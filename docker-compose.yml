@@ -1,0 +1,14 @@
+version: '3.2'
+services:
+
+  db:
+    image: redun_postgres
+    build:
+      context: db/
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"

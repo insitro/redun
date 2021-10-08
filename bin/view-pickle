@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+"""
+pickle preview utility.
+"""
+
+import argparse
+import sys
+from pprint import pprint
+
+from redun.utils import pickle_preview
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--debug", action="store_true", help="Start debugger")
+parser.add_argument("pickle", nargs="?")
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+
+    if args.pickle:
+        infile = open(args.pickle, "rb")
+    else:
+        infile = sys.stdin.buffer
+
+    data = infile.read()
+    obj = pickle_preview(data)
+
+    if args.debug:
+        print("pickle-preview debugger")
+        print(f"{len(data)} bytes, `data`, loaded into `obj`.")
+        breakpoint()
+    else:
+        pprint(obj)

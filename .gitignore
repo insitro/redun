@@ -1,0 +1,9 @@
+.venv
+__pycache__
+*.egg-info/
+.tox/
+docs/build/
+.idea
+.redun
+redun.db
+dist/
