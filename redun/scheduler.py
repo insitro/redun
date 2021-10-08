@@ -56,7 +56,8 @@ from redun.logging import logger as _logger
 from redun.tags import parse_tag_value
 from redun.task import Task, get_task_registry, scheduler_task, task
 from redun.utils import format_table, iter_nested_value, map_nested_value, trim_string
-from redun.value import TypeError, Value, get_type_registry
+from redun.value import TypeError as RedunTypeError
+from redun.value import Value, get_type_registry
 
 # Globals.
 _local = threading.local()
@@ -1334,7 +1335,13 @@ class Scheduler:
 
             # Compute final call_hash and record CallNode.
             error_value = ErrorValue(error, error_traceback or Traceback.from_error(error))
-            error_hash = self.backend.record_value(error_value)
+            try:
+                error_hash = self.backend.record_value(error_value)
+            except (TypeError, AttributeError):
+                # Some errors cannot be serialized so record them as generic Exceptions.
+                error2 = Exception(repr(error))
+                error_value = ErrorValue(error2, error_traceback or Traceback.from_error(error2))
+                error_hash = self.backend.record_value(error_value)
             job.call_hash = self.backend.record_call_node(
                 task_name=job.task.fullname,
                 task_hash=job.task.hash,
@@ -1453,7 +1460,7 @@ class Scheduler:
             if call_hash:
                 try:
                     result, is_cached = self.backend.get_cache(call_hash)
-                except TypeError:
+                except RedunTypeError:
                     # Type no longer exists, we can't use shallow checking.
                     result, is_cached = self.backend.get_eval_cache(eval_hash)
             else:

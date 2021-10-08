@@ -189,3 +189,24 @@ def test_error_value() -> None:
 
     assert isinstance(error2.error, ValueError)
     assert error2.error.args == ("BOOM",)
+
+
+def test_error_value_fallback(scheduler: Scheduler, session: Session) -> None:
+    """
+    redun should fallback to Exception for errors that cannot be serialized.
+    """
+
+    @task()
+    def main():
+        # Lambdas are not pickleable.
+        raise ValueError(lambda: "unpicklable")
+
+    # Workflow should raise exception.
+    with pytest.raises(ValueError):
+        scheduler.run(main())
+
+    # CallGraph should have recorded exception as ValueError.
+    execution = session.query(Execution).one()
+    error = execution.job.call_node.value.value_parsed.error
+    assert type(error) == Exception
+    assert "ValueError" in str(error)
