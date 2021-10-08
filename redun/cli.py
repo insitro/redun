@@ -471,6 +471,26 @@ def arg_name2cli_name(arg_name: str) -> str:
     return "--" + arg_name.lower().replace("_", "-")
 
 
+def make_parse_arg_func(arg_anno: Any) -> Callable[[str], Any]:
+    """
+    Returns parser for argument annotation.
+    """
+    arg_name = arg_anno.__name__ if hasattr(arg_anno, "__name__") else repr(arg_anno)
+
+    def parse_arg(arg: str) -> Any:
+        try:
+            return get_type_registry().parse_arg(arg_anno, arg)
+        except Exception as error:
+            # Log specific error.
+            logger.error(f"Error parsing {arg_name}: {error}")
+            raise
+
+    # Set parser name for more useful help text.
+    parse_arg.__name__ = arg_name
+
+    return parse_arg
+
+
 def add_value_arg_parser(
     parser: argparse.ArgumentParser, arg_name: str, anno: Any, default: Any
 ) -> argparse.Action:
@@ -532,10 +552,8 @@ def add_value_arg_parser(
             arg_anno = anno.__args__[0]
         else:
             arg_anno = anno
-        parse_arg = lambda arg: get_type_registry().parse_arg(arg_anno, arg)  # noqa: E731
 
-        # Set parser name for more useful help text.
-        parse_arg.__name__ = arg_anno.__name__ if hasattr(arg_anno, "__name__") else repr(arg_anno)
+        parse_arg = make_parse_arg_func(arg_anno)
     else:
         arg_anno = None
         # Parameters without an annotation are assumed to be str.
