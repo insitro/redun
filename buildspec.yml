@@ -1,0 +1,25 @@
+version: 0.2
+
+env:
+  variables:
+    # Set the locale explicitly for tools like click.
+    LC_ALL: C.UTF-8
+    LANG: C.UTF-8
+  exported-variables:
+    - LC_ALL
+    - LANG
+
+phases:
+  install:
+    commands:
+      - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+      - apt-get update && apt-get install -y postgresql-client
+      - pyenv install -s 3.6.10
+      - pyenv install -s 3.7.10
+      - pyenv install -s 3.8.8
+      - pyenv install -s 3.9.4
+      - pyenv global 3.6.10 3.7.10 3.8.8 3.9.4
+  build:
+    commands:
+      - make lint
+      - make test
