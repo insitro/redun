@@ -20,19 +20,21 @@ See the [docs](docs/source/design.md) and the [tutorial](examples/README.md) for
 
 ## Install
 
-### Dependencies
-
-Redun assumes the following dependencies are installed:
-* pg_config (in the `postgresql-devel` package; on ubuntu: `apt-get install libpq-dev`)
-* gcc (on ubuntu or similar `sudo apt-get install gcc`)
-
-### Installation commands
-
-redun can be installed using pip:
-
 ```sh
 pip install redun
 ```
+
+### Postgres backend
+
+To use postgres as a backend, use
+
+```sh
+pip install redun[postgres]
+```
+
+The above assumes the following dependencies are installed:
+* `pg_config` (in the `postgresql-devel` package; on ubuntu: `apt-get install libpq-dev`)
+* `gcc` (on ubuntu or similar `sudo apt-get install gcc`)
 
 
 ## Small taste
