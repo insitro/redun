@@ -1,14 +1,16 @@
-
-# Chose any base image you would like:
-ARG ACCOUNT
-FROM ${REGISTRY}/amazonlinux-python3
-WORKDIR /code
+FROM ubuntu:impish
 
 # Install OS-level libraries.
-RUN yum update -y && yum install -y \
-    postgresql-devel
+RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
+    python3 \
+    python3-pip && \
+    apt-get clean
+
+WORKDIR /code
 
 # Install our python code dependencies.
+# Here we copy the redun library into the container, but we could also
+# use `pip install redun`.
 COPY redun redun
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt

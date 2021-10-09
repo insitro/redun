@@ -1,4 +1,4 @@
-IMAGE=redun_aws_batch_example
+IMAGE=redun_example
 ACCOUNT=$(shell aws ecr describe-registry --query registryId --output text)
 REGION=$(shell aws configure get region)
 REGISTRY=$(ACCOUNT).dkr.ecr.$(REGION).amazonaws.com
@@ -15,10 +15,10 @@ login:
 	aws ecr get-login-password --region $(REGION) | docker login --username AWS --password-stdin $(REGISTRY)
 
 build:
-	docker build -t $(REGISTRY)/$(IMAGE) --build-arg REGISTRY=$(REGISTRY) .
+	docker build -t $(REGISTRY)/$(IMAGE) .
 
 build-local:
-	docker build -t $(IMAGE) --build-arg REGISTRY=$(REGISTRY) .
+	docker build -t $(IMAGE) .
 
 create-repo:
 	aws ecr create-repository --repository=$(IMAGE)
