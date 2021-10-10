@@ -1,4 +1,4 @@
-IMAGE=redun_aws_batch_example
+IMAGE=redun_example
 ACCOUNT=$(shell aws ecr describe-registry --query registryId --output text)
 REGION=$(shell aws configure get region)
 REGISTRY=$(ACCOUNT).dkr.ecr.$(REGION).amazonaws.com
