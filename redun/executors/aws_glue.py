@@ -573,8 +573,17 @@ def submit_glue_job(
             DEFAULT_ADDITIONAL_PYTHON_MODULES + "," + ",".join(job_options["additional_libs"])
         )
 
+    # Copy extra Python files to S3, as Glue requires them to be there.
+    scratch_dir = aws_utils.get_job_scratch_dir(s3_scratch_prefix, job)
+    if job_options.get("extra_py_files"):
+        job_args["--extra-py-files"] += ",".join(
+            aws_utils.copy_to_s3(f, scratch_dir) for f in job_options["extra_py_files"]
+        )
+
     if job_options.get("extra_files"):
-        job_args["--extra-files"] = ",".join(job_options["extra_files"])
+        job_args["--extra-files"] = ",".join(
+            aws_utils.copy_to_s3(f, scratch_dir) for f in job_options["extra_files"]
+        )
 
     # Validate job options
     if job_options["worker_type"] not in VALID_GLUE_WORKERS:
