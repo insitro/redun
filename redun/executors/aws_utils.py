@@ -125,6 +125,21 @@ def get_array_scratch_file(s3_scratch_prefix: str, job_array_id: str, filename: 
     return os.path.join(s3_scratch_prefix, "array_jobs", job_array_id, filename)
 
 
+def copy_to_s3(file_path: str, s3_scratch_dir: str) -> str:
+    """
+    Copies a file to the S3 scratch directory if it is not already on S3.
+    Returns the path to the file on S3.
+    """
+    file = File(file_path)
+    if file.filesystem.name == "s3":
+        return file.path
+
+    _, filename = os.path.split(file.path)
+    s3_temp_file = File(f"{s3_scratch_dir.rstrip('/')}/{filename}")
+    file.copy_to(s3_temp_file)
+    return s3_temp_file.path
+
+
 def get_default_region() -> str:
     """
     Returns the default AWS region.

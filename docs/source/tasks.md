@@ -19,7 +19,7 @@ def process_dataset(dataset: list, col: str, value: Any) -> list:
     return dataset2
 ```
 
-Tasks options can also be overridden at call-time using [`Task.option()`](redun/redun.md#redun.task.Task). For example, we could dynamically set the memory required for a AWS Batch task based on the dataset size.
+Tasks options can also be overridden at call-time using [`Task.options()`](redun/redun.md#redun.task.Task). For example, we could dynamically set the memory required for a AWS Batch task based on the dataset size.
 
 ```py
 @task()
@@ -28,7 +28,7 @@ def main(input: File) -> list:
 
     # Dynamically change memory depending on size of dataset.
     memory = len(dataset) / 1000
-    dataset2 = process_dataset.option(memory=memory)(dataset, "color", "red")
+    dataset2 = process_dataset.options(memory=memory)(dataset, "color", "red")
     return dataset2
 ```
 
