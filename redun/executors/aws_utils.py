@@ -131,10 +131,8 @@ def copy_to_s3(file_path: str, s3_scratch_dir: str) -> str:
     Returns the path to the file on S3.
     """
     file = File(file_path)
-    if file.filesystem.name == "s3":
-        return file.path
-
     _, filename = os.path.split(file.path)
+
     s3_temp_file = File(f"{s3_scratch_dir.rstrip('/')}/{filename}")
     file.copy_to(s3_temp_file)
     return s3_temp_file.path
