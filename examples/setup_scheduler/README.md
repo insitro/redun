@@ -4,7 +4,7 @@ This example shows how a project can use tasks from a workflow library, `workflo
 
 This example also shows how complex redun configuration can be defined using a `setup_scheduler()` function, which is an optional function used  by the redun CLI to configure the redun scheduler at runtime. This can be useful in situations where users prefer to use python to configure scheduler instead of the `.redun/redun.ini` configuration file.
 
-To run this example, first create the necessary docker images following the instructions in [../aws_batch/README.md](../aws_batch/README.md). Then run the example workflow using:
+To run this example, first create the necessary docker images following the instructions in [../05_aws_batch/README.md](../05_aws_batch/README.md). Then run the example workflow using:
 
 ```sh
 redun run workflow.py main

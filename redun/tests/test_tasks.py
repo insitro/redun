@@ -157,6 +157,7 @@ def test_cache_task() -> None:
     assert isinstance(task1b, Task)
     assert task1b.fullname == task1.fullname
     assert task1b.func == task1.func
+    assert task1b.source == task1.source
 
     # The task is still valid because we have not changed its code since serialization.
     assert task1b.is_valid()

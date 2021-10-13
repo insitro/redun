@@ -272,9 +272,11 @@ class Task(Value, Generic[Func]):
         if _task:
             self.func = _task.func
             self.task_options = _task.task_options
+            self.source = get_func_source(self.func)
         else:
             self.func = lambda *args, **kwargs: undefined_task(self.fullname, *args, **kwargs)
             self.task_options = {}
+            self.source = ""
 
         self.nout = self._get_nout()
         self._signature = None
