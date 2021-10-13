@@ -139,6 +139,7 @@ def test_partial_serialize() -> None:
     inc2 = PartialTask.__new__(PartialTask)
     inc2.__setstate__(state)
     assert inc2.__getstate__() == state
+    assert inc2.source == add.source
 
 
 def test_partial_bad_args(scheduler: Scheduler) -> None:
