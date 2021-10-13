@@ -10,7 +10,7 @@ requirements = [
     "gcsfs>=2021.4.0",
     "promise>=2.2",
     "sqlalchemy>=1.3.17,<2",
-    "s3fs<0.5",
+    "s3fs>=0.4.2",
     "boto3>=1.16.63",
     "python-dateutil>=2.8",
 ]
