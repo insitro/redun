@@ -26,10 +26,10 @@ def main():
     print(f":Date: {today}\n")
 
     merge_base = subprocess.check_output(
-        f"git merge-base {args.current_release_tag} origin/master", shell=True
+        f"git merge-base {args.current_release_tag} origin/main", shell=True
     ).decode("utf8")
     commits = subprocess.check_output(
-        f"git --no-pager log --pretty='%s' --abbrev-commit {merge_base.strip()}..origin/master",
+        f"git --no-pager log --pretty='%s' --abbrev-commit {merge_base.strip()}..origin/main",
         shell=True,
     ).decode("utf8")
     for commit in commits.splitlines():
