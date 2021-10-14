@@ -3,11 +3,10 @@ import re
 import sys
 from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Tuple, TypeVar, cast
 
-from promise import Promise
-
 from redun.expression import SchedulerExpression, TaskExpression
 from redun.hashing import hash_arguments, hash_struct
 from redun.namespace import get_current_namespace
+from redun.promise import Promise
 from redun.utils import get_func_source
 from redun.value import Value, get_type_registry
 
