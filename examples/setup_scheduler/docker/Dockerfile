@@ -1,4 +1,4 @@
-FROM ubuntu:impish
+FROM ubuntu:20.04
 
 # Install OS-level libraries.
 RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
