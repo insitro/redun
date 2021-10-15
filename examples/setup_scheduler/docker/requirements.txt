@@ -1,1 +1,2 @@
+awscli
 -e redun/
