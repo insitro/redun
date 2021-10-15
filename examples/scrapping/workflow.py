@@ -122,7 +122,7 @@ def crawl(url: str, url_prefix: str, out_path: str, depth: int) -> List[File]:
 
     file = scrape_page(url, out_path)
 
-    # If the page scraping is successful, process it.
+    # If the page scrapping is successful, process it.
     # We use cond (a lazy if-statement) since `file` is a lazy expression.
     return cond(file, process_page(file, url, url_prefix, out_path, depth), [])
 
