@@ -4,31 +4,71 @@ from redun.promise import Promise
 
 
 def test_resolve() -> None:
+    """
+    Promise constructor should reslove values.
+    """
     promise: Promise[int] = Promise(lambda resolve, reject: resolve(10))
     assert promise.value == 10
 
 
 def test_reject() -> None:
+    """
+    Promise constructor should reject exceptions.
+    """
     error = ValueError("boom")
     promise: Promise[int] = Promise(lambda resolve, reject: reject(error))
     assert promise.error == error
 
 
 def test_do_resolve() -> None:
+    """
+    Promises should resolve values after instantiation.
+    """
     promise: Promise[int] = Promise()
     promise.do_resolve(10)
     assert promise.value == 10
 
 
 def test_do_reject() -> None:
+    """
+    Promises should reject exceptions after instantiation.
+    """
     error = ValueError("boom")
     promise: Promise[int] = Promise()
     promise.do_reject(error)
     assert promise.error == error
 
 
-def test_then_resolve() -> None:
+def test_resolve_first() -> None:
+    """
+    First resolution counts.
+    """
+    error = ValueError("boom")
+    promise: Promise[int] = Promise()
+    promise.do_resolve(10)
+    promise.do_resolve(20)
+    promise.do_reject(error)
+    assert promise.value == 10
 
+
+def test_reject_first() -> None:
+    """
+    First rejection counts.
+    """
+    error = ValueError("boom")
+    error2 = ValueError("boom2")
+    promise: Promise[int] = Promise()
+    promise.do_reject(error)
+    promise.do_reject(error2)
+    promise.do_resolve(10)
+    promise.do_resolve(20)
+    assert promise.error == error
+
+
+def test_then_resolve() -> None:
+    """
+    Promise resolutions should propagate through then().
+    """
     mock = Mock()
     promise: Promise[int] = Promise()
     promise.then(mock)
@@ -37,6 +77,10 @@ def test_then_resolve() -> None:
 
 
 def test_then_reject() -> None:
+    """
+    Promise rejections should propagate through then().
+    """
+
     def fail(error):
         pass
 
@@ -50,7 +94,9 @@ def test_then_reject() -> None:
 
 
 def test_resolve_then() -> None:
-
+    """
+    Already resolved promises should still propagate through then().
+    """
     promise: Promise[int] = Promise()
     promise.do_resolve(10)
 
@@ -60,7 +106,9 @@ def test_resolve_then() -> None:
 
 
 def test_reject_then() -> None:
-
+    """
+    Already rejected promises should still propagate through then().
+    """
     promise: Promise[int] = Promise()
     error = ValueError("boom")
     promise.do_reject(error)
@@ -71,7 +119,9 @@ def test_reject_then() -> None:
 
 
 def test_resolve_multiple_then() -> None:
-
+    """
+    Resolutions should fan-out to multiple `then()` calls.
+    """
     promise: Promise[int] = Promise()
 
     mock = Mock()
@@ -85,7 +135,9 @@ def test_resolve_multiple_then() -> None:
 
 
 def test_reject_multiple_then() -> None:
-
+    """
+    Rejections should fan-out through multiple `then()` calls.
+    """
     promise: Promise[int] = Promise()
 
     mock = Mock()
@@ -100,7 +152,9 @@ def test_reject_multiple_then() -> None:
 
 
 def test_chain_resolve() -> None:
-
+    """
+    Resolutions should propagate through chained `then()` calls.
+    """
     promise: Promise[int] = Promise()
 
     mock = Mock()
@@ -111,7 +165,9 @@ def test_chain_resolve() -> None:
 
 
 def test_chain_reject() -> None:
-
+    """
+    Rejections should propagate through chained `then()` calls.
+    """
     promise: Promise[int] = Promise()
 
     mock = Mock()
@@ -123,7 +179,9 @@ def test_chain_reject() -> None:
 
 
 def test_chain_null() -> None:
-
+    """
+    Resolutions should propagate through empty `then()` calls.
+    """
     promise: Promise[int] = Promise()
 
     mock = Mock()
@@ -134,7 +192,9 @@ def test_chain_null() -> None:
 
 
 def test_nest_resolve() -> None:
-
+    """
+    Resolutions of nested promises should propagate.
+    """
     promise: Promise[int] = Promise()
 
     mock = Mock()
@@ -145,7 +205,9 @@ def test_nest_resolve() -> None:
 
 
 def test_nest_reject() -> None:
-
+    """
+    Rejections of nested promises should propagate.
+    """
     promise: Promise[int] = Promise()
 
     error = ValueError("boom")
@@ -157,7 +219,9 @@ def test_nest_reject() -> None:
 
 
 def test_raise() -> None:
-
+    """
+    Raising an exception should reject the Promise.
+    """
     error = ValueError("boom")
 
     def then(result: int) -> None:
@@ -181,7 +245,9 @@ def test_raise() -> None:
 
 
 def test_all() -> None:
-
+    """
+    Promise.all() should resolve when all child promises resolve.
+    """
     promise1: Promise[int] = Promise()
     promise2: Promise[int] = Promise()
 
@@ -196,7 +262,9 @@ def test_all() -> None:
 
 
 def test_all_reject() -> None:
-
+    """
+    Promise.all() should reject when any child promise rejects.
+    """
     promise1: Promise[int] = Promise()
     promise2: Promise[int] = Promise()
 

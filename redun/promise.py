@@ -41,7 +41,7 @@ class Promise(Generic[T]):
         elif self.is_fulfilled:
             return cast(T, self._value)
         else:
-            # TODO: This is a backwards compatible fix.
+            # This is a backwards compatible fix.
             return cast(T, self._error)
 
     @property
@@ -86,14 +86,17 @@ class Promise(Generic[T]):
         Notify all listeners of the promise.
         """
         if self.is_pending:
+            # If promise is still pending, do nothing.
             return
         elif self.is_fulfilled:
+            # If promise is resolved, notify new resolvers. Discard rejectors.
             resolvers = self._resolvers
             self._resolvers = []
             self._rejectors.clear()
             for resolver in resolvers:
                 resolver(cast(T, self._value))
         else:
+            # If promise is rejected, notify new rejectors. Discard resolvers.
             self._resolvers.clear()
             rejectors = self._rejectors
             self._rejectors = []
@@ -115,10 +118,13 @@ class Promise(Generic[T]):
                 try:
                     result2 = func(result_or_error)
                     if isinstance(result2, Promise):
+                        # A nested promise should propagate to the parent promise.
                         result2.then(promise.do_resolve, promise.do_reject)
                     else:
+                        # Propagate the resolved value.
                         promise.do_resolve(result2)
                 except Exception as error:
+                    # Propagate the rejected exception.
                     promise.do_reject(error)
 
             return wrapper
