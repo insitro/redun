@@ -5,7 +5,7 @@ from redun.promise import Promise
 
 def test_resolve() -> None:
     """
-    Promise constructor should reslove values.
+    Promise constructor should resolve values.
     """
     promise: Promise[int] = Promise(lambda resolve, reject: resolve(10))
     assert promise.value == 10
