@@ -132,7 +132,7 @@ class Promise(Generic[T]):
         if resolver:
             self._resolvers.append(wrap_callback(resolver))
         else:
-            # By default propogate result.
+            # By default propagate result.
             self._resolvers.append(cast(Callable[[T], S], promise.do_resolve))
         if rejector:
             self._rejectors.append(wrap_callback(rejector))
