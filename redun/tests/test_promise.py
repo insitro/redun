@@ -49,6 +49,18 @@ def test_resolve_first() -> None:
     promise.do_resolve(20)
     promise.do_reject(error)
     assert promise.value == 10
+    
+def test_resolved_has_no_error() -> None:
+    """
+    Once resolved, promise is marked as not rejected.
+    """
+    error = ValueError("boom")
+    promise: Promise[int] = Promise()
+    promise.do_resolve(10)
+    promise.do_reject(error)
+    assert promise.value == 10
+    with pytest.raises(ValueError):
+        promise.error
 
 
 def test_reject_first() -> None:
