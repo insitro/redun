@@ -1,5 +1,7 @@
 from unittest.mock import Mock
 
+import pytest
+
 from redun.promise import Promise
 
 
@@ -49,7 +51,8 @@ def test_resolve_first() -> None:
     promise.do_resolve(20)
     promise.do_reject(error)
     assert promise.value == 10
-    
+
+
 def test_resolved_has_no_error() -> None:
     """
     Once resolved, promise is marked as not rejected.
