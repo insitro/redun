@@ -30,8 +30,6 @@ from typing import (
     overload,
 )
 
-from promise import Promise
-
 from redun.backends.base import RedunBackend, TagEntityType
 from redun.backends.db import RedunBackendDb
 from redun.config import Config, Section, SectionProxy, create_config_section
@@ -53,6 +51,7 @@ from redun.expression import (
 from redun.handle import Handle
 from redun.hashing import hash_eval, hash_struct
 from redun.logging import logger as _logger
+from redun.promise import Promise
 from redun.tags import parse_tag_value
 from redun.task import Task, get_task_registry, scheduler_task, task
 from redun.utils import format_table, iter_nested_value, map_nested_value, trim_string
@@ -249,6 +248,7 @@ class Job:
 
         # Execution state.
         self.execution: Optional[Execution] = execution
+        self.task_name: str = self.expr.task_name
         self.task: Optional[Task] = None
         self.args_hash: Optional[str] = None
         self.eval_args: Optional[Tuple[Tuple, Dict]] = None
@@ -262,15 +262,21 @@ class Job:
         self.handle_forks: Dict[str, int] = defaultdict(int)
         self.job_tags: List[Tuple[str, Any]] = []
         self.value_tags: List[Tuple[str, List[Tuple[str, Any]]]] = []
+        self._status: Optional[str] = None
 
         if parent_job:
             self.notify_parent(parent_job)
         if execution:
             execution.add_job(self)
 
+    def __repr__(self) -> str:
+        return f"Job(id={self.id}, task_name={self.task_name})"
+
     @property
     def status(self) -> str:
-        if self.eval_args is None:
+        if self._status:
+            return self._status
+        elif self.eval_args is None:
             return "PENDING"
         elif self.result_promise.is_pending:
             return "RUNNING"
@@ -350,6 +356,7 @@ class Job:
         """
         self.expr.call_hash = self.call_hash
         self.result_promise.do_resolve(result)
+        self.clear()
 
     def reject(self, error: Any) -> None:
         """
@@ -357,6 +364,27 @@ class Job:
         """
         self.expr.call_hash = self.call_hash
         self.result_promise.do_reject(error)
+        self.clear()
+
+    def clear(self):
+        """
+        Free execution state from Job.
+        """
+        # Record final status before clearing execution state.
+        self._status = self.status
+
+        self.expr = None
+        self.args = None
+        self.kwargs = None
+        self.eval_args = None
+        self.result_promise = None
+        self.result = None
+        self.job_tags.clear()
+        self.value_tags.clear()
+
+        for child_job in self.child_jobs:
+            child_job.parent_job = None
+        self.child_jobs.clear()
 
 
 def get_backend_from_config(backend_config: Optional[SectionProxy] = None) -> RedunBackend:
@@ -662,7 +690,8 @@ class Scheduler:
         self.workflow_promise: Optional[Promise] = None
         self._current_execution: Optional[Execution] = None
         self._pending_expr: Dict[str, Tuple[Promise, Job]] = {}
-        self.jobs: Set[Job] = set()
+        self._jobs: Set[Job] = set()
+        self._finalized_jobs: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
         self.dryrun = False
         self.use_cache = True
 
@@ -772,7 +801,7 @@ class Scheduler:
         start_time = time.time()
         self.thread_id = threading.get_ident()
         self._pending_expr.clear()
-        self.jobs.clear()
+        self._jobs.clear()
         result = self.evaluate(expr)
         self.process_events(result)
 
@@ -838,9 +867,13 @@ class Scheduler:
         """
         # Gather job status information.
         status_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
-        for job in self.jobs:
-            status_counts[job.expr.task_name][job.status] += 1
-            status_counts[job.expr.task_name]["TOTAL"] += 1
+        for job in self._jobs:
+            status_counts[job.task_name][job.status] += 1
+            status_counts[job.task_name]["TOTAL"] += 1
+        for task_name, task_status_counts in self._finalized_jobs.items():
+            for status, count in task_status_counts.items():
+                status_counts[task_name][status] += count
+                status_counts[task_name]["TOTAL"] += count
 
         # Create counts table.
         task_names = sorted(status_counts.keys())
@@ -961,7 +994,7 @@ class Scheduler:
 
             # TaskExpressions need to be executed in a new Job.
             job = Job(expr, parent_job=parent_job, execution=self._current_execution)
-            self.jobs.add(job)
+            self._jobs.add(job)
 
             # Evaluate args then execute job.
             args_promise = self.evaluate((expr.args, expr.kwargs), parent_job=parent_job)
@@ -1252,6 +1285,14 @@ class Scheduler:
 
         self.backend.record_job_end(job)
         job.resolve(result)
+        self._finalize_job(job)
+
+    def _finalize_job(self, job: Job) -> None:
+        """
+        Clean up finalized job.
+        """
+        self._jobs.remove(job)
+        self._finalized_jobs[job.task_name][job.status] += 1
 
     def _record_job_tags(self, job: Job) -> None:
         """
@@ -1354,6 +1395,7 @@ class Scheduler:
             self._record_job_tags(job)
             self.backend.record_job_end(job, status="FAILED")
             job.reject(error)
+            self._finalize_job(job)
 
         else:
             # Error is not job specific. Often this could be a redun-internal error.

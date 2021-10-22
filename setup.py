@@ -8,7 +8,6 @@ requirements = [
     "aiohttp>=3.7.4",
     "alembic>=1.4",
     "gcsfs>=2021.4.0",
-    "promise>=2.2",
     "sqlalchemy>=1.3.17,<2",
     "s3fs>=0.4.2",
     "boto3>=1.16.63",

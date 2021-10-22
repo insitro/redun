@@ -4,13 +4,13 @@ from typing import Any, Dict, List, Sequence, Tuple
 from unittest.mock import Mock, patch
 
 import pytest
-from promise import Promise
 from sqlalchemy.orm import Session
 
 from redun import Scheduler, task
 from redun.backends.db import Execution, RedunBackendDb
 from redun.config import Config
 from redun.expression import SchedulerExpression
+from redun.promise import Promise
 from redun.scheduler import DryRunResult, Frame, Job, Task, Traceback, catch, cond, scheduler_task
 from redun.task import PartialTask, SchedulerTask
 from redun.tests.utils import assert_match_lines, use_tempdir
@@ -655,6 +655,8 @@ def test_job_status() -> None:
     job.resolve(10)
     assert job.status == "DONE"
 
+    job = Job(task1())
+    job.eval_args = ((), {})
     job.reject(ValueError())
     assert job.status == "FAILED"
 

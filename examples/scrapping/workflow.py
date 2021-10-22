@@ -184,7 +184,7 @@ def main(
     depth: int = 2,
 ):
     """
-    Scrap a website, compute the word frequency, general an HTML report.
+    Scrape a website, compute the word frequency, generate an HTML report.
     """
     files = crawl(url, url, os.path.join(out_path, "crawl"), depth)
 
