@@ -2,6 +2,12 @@
 Changelog
 *********
 
+0.8.1
+=====
+:Date: October 24, 2021
+
+* `#11` - improve job and promise memory usage
+
 0.8.0
 =====
 :Date: October 13, 2021
