@@ -6,18 +6,19 @@ Here, we describe the high-level design features of redun.
 
 The goal of redun is to provide the benefits of workflow engines for Python code in an easy and unintrusive way. Workflow engines can help run code faster by using parallel distributed execution, they can provide checkpointing for fast resuming of previously halted execution, they can reactively re-execute code based on changes in data or code, and can provide logging for data provenance.
 
-While there are [A LOT](https://github.com/pditommaso/awesome-pipeline) of workflow engines available even for Python, redun differs by avoiding the need to restructure programs in terms of dataflow. In fact, we take the position that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, recursion, higher order functions, etc).
+While there are [A LOT](https://github.com/pditommaso/awesome-pipeline) of workflow engines available even for Python, redun differs by avoiding the need to restructure programs in terms of dataflow. In fact, we take the position that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, recursion, higher order functions, etc). redun's key insight is that workflows can be expressed as lazy expressions, that are then evaluated by a scheduler which performs automatic parallelization, caching, and data provenance logging.
 
 redun's key features are:
 
-- Dynamic directed acyclic graph (DAG) construction that can contain complex data flows such as recursion, higher order tasks (tasks that take tasks as arguments or return them as results).
-- Automatic incremental recomputation triggered based on data changes as well as code changes.
-- Code changes are detected by hashing individual Python functions and comparing against historical call graph recordings (inspired by [redo](https://github.com/apenwarr/redo)).
+- Workflows are defined by lazy expressions that when evaluated emit dynamic directed acyclic graphs (DAGs), enabling complex data flows.
+- Incremental computation that is reactive to both data changes as well as code changes.
+- Workflow tasks can be executed on a variety of compute backend (threads, processes, AWS batch jobs, Spark jobs, etc). 
 - Data changes are detected for in memory values as well as external data sources such as files and object stores using file hashing.
-- A concept called *handles* allows defining proper recomputation for complex external data sources such as connections to databases and web services where full data hashing is not feasible. Consequently, this make redun convenient for ETL pipelines involving databases.
-- Past intermediate results are cached centrally and reused across tasks and executions.
+- Code changes are detected by hashing individual Python functions and comparing against historical call graph recordings.
+- Past intermediate results are cached centrally and reused across workflows.
 - Past call graphs can be used as a data lineage record and can be queried for debugging and auditing.
 
+See the [influences](#influences) for more details on how these features relate to other tools.
 
 ## First example
 
@@ -811,6 +812,13 @@ def main(x):
 
 ## Data provenance
 
+### Call graphs
+
+<img src="redun-call-graph.svg" width="100%"/>
+
+Depicted above is an example call graph and job tree (left) for an execution of a workflow (right). When each task is called, a CallNode is recorded along with all the Values used as arguments and return value. As tasks (`main`) call child tasks, children CallNodes are recorded (`task1` and `task2`). "Horizontal" dataflow is also recorded between sibling tasks, such as `task1` and `task2`. Each node in the call graph is identified by a unique hash and each Job and Execution is identified by a unique UUID. This information is stored by default in the redun database `.redun/redun.db`.
+
+
 ### Querying call graphs
 
 Every time redun executes a workflow, it records the execution as a CallGraph. The `redun log` command can be used to query past executions and walk through the CallGraph. Here we'll walk through the `examples/compile/` example. The workflow script should look something like this:
@@ -1528,7 +1536,7 @@ redun's use of task decorators and lazy-evaluation can be thought of as a [monad
 
 - A type constructor `M`:
   - redun uses `Expression` to wrap user values (type `a`).
-- A type converter `unit : a -> M a`:
+- A type converter `unit :: a -> M a`:
   - redun uses `ExpressionValue(a)` to lift a user value into the monad. This is conceptually done automatically for the user.
 - A combinator `bind :: M a -> (a -> M b) -> M b`:
   - The `@task()` decorator plays the role of `bind` although with the arguments reversed.
@@ -1549,7 +1557,7 @@ def task2(y: int):
 - We can think of decorator `@task` as performing currying.
   - `task2` has type `a -> M b`.
   - `task(task2)` transforms the function to have type `M a -> M b`, since decorated tasks can accept `Expressions` as arguments. For arguments that are concrete user values (type `a`), redun automatically wraps the arguments with `ValueExpression`, at least conceptually.
-  - If `task(task2)(ValueExpression(10))` is viewed as currying, we could write this as `task(task2, ValueExpression(10)` and `task` has type `(a -> M b) -> M a -> M b`. This is very close to `bind` except with arguments reversed.
+  - If `task(task2)(ValueExpression(10))` is viewed as currying, we could write this as `task(task2, ValueExpression(10))` and `task` has type `(a -> M b) -> M a -> M b`. This is very close to `bind` except with arguments reversed.
 
 By using monads to wrap the computation, redun can analyze the dataflow between tasks and perform proper parallelization and scheduling transparently. By design, redun tries to leverage the benefits of monads and functional programming concepts, but in a style familiar to Python developers.
 
@@ -1565,14 +1573,47 @@ In our use, "reifying" means wrapping the computation into an expression tree th
 redun can be thought of as implementing a asynchronous functional programming language within Python, which is an imperative multi-paradigm language, a general pattern called [metaprogramming](https://en.wikipedia.org/wiki/Metaprogramming). This strategy for implementing a workflow engine allows us to use a very popular programming language, Python (used in data science, ML, web development, ETLs), but adapt it to have language features amenable to distributed computing. The following features map between Python and redun-the-language:
 
 - `Task`s are the functions of redun.
-- Tasks are first-class values in redun and therefore can be passed as arguments and returned as results from redun functions.
+- Tasks are [first-class values](https://en.wikipedia.org/wiki/First-class_function) in redun and therefore can be passed as arguments and returned as results from redun functions.
 - Task input arguments and outputs are the values of redun.
   - In fact, the base class for classes like `File`, `Handle`, and `Task` is `Value`.
 - The `Scheduler` is the interpreter and runtime of redun.
 - `Expression`s implements expressions in the redun language. The `Scheduler` recursively evaluates `Expression`s into concrete values. 
 - The `TaskRegistry` and `TypeRegistry` are the environment (described in [Scope](https://en.wikipedia.org/wiki/Scope_(computer_science)#Overview)) for redun.
-- Plain Python functions that take `Expression`s are like [macros](https://en.wikipedia.org/wiki/Macro_(computer_science)#Syntactic_macros)
+- Plain Python functions that take `Expression`s are like [macros](https://en.wikipedia.org/wiki/Macro_(computer_science)#Syntactic_macros) since they are evaluated at "compile-time" (i.e. workflow construction-time).
 - `scheduler_task`s are the equivalent of [fexpr](https://en.wikipedia.org/wiki/Fexpr) and can be used to implement [special forms](https://groups.csail.mit.edu/mac/ftpdir/scheme-7.4/doc-html/scheme_3.html) in redun.
   - One could implement if-expressions (`cond`), try-except (`catch`), and `seq`.
 - `PartialTask` allows the creation of closures for redun, since they do not evaluate their arguments until all other arguments are supplied.
   - `PartialTask`s can be used to implement `delay` and `force`.
+
+
+## Influences
+
+Development of redun has been inspired by many projects. Here is a brief review of our understanding of how redun's ideas relate to similar concepts seen elsewhere.
+
+- Bioinformatic workflow languages: [WDL](https://github.com/openwdl/wdl), [Nextflow](https://www.nextflow.io/), [Snakemake](https://snakemake.readthedocs.io/en/stable/), [Reflow](https://github.com/grailbio/reflow)
+  - Workflow languages such as these give special treatment to file and code change reactivity, which is especially helpful in scientific workflows that typically go through quick interative development. redun's `File` and task hashing were inspired by these languages.
+  - They also all define a Domain Specific Language (DSL) in order to enforce pure functions or provide dedicated syntax for task dependency. redun differs by relying on a host language, Python. Using Python makes it difficult to enforce some of the same constraints (e.g. function purity), but it does allow redun workflows to more easily integrate with the whole world of Python data science libraries (e.g. Pandas, NumPy, pytorch, rdkit, sqlalchemy, etc) without layers of wrapping (e.g. driver scripts, data serializing/deserializing, Docker images).
+- Data engineering workflow languages: [Airflow](https://airflow.apache.org/), [Luigi](https://github.com/spotify/luigi), [Prefect](https://www.prefect.io/)
+  - These workflow languages have had a more general focus beyond interacting with files. They are often used for ETLs (extract-transform-load) where data is exchanged with databases or web services. redun does not assume all dataflow is through files and so can used for interacting with databases and APIs as well.
+  - Airflow v2, Prefect, and [Dask delayed](https://docs.dask.org/en/latest/delayed.html) have adopted defining tasks as decorated Python functions, which when invoked return a Promise / Future / Delayed that can be passed as an argument to another task call. The workflow engine can then inspect the presence of these lazy objects in task call arguments in order to infer the edges of the workflow DAG. This allows very natural looking workflow definitions. redun uses the same approach but returns Expressions instead. Also, redun will search for Expressions inside of Nested Values.
+- Expression hashing: [Unison](https://www.unisonweb.org/), [gg](https://github.com/StanfordSNR/gg)
+  - In Unison, every expression is hashable and the hash can be used as a cache key for replaying reductions / evaluations from a cache. This is similar to how redun represents a workflow as a graph of Expressions, each of which is hashed in order to consult a central cache (Value Store).
+  - In gg, a workflow is defined as a graph of thunks (redun's TaskExpression) which is evaluated using graph reduction. Each reduction is performed on a remote execution system such as AWS Lambda. redun is very similar, but also allows evaluating each Expression on a different Executor (e.g. threads, processes, Batch jobs, Spark jobs, etc).
+- Functional programming languages: [Haskell](https://www.haskell.org/) and [Lisp](https://en.wikipedia.org/wiki/Lisp_(programming_language))
+  - redun's Scheduler can be seen as an interpreter for a [functional programming language](#redun-a-language-within). Many of the builtin tasks take their name from similar functions in Haskell and Lisp: `map_`, `flat_map`, `seq`, `catch`, `cond`, `delay`, `force`, `@scheduler_task` (a.k.a. [special forms](https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node59.html) and [fexpr](https://en.wikipedia.org/wiki/Fexpr)).
+  - redun is like Lisp in that higher level constructs like `catch` and `cond` are defined using lower-level features like `@scheduler_task`. This allows users to extend the workflow language similar to extending Lisp using macros.
+- Build systems: [redo](https://redo.readthedocs.io/en/latest/), [Build systems a la Carte](https://dl.acm.org/doi/10.1145/3236774)
+  - redo shows how the build steps ("tasks" in redun's terminology) can be arbitrary code that does not require static analysis of its dependencies (child task calls). Instead, when running a workflow for the first time you have to run everything anyways, so just run it. However, if one carefully records what was run (i.e. the data provenance Call Graph in redun) then you can consult the recording in future executions to decide what needs to be incrementally re-executed.
+- Observability, distributed tracing: [Spans](https://opentelemetry.lightstep.com/spans/)
+  - Span trees play a similar role to redun's Call Graph. Span attributes are equivalent to redun's tag system.
+  - redun's Call Graphs should provide similar observability and debugging capabilities as span trees. One difference is that Call Graphs are intended to be retained long term in order to provide data provenance. In some ways, observability is like short-term data provenance.
+  - redun's Call Graph gives more attention to dataflow between Jobs than Spans typically do.
+- Source control: [git](https://git-scm.com/)
+  - git provided several inspirations to redun. First, it is easy to get started with git, because users can simply run `git init` to create a new local repo in the hidden directory `.git/`. Central configuration and coordination is not needed. As users change their code, they record each change using commands like `git add` and `git commit`. This can be seen as a form of provenance but for code, and the [commit graph](https://krishnabiradar.com/blogs/deconstructing-a-git-commit/) is git's data structure for storing this provenance information. The commit graph is a [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree) that uses hashes to give unique ids to each node in the graph and this enables efficient peer-to-peer syncing of commit graphs between repos using the `git push` and `git pull` commands. git provides many additional tools, such as `git log` and `git diff`, for inspecting commit graphs to help with the code development process.
+  - To relate this to redun, redun also creates a local repo in `.redun/` on the first workflow run or with a `redun init` command. New data provenance is recorded each time users use the `redun run` command. These recordings are stored in the Call Graph data structure, which is also a Merkle tree. Users can sync Call Graphs efficiently using the `redun push` and `redun pull` commands. redun also provides tools for using Call Graphs in the development process, such as exploring past executions (`redun log`), figuring out the difference between two executions (`redun diff`), and interactively exploring Call Graphs and data (`redun repl`).
+- Database migration frameworks: [Alembic](https://alembic.sqlalchemy.org/), [Django migrations](https://docs.djangoproject.com/en/3.2/topics/migrations/)
+  - Migration frameworks are used to alter databases (both schemas and data) in a controlled manner. Frameworks, such as Alembic and Django migrations, encourage users to represent their migrations as atomic scripts arranged into a dependency DAG. The frameworks then provide command-line tools for upgrading and downgrading the database to a specific version node within the migration DAG. Such tools then execute the necessary migrations in topological sort order. In order to not apply the same migration twice, these frameworks often maintain a metadata table within the database. In a way, these frameworks are workflow engines with the same usual features of task dependency DAGs and caching logic.
+  - One difference though, is that migration frameworks also encourage users to define an inverse for each "task", that is each upgrade migration has a corresponding downgrade. When given a desired migration node version, these CLI tools may apply a combination of upgrade and downgrade migrations to move the database along a path in the migration DAG.
+  - redun has an experimental feature called `Handle` for defining interactions with stateful services such as databases. redun must record similar metadata about the past states of the Handle and it is envisioned that inverse tasks, or rollbacks, could be defined and executed as needed.
+- Causal hashing: [Koji](https://arxiv.org/abs/1901.01908)
+  - The Koji paper describes a way of using causal hashing to unify both file and web service use within a single workflow engine system. redun also aims for similar unification and provides a special Value type, Handle, for interacting with external services, such as databases and APIs. Handles solve the problem of giving a unique id to the state of an external system. When the external data source is a simple file, we can hash the file to give its state a unique id. However, when the external data source is a database, it is likely unreasonable to hash a whole database or web service. Instead, a causal hash can be defined as hashing the series of Call Nodes a Handle has passed through. This often gives an equally unique id for the state of an external service, while being more efficient.
