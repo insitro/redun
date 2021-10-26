@@ -781,12 +781,6 @@ class ShardedS3Dataset(Value):
         self.format = format
 
         self.filesystem: FileSystem = get_filesystem(url=self.path)
-        assert isinstance(self.filesystem, S3FileSystem)
-        self.s3 = self.filesystem.s3
-
-        if self.filesystem.name != "s3":
-            raise ValueError("ShardedS3Dataset requires a path on S3")
-
         self._filenames: List[str] = self._gather_files()
 
     def _gather_files(self) -> List[str]:
@@ -878,6 +872,10 @@ class ShardedS3Dataset(Value):
         """
         # Do this first so if we're not in a Spark env it raises ValueError.
         context = glue.get_glue_context()
+
+        # Only loading from S3 is supported
+        if self.filesystem.name != "s3":
+            raise ValueError("load_spark requires a path on S3")
 
         # Set default options for csv as having a header line.
         f_options = {}
@@ -974,7 +972,7 @@ class ShardedS3Dataset(Value):
         self,
         dataset: Union["pandas.DataFrame", "pyspark.sql.DataFrame"],
         partition_keys: List[str] = [],
-        catalog_database: str = "cheminfo",
+        catalog_database: str = "default",
         catalog_table: Optional[str] = None,
         format_options: Dict[str, Any] = {},
     ) -> None:
@@ -995,7 +993,7 @@ class ShardedS3Dataset(Value):
 
         catalog_database : str
             Datacatalog name to write to, if creating a table in the Data Catalog.
-            Defaults to 'cheminfo'
+            Defaults to 'default'
 
         catalog_table : Optional[str]
             If present, written data will be available in AWS Data Catalog / Glue / Athena
@@ -1007,6 +1005,10 @@ class ShardedS3Dataset(Value):
         """
         # Do this first so if we're not in a Spark env it raises ValueError.
         context = glue.get_glue_context()
+
+        # Only saving to S3 is supported
+        if self.filesystem.name != "s3":
+            raise ValueError("save_spark requires a path on S3")
 
         import pandas
         import pyspark
