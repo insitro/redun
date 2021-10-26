@@ -576,7 +576,7 @@ def submit_glue_job(
     # Copy extra Python files to S3, as Glue requires them to be there.
     scratch_dir = aws_utils.get_job_scratch_dir(s3_scratch_prefix, job)
     if job_options.get("extra_py_files"):
-        job_args["--extra-py-files"] += ",".join(
+        job_args["--extra-py-files"] += "," + ",".join(
             aws_utils.copy_to_s3(f, scratch_dir) for f in job_options["extra_py_files"]
         )
 
