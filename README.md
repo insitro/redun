@@ -24,6 +24,8 @@ See the [docs](docs/source/design.md), [tutorial](examples/README.md), and [infl
 pip install redun
 ```
 
+See [developing](docs/source/developing.md) for more information on working with the code.
+
 ### Postgres backend
 
 To use postgres as a recording backend, use

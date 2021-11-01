@@ -1451,6 +1451,7 @@ def test_jobs_are_arrayed(submit_task_mock, get_aws_user_mock):
     executor.stop()
 
 
+@use_tempdir
 @mock_s3
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
 @patch("redun.executors.aws_batch.AWSBatchExecutor._submit_single_job")

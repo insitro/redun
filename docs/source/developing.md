@@ -1,5 +1,21 @@
 # Developer guide
 
+## Development installation
+
+If you have postgres available, (perhaps with `brew install postgresql` on macOS), you can prepare
+an editable installation and run the tests:
+```shell
+make setup
+. .venv/bin/activate
+pytest redun
+
+# Other targets
+make black
+make mypy
+make lint
+make isort
+```
+
 ## Release
 
 Redun releases are done via the `redun-release-auto` [codebuild pipeline](https://us-west-2.console.aws.amazon.com/codesuite/codebuild/projects/redun-release-auto/).

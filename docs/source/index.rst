@@ -15,6 +15,7 @@ redun is a expressive workflow engine for Python.
    spark
    typing
    redun/modules
+   developing
    FAQ
    CHANGELOG
 
