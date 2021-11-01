@@ -332,3 +332,15 @@ def test_tuple_type_length() -> None:
     assert get_tuple_type_length(User) == 3
 
     assert get_tuple_type_length(User2) == 2
+
+
+def test_naked_task() -> None:
+    """
+    A naked task decorator (no arguments) should also produce a Task.
+    """
+
+    @task
+    def add(a: int, b: int) -> int:
+        return a + b
+
+    assert isinstance(add, Task)

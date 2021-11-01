@@ -1,7 +1,20 @@
 import inspect
 import re
 import sys
-from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Tuple, TypeVar, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 from redun.expression import SchedulerExpression, TaskExpression
 from redun.hashing import hash_arguments, hash_struct
@@ -430,7 +443,16 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
         return PartialTask(self.task, args2, kwargs2)
 
 
+@overload
 def task(
+    func: Func,
+) -> Task[Func]:
+    ...
+
+
+@overload
+def task(
+    *,
     name: Optional[str] = None,
     namespace: Optional[str] = None,
     version: Optional[str] = None,
@@ -438,11 +460,27 @@ def task(
     script: bool = False,
     **task_options: Any,
 ) -> Callable[[Func], Task[Func]]:
+    ...
+
+
+def task(
+    func: Optional[Func] = None,
+    *,
+    name: Optional[str] = None,
+    namespace: Optional[str] = None,
+    version: Optional[str] = None,
+    compat: Optional[List[str]] = None,
+    script: bool = False,
+    **task_options: Any,
+) -> Union[Task[Func], Callable[[Func], Task[Func]]]:
     """
     Decorator to register a function as a redun :class:`Task`.
 
     Parameters
     ----------
+    func : Optional[Func]
+        A python function to register as a redun Task. If not given, a
+        parameterized decorator is returned.
     name : Optional[str]
         Name of task (Default: infer from function `func.__name__`)
     namespace : Optional[str]
@@ -477,7 +515,12 @@ def task(
         get_task_registry().add(_task)
         return _task
 
-    return deco
+    if func:
+        # If this decorator is applied directly to a function, decorate it.
+        return deco(func)
+    else:
+        # If a function is not given, just return the parameterized decorator.
+        return deco
 
 
 def scheduler_task(
