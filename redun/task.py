@@ -120,40 +120,68 @@ class Task(Value, Generic[Func]):
         self.version = version
         self.compat = compat or []
         self.script = script
-        self.task_options = task_options or {}
-        self.task_options_update = task_options_update or {}
-        self.nout = self._get_nout()
+        self._task_options = task_options or {}
+        self._task_options_update = task_options_update or {}
         self.hash = self._calc_hash()
         self._signature: Optional[inspect.Signature] = None
 
         self._validate()
 
-    def _get_nout(self) -> Optional[int]:
+    @property
+    def nout(self) -> Optional[int]:
         """
         Determines nout from task options and return type.
 
         The precedence is:
-        - task_options_update
-        - task_options
+        - the task option
         - function return type
         """
-        nout = self.task_options_update.get("nout")
-        if nout is None:
-            nout = self.task_options.get("nout")
-        if nout is None:
+        if self.has_task_option("nout"):
+            nout = self.get_task_option("nout")
+        else:
+            # Infer nout from return type.
             return_type = self.func.__annotations__.get("return")
-            if return_type:
-                # Infer nout from return type.
-                nout = get_tuple_type_length(return_type)
-
-        # Validate nout.
-        if nout is not None:
-            if not isinstance(nout, int):
-                raise TypeError("nout must be an int")
-            if nout < 0:
-                raise TypeError("nout must be non-negative")
+            nout = get_tuple_type_length(return_type)
 
         return nout
+
+    T = TypeVar("T")
+
+    @overload
+    def get_task_option(self, option_name: str) -> Optional[Any]:
+        ...
+
+    @overload
+    def get_task_option(self, option_name: str, default: T) -> T:
+        ...
+
+    def get_task_option(self, option_name: str, default: Optional[T] = None) -> Optional[T]:
+        """
+        Fetch the requested option, preferring run-time updates over options from task
+        construction. Like the dictionary `get` method, returns the default
+        a `KeyError` on missing keys.
+        """
+
+        if option_name in self._task_options_update:
+            return self._task_options_update.get(option_name)
+        if option_name in self._task_options:
+            return self._task_options.get(option_name)
+        return default
+
+    def get_task_options(self) -> dict:
+        """
+        Merge and return the task options.
+        """
+        return {
+            **self._task_options,
+            **self._task_options_update,
+        }
+
+    def has_task_option(self, option_name: str) -> bool:
+        """
+        Return true if the task has an option with name `option_name`
+        """
+        return option_name in self._task_options_update or option_name in self._task_options
 
     def __repr__(self) -> str:
         return "Task(fullname={fullname}, hash={hash})".format(
@@ -162,7 +190,7 @@ class Task(Value, Generic[Func]):
         )
 
     def _validate(self) -> None:
-        config_args = self.task_options.get("config_args")
+        config_args = self.get_task_option("config_args")
         if config_args:
             valid_args = list(self.signature.parameters)
             invalid_args = [
@@ -184,6 +212,13 @@ class Task(Value, Generic[Func]):
         if not re.match("^[A-Za-z_][A-Za-z_0-9]+$", self.name):
             raise ValueError("Task name must use only alphanumeric characters and underscore '_'.")
 
+        # Validate nout.
+        if self.nout is not None:
+            if not isinstance(self.nout, int):
+                raise TypeError("nout must be an int")
+            if self.nout < 0:
+                raise TypeError("nout must be non-negative")
+
     @property
     def fullname(self) -> str:
         """
@@ -201,7 +236,7 @@ class Task(Value, Generic[Func]):
         return cast(
             Result,
             TaskExpression(
-                self.fullname, args, kwargs, self.task_options_update, length=self.nout
+                self.fullname, args, kwargs, self._task_options_update, length=self.nout
             ),
         )
 
@@ -224,7 +259,7 @@ class Task(Value, Generic[Func]):
         Returns a new Task with task_option overrides.
         """
         new_task_options_update = {
-            **self.task_options_update,
+            **self._task_options_update,
             **task_options_update,
         }
         return Task(
@@ -234,7 +269,7 @@ class Task(Value, Generic[Func]):
             version=self.version,
             compat=self.compat,
             script=self.script,
-            task_options=self.task_options,
+            task_options=self._task_options,
             task_options_update=new_task_options_update,
         )
 
@@ -243,8 +278,8 @@ class Task(Value, Generic[Func]):
         if self.compat:
             return self.compat[0]
 
-        if self.task_options_update:
-            task_options_hash = [get_type_registry().get_hash(self.task_options_update)]
+        if self._task_options_update:
+            task_options_hash = [get_type_registry().get_hash(self._task_options_update)]
         else:
             task_options_hash = []
 
@@ -266,7 +301,7 @@ class Task(Value, Generic[Func]):
             "hash": self.hash,
             "compat": self.compat,
             "script": self.script,
-            "task_options": self.task_options_update,
+            "task_options": self._task_options_update,
         }
 
     def __setstate__(self, state) -> None:
@@ -276,21 +311,20 @@ class Task(Value, Generic[Func]):
         self.hash = state["hash"]
         self.compat = state.get("compat", [])
         self.script = state.get("script", False)
-        self.task_options_update = state.get("task_options", {})
+        self._task_options_update = state.get("task_options", {})
 
         # Set func from TaskRegistry.
         registry = get_task_registry()
         _task = registry.get(self.fullname)
         if _task:
             self.func = _task.func
-            self.task_options = _task.task_options
+            self._task_options = _task._task_options
             self.source = get_func_source(self.func)
         else:
             self.func = lambda *args, **kwargs: undefined_task(self.fullname, *args, **kwargs)
-            self.task_options = {}
+            self._task_options = {}
             self.source = ""
 
-        self.nout = self._get_nout()
         self._signature = None
 
     def is_valid(self) -> bool:
@@ -493,7 +527,9 @@ def task(
     script : bool
         If True, this is a script-style task which returns a shell script string.
     **task_options
-        Additional options for configuring a task.
+        Additional options for configuring a task. These must be serializable; for
+        example, this is necessary to send the task description over the network to
+        a remote worker.
     """
 
     def deco(func: Func) -> Task[Func]:

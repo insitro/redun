@@ -177,7 +177,7 @@ def test_cache_task() -> None:
     assert task1c.is_valid()
 
     # Task should have new task options.
-    assert task1c.task_options == {"memory": 4}
+    assert task1c.get_task_options() == {"memory": 4}
 
     # Change the definition of the task.
     @task()  # type: ignore
@@ -250,23 +250,51 @@ def test_task_options() -> None:
     def task1():
         return 10
 
-    assert task1.task_options == {"executor": "batch"}
+    assert task1.has_task_option("executor")
+    assert "batch" == task1.get_task_option("executor")
+    assert "batch" == task1.get_task_option("executor", "default_executor")
+
+    assert not task1.has_task_option("memory")
+    assert task1.get_task_option("memory") is None
+    assert 1000 == task1.get_task_option("memory", 1000)
+
+    assert task1.get_task_options() == {"executor": "batch"}
 
     # The expression should not need any updated options.
-    assert task1().task_options == {}
+    assert task1().task_expr_options == {}
 
     # When we apply an update to the task, it should appear on the new task and expression.
     task2 = task1.options(executor="local")
-    assert task2.task_options_update == {"executor": "local"}
-    assert task2().task_options == {"executor": "local"}
+
+    assert task2.has_task_option("executor")
+    assert "local" == task2.get_task_option("executor")
+    assert "local" == task2.get_task_option("executor", "default_executor")
+
+    assert not task2.has_task_option("memory")
+    assert task2.get_task_option("memory") is None
+    assert 1000 == task2.get_task_option("memory", 1000)
+
+    assert task2.get_task_options() == {"executor": "local"}
+
+    assert task2().task_expr_options == {"executor": "local"}
 
     # Additional updates should accumulate.
     task3 = task2.options(memory=4)
-    assert task3.task_options_update == {
+
+    assert task3.has_task_option("executor")
+    assert "local" == task3.get_task_option("executor")
+    assert "local" == task3.get_task_option("executor", "default_executor")
+
+    assert task3.has_task_option("memory")
+    assert 4 == task3.get_task_option("memory")
+    assert 4 == task3.get_task_option("memory", 1000)
+
+    assert task3.get_task_options() == {
         "executor": "local",
         "memory": 4,
     }
-    assert task3().task_options == {
+
+    assert task3().task_expr_options == {
         "executor": "local",
         "memory": 4,
     }
@@ -274,7 +302,7 @@ def test_task_options() -> None:
 
 def test_task_options_hash() -> None:
     """
-    task_options_update should contribute to task hash.
+    _task_options_update should contribute to task hash.
     """
 
     @task()

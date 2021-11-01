@@ -298,15 +298,15 @@ class Job:
         (e.g. `task.options(option=foo)(arg1, arg2)`) over task definition-time
         (e.g. `@task(option=foo)`).
         """
-        assert "task_options" in self.expr.__dict__
+        assert "task_expr_options" in self.expr.__dict__
         task = cast(Task, self.task)
 
         if key in self.task_options:
             return self.task_options[key]
-        elif key in self.expr.task_options:
-            return self.expr.task_options[key]
-        elif key in task.task_options:
-            return task.task_options[key]
+        elif key in self.expr.task_expr_options:
+            return self.expr.task_expr_options[key]
+        elif task.has_task_option(key):
+            return task.get_task_option(key)
         else:
             return default
 
@@ -320,8 +320,8 @@ class Job:
         """
         assert self.task
         task_options = {
-            **self.task.task_options,
-            **self.expr.task_options,
+            **self.task.get_task_options(),
+            **self.expr.task_expr_options,
             **self.task_options,
         }
         return task_options
@@ -1314,7 +1314,7 @@ class Scheduler:
             )
 
         # Record Task tags.
-        task_tags = job.task.task_options.get("tags")
+        task_tags = job.task.get_task_option("tags")
         if task_tags:
             self.backend.record_tags(
                 entity_type=TagEntityType.Task, entity_id=job.task.hash, tags=task_tags
@@ -1461,7 +1461,7 @@ class Scheduler:
         """
         # Filter out config args from args and kwargs.
         sig = task.signature
-        config_args = task.task_options.get("config_args", [])
+        config_args: List = task.get_task_option("config_args", [])
 
         # Filter args.
         args2 = [

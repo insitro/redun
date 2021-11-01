@@ -141,7 +141,7 @@ def test_batch_tags(scheduler: Scheduler) -> None:
     job = Job(task1(10), execution=exec1)
     job.task = task1
 
-    batch_tags = executor._get_task_options(job)["batch_tags"]
+    batch_tags = executor._get_job_options(job)["batch_tags"]
     assert batch_tags == {
         "redun_aws_user": "alice",
         "redun_execution_id": "123",
@@ -180,7 +180,7 @@ def test_batch_tags_no_default(scheduler: Scheduler) -> None:
     job = Job(task1(10), execution=exec1)
     job.task = task1
 
-    batch_tags = executor._get_task_options(job)["batch_tags"]
+    batch_tags = executor._get_job_options(job)["batch_tags"]
     assert batch_tags == {
         "step": "final",
         "project": "acme",

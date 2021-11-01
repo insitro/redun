@@ -1159,7 +1159,7 @@ class AWSBatchExecutor(Executor):
                 redun_job, error, error_traceback=error_traceback, job_tags=job_tags
             )
 
-    def _get_task_options(self, job: Job) -> dict:
+    def _get_job_options(self, job: Job) -> dict:
         """
         Determine the task options for a job.
 
@@ -1252,7 +1252,7 @@ class AWSBatchExecutor(Executor):
         job_type = "AWS Batch job" if not self.debug else "Docker container"
 
         # Determine job options.
-        task_options = self._get_task_options(job)
+        task_options = self._get_job_options(job)
         use_cache = task_options.get("cache", True)
 
         # Determine if we can reunite with a previous Batch output or job.
@@ -1302,7 +1302,7 @@ class AWSBatchExecutor(Executor):
         if job.task.script:
             raise NotImplementedError("Array jobs not supported for scripts")
 
-        task_options = self._get_task_options(job)
+        task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
         queue = task_options.pop("queue", self.queue)
         # Generate a unique name for job with no '-' to simplify job name parsing.
@@ -1401,7 +1401,7 @@ class AWSBatchExecutor(Executor):
         of an array job
         """
         assert job.task
-        task_options = self._get_task_options(job)
+        task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
         queue = task_options.pop("queue", self.queue)
 

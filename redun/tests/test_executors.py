@@ -63,7 +63,7 @@ type = local
     scheduler = Scheduler(config=config)
     scheduler.executors.pop("default")
 
-    assert main.task_options["executor"] == "custom"
+    assert main.get_task_option("executor") == "custom"
     assert isinstance(scheduler.executors["custom"], LocalExecutor)
 
     # Should be able to use executor.
@@ -89,10 +89,11 @@ type = local
     scheduler = Scheduler(config=config)
     scheduler.executors.pop("default")
 
-    assert main.task_options["executor"] == "bad_executor"
+    assert main.get_task_option("executor") == "bad_executor"
     assert isinstance(scheduler.executors["custom"], LocalExecutor)
 
     # Should be able to use executor.
     expr = main.options(executor="custom")()
-    assert expr.task_options == {"executor": "custom"}
+    assert expr.task_expr_options == {"executor": "custom"}
+
     assert scheduler.run(expr) == 10

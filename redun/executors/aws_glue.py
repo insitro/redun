@@ -413,7 +413,7 @@ class AWSGlueExecutor(Executor):
         if error:
             self.scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
 
-    def _get_task_options(self, job: Job) -> dict:
+    def _get_job_options(self, job: Job) -> dict:
         """
         Determines task options for a job.
         """
@@ -449,7 +449,7 @@ class AWSGlueExecutor(Executor):
             self.code_file = aws_utils.package_code(self.s3_scratch_prefix, code_package)
 
         # Determine job options
-        task_options = self._get_task_options(job)
+        task_options = self._get_job_options(job)
 
         # Determine if we can reunite with a previous Glue output or job.
         glue_job_id: Optional[str] = None
@@ -506,7 +506,7 @@ class AWSGlueExecutor(Executor):
                 glue_job_name=self.glue_job_name,
                 redun_zip_location=self.redun_zip_location,
                 s3_scratch_prefix=self.s3_scratch_prefix,
-                job_options=self._get_task_options(job),
+                job_options=self._get_job_options(job),
                 code_file=self.code_file,
                 aws_region=self.aws_region,
             )

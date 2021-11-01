@@ -114,7 +114,7 @@ class TaskExpression(ApplyExpression[Result]):
         super().__init__(args, kwargs)
         self.task_name = task_name
         self.call_hash: Optional[str] = None
-        self.task_options = task_options or {}
+        self.task_expr_options = task_options or {}
         self._length = length
 
     def __repr__(self) -> str:
@@ -125,7 +125,7 @@ class TaskExpression(ApplyExpression[Result]):
     def _calc_hash(self) -> str:
         registry = get_type_registry()
         args_hash = hash_arguments(registry, self.args, self.kwargs)
-        task_options_hash = hash_bytes(pickle_dumps(self.task_options))
+        task_options_hash = hash_bytes(pickle_dumps(self.task_expr_options))
         return hash_struct(["TaskExpression", self.task_name, args_hash, task_options_hash])
 
     def __getstate__(self) -> dict:
@@ -136,7 +136,7 @@ class TaskExpression(ApplyExpression[Result]):
             "task_name": self.task_name,
             "args": registry.serialize(self.args),
             "kwargs": registry.serialize(self.kwargs),
-            "task_options": self.task_options,
+            "task_options": self.task_expr_options,
         }
 
     def __setstate__(self, state: dict) -> None:
@@ -145,7 +145,7 @@ class TaskExpression(ApplyExpression[Result]):
         self.task_name = state["task_name"]
         self.args = registry.deserialize("builtins.tuple", state["args"])
         self.kwargs = registry.deserialize("builtins.dict", state["kwargs"])
-        self.task_options = state.get("task_options", {})
+        self.task_expr_options = state.get("task_options", {})
         self._upstreams = [self.args, self.kwargs]
 
     def is_valid(self) -> bool:
