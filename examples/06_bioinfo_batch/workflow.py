@@ -38,7 +38,7 @@ sites_src_files = [
 ]
 
 
-@task(verison="1")
+@task(version="1")
 def download_genome_ref(genome_ref_src: File, ref_dir: str, skip_if_exists: bool = True) -> File:
     """
     Download reference genome to our own directory/bucket.

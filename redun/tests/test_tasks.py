@@ -210,7 +210,7 @@ def test_cache_task_del() -> None:
     task1 = Task.__new__(Task)
     task1.__setstate__(state)
 
-    # A Task that refers to non-existant code should not be valid.
+    # A Task that refers to non-existent code should not be valid.
     assert not task1.is_valid()
 
     # We should get an error calling the function.
@@ -243,7 +243,7 @@ def test_get_func_source() -> None:
 
 def test_task_options() -> None:
     """
-    Task options should be availble on the task and updates by options().
+    Task options should be available on the task and updates by options().
     """
 
     @task(executor="batch")

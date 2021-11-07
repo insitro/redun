@@ -120,7 +120,7 @@ def get_wrapped_command(command: str, eof_prefix: str = "EOF") -> str:
         '''
 
     In order to turn this into a regular sh shell script, we need to write
-    this command to a tempory file, mark the file as executable,
+    this command to a temporary file, mark the file as executable,
     execute the file, and remove the temporary file.
     """
     wrapped_command = """\

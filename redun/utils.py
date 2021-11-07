@@ -205,11 +205,11 @@ def get_func_source(func: Callable) -> str:
     return source
 
 
-def format_table(table: List[List], justs: str, min_width: int = 0) -> Iterator[str]:
+def format_table(table: List[List], just: str, min_width: int = 0) -> Iterator[str]:
     """
     Format table with justified columns.
     """
-    assert len(justs) == len(table[0])
+    assert len(just) == len(table[0])
 
     # Convert to strings.
     table = [[str(cell) for cell in row] for row in table]
@@ -230,7 +230,7 @@ def format_table(table: List[List], justs: str, min_width: int = 0) -> Iterator[
         if i == 1:
             yield ""
         yield " ".join(
-            justify(cell, just, width) for cell, just, width in zip(row, justs, column_widths)
+            justify(cell, just, width) for cell, just, width in zip(row, just, column_widths)
         )
 
 

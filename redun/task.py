@@ -44,7 +44,7 @@ def undefined_task(fullname: str, *args: Any, **kwargs: Any) -> None:
 
 def get_tuple_type_length(tuple_type: Any) -> Optional[int]:
     """
-    Returns the length of a tuple type if inferrable.
+    Returns the length of a tuple type if inferable.
     """
     if getattr(tuple_type, "__origin__", None) in (tuple, Tuple):
         # Return type is Tuple[ * ].

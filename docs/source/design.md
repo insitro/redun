@@ -1090,7 +1090,7 @@ File(hash='574d39e6', path='prog.c'):
           return File(c_file.path.replace('.c', '.o'))
 ```
 
-We can also walk the CallGraph using SQLAlechemy. The command `redun repl` gives us an interactive read-eval-print-loop (REPL). There is a builtin function `query()` that can retrive any object by an id prefix:
+We can also walk the CallGraph using SQLAlechemy. The command `redun repl` gives us an interactive read-eval-print-loop (REPL). There is a builtin function `query()` that can retrieve any object by an id prefix:
 
 ```
 redun repl
@@ -1591,7 +1591,7 @@ redun can be thought of as implementing a asynchronous functional programming la
 Development of redun has been inspired by many projects. Here is a brief review of our understanding of how redun's ideas relate to similar concepts seen elsewhere.
 
 - Bioinformatic workflow languages: [WDL](https://github.com/openwdl/wdl), [Nextflow](https://www.nextflow.io/), [Snakemake](https://snakemake.readthedocs.io/en/stable/), [Reflow](https://github.com/grailbio/reflow)
-  - Workflow languages such as these give special treatment to file and code change reactivity, which is especially helpful in scientific workflows that typically go through quick interative development. redun's `File` and task hashing were inspired by these languages.
+  - Workflow languages such as these give special treatment to file and code change reactivity, which is especially helpful in scientific workflows that typically go through quick interactive development. redun's `File` and task hashing were inspired by these languages.
   - Bioinformatic workflow languages are most commonly used to wrap unix programs that expect their input and output files to be local. Accordingly, these languages typically provide a specific syntax to help copy files from cloud storage to local disk and back, a process sometimes called staging or localization. This behavior inspired redun's `File(remote_path).stage(local_path)` syntax. The need to make frequent calls to unix programs inspired the `script()` task.
   - They also all define a Domain Specific Language (DSL) in order to enforce pure functions or provide dedicated syntax for task dependency. redun differs by relying on a host language, Python. Using Python makes it difficult to enforce some of the same constraints (e.g. function purity), but it does allow redun workflows to more easily integrate with the whole world of Python data science libraries (e.g. Pandas, NumPy, pytorch, rdkit, sqlalchemy, etc) without layers of wrapping (e.g. driver scripts, data serializing/deserializing, Docker images).
 - Data engineering workflow languages: [Airflow](https://airflow.apache.org/), [Luigi](https://github.com/spotify/luigi), [Prefect](https://www.prefect.io/)

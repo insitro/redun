@@ -45,7 +45,7 @@ def test_get_or_create(session: Session) -> None:
     get_or_create should ensure records exist and update them if needed.
     """
 
-    # Assert db inital state.
+    # Assert db initial state.
     assert session.query(Person.name).order_by(Person.name).all() == [
         ("Alice",),
         ("Bob",),
@@ -68,7 +68,7 @@ def test_get_or_create(session: Session) -> None:
     assert row.name == "Bobby"
     assert not created
 
-    # Update non-existant row.
+    # Update non-existent row.
     row, created = get_or_create(session, Person, {"name": "Fred"}, update={"name": "Freddie"})
     assert row.name == "Freddie"
     assert created
@@ -79,7 +79,7 @@ def test_filter_in(session: Session) -> None:
     filter_in should allow large filter-IN clauses for sqlalchemy.
     """
 
-    # Assert db inital state.
+    # Assert db initial state.
     assert session.query(Person.name).order_by(Person.name).all() == [
         ("Alice",),
         ("Bob",),

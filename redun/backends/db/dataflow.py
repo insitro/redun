@@ -885,7 +885,7 @@ def iter_subsections(section: DataflowSection) -> Iterator[DataflowSection]:
         if edge.dest:
             dest2edges[edge.dest].append(edge)
 
-    # Find roots. Maintain order of appearence in section.
+    # Find roots. Maintain order of appearance in section.
     roots = [node for node in iter_unique(nodes) if len(dest2edges[node]) == 0]
 
     # Find merge nodes.
