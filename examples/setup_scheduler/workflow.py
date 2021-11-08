@@ -1,5 +1,6 @@
 from redun import task, Scheduler
 from redun.config import Config
+from redun.executors.base import Executor
 
 # Import a task from a workflow library.
 from workflow_lib.utils import analysis, postprocess_data
