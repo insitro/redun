@@ -14852,7 +14852,7 @@ start add(3, 7)
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <h2 id="Executing-workflows-with-graph-reduction">Executing workflows with graph reduction<a class="anchor-link" href="#Executing-workflows-with-graph-reduction">&#182;</a></h2><p>The redun scheduler treats the expression <code>add(add(1, 2), add(3, 4))</code> as a tree (or DAG more generally). In the figure below, concrete values (anything that's not a subclass of <code>Expression</code>) are drawn in grey boxes, and <code>TaskExpressions</code> are drawn in blue boxes.</p>
 <p><img width="50%" src="images/expression-tree.png"></p>
-<p>When <code>scheduler.run()</code> is applied, it begins to identify subtrees that can be <em>reduced</em>, namely tasks with concrete arguments (see red boxes below). The scheduler will perform these reductions by calling tasks (e.g. <code>add</code>) with the child nodes as the arguments. These task executions can occur in parallel, which is safe to do becauses tasks are required to be written as pure functions with no side-effects. The scheduler can also consult the cache before performing each reduction to see if it can skip executing a task and instead just replay the result.</p>
+<p>When <code>scheduler.run()</code> is applied, it begins to identify subtrees that can be <em>reduced</em>, namely tasks with concrete arguments (see red boxes below). The scheduler will perform these reductions by calling tasks (e.g. <code>add</code>) with the child nodes as the arguments. These task executions can occur in parallel, which is safe to do because tasks are required to be written as pure functions with no side-effects. The scheduler can also consult the cache before performing each reduction to see if it can skip executing a task and instead just replay the result.</p>
 <p><img width="50%" src="images/expression-tree2.png"></p>
 <p>When a task completes its execution, its result is replaced into the expression tree.</p>
 <p><img width="25%" src="images/expression-tree3.png"></p>
@@ -15026,7 +15026,7 @@ start add(11, 15)
 <p><img width="50%" src="images/expression-tree7.png"></p>
 <p>The scheduler will begin to recurse into the new expressions looking for more reductions.</p>
 <p>In this way, the expression graph can actually expand and contract. Being able to dynamically grow the expression graph is what gives redun its ability to express very dynamic workflows.</p>
-<p>This process actually follows the implementation of classic functional programming language compliers and interpreters.</p>
+<p>This process actually follows the implementation of classic functional programming language compilers and interpreters.</p>
 
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">

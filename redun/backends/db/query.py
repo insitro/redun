@@ -168,7 +168,7 @@ class CallGraphQuery:
 
         # Values can connect to CallNodes either directly as a result or
         # through Argument as an argument. Values can also be a subvalue of a
-        # parent Value. These possiblities combine to give four join paths.
+        # parent Value. These possibilities combine to give four join paths.
         value_results = query._values.join(CallNode, CallNode.value_hash == Value.value_hash).join(
             Job, Job.call_hash == CallNode.call_hash
         )

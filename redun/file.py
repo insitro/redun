@@ -43,10 +43,10 @@ def register_filesystem(cls: Type["FileSystem"]) -> Type["FileSystem"]:
 
 def get_proto(url: str) -> str:
     """
-    Returns the protocal for a url.
+    Returns the protocol for a url.
 
-    For example the protocal for 'http://example.com' is 'http'. Local paths
-    '/path/to/my/file' have the protocal 'local'.
+    For example the protocol for 'http://example.com' is 'http'. Local paths
+    '/path/to/my/file' have the protocol 'local'.
     """
     return urlparse(url).scheme or "local"
 
@@ -55,7 +55,7 @@ def get_filesystem_class(
     proto: Optional[str] = None, url: Optional[str] = None
 ) -> Type["FileSystem"]:
     """
-    Returns the corresponding FileSystem class for a given url or protocal.
+    Returns the corresponding FileSystem class for a given url or protocol.
     """
     if not proto:
         assert url, "Must give url or proto as argument."
@@ -76,7 +76,7 @@ _filesystem_instances: Dict[Type, "FileSystem"] = {}
 
 def get_filesystem(proto: Optional[str] = None, url: Optional[str] = None) -> "FileSystem":
     """
-    Returns the corresponding FileSystem for a given url or protocal.
+    Returns the corresponding FileSystem for a given url or protocol.
     """
     filesystem_class = get_filesystem_class(proto=proto, url=url)
     filesystem = _filesystem_instances.get(filesystem_class)
@@ -457,7 +457,7 @@ class S3FileSystem(FileSystem):
         try:
             self.s3.rm(path)
         except FileNotFoundError:
-            # It it not an error to try to remove a non-existant File.
+            # It it not an error to try to remove a non-existent File.
             pass
 
     def open(self, path: str, mode: str) -> IO:

@@ -387,7 +387,7 @@ def test_script_invalid(scheduler: Scheduler) -> None:
     [out_file] = scheduler.run(expr)
     assert out_file.read() == "hi\n"
 
-    # Invalidate the output file by overwritting it.
+    # Invalidate the output file by overwriting it.
     File("remote").write("bye")
 
     # Rerunning the workflow should reproduce the same output.
