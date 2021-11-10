@@ -2,6 +2,21 @@
 Changelog
 *********
 
+0.8.2
+=====
+:Date: November 10, 2021
+
+* `#23` - Add support for task wrappers
+* `#4` - GitHub Action to run tox on every pull request
+* `#3` - Import Executor for lines 36 and 38
+* `#28` - Add more influence text for bioinfo and ML frameworks
+* `#26` - Separate the various concepts of options
+* `#25` - Document development installation and testing
+* `#27` - DE-3811 Allow naked task decorator
+* Merge pull request #21 from insitro/glue_py_bugfix
+* Add clarifying comments
+* Correctly format extra_py_files arg
+
 0.8.1
 =====
 :Date: October 24, 2021
