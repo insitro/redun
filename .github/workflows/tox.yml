@@ -1,4 +1,4 @@
-name: tox
+name: tox-test
 on:
   push:
   pull_request:
