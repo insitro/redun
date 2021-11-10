@@ -2,6 +2,15 @@
 Changelog
 *********
 
+0.8.3
+=====
+:Date: November 10, 2021
+
+* `#32` - Fix version cli arg conflict
+* `#38` - Add python 3.10 to codebuild
+* `#36` - Clarify release triggering documentation
+* Merge pull request #33 from insitro/prevent-double-ci-runs - Prevent double github actions runs
+
 0.8.2
 =====
 :Date: November 10, 2021
