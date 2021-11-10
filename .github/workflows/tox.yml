@@ -1,8 +1,5 @@
-name: tox-test
-on:
-  push:
-  pull_request:
-    types: [opened]
+name: tox
+on: pull_request
 jobs:
   tox:
     strategy:
