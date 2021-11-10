@@ -62,7 +62,7 @@ def backfill_values_for_lonely_tasks(session: Session) -> None:
             namespace=db_task.namespace,
             compat=[],  # Missing from db record
             script=guess_is_script(db_task),
-            task_options={},  # Missing from task record & not hashed until very recently
+            task_options_base={},  # Missing from task record & not hashed until very recently
         )
         session.add(
             db.Value(

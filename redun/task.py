@@ -98,6 +98,24 @@ class Task(Value, Generic[Func]):
         @task()
         def my_task(x: int) -> int:
             return x + 1
+
+    Similar to pickling of functions, `Task`s specify the work to execute by reference, not by
+    value. This is important for serialization and caching, since a task is always reattached
+    to the latest implementation and task options just-in-time.
+
+    Task options may give direction to the scheduler about the execution environment, but must
+    not alter the result of the function, since changing options will not trigger cache
+    invalidation and we are allowed to return cached results with differing options. These
+    can be provided at two times: 1) at module-load time by decorator options, 2) at run-time
+    by creating task expressions. The former are not serialized so they are attached the latest
+    value in the source code. The latter must be serialized, since they are not available
+    except at run-time.
+
+    Task are routinely serialized and deserialized and are cached based on their serialization.
+    This relies on the serialized format being as minimal as possible, while providing the needed
+    reference to the code to run.
+
+    If needed, extra hashable data may be provided to trigger re-evaluation/cache-invalidation.
     """
 
     type_name = "redun.Task"
@@ -110,22 +128,50 @@ class Task(Value, Generic[Func]):
         version: Optional[str] = None,
         compat: Optional[List[str]] = None,
         script: bool = False,
-        task_options: Optional[dict] = None,
-        task_options_update: Optional[dict] = None,
+        task_options_base: Optional[dict] = None,
+        task_options_override: Optional[dict] = None,
+        hash_includes: Optional[list] = None,
     ):
         self.name = name or func.__name__
-        self.namespace = namespace or get_current_namespace()
+        self.namespace = self._compute_namespace(func, namespace)
         self.func = func
         self.source = get_func_source(func)
         self.version = version
         self.compat = compat or []
         self.script = script
-        self._task_options = task_options or {}
-        self._task_options_update = task_options_update or {}
-        self.hash = self._calc_hash()
+        # The base set of options, typically defined by module-load time code, which are not
+        # serialized and are not hashed
+        self._task_options_base = task_options_base or {}
+        # Overrides to the options, typically provided at run-time, which are serialized and
+        # hashed.
+        self._task_options_override = task_options_override or {}
         self._signature: Optional[inspect.Signature] = None
+        # Extra data to hash, but not serialize
+        self._hash_includes = hash_includes
+        self.recompute_hash()
 
         self._validate()
+
+    def recompute_hash(self):
+        self.hash = self._calc_hash()
+
+    @staticmethod
+    def _compute_namespace(func: Callable, namespace: Optional[str] = None):
+        """Compute the namespace for the provided function to wrap.
+
+        WARNING: The computation is stateful and hence this can only be used during task
+        creation.
+
+        Precedence:
+        - Explicit namespace provided
+        - Infer it from a `redun_namespace` variable in the same module as func
+        - The current namespace, configured with `set_current_namespace`"""
+
+        # Determine task namespace.
+        if not namespace:
+            namespace = getattr(sys.modules[func.__module__], "redun_namespace", None)
+
+        return namespace or get_current_namespace()
 
     @property
     def nout(self) -> Optional[int]:
@@ -162,10 +208,10 @@ class Task(Value, Generic[Func]):
         a `KeyError` on missing keys.
         """
 
-        if option_name in self._task_options_update:
-            return self._task_options_update.get(option_name)
-        if option_name in self._task_options:
-            return self._task_options.get(option_name)
+        if option_name in self._task_options_override:
+            return self._task_options_override[option_name]
+        if option_name in self._task_options_base:
+            return self._task_options_base[option_name]
         return default
 
     def get_task_options(self) -> dict:
@@ -173,15 +219,15 @@ class Task(Value, Generic[Func]):
         Merge and return the task options.
         """
         return {
-            **self._task_options,
-            **self._task_options_update,
+            **self._task_options_base,
+            **self._task_options_override,
         }
 
     def has_task_option(self, option_name: str) -> bool:
         """
         Return true if the task has an option with name `option_name`
         """
-        return option_name in self._task_options_update or option_name in self._task_options
+        return option_name in self._task_options_override or option_name in self._task_options_base
 
     def __repr__(self) -> str:
         return "Task(fullname={fullname}, hash={hash})".format(
@@ -206,7 +252,7 @@ class Task(Value, Generic[Func]):
             if not re.match("^[A-Za-z_][A-Za-z_0-9.]+$", self.namespace):
                 raise ValueError(
                     "Task namespace must use only alphanumeric characters, "
-                    "underscore '_', and dot '.'."
+                    "underscore '_', and dot '.', and may not start with a dot."
                 )
 
         if not re.match("^[A-Za-z_][A-Za-z_0-9]+$", self.name):
@@ -224,10 +270,15 @@ class Task(Value, Generic[Func]):
         """
         Returns the fullname of a Task: '{namespace}.{name}'
         """
-        if self.namespace:
-            return self.namespace + "." + self.name
+        return self._format_fullname(self.namespace, self.name)
+
+    @staticmethod
+    def _format_fullname(namespace: Optional[str], name: str):
+        """Format the fullname of a Task."""
+        if namespace:
+            return namespace + "." + name
         else:
-            return self.name
+            return name
 
     def _call(self: "Task[Callable[..., Result]]", *args: Any, **kwargs: Any) -> Result:
         """
@@ -236,7 +287,7 @@ class Task(Value, Generic[Func]):
         return cast(
             Result,
             TaskExpression(
-                self.fullname, args, kwargs, self._task_options_update, length=self.nout
+                self.fullname, args, kwargs, self._task_options_override, length=self.nout
             ),
         )
 
@@ -259,7 +310,7 @@ class Task(Value, Generic[Func]):
         Returns a new Task with task_option overrides.
         """
         new_task_options_update = {
-            **self._task_options_update,
+            **self._task_options_override,
             **task_options_update,
         }
         return Task(
@@ -269,31 +320,49 @@ class Task(Value, Generic[Func]):
             version=self.version,
             compat=self.compat,
             script=self.script,
-            task_options=self._task_options,
-            task_options_update=new_task_options_update,
+            task_options_base=self._task_options_base,
+            task_options_override=new_task_options_update,
         )
 
     def _calc_hash(self) -> str:
+        """The hash is designed for checking equality of `Task`s for the purposes of caching.
+        That is, results of this Task may be cached if the hash value is the same, regardless
+         of other data members."""
         # TODO: implement for real.
         if self.compat:
             return self.compat[0]
 
-        if self._task_options_update:
-            task_options_hash = [get_type_registry().get_hash(self._task_options_update)]
+        # Note, we specifically do not hash `_task_options_base` since they are
+        # not allowed to impact the results of computation.
+        if self._task_options_override:
+            task_options_hash = [get_type_registry().get_hash(self._task_options_override)]
         else:
             task_options_hash = []
 
+        if self._hash_includes:
+            # Sort to avoid order dependence on the includes.
+            hash_includes_hash = sorted(map(get_type_registry().get_hash, self._hash_includes))
+        else:
+            hash_includes_hash = []
+
         if self.version is None:
             source = get_func_source(self.func) if self.func else ""
-            return hash_struct(["Task", self.fullname, "source", source] + task_options_hash)
+            return hash_struct(
+                ["Task", self.fullname, "source", source] + hash_includes_hash + task_options_hash
+            )
         else:
             return hash_struct(
-                ["Task", self.fullname, "version", self.version] + task_options_hash
+                ["Task", self.fullname, "version", self.version]
+                + hash_includes_hash
+                + task_options_hash
             )
 
     def __getstate__(self) -> dict:
-        # Note: We specifically don't serialize func. We will use the
-        # TaskRegistry during deserialization to fetch the latest func for a task.
+        # Note: We specifically don't serialize several items (e.g., func and task_options_base)
+        # that are created for us at module load time. These are extracted from the task
+        # registry, instead.
+        #
+        # This needs to remain minimal. See class-level docs before adding anything to this state.
         return {
             "name": self.name,
             "namespace": self.namespace,
@@ -301,7 +370,8 @@ class Task(Value, Generic[Func]):
             "hash": self.hash,
             "compat": self.compat,
             "script": self.script,
-            "task_options": self._task_options_update,
+            # This key name is mismatched to avoid a trivial schema update.
+            "task_options": self._task_options_override,
         }
 
     def __setstate__(self, state) -> None:
@@ -311,19 +381,22 @@ class Task(Value, Generic[Func]):
         self.hash = state["hash"]
         self.compat = state.get("compat", [])
         self.script = state.get("script", False)
-        self._task_options_update = state.get("task_options", {})
+        # This key name is mismatched to avoid a trivial schema update.
+        self._task_options_override = state.get("task_options", {})
 
         # Set func from TaskRegistry.
         registry = get_task_registry()
         _task = registry.get(self.fullname)
         if _task:
             self.func = _task.func
-            self._task_options = _task._task_options
+            self._task_options_base = _task._task_options_base
             self.source = get_func_source(self.func)
+            self._hash_includes = _task._hash_includes
         else:
             self.func = lambda *args, **kwargs: undefined_task(self.fullname, *args, **kwargs)
-            self._task_options = {}
+            self._task_options_base = {}
             self.source = ""
+            self._hash_includes = None
 
         self._signature = None
 
@@ -362,6 +435,14 @@ class Task(Value, Generic[Func]):
         if not self._signature:
             self._signature = inspect.signature(self.func)
         return self._signature
+
+    @property
+    def load_module(self) -> str:
+        load_module = self.get_task_option("load_module")
+        if load_module:
+            return load_module
+        else:
+            return self.func.__module__
 
 
 class SchedulerTask(Task[Func]):
@@ -492,7 +573,8 @@ def task(
     version: Optional[str] = None,
     compat: Optional[List[str]] = None,
     script: bool = False,
-    **task_options: Any,
+    hash_includes: Optional[list] = None,
+    **task_options_base: Any,
 ) -> Callable[[Func], Task[Func]]:
     ...
 
@@ -505,7 +587,8 @@ def task(
     version: Optional[str] = None,
     compat: Optional[List[str]] = None,
     script: bool = False,
-    **task_options: Any,
+    hash_includes: Optional[list] = None,
+    **task_options_base: Any,
 ) -> Union[Task[Func], Callable[[Func], Task[Func]]]:
     """
     Decorator to register a function as a redun :class:`Task`.
@@ -518,7 +601,8 @@ def task(
     name : Optional[str]
         Name of task (Default: infer from function `func.__name__`)
     namespace : Optional[str]
-        Namespace of task (Default: None)
+        Namespace of task (Default: Infer from context if possible, else None. See
+        `Task._compute_namespace`)
     version : Optional[str]
         Optional manual versioning for a task (Default: source code of task is
         hashed).
@@ -526,18 +610,23 @@ def task(
         Optional redun version compatibility. Not currently implemented.
     script : bool
         If True, this is a script-style task which returns a shell script string.
-    **task_options
-        Additional options for configuring a task. These must be serializable; for
-        example, this is necessary to send the task description over the network to
-        a remote worker.
+    hash_includes : Optional[list]
+        If provided, extra data that should be hashed. That is, extra data that should be
+        considered as part of cache invalidation. This list may be reordered without impacting
+        the computation. Each list item must be hashable by `redun.value.TypeRegistry.get_hash`.
+    **task_options_base
+        Additional options for configuring a task or specifying behaviors of tasks. Since
+        these are provided at task construction time (this is typically at Python module-load
+        time), they are the "base" set. Known keys:
+        load_module : Optional[str]
+            The module to load to import this task. (Default: infer from function
+            `func.__module__`)
+        wrapped_task : Optional[Task]
+            If present, a reference to the task wrapped by this one.
     """
 
     def deco(func: Func) -> Task[Func]:
         nonlocal namespace
-
-        # Determine task namespace.
-        if not namespace:
-            namespace = getattr(sys.modules[func.__module__], "redun_namespace", None)
 
         _task: Task[Func] = Task(
             func,
@@ -546,7 +635,8 @@ def task(
             version=version,
             compat=compat,
             script=script,
-            task_options=task_options,
+            task_options_base=task_options_base,
+            hash_includes=hash_includes,
         )
         get_task_registry().add(_task)
         return _task
@@ -610,19 +700,166 @@ def scheduler_task(
     def deco(func: Callable[..., Promise[Result]]) -> SchedulerTask[Callable[..., Result]]:
         nonlocal name, namespace
 
-        if not namespace:
-            namespace = getattr(sys.modules[func.__module__], "redun_namespace", None)
-
         _task: SchedulerTask[Callable[..., Result]] = SchedulerTask(
-            func,
-            name=name,
-            namespace=namespace,
-            version=version,
+            func, name=name, namespace=namespace, version=version
         )
         get_task_registry().add(_task)
         return _task
 
     return deco
+
+
+def wraps_task(
+    wrapper_name: Optional[str] = None,
+    wrapper_hash_includes: list = [],
+    **wrapper_task_options_base: Any,
+) -> Callable[[Callable[[Task[Func]], Func]], Callable[[Func], Task[Func]]]:
+    """A helper for creating new decorators that can be used like `@task`, that allow us to
+    wrap the task in another one. Conceptually inspired by `@functools.wraps`, which makes it
+    easier to create decorators that enclose functions.
+
+    Specifically, this helps us create a decorator that accepts a task and wraps it. The task
+    passed in is moved into an inner namespace, hiding it. Then a new task is created from the
+    wrapper implementation that assumes its identity; the wrapper is given access to both the
+    run-time arguments and the hidden task definition. Since `Tasks` may be wrapped repeatedly,
+    the hiding step is recursive. The `load_module` for all of the layers is dictated by the
+    innermost concrete `Task` object.
+
+    A simple usage example is a new decorator `@doubled_task`, which simply runs the original
+    task and multiplies by two.
+
+    .. code-block:: python
+
+        def doubled_task() -> Callable[[Func], Task[Func]]:
+
+            # The name of this inner function is used to create the nested namespace,
+            # so idiomatically, use the same name as the decorator with a leading underscore.
+            @wraps_task()
+            def _doubled_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
+
+                # The behavior when the task is run. Note we have both the task and the
+                # runtime args.
+                def do_doubling(*task_args, **task_kwargs) -> Any:
+                    return 2 * inner_task.func(*task_args, **task_kwargs)
+
+                return do_doubling
+            return _doubled_task
+
+        # The simplest use is to wrap a task that is already created
+        @doubled_task()
+        @task()
+        def value_task1(x: int):
+            return 1 + x
+
+        # We can skip the inner decorator and the task will get created implicitly
+        # Use the explicit form if you need to pass arguments to task creation.
+        @doubled_task()
+        def value_task2(x: int):
+            return 1 + x
+
+        # We can keep going
+        @doubled_task()
+        @doubled_task()
+        def value_task3(x: int):
+            return 1 + x
+
+    There is an additional subtlety if the wrapper itself accepts arguments. These must be passed
+    along to the wrapper so they are visible to the scheduler. Needing to do this manually is
+    the cost of the extra powers we have.
+
+    .. code-block:: python
+        # An example of arguments consumed by the wrapper
+        def wrapper_with_args(wrapper_arg: int) -> Callable[[Func], Task[Func]]:
+
+            # WARNING: Be sure to pass the extra data for hashing so it participates in the cache
+            # evaluation
+            @wraps_task(wrapper_hash_includes=[wrapper_arg])
+            def _wrapper_with_args(inner_task: Task) -> Callable[[Task[Func]], Func]:
+
+                def do_wrapper_with_args(*task_args, **task_kwargs) -> Any:
+                    return wrapper_arg * inner_task.func(*task_args, **task_kwargs)
+
+                return do_wrapper_with_args
+            return _wrapper_with_args
+
+    Parameters
+    ----------
+    wrapper_name : Optional[str]
+        The name of the wrapper, which is used to create the inner namespace. (Default: infer
+        from the wrapper `wrapper_func.__name__`)
+    wrapper_task_options_base : Any
+        Additional options for the wrapper task.
+    wrapper_hash_includes : Optional[list]
+        If provided, extra data that should be hashed. That is, extra data that should be
+        considered as part of cache invalidation. This list may be reordered without impacting
+        the computation. Each list item must be hashable by `redun.value.TypeRegistry.get_hash`
+    """
+
+    def transform_wrapper(wrapper_func: Callable[[Task], Func]) -> Callable[[Func], Task[Func]]:
+        def create_tasks(inner_func_or_task: Union[Func, Task[Func]]) -> Task[Func]:
+
+            # As a convenience, create the lowest level Task on the fly.
+            if isinstance(inner_func_or_task, Task):
+                hidden_inner_task = inner_func_or_task
+            else:
+                hidden_inner_task = task()(inner_func_or_task)
+
+            visible_name = hidden_inner_task.name
+            visible_namespace = hidden_inner_task.namespace
+
+            def recursive_rename(task_: Task, suffix: str) -> str:
+                # Recurse first, so we rename the innermost first, making room for renames
+                # higher up the chain.
+                if task_.get_task_option("wrapped_task", None) is not None:
+                    task_._task_options_base["wrapped_task"] = recursive_rename(
+                        get_task_registry().get(task_name=task_.get_task_option("wrapped_task")),
+                        suffix,
+                    )
+
+                old_fullname = task_.fullname
+                if task_.namespace != "":
+                    task_.namespace = f"{task_.namespace}.{suffix}"
+                else:
+                    task_.namespace = suffix
+                # Fix the hash, which we have to do manually.
+                task_.recompute_hash()
+
+                new_fullname = task_.fullname
+                get_task_registry().rename(old_fullname, new_fullname)
+                return new_fullname
+
+            nonlocal wrapper_name
+            if not wrapper_name:
+                wrapper_name = wrapper_func.__name__
+
+            # *Before* we create the new task, hide the old one
+            recursive_rename(hidden_inner_task, wrapper_name)
+
+            # Gather data to propagate the implementation of our children, so that cache
+            # invalidation propagates. We don't know how wrapper functions will use the tasks,
+            # so take the conservative approach and assume that any change invalidates.
+            # For example, may call `func` directly, which would put a whole subtree of evaluation
+            # out of view of the scheduler.
+            #
+            # Technically we don't need the name, since the hash has that already, but it's a lot
+            # easier to understand this way.
+            wrapped_hash_data = [hidden_inner_task]
+
+            # We're definitely getting a task back
+            wrapped_task: Task[Func] = task(
+                name=visible_name,
+                namespace=visible_namespace,
+                wrapped_task=hidden_inner_task.fullname,
+                load_module=hidden_inner_task.load_module,
+                hash_includes=wrapper_hash_includes + wrapped_hash_data,
+                **wrapper_task_options_base,
+            )(wrapper_func(hidden_inner_task))
+
+            return wrapped_task
+
+        return create_tasks
+
+    return transform_wrapper
 
 
 class TaskRegistry:
@@ -648,6 +885,11 @@ class TaskRegistry:
             return None
         else:
             raise ValueError("No task field given.")
+
+    def rename(self, old_name: str, new_name: str) -> None:
+        assert old_name in self._tasks
+        task = self._tasks.pop(old_name)
+        self._tasks[new_name] = task
 
     def __iter__(self) -> Iterable[Task]:
         return iter(self._tasks.values())

@@ -62,9 +62,17 @@ The `memory` arg in `task1` will be ignored when hashing a task and changing tha
 
 A string (default: `default`) that defines which executor the task executes on. See [Executors](executors.md) for more information.
 
+##### `hash_includes`
+
+A list of data to include in the task hash. Changing the hash will invalidate cached execution results.
+
 ##### `limits`
 
 A list or dict of resources needed for this task to execute. See the [Limits](config.md#limits) feature for more information.
+
+##### `load_module`
+
+The name of a python module that can be loaded to recreate this task. For example, this is part of how a remote worker is instructed to initialize itself, in preparation for running a task. 
 
 ##### `name`
 
@@ -74,7 +82,7 @@ Every task in a workflow needs a unique name. By default this is automatically i
 
 ##### `namespace`
 
-A string defining the namespace for a task. Task namespace must use only alphanumeric characters, underscore '_', and dot '.'
+A string defining the namespace for a task. Task namespace must use only alphanumeric characters, underscore '_', and dot '.', and may not start with a dot.
 
 Ideally, tasks should be uniquely identified across workflows by their fullname, which is a combination of their namespace and name. Typically, the namespace is set for the entire python module using the `redun_namespace` global variable (See [Task naming](design.md#task-naming) for more). However, the namespace can also be configured explicitly using this task option.
 

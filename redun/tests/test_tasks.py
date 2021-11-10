@@ -1,6 +1,7 @@
 import pickle
+import sys
 from collections import namedtuple
-from typing import Any, NamedTuple, Tuple
+from typing import Any, Callable, NamedTuple, Tuple
 
 import pytest
 
@@ -8,7 +9,8 @@ import redun
 from redun import Task, task
 from redun.expression import Expression
 from redun.scheduler import set_arg_defaults
-from redun.task import get_tuple_type_length
+from redun.task import Func, get_task_registry, get_tuple_type_length, wraps_task
+from redun.tests.task_test_helpers import square_task
 from redun.utils import get_func_source, pickle_dumps
 
 
@@ -21,9 +23,15 @@ def test_task_config() -> None:
     def my_task():
         return 10
 
-    @task(name="custom_name", namespace="my_namespace")
+    assert Task._compute_namespace(my_task) == my_task.namespace
+    assert my_task.fullname == Task._format_fullname(Task._compute_namespace(my_task), "my_task")
+
+    @task(name="custom_name", namespace="my_namespace", load_module="custom.module")
     def my_task2():
         return 10
+
+    assert Task._compute_namespace(my_task2, namespace="my_namespace") == my_task2.namespace
+    assert my_task2.load_module == "custom.module"
 
     redun.namespace("my_namespace2")
 
@@ -31,10 +39,13 @@ def test_task_config() -> None:
     def my_task3():
         return 10
 
+    assert Task._compute_namespace(my_task3) == my_task3.namespace
+
     redun.namespace()
 
     assert my_task.name == "my_task"
     assert my_task.fullname == "my_task"
+    assert my_task.load_module == "redun.tests.test_tasks"
     assert my_task.hash
     assert my_task.func
     assert (
@@ -94,6 +105,19 @@ def test_task_hashing():  # typing: ignore
         return "totaly different implementation"
 
     assert task1.get_hash() == "48ce769e8b759be9812a19cfdb69898678eee0b3"
+
+    # Hash includes are order invariant
+    @task(hash_includes=["a", 2])
+    def task1():  # type: ignore
+        return 10
+
+    assert task1.get_hash() == "156d0a1a6fac078702c4796dcce77337a37af8ed"
+
+    @task(hash_includes=[2, "a"])
+    def task1():  # type: ignore
+        return 10
+
+    assert task1.get_hash() == "156d0a1a6fac078702c4796dcce77337a37af8ed"
 
 
 def test_version() -> None:
@@ -302,7 +326,7 @@ def test_task_options() -> None:
 
 def test_task_options_hash() -> None:
     """
-    _task_options_update should contribute to task hash.
+    _task_options_overrides should contribute to task hash.
     """
 
     @task()
@@ -372,3 +396,152 @@ def test_naked_task() -> None:
         return a + b
 
     assert isinstance(add, Task)
+
+
+def test_wraps_task() -> None:
+    def doubled_task(offset: int = 0) -> Callable[[Func], Task[Func]]:
+        @wraps_task(wrapper_hash_includes=[offset])
+        def _doubled_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
+            def do_doubling(*task_args, **task_kwargs) -> Any:
+
+                return (
+                    inner_task.func(*task_args, **task_kwargs)
+                    + inner_task.func(*task_args, **task_kwargs)
+                    + offset
+                )
+
+            return do_doubling
+
+        return _doubled_task
+
+    # 1. Test that the task will get implicitly created
+    @doubled_task()
+    def value_task_unnested(x: int):
+        return 1 + x
+
+    # Check we can call it and arguments gets passed.
+    assert 8 == value_task_unnested.func(3)
+    assert 10 == value_task_unnested.func(4)
+
+    # The tasks get registered.
+    assert "value_task_unnested" in get_task_registry()._tasks
+    assert "_doubled_task.value_task_unnested" in get_task_registry()._tasks
+
+    # 2. Test that we can accept an explicit task
+    @doubled_task()
+    @task
+    def value_task_nested(x: int):
+        return 1 + x
+
+    # Check we can call it and arguments gets passed.
+    assert 8 == value_task_nested.func(3)
+    assert 10 == value_task_nested.func(4)
+
+    # The tasks get registered.
+    assert "value_task_nested" in get_task_registry()._tasks
+    assert "_doubled_task.value_task_nested" in get_task_registry()._tasks
+
+    @doubled_task()
+    def value_task(x: int):
+        return 1 + x
+
+    # 3. Demonstrate that we can return tasks lazily.
+    def listify_task() -> Callable[[Func], Task[Func]]:
+        @wraps_task(wrapper_name="renamed_task")
+        def _listify_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
+            def make_list(*task_args, copies=1, **task_kwargs) -> Any:
+
+                return [inner_task] * copies
+
+            return make_list
+
+        return _listify_task
+
+    @listify_task()
+    def float_task():
+        return 3.1415
+
+    assert "float_task" in get_task_registry()._tasks
+    assert "renamed_task.float_task" in get_task_registry()._tasks
+
+    float_task_inner = get_task_registry()._tasks["renamed_task.float_task"]
+    assert float_task.func() == [float_task_inner]
+    assert float_task.func(copies=3) == [float_task_inner, float_task_inner, float_task_inner]
+
+    # 4. Try using a wrapper that is not defined in this module, so we can tell whether the
+    # `load_module` points here, as it should. This is more likely representative of real use,
+    # that the wrapper and its use will not be colocated.
+    @square_task()
+    @task(namespace="custom_namespace")
+    def value_task2():
+        return 7
+
+    assert value_task2.func() == 49
+    assert value_task2.load_module == sys.modules[__name__].__name__
+    assert value_task2.namespace == "custom_namespace"
+
+    assert "custom_namespace.value_task2" in get_task_registry()._tasks
+    assert "custom_namespace.square_task.value_task2" in get_task_registry()._tasks
+
+    # 5. Try deeper nesting with explicit task creating
+    @listify_task()
+    @doubled_task(offset=1)
+    @task()
+    def extra_nested():
+        return -2
+
+    extra_nested_middle_task = get_task_registry()._tasks["renamed_task.extra_nested"]
+    assert extra_nested.func(copies=2) == [extra_nested_middle_task, extra_nested_middle_task]
+    assert extra_nested_middle_task.func() == -3
+    assert get_task_registry()._tasks["_doubled_task.renamed_task.extra_nested"].func() == -2
+
+    # 6. Deeper nesting with implicit task creation
+    @listify_task()
+    @doubled_task(offset=1)
+    def extra_nested_implicit():
+        return -2
+
+    extra_nested_middle_task = get_task_registry()._tasks["renamed_task.extra_nested_implicit"]
+    assert extra_nested_implicit.func(copies=2) == [
+        extra_nested_middle_task,
+        extra_nested_middle_task,
+    ]
+    assert extra_nested_middle_task.func() == -3
+    assert (
+        get_task_registry()._tasks["_doubled_task.renamed_task.extra_nested_implicit"].func() == -2
+    )
+
+    # 7. Test hash propagation via source
+    extra_nested_stored_hash = extra_nested.hash
+
+    @listify_task()  # type: ignore
+    @doubled_task(offset=1)
+    def extra_nested():
+        return -3
+
+    # These are the same except at the inner-most level
+    assert extra_nested_stored_hash != extra_nested.hash
+
+    # 8. Test hash propagation via extra data
+    @listify_task()  # type: ignore
+    @doubled_task(offset=2)
+    def extra_nested():
+        return -2
+
+    assert extra_nested_stored_hash != extra_nested.hash
+
+    # 9. It's turtles all the way down...
+    # These tasks have repeated names, which have helped catch several errors.
+    @doubled_task()
+    @doubled_task()
+    @doubled_task()
+    @doubled_task()
+    @doubled_task()
+    def turtles():
+        return 2
+
+    assert turtles.func() == 64
+
+    # After all our renaming, make sure our registry is still a correct index of task names.
+    for task_name, task_ in get_task_registry()._tasks.items():
+        assert task_name == task_.fullname

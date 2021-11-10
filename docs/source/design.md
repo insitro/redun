@@ -1381,6 +1381,83 @@ conn* --> conn_i* ---> conn2a* ----> conn3* --> conn_iii* --> conn4*
 
 Using the above Handle Graph, redun can determine that updating the code for `load_b()` should trigger re-execution for `load_b()` and `load_c()`, but not `load_a()`.
 
+### Task wrapping
+
+We provide a mechanism for wrapping tasks, which is a powerful mechanism for altering
+the run-time behavior of a task. Conceptually inspired by `@functools.wraps`, which makes it easier 
+to create decorators that enclose functions. As a motivating example, consider a task that needs
+to operate in parallel processes on the worker that executes the task. We can partition the 
+implementation into a generic wrapper that launches parallel processes and an inner task
+that operates within that context.  
+
+Specifically, this helps us create a decorator that accepts a task and wraps it. The task
+passed in is moved into an inner namespace, hiding it. Then a new task is created from the
+wrapper implementation that assumes its identity; the wrapper is given access to both the run-time
+arguments and the hidden task definition. Since `Tasks` may be wrapped repeatedly,
+the hiding step is recursive.
+
+A simple usage example is a new decorator `@doubled_task`, which simply runs the original
+task and multiplies by two.
+
+```python
+def doubled_task() -> Callable[[Func], Task[Func]]:
+
+    # The name of this inner function is used to create the nested namespace,
+    # so idiomatically, use the same name as the decorator with a leading underscore.
+    @wraps_task()
+    def _doubled_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
+
+        # The behavior when the task is run. Note we have both the task and the
+        # runtime args.
+        def do_doubling(*task_args, **task_kwargs) -> Any:
+            return 2 * inner_task.func(*task_args, **task_kwargs)
+
+        return do_doubling
+    return _doubled_task
+
+# Create the task implicitly
+@doubled_task()
+def value_task(x: int):
+    return 1 + x
+
+# Or we can do it manually
+@doubled_task()
+@task(name="renamed")
+def value_task2(x: int):
+    return 1 + x
+
+# We can keep going
+@doubled_task()
+@doubled_task()
+def value_task3(x: int):
+    return 1 + x
+```
+
+This mechanism might be used to alter the runtime behavior, such as by retrying the task
+if it fails or running it in parallel. We suggest that users prefer other approaches for
+defining their tasks, and only use this technique when access to the `Task` object itself is 
+needed.
+
+
+There is an additional subtlety if the wrapper itself accepts arguments. These must be passed
+along to the wrapper so they are visible to the scheduler. Needing to do this manually is
+the cost of the extra powers we have. 
+
+```python
+# An example of arguments consumed by the wrapper
+def wrapper_with_args(wrapper_arg: int) -> Callable[[Func], Task[Func]]:
+
+    # WARNING: Be sure to pass the extra data for hashing so it participates in the cache 
+    # evaluation
+    @wraps_task(wrapper_extra_hash_data=[wrapper_arg])
+    def _wrapper_with_args(inner_task: Task) -> Callable[[Task[Func]], Func]:
+
+        def do_wrapper_with_args(*task_args, **task_kwargs) -> Any:
+            return wrapper_arg * inner_task.func(*task_args, **task_kwargs)
+
+        return do_wrapper_with_args
+    return _wrapper_with_args
+```
 
 ## Implementation notes
 

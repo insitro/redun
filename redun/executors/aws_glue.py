@@ -547,8 +547,6 @@ def submit_glue_job(
     """
     Submits a redun task to AWS glue.
     """
-    module = a_task.func.__module__
-
     input_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, aws_utils.S3_SCRATCH_INPUT)
     output_path = aws_utils.get_job_scratch_file(
         s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
@@ -561,7 +559,7 @@ def submit_glue_job(
         "--check-version": aws_utils.REDUN_REQUIRED_VERSION,
         "--input": input_path,
         "--output": output_path,
-        "--script": module,
+        "--script": a_task.load_module,
         "--task": a_task.fullname,
         "--error": error_path,
         "--code": code_file.path if code_file else "",

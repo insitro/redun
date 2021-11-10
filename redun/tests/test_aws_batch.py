@@ -217,10 +217,22 @@ def task1(x):
     return x + 10
 
 
+@task(load_module="custom.module")
+def task1_custom_module(x):
+    return x + 10
+
+
 @use_tempdir
 @mock_s3
 @patch("redun.executors.aws_batch.batch_submit")
-def test_submit_task(batch_submit_mock):
+@pytest.mark.parametrize(
+    "custom_module, expected_load_module, a_task",
+    [
+        (None, "redun.tests.test_aws_batch", task1),
+        ("custom.module", "custom.module", task1_custom_module),
+    ],
+)
+def test_submit_task(batch_submit_mock, custom_module, expected_load_module, a_task):
     job_id = "123"
     image = "my-image"
     queue = "queue"
@@ -233,14 +245,14 @@ def test_submit_task(batch_submit_mock):
 
     # Create example workflow script to be packaged.
     File("workflow.py").write(
-        """
-@task()
+        f"""
+@task(load_module={custom_module})
 def task1(x):
     return x + 10
     """
     )
 
-    job = Job(task1())
+    job = Job(a_task())
     job.id = job_id
     job.eval_hash = "eval_hash"
     code_file = package_code(s3_scratch_prefix)
@@ -249,7 +261,7 @@ def task1(x):
         queue,
         s3_scratch_prefix,
         job,
-        task1,
+        a_task,
         args=[10],
         kwargs={},
         code_file=code_file,
@@ -269,7 +281,7 @@ def task1(x):
             "--check-version",
             REDUN_REQUIRED_VERSION,
             "oneshot",
-            "redun.tests.test_aws_batch",
+            expected_load_module,
             "--code",
             code_file.path,
             "--input",
@@ -278,7 +290,7 @@ def task1(x):
             "s3://example-bucket/redun/jobs/eval_hash/output",
             "--error",
             "s3://example-bucket/redun/jobs/eval_hash/error",
-            "task1",
+            a_task.name,
         ],
         "queue",
         image="my-image",

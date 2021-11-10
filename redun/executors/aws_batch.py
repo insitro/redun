@@ -416,8 +416,6 @@ def submit_task(
     """
     Submit a redun Task to AWS Batch or Docker (debug=True).
     """
-    module = a_task.func.__module__
-
     if array_size:
         # Output_path will contain a pickled list of actual output paths, etc.
         # Want files that won't get clobbered when jobs actually run
@@ -467,7 +465,7 @@ def submit_task(
             "--check-version",
             aws_utils.REDUN_REQUIRED_VERSION,
             "oneshot",
-            module,
+            a_task.load_module,
         ]
         + import_args
         + code_arg
