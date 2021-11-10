@@ -1233,7 +1233,11 @@ class RedunClient:
             "upgrade", help="Upgrade redun repo database."
         )
         db_upgrade_parser.add_argument(
-            "version", nargs="?", default="latest", help="DB version to upgrade towards."
+            "db_version",
+            nargs="?",
+            default="latest",
+            help="DB version to upgrade towards.",
+            type=str,
         )
         db_upgrade_parser.set_defaults(func=self.db_upgrade_command)
 
@@ -1241,7 +1245,11 @@ class RedunClient:
         db_downgrade_parser = db_subparsers.add_parser(
             "downgrade", help="Downgrade redun repo database."
         )
-        db_downgrade_parser.add_argument("version", help="DB version to downgrade towards.")
+        db_downgrade_parser.add_argument(
+            "db_version",
+            help="DB version to downgrade towards.",
+            type=str,
+        )
         db_downgrade_parser.set_defaults(func=self.db_downgrade_command)
 
         # Db versions command.
@@ -2591,7 +2599,7 @@ class RedunClient:
         backend.create_engine()
 
         version = backend.get_db_version()
-        desired_version = parse_db_version(args.version)
+        desired_version = parse_db_version(args.db_version)
 
         self.display(f"redun :: version {redun.__version__}")
         self.display(f"config dir: {get_config_dir(args.config)}")
