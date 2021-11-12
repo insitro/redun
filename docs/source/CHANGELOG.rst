@@ -43,7 +43,7 @@ Changelog
 * `#3` - Use public docker images
 * `#2` - Update postgres install instructions
 * `#1` - Add testing buildspec.
-* Begining of public repo
+* Beginning of public repo
 * `#312` - Update html links to markdown
 * `#28` - Example of making postgres optional
 * `#305` - Compute hash of ShardedS3Dataset after it's returned
@@ -418,7 +418,7 @@ Changelog
 :Date: October 14th, 2020
 
 * `#57` - Improve redun traceback for failed jobs.
-* `#56` - Fix local shell error propogation.
+* `#56` - Fix local shell error propagation.
 * `#54` - Add documentation on required dependencies.
 
 0.2.4
@@ -432,7 +432,7 @@ Changelog
 =====
 :Date: September 25, 2020
 
-* Fixes FileNotFoundError occuring when using AWS Batch tasks, by avoiding the s3fs cache.
+* Fixes FileNotFoundError occurring when using AWS Batch tasks, by avoiding the s3fs cache.
 
 
 0.2.2

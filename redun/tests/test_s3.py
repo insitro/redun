@@ -69,7 +69,7 @@ def test_exists_cache() -> None:
     # Update object outside of s3fs.
     s3_client.put_object(Body=b"hello", Bucket="example-bucket", Key="a")
 
-    # Using the normal s3fs exists(), the existance check would be cached and
+    # Using the normal s3fs exists(), the existence check would be cached and
     # would now return an incorrect result.
 
     # However, File.exists() avoids using the s3fs cache and gives the correct result.

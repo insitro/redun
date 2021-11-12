@@ -205,7 +205,7 @@ def check_version(version: str, version_spec: str) -> bool:
     Returns True if version satisfies version specification.
     """
     if "," in version_spec:
-        # Mutliple version specifications.
+        # Multiple version specifications.
         return all(
             check_version(version, version_part) for version_part in version_spec.split(",")
         )
@@ -1990,7 +1990,7 @@ class RedunClient:
                 )
 
                 if call_node.value.type == "redun.ErrorValue":
-                    # Protect against not being able to unpickle the erorr.
+                    # Protect against not being able to unpickle the error.
                     error = (
                         call_node.value_parsed.error
                         if isinstance(call_node.value_parsed, ErrorValue)
@@ -2076,7 +2076,7 @@ class RedunClient:
 
         elif kind == "arg":
             verb = "Consumed"
-            # Lastest job start is deepest.
+            # Latest job start is deepest.
             call_node = sorted(
                 (arg.call_node for value in file.values for arg in value.arguments),
                 key=lambda call_node: max(job.start_time for job in call_node.jobs),

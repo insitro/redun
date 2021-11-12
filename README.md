@@ -50,7 +50,7 @@ redun's general approach to defining workflows makes it a good choice for implem
 
 ## Small taste
 
-Here is a quick example of using redun for a familar workflow, compiling a C program ([full example](examples/02_compile/README.md)). In general, any kind of data processing could be done within each task (e.g. reading and writing CSVs, DataFrames, databases, APIs).
+Here is a quick example of using redun for a familiar workflow, compiling a C program ([full example](examples/02_compile/README.md)). In general, any kind of data processing could be done within each task (e.g. reading and writing CSVs, DataFrames, databases, APIs).
 
 ```py
 # make.py

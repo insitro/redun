@@ -194,7 +194,7 @@ db_uri = sqlite:///redun2.db
 @use_tempdir
 def test_setup_scheduler_ommit_db_uri() -> None:
     """
-    Ensure we use default DB URI if ommitted in config.
+    Ensure we use default DB URI if omitted in config.
     """
     os.makedirs(".redun")
     with open(".redun/redun.ini", "w") as out:

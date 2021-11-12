@@ -106,9 +106,9 @@ def get_job_definition(
     batch_client: boto3.Session = None,
 ) -> dict:
     """
-    Returns a job defintion with the supplied name or empty dict if no matches are found..
+    Returns a job definition with the supplied name or empty dict if no matches are found..
 
-    The returned job defintion will be the most recent, active revision if there are more than one
+    The returned job definition will be the most recent, active revision if there are more than one
     returned from the API.
     """
     if not batch_client:

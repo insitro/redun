@@ -165,7 +165,7 @@ def set_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> Tuple[Tuple, di
             continue
 
         elif param.name in kwargs2:
-            # User already specificed this arg in kwargs.
+            # User already specified this arg in kwargs.
             continue
 
         elif param.default != param.empty:
@@ -1025,7 +1025,7 @@ class Scheduler:
             )
 
         else:
-            raise NotImplementedError("Unkown expression: {}".format(expr))
+            raise NotImplementedError("Unknown expression: {}".format(expr))
 
     def _is_job_within_limits(self, job_limits: dict) -> bool:
         """
