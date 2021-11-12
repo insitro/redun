@@ -539,6 +539,10 @@ def test_iter_batch_job_logs(aws_describe_jobs_mock) -> None:
     with pytest.raises(Exception):
         list(iter_batch_job_logs(job_id, required=True))
 
+    # Fetch logs from job with no logs at all.
+    aws_describe_jobs_mock.side_effect = lambda *args, **kwargs: iter([{"container": {}}])
+    assert list(iter_batch_job_logs(job_id, required=False)) == []
+
 
 def mock_executor(scheduler, debug=False, code_package=False):
     """

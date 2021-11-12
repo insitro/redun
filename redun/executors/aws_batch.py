@@ -782,7 +782,10 @@ def iter_batch_job_logs(
     if not job:
         # Job is no longer present in AWS API. Return no logs.
         return
-    log_stream = job["container"].get("logStreamName", "")
+    log_stream = job["container"].get("logStreamName")
+    if not log_stream:
+        # No log stream is present. Return no logs.
+        return
 
     yield from iter_log_stream(
         log_group_name=log_group_name,
