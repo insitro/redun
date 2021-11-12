@@ -68,7 +68,7 @@ class JobArrayer:
 
     min_array_size: int
         Minimum number of jobs in a group to be submitted as an array job
-        instead of indiviual jobs. Can be anywhere from 2 to
+        instead of individual jobs. Can be anywhere from 2 to
         `MAX_ARRAY_SIZE-1`.
 
     max_array_size: int

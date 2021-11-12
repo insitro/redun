@@ -36,7 +36,7 @@ Lastly, several task options, such as [`image`](config.md#image) or [`memory`](c
 
 ##### `cache`
 
-A bool (default: true) that defines whether the cache can be used to fast forward through the task's execution. If set to `False`, the task will run everytime the task is called in a workflow.
+A bool (default: true) that defines whether the cache can be used to fast forward through the task's execution. If set to `False`, the task will run every time the task is called in a workflow.
 
 ##### `check_valid`
 

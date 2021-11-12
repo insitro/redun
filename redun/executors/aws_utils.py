@@ -56,7 +56,7 @@ def find_code_files(
     basedir: str = ".", includes: Optional[List[str]] = None, excludes: Optional[List[str]] = None
 ) -> Iterable[str]:
     """
-    Find all the workflow code files consitent with the include/exclude patterns.
+    Find all the workflow code files consistent with the include/exclude patterns.
     """
     if includes is None:
         includes = ["**/*.py"]

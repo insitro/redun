@@ -532,7 +532,7 @@ def test_higher_order2(scheduler: Scheduler) -> None:
     assert scheduler.run(workflow()) == 65
     assert task_calls == ["chooser", "adder"]
 
-    # Changing a child of multipler, changes multipler. Caching should detect this.
+    # Changing a child of multiplier, changes multiplier. Caching should detect this.
     @task()  # type: ignore # noqa: F811
     def get_offset():
         task_calls.append("get_offset")

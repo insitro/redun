@@ -260,7 +260,7 @@ def test_partial_as_arg():
     assert scheduler.run(main(inc)) == 11
     assert task_calls == ["main", "add"]
 
-    # Everthing should be cached.
+    # Everything should be cached.
     task_calls = []
     assert scheduler.run(main(inc)) == 11
     assert task_calls == []
@@ -291,7 +291,7 @@ def test_partial_as_result():
     assert scheduler.run(main()) == 11
     assert task_calls == ["main", "make_partial", "add"]
 
-    # Everthing should be cached.
+    # Everything should be cached.
     task_calls = []
     assert scheduler.run(main()) == 11
     assert task_calls == []

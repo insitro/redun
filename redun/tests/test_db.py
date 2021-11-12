@@ -32,7 +32,7 @@ def test_cache_db() -> None:
     backend = RedunBackendDb(db_uri="sqlite:///:memory:")
     backend.load()
 
-    # Set values into cache and retrive them.
+    # Set values into cache and retrieve them.
     value_hash1 = backend.record_value("myvalue")
     value_hash2 = backend.record_value(10)
     assert backend.get_value(value_hash1) == ("myvalue", True)
@@ -444,7 +444,7 @@ def test_parent_job_multiple_simple_arg(scheduler: Scheduler, session: Session) 
     last_exec = session.query(Execution).one()
     assert last_exec.job.task.name == "task3"
 
-    # Due to collapsing mutliple equivalent expressions, there should only be
+    # Due to collapsing multiple equivalent expressions, there should only be
     # two sub jobs.
     assert len(last_exec.job.child_jobs) == 2
     assert last_exec.job.child_jobs[0].task.name == "task1"

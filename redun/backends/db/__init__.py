@@ -1157,7 +1157,7 @@ class RedunBackendDb(RedunBackend):
         """
         Migrate database to desired version.
 
-        Paramaters
+        Parameters
         ----------
         desired_version: Optional[DBVersionInfo]
             Desired version to update redun database to. If null, update to latest version.

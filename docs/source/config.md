@@ -19,7 +19,7 @@ s3_scratch = s3://my-bucket/my-path/
 
 ## Configuration directory
 
-The configuration directory, `.redun/`, is specified by the following (in order of precendence):
+The configuration directory, `.redun/`, is specified by the following (in order of precedence):
 - Command line option: `redun --config <config_dir> ...`
 - Environment variable: `export REDUN_CONFIG=<config_dir>`
 - Filesystem search: Find a directory named `.redun/` starting in the current working directory and proceeding to parent directories.
@@ -316,7 +316,7 @@ A bool (default: True) that specifies whether redun should add default tags to a
 - redun_job_id: id of the redun Job.
 - redun_task_name: fullname of the redun Task.
 - redun_execution_id: id of the high-level execution for the whole workflow.
-- redun_project: the project of the workflow, which is typicaly the root task namespace.
+- redun_project: the project of the workflow, which is typically the root task namespace.
 - redun_aws_user: the user as identified by sts.get_caller_identity.
 
 #### AWS Glue executor
@@ -329,7 +329,7 @@ A string that specifies the [S3 scratch space](executors.md#s3-scratch-space) us
 
 ##### `workers`
 
-An integer that specifies the number of workers available by default to Glue jobs. Each worker provides one or more "data processing units" (DPUs). AWS defines a  DPU as "a relative measure of processing power that consists of 4 vCPUs of compute capacity and 16GB of memory." Depending on the worker type, there will be one or more Spark executors per DPU, each with one or more spark cores. Jobs are billed by number of DPUs and time. This paramter can be overriden on a per-task basis using task options.
+An integer that specifies the number of workers available by default to Glue jobs. Each worker provides one or more "data processing units" (DPUs). AWS defines a  DPU as "a relative measure of processing power that consists of 4 vCPUs of compute capacity and 16GB of memory." Depending on the worker type, there will be one or more Spark executors per DPU, each with one or more spark cores. Jobs are billed by number of DPUs and time. This parameter can be overridden on a per-task basis using task options.
 
 ##### `worker_type`
 
@@ -342,7 +342,7 @@ this worker type for memory-intensive jobs.
 this worker type for memory-intensive jobs or ML transforms. Note that as this worker type provides 2 DPUs, it is twice
 as expensive as the others.
 
-This can be overriden on a per-task basis using task options.
+This can be overridden on a per-task basis using task options.
 
 ##### `aws_region`
 
