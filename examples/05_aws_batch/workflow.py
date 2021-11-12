@@ -26,7 +26,7 @@ def task_on_default(x: int) -> list:
     ]
 
 
-@task(executor='batch', memory=.5, cpus=1, batch_tags={"stage": "2", "level": "high"})
+@task(executor='batch', memory=.5, vcpus=1, batch_tags={"stage": "2", "level": "high"})
 def task_on_batch(x: int) -> list:
     # As you can see in the task options, this task will run on the 'batch' executor.
     # We have configured .5Gb of memory and 1 vCPU.
@@ -43,12 +43,16 @@ def task_on_batch(x: int) -> list:
     # task to invoke a task to run back on the local machine, however, recall that
     # calling a task initially returns a lazy expression. The lazy expression is the
     # return value from the batch task, and the local scheduler will do a follow up evaluation
-    # to run `task_on_default` locally.
+    # to run `task_on_default` locally.  We can also invoke tasks that don't specify an executor,
+    # such as script().  Task executor options can be supplied manually to override the executor, as
+    # well as CPU, memory and other machine constraints.
 
     return [
         'task_on_batch',
         subprocess.check_output(['uname', '-a']),
         task_on_default(x + 5),
+        script("echo Hello default"), # runs on default
+        script("echo Hello batch", executor="batch", memory=0.25, vcpus=0.25), # runs on batch
         x
     ]
 
