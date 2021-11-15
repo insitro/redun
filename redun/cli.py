@@ -72,6 +72,7 @@ from redun.executors.aws_batch import (
     format_log_stream_event,
     iter_log_stream,
 )
+from redun.executors.k8s import K8SExecutor
 from redun.executors.aws_utils import extract_tar
 from redun.file import File as BaseFile
 from redun.job_array import AWS_ARRAY_VAR
