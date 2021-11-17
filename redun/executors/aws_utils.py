@@ -2,6 +2,7 @@ import glob
 import os
 import pickle
 import shlex
+import subprocess
 import tarfile
 import tempfile
 import threading
