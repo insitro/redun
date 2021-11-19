@@ -5,6 +5,7 @@ import shlex
 import tarfile
 import tempfile
 import threading
+import zipfile
 from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Set, Tuple, Union
 
 import boto3
@@ -95,6 +96,21 @@ def extract_tar(tar_file: File, dest_dir: str = ".") -> None:
             tar.extractall(dest_dir)
 
 
+def create_zip(zip_path: str, base_path: str, file_paths: Iterable[str]) -> File:
+    """
+    Create a zip file from local file paths.
+    """
+    zip_file = File(zip_path)
+
+    with zip_file.open("wb") as out:
+        with zipfile.ZipFile(out, mode="w") as stream:
+            for file_path in file_paths:
+                arcname = os.path.relpath(file_path, base_path)
+                stream.write(file_path, arcname)
+
+    return zip_file
+
+
 def get_job_scratch_dir(s3_scratch_prefix: str, job: Job) -> str:
     """
     Returns s3 scratch directory for a redun Job.
@@ -111,11 +127,11 @@ def get_job_scratch_file(s3_scratch_prefix: str, job: Job, filename: str) -> str
     return os.path.join(s3_scratch_prefix, "jobs", job.eval_hash, filename)
 
 
-def get_code_scratch_file(s3_scratch_prefix: str, tar_hash: str) -> str:
+def get_code_scratch_file(s3_scratch_prefix: str, tar_hash: str, use_zip: bool = False) -> str:
     """
     Returns s3 scratch path for a code package tar file.
     """
-    return os.path.join(s3_scratch_prefix, "code", tar_hash + ".tar.gz")
+    return os.path.join(s3_scratch_prefix, "code", tar_hash + (".zip" if use_zip else ".tar.gz"))
 
 
 def get_array_scratch_file(s3_scratch_prefix: str, job_array_id: str, filename: str) -> str:
@@ -167,7 +183,7 @@ def parse_code_package_config(config) -> Union[dict, bool]:
     return {"includes": shlex.split(include_config), "excludes": shlex.split(exclude_config)}
 
 
-def package_code(s3_scratch_prefix: str, code_package: dict = {}) -> File:
+def package_code(s3_scratch_prefix: str, code_package: dict = {}, use_zip=False) -> File:
     """
     Package code to S3.
     """
@@ -175,12 +191,17 @@ def package_code(s3_scratch_prefix: str, code_package: dict = {}) -> File:
         file_paths = find_code_files(
             includes=code_package.get("includes"), excludes=code_package.get("excludes")
         )
-        temp_file = File(os.path.join(tmpdir, "code.tar.gz"))
-        create_tar(temp_file.path, file_paths)
+
+        if use_zip:
+            temp_file = File(os.path.join(tmpdir, "code.zip"))
+            create_zip(temp_file.path, ".", file_paths)
+        else:
+            temp_file = File(os.path.join(tmpdir, "code.tar.gz"))
+            create_tar(temp_file.path, file_paths)
 
         with temp_file.open("rb") as infile:
             tar_hash = hash_stream(infile)
-        code_file = File(get_code_scratch_file(s3_scratch_prefix, tar_hash))
+        code_file = File(get_code_scratch_file(s3_scratch_prefix, tar_hash, use_zip=True))
         if not code_file.exists():
             temp_file.copy_to(code_file)
 

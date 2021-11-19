@@ -5,9 +5,8 @@ import pickle
 import tempfile
 import threading
 import time
-import zipfile
 from collections import OrderedDict, deque
-from typing import Any, Deque, Dict, Iterable, Iterator, List, Optional, Tuple, Union, cast
+from typing import Any, Deque, Dict, Iterator, List, Optional, Tuple, Union, cast
 
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
@@ -57,21 +56,6 @@ def get_redun_lib_scratch_file(s3_scratch_prefix: str, lib_hash: str) -> str:
     return os.path.join(s3_scratch_prefix, "glue", f"redun-{lib_hash}.zip")
 
 
-def create_zip(zip_path: str, base_path: str, file_paths: Iterable[str]) -> File:
-    """
-    Create a tar file from local file paths.
-    """
-    zip_file = File(zip_path)
-
-    with zip_file.open("wb") as out:
-        with zipfile.ZipFile(out, mode="w") as stream:
-            for file_path in file_paths:
-                arcname = os.path.relpath(file_path, base_path)
-                stream.write(file_path, arcname)
-
-    return zip_file
-
-
 def get_redun_lib_files() -> Iterator[str]:
     """
     Iterates through the files of the redun library.
@@ -94,7 +78,7 @@ def package_redun_lib(s3_scratch_prefix: str) -> File:
         base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         temp_path = os.path.join(tmpdir, "redun.zip")
         lib_files = get_redun_lib_files()
-        temp_file = create_zip(temp_path, base_path, lib_files)
+        temp_file = aws_utils.create_zip(temp_path, base_path, lib_files)
 
         with temp_file.open("rb") as infile:
             lib_hash = hash_stream(infile)
@@ -446,7 +430,9 @@ class AWSGlueExecutor(Executor):
         if self.code_package is not False and self.code_file is None:
             code_package = self.code_package or {}
             assert isinstance(code_package, dict)
-            self.code_file = aws_utils.package_code(self.s3_scratch_prefix, code_package)
+            self.code_file = aws_utils.package_code(
+                self.s3_scratch_prefix, code_package, use_zip=True
+            )
 
         # Determine job options
         task_options = self._get_job_options(job)
@@ -564,7 +550,6 @@ def submit_glue_job(
         "--script": module,
         "--task": a_task.fullname,
         "--error": error_path,
-        "--code": code_file.path if code_file else "",
         "--job-hash": job.eval_hash,
     }
 
@@ -579,17 +564,13 @@ def submit_glue_job(
 
     # Extra py files will be in an importable location at job start.
     # They can be either importable zip files, or .py source files.
-    # Redun is provided as an importable zip file.
+    # Redun and the code to run are provided as importable zip files.
     scratch_dir = aws_utils.get_job_scratch_dir(s3_scratch_prefix, job)
-    if job_options.get("extra_py_files"):
-        job_args["--extra-py-files"] = (
-            redun_zip_location
-            + ","
-            + ",".join(aws_utils.copy_to_s3(f, scratch_dir) for f in job_options["extra_py_files"])
-        )
 
-    else:
-        job_args["--extra-py-files"] = redun_zip_location
+    job_args["--extra-py-files"] = ",".join([redun_zip_location, code_file.path]) + ","
+    if job_options.get("extra_py_files"):
+        addl_files = [aws_utils.copy_to_s3(f, scratch_dir) for f in job_options["extra_py_files"]]
+        job_args["--extra-py-files"] += ",".join(addl_files)
 
     # Extra files will be available in job's $PWD.
     if job_options.get("extra_files"):
