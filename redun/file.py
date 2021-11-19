@@ -784,12 +784,11 @@ class ShardedS3Dataset(Value):
         self._filenames: List[str] = self._gather_files()
 
     def _gather_files(self) -> List[str]:
-        # All files in current directory.
-        files = glob_file(f"{self.path}/*.{self.format}")
-
         # If recursing, look in subdirectories too.
         if self.recurse:
-            files.extend(glob_file(f"{self.path}/**/*.{self.format}"))
+            files = glob_file(f"{self.path}/**/*.{self.format}")
+        else:
+            files = glob_file(f"{self.path}/*.{self.format}")
 
         return sorted(files)
 
