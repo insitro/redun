@@ -1,21 +1,28 @@
+import subprocess
+import threading
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
+from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.scheduler import Job, Scheduler, Traceback
 
-print("fooooo")
 @register_executor("k8s")
 class K8SExecutor(Executor):
     def __init__(self, name: str, scheduler: Optional["Scheduler"] = None, config=None):
         super().__init__(name, scheduler=scheduler)
         if config is None:
             raise ValueError("K8SExecutor requires config.")
+        self.is_running = False
 
+
+    def _monitor(self) -> None:
+        pass
 
     def log(self, *messages: Any, **kwargs) -> None:
         """
         Display log message through Scheduler.
         """
+        print("log")
         assert self.scheduler
         self.scheduler.log(f"Executor[{self.name}]:", *messages, **kwargs)
 
@@ -34,7 +41,7 @@ class K8SExecutor(Executor):
         """
         Stop Executor and monitoring thread.
         """
-        self.arrayer.stop()
+        print("stop")
         self.is_running = False
 
     def _submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
@@ -48,6 +55,7 @@ class K8SExecutor(Executor):
         """
         Submit Job to executor.
         """
+        print("submit")
         return self._submit(job, args, kwargs)
 
     def submit_script(self, job: Job, args: Tuple, kwargs: dict) -> None:
