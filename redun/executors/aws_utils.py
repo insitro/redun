@@ -201,7 +201,7 @@ def package_code(s3_scratch_prefix: str, code_package: dict = {}, use_zip=False)
 
         with temp_file.open("rb") as infile:
             tar_hash = hash_stream(infile)
-        code_file = File(get_code_scratch_file(s3_scratch_prefix, tar_hash, use_zip=True))
+        code_file = File(get_code_scratch_file(s3_scratch_prefix, tar_hash, use_zip=use_zip))
         if not code_file.exists():
             temp_file.copy_to(code_file)
 

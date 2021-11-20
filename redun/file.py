@@ -784,13 +784,15 @@ class ShardedS3Dataset(Value):
         self._filenames: List[str] = self._gather_files()
 
     def _gather_files(self) -> List[str]:
-        # If recursing, look in subdirectories too.
-        if self.recurse:
-            files = glob_file(f"{self.path}/**/*.{self.format}")
-        else:
-            files = glob_file(f"{self.path}/*.{self.format}")
 
-        return sorted(files)
+        # If recursing, look in subdirectories too.
+        files = glob_file(f"{self.path}/*.{self.format}")
+        if self.recurse:
+            files.extend(glob_file(f"{self.path}/**/*.{self.format}"))
+
+        # Work around differences between fsspec's interpretation of ** on S3 vs.local
+        # by removing any duplicate file names from the list.
+        return sorted(set(files))
 
     def update_hash(self) -> None:
         self._hash = self._calc_hash()
