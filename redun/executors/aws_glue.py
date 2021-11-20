@@ -483,6 +483,7 @@ class AWSGlueExecutor(Executor):
         assert job.task
         assert self.glue_job_name
         assert self.redun_zip_location
+        assert self.code_file
         client = aws_utils.get_aws_client("glue", aws_region=self.aws_region)
 
         try:
@@ -526,8 +527,8 @@ def submit_glue_job(
     s3_scratch_prefix: str,
     glue_job_name: str,
     redun_zip_location: str,
+    code_file: File,
     job_options: dict = {},
-    code_file: Optional[File] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> Dict[str, Any]:
     """
