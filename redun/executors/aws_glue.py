@@ -544,7 +544,7 @@ def submit_glue_job(
 
     # Assemble job arguments
     assert job.eval_hash
-    job_args = {
+    glue_args = {
         "--check-version": aws_utils.REDUN_REQUIRED_VERSION,
         "--input": input_path,
         "--output": output_path,
@@ -556,7 +556,7 @@ def submit_glue_job(
 
     # Comma separated string of Python modules to be installed with pip before job start.
     if job_options.get("additional_libs"):
-        job_args["--additional-python-modules"] = (
+        glue_args["--additional-python-modules"] = (
             DEFAULT_ADDITIONAL_PYTHON_MODULES + "," + ",".join(job_options["additional_libs"])
         )
 
@@ -568,14 +568,14 @@ def submit_glue_job(
     # Redun and the code to run are provided as importable zip files.
     scratch_dir = aws_utils.get_job_scratch_dir(s3_scratch_prefix, job)
 
-    job_args["--extra-py-files"] = ",".join([redun_zip_location, code_file.path]) + ","
+    glue_args["--extra-py-files"] = ",".join([redun_zip_location, code_file.path]) + ","
     if job_options.get("extra_py_files"):
         addl_files = [aws_utils.copy_to_s3(f, scratch_dir) for f in job_options["extra_py_files"]]
-        job_args["--extra-py-files"] += ",".join(addl_files)
+        glue_args["--extra-py-files"] += ",".join(addl_files)
 
     # Extra files will be available in job's $PWD.
     if job_options.get("extra_files"):
-        job_args["--extra-files"] = ",".join(
+        glue_args["--extra-files"] = ",".join(
             aws_utils.copy_to_s3(f, scratch_dir) for f in job_options["extra_files"]
         )
 
@@ -588,7 +588,7 @@ def submit_glue_job(
     glue_client = aws_utils.get_aws_client("glue", aws_region=aws_region)
     result = glue_client.start_job_run(
         JobName=glue_job_name,
-        Arguments=job_args,
+        Arguments=glue_args,
         Timeout=job_options["timeout"],
         WorkerType=job_options["worker_type"],
         NumberOfWorkers=job_options["workers"],
