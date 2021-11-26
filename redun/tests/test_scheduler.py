@@ -1336,22 +1336,35 @@ def test_catch_deep_recover_react(scheduler: Scheduler) -> None:
     assert calls == ["faulty", "recover", "deep", "deep2"]
 
 
-def test_config_arg(scheduler: Scheduler) -> None:
+def test_config_args(scheduler: Scheduler) -> None:
     """
-    Argument types wrapped in ConfigArg should be detectable.
+    Config_args should not contribute to the eval_hash.
     """
 
     @task(config_args=["x", "z"])
     def task1(x: int, y: int, z: str = "hello") -> int:
         return x
 
-    assert scheduler.run(task1(10, 11)) == 10
-
     eval_hash1, args_hash1 = scheduler.get_eval_hash(task1, (10, 11), {})
     # Changing 'x' and 'z' does not change args_hash.
     eval_hash2, args_hash2 = scheduler.get_eval_hash(task1, (11, 11), {"z": "bye"})
     assert eval_hash1 == eval_hash2
     assert args_hash1 == args_hash2
+
+
+def test_variadic_args(scheduler: Scheduler) -> None:
+    """
+    Variadic arguments should contribute to the eval_hash.
+    """
+
+    @task
+    def task1(x: int, y: int, *rest: int) -> int:
+        return x
+
+    eval_hash1, args_hash1 = scheduler.get_eval_hash(task1, (10, 11, 12), {})
+    eval_hash2, args_hash2 = scheduler.get_eval_hash(task1, (10, 11, 12, 13, 14), {})
+    assert eval_hash1 != eval_hash2
+    assert args_hash1 != args_hash2
 
 
 def test_default_root(scheduler: Scheduler, session: Session) -> None:

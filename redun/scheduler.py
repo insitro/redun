@@ -1463,12 +1463,26 @@ class Scheduler:
         sig = task.signature
         config_args: List = task.get_task_option("config_args", [])
 
-        # Filter args.
+        # Determine the variadic parameter if it exists.
+        var_param_name: Optional[str] = None
+        for param in sig.parameters.values():
+            if param.kind == inspect.Parameter.VAR_POSITIONAL:
+                var_param_name = param.name
+                break
+
+        # Filter args to remove config_args.
         args2 = [
             arg_value
             for arg_name, arg_value in zip(sig.parameters, args)
             if arg_name not in config_args
         ]
+
+        # Additional arguments are assumed to be variadic arguments.
+        args2.extend(
+            arg_value
+            for arg_value in args[len(sig.parameters) :]
+            if var_param_name not in config_args
+        )
 
         # Filter kwargs.
         kwargs2 = {
