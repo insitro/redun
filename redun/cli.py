@@ -719,7 +719,10 @@ def import_script(filename_or_module: str, add_cwd: bool = True) -> ModuleType:
             add_import_path(os.getcwd())
         module_name = filename_or_module
 
-    module = importlib.import_module(module_name)
+    try:
+        module = importlib.import_module(module_name)
+    except ModuleNotFoundError as e:
+        raise RedunClientError(f"Failed to run workflow from Python script file named {filename_or_module}.")
     return module
 
 
