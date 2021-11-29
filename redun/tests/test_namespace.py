@@ -53,6 +53,21 @@ def test_no_namespace() -> None:
         assert "namespace" in warning.call_args[0][0]
 
 
+def test_empty_namespace() -> None:
+    """Until namespaces are required, setting an empty-string namespace is legal"""
+    scheduler = Scheduler()
+
+    with patch.object(scheduler.logger, "warning") as warning:
+
+        @task(namespace="")
+        def task1():
+            return 10
+
+        assert task1.namespace == ""
+        assert scheduler.run(task1()) == 10
+        assert "namespace" in warning.call_args[0][0]
+
+
 def test_no_namespace_ignore() -> None:
     """
     Ensure we can ignore namespace warning.

@@ -163,15 +163,17 @@ class Task(Value, Generic[Func]):
         creation.
 
         Precedence:
-        - Explicit namespace provided
+        - Explicit namespace provided (empty string is a valid explicit value)
         - Infer it from a `redun_namespace` variable in the same module as func
         - The current namespace, configured with `set_current_namespace`"""
 
         # Determine task namespace.
-        if not namespace:
+        if namespace is None:
             namespace = getattr(sys.modules[func.__module__], "redun_namespace", None)
 
-        return namespace or get_current_namespace()
+        if namespace is not None:
+            return namespace
+        return get_current_namespace()
 
     @property
     def nout(self) -> Optional[int]:
