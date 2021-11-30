@@ -5,6 +5,7 @@ furo
 isort==5.7.0
 moto==1.3.16
 mypy==0.790
+myst-parser
 numpydoc==1.1.0
 pandas
 pdbpp

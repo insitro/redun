@@ -6,6 +6,7 @@ redun is a expressive workflow engine for Python.
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
+   :hidden:
 
    design
    tasks
