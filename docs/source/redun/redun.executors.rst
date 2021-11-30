@@ -20,6 +20,14 @@ redun.executors.aws\_glue module
    :undoc-members:
    :show-inheritance:
 
+redun.executors.aws\_utils module
+---------------------------------
+
+.. automodule:: redun.executors.aws_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.executors.base module
 ---------------------------
 

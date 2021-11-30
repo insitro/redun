@@ -117,6 +117,22 @@ redun.namespace module
    :undoc-members:
    :show-inheritance:
 
+redun.promise module
+--------------------
+
+.. automodule:: redun.promise
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+redun.pytest module
+-------------------
+
+.. automodule:: redun.pytest
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.scheduler module
 ----------------------
 
@@ -129,6 +145,14 @@ redun.scripting module
 ----------------------
 
 .. automodule:: redun.scripting
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+redun.tags module
+-----------------
+
+.. automodule:: redun.tags
    :members:
    :undoc-members:
    :show-inheritance:

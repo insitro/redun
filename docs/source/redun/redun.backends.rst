@@ -20,6 +20,14 @@ redun.backends.base module
    :undoc-members:
    :show-inheritance:
 
+redun.backends.value\_store module
+----------------------------------
+
+.. automodule:: redun.backends.value_store
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
