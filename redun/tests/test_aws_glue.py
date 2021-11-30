@@ -13,13 +13,8 @@ from moto.glue.responses import GlueResponse
 import redun.executors.aws_glue as redun_glue
 from redun import File, task
 from redun.config import Config
-from redun.executors.aws_glue import (
-    AWSGlueExecutor,
-    create_zip,
-    get_redun_lib_files,
-    package_redun_lib,
-)
-from redun.executors.aws_utils import get_aws_client
+from redun.executors.aws_glue import AWSGlueExecutor, get_redun_lib_files, package_redun_lib
+from redun.executors.aws_utils import create_zip, get_aws_client
 from redun.scheduler import Job
 from redun.tests.utils import mock_scheduler, use_tempdir, wait_until
 from redun.utils import pickle_dumps
