@@ -1,5 +1,5 @@
 ---
-tocdepth: 2
+tocpdeth: 3
 ---
 
 # Executors
@@ -139,11 +139,11 @@ However, other modules, especially those using C/C++ compiled extensions, are no
 
 The following configuration options may be specified on a per-task basis in the decorator.
 
-##### `workers`
+#### `workers`
 
 An integer that specifies the number of workers available by default to Glue jobs. Each worker provides one or more "data processing units" (DPUs). AWS defines a  DPU as "a relative measure of processing power that consists of 4 vCPUs of compute capacity and 16GB of memory." Depending on the worker type, there will can be one or more Spark executors per DPU, each with one or more spark cores. Jobs are billed by number of DPUs and time.
 
-##### `worker_type`
+#### `worker_type`
 
 Choose from:
 
@@ -154,11 +154,11 @@ this worker type for memory-intensive jobs.
 this worker type for memory-intensive jobs or ML transforms. Note that as this worker type provides 2 DPUs, it is twice
 as expensive as the others.
 
-##### `additional_libs`
+#### `additional_libs`
 
 A list of additional Python libraries that will be `pip install`'ed before the run starts. For example,
 `additional_libs=["promise", "alembic==1.0.0"]` will install the promise and alembic libraries.
 
-##### `extra_files`
+#### `extra_files`
 
 A list of files that will be made available in the root directory of the run.

@@ -1,5 +1,5 @@
 ---
-tocdepth: 2
+tocpdeth: 3
 ---
 
 # Configuration
@@ -36,13 +36,13 @@ Currently, redun supports the following configuration sections and options.
 
 Scheduler options can be configured in the `[scheduler]` section.
 
-##### `ignore_warnings`
+#### `ignore_warnings`
 
 A whitespace-separated string of redun warnings to suppress from logging. Current warning types include:
 
 - `namespace`: Task namespaces will be required soon. Until then, it is a warning to not define a namespace for a task.
 
-##### `setup_scheduler`
+#### `setup_scheduler`
 
 A string that specifies the location of a user-defined function for setting up the scheduler. It should follow the syntax `{file_or_module}::{function_name}`, where
 
@@ -96,7 +96,7 @@ redun --setup profile=dev run workflow.py main --x 1 --y 2
 ```
 
 
-##### `job_status_interval`
+#### `job_status_interval`
 
 An integer (default: 20) of how many seconds between displays of the job status table.
 
@@ -105,11 +105,11 @@ An integer (default: 20) of how many seconds between displays of the job status 
 
 Backend options, such as connecting to the redun database, can be configured in the `[backend]` section.
 
-##### `automigrate`
+#### `automigrate`
 
 A bool indicating whether the redun client should automigrate the redun repo database to the latest schema before execution. If the database is a local sqlite file, `automigrate` is `True` by default for convenience. Otherwise, `automation` is `False` by default for safety since a central shared database likely needs a coordinated migration.
 
-##### `db_aws_secret_name`
+#### `db_aws_secret_name`
 
 When specified, the database URI will be constructed from the data stored in the named secret.
 __NOTE:__ This setting takes precedence over the following backend config options.
@@ -123,30 +123,30 @@ This setting assumes the standard fields in an AWS RDS or Other Database secret,
  * port
  * dbname
 
-##### `db_uri`
+#### `db_uri`
 
 [URI](https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls) for the redun database. redun supports the `sqlite` and `postgresql` portocols. If the URI is relative, it will be interpreted as relevative to the configuration directory, `.redun/`.
 
 For security reasons, username and password are not allowed in `db_uri`, since `redun.ini` files are often checked into source control. See below for alternative ways to define database credentials.
 
-##### `db_username_env`
+#### `db_username_env`
 
 Environment variable (default: `REDUN_DB_USERNAME`) containing the username login for `db_uri`.
 
-##### `db_password_env`
+#### `db_password_env`
 
 Environment variable (default: `REDUN_DB_PASSWORD`) containing the password login for `db_uri`.
 
-##### `max_value_size`
+#### `max_value_size`
 
 An integer (default: `1000000000`, 1Gb) specifying the maximum number of bytes to allow for storing a single value in the cache.
 
-##### `value_store_path`
+#### `value_store_path`
 
 Location of an optional `ValueStore`.
 If a local, non-absolute path is specified, it is assumed relative to `config_dir`.
 
-##### `value_store_min_size`
+#### `value_store_min_size`
 
 Minimum value size in bytes beyond which values are written to the value store instead of the primary backend.
 
@@ -202,7 +202,7 @@ def task1():
 ```
 
 
-##### `type`
+#### `type`
 
 A string that specifies the executor module (e.g. `local`, `aws_batch`, etc) to use for this executor.
 
@@ -211,15 +211,15 @@ A string that specifies the executor module (e.g. `local`, `aws_batch`, etc) to 
 
 The [Local executor](executors.md#local-executor) (`type = local`) executes tasks on the local machine using either multiple threads or processes. 
 
-##### `mode`
+#### `mode`
 
 A string (default: `thread`) that specifies whether to run tasks on new threads (`mode = thread`) or new processes (`mode = process`).
 
-##### `max_workers`
+#### `max_workers`
 
 An integer (default: 20) that specifies the maximum number of workers to use in the thread/process pool for task execution.
 
-##### `start_method`
+#### `start_method`
 
 A string (default: `fork`) that specifies the [start method](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods) for new processes. Other start methods include `spawn` and `forkserver`.
 
@@ -229,83 +229,83 @@ A string (default: `fork`) that specifies the [start method](https://docs.python
 
 The [AWS Batch executor](executors.md#aws-batch-executor) (`type = aws_batch`) executes tasks on the AWS Batch compute service.
 
-##### `image`
+#### `image`
 
 A string that specifies the default Docker image to use for AWS Batch jobs. This can be overridden on a per task basis using task options.
 
-##### `queue`
+#### `queue`
 
 A string that specifies the default AWS Batch queue to use for submitting jobs. This can be overridden on a per task basis using task options.
 
-##### `s3_scratch`
+#### `s3_scratch`
 
 A string that specifies the [S3 scratch space](executors.md#s3-scratch-space) used to communicate with AWS Batch jobs.
 
-##### `aws_region`
+#### `aws_region`
 
 A string that specifies the AWS region containing the user's AWS Batch service.
 
-##### `role`
+#### `role`
 
 A string that specifies the IAM role that AWS Batch jobs should adopt while executing. This may be needed for jobs to have proper access to resources (S3 data, other services, etc). This can be overridden on a per task basis using task options.
 
-##### `vcpus`
+#### `vcpus`
 
 An integer (default: 1) that specifies the default number of virtual CPUs required for each task. This can be overridden on a per task basis using task options.
 
-##### `gpus`
+#### `gpus`
 
 An integer (default: 0) that specifies the default number of GPUs required for each task. This can be overridden on a per task basis using task options.
 
-##### `memory`
+#### `memory`
 
 A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.
 
-##### `retries`
+#### `retries`
 
 An integer (default: 1) that specifies the default number of retries to use for submitting a job to the AWS Batch queue. This can be overridden on a per task basis using task options.
 
-##### `job_name_prefix`
+#### `job_name_prefix`
 
 A string (default: `batch-job`) that specifies the prefix to use for AWS Batch job names. This can make it easier for users to distinguish which AWS Batch jobs correspond to their workflow.
 
-##### `code_package`
+#### `code_package`
 
 A bool (default: True) that specifies whether to perform [code packaging](executors.md#code-packaging).
 
-##### `code_includes`
+#### `code_includes`
 
 A string (default: `**/*.py`) that specifies a pattern for which files should be included in a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 
-##### `code_excludes`
+#### `code_excludes`
 
 A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 
-##### `debug`
+#### `debug`
 
 A bool (default: False) that specifies whether to run the [Docker container locally](executors.md#local-debugging).
 
-##### `job_monitor_interval`
+#### `job_monitor_interval`
 
 A float (default: 5.0) that specifies how often, in seconds, the AWS Batch API is queried to monitor running jobs.
 
-##### `min_array_size`
+#### `min_array_size`
 
 Minimum number (default: 5) of equivalent tasks that will be submitted together as an AWS Batch array job. "Equivalent" means the same task and execution requirements (CPU, memory, etc), but with possibly different arguments. Set to 0 to disable array job submission. Defaults to 5.
 
-##### `max_array_size`
+#### `max_array_size`
 
 Maximum number (default: 1000) of equivalent tasks that will be submitted together as an AWS Batch array job. Must be greater than or equal to `min_array_size`. If greater than the AWS maximum array size (currently 10000), will be clamped to this value.
 
-##### `job_stale_time`
+#### `job_stale_time`
 
 A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wait before submission to be possibly bundled into an array job.
 
-##### `timeout`
+#### `timeout`
 
 An optional integer (default: None) that specifies the time duration in seconds (measure from job attempt's `startedAt` timestamp) after which AWS Batch will terminate the job. For more on job timeouts, see the [Job Timeouts on Batch docs](https://docs.aws.amazon.com/batch/latest/userguide/job_timeouts.html). When not set, jobs will run indefinitely (unless on Fargate where there is a 14 day limit).
 
-##### `batch_tags`
+#### `batch_tags`
 
 An optional JSON mapping of string key-value pairs to use as Batch job tags. This could be used to track jobs or query them after execution.
 
@@ -313,7 +313,7 @@ An optional JSON mapping of string key-value pairs to use as Batch job tags. Thi
 batch_tags = {"project": "acme", "user": "alice"}
 ```
 
-###### `default_batch_tags`
+##### `default_batch_tags`
 
 A bool (default: True) that specifies whether redun should add default tags to all batch jobs. The default tags include:
 
@@ -327,15 +327,15 @@ A bool (default: True) that specifies whether redun should add default tags to a
 
 The [AWS Glue executor](executors.md#aws-glue-executor) (`type = aws_glue`) executes tasks on the AWS Glue compute service.
 
-##### `s3_scratch`
+#### `s3_scratch`
 
 A string that specifies the [S3 scratch space](executors.md#s3-scratch-space) used to communicate with AWS Glue jobs.
 
-##### `workers`
+#### `workers`
 
 An integer that specifies the number of workers available by default to Glue jobs. Each worker provides one or more "data processing units" (DPUs). AWS defines a  DPU as "a relative measure of processing power that consists of 4 vCPUs of compute capacity and 16GB of memory." Depending on the worker type, there will be one or more Spark executors per DPU, each with one or more spark cores. Jobs are billed by number of DPUs and time. This parameter can be overridden on a per-task basis using task options.
 
-##### `worker_type`
+#### `worker_type`
 
 Choose from:
 
@@ -348,47 +348,47 @@ as expensive as the others.
 
 This can be overridden on a per-task basis using task options.
 
-##### `aws_region`
+#### `aws_region`
 
 A string that specifies the AWS region containing the user's AWS Glue service.
 
-##### `role`
+#### `role`
 
 A string (default: your account's `AWSGlueServiceRole`) that specifies the IAM role that AWS Glue jobs should adopt while executing. AWS provides a [managed policy](https://docs.aws.amazon.com/glue/latest/dg/create-service-policy.html), `AWSGlueServiceRole` that has the minimal permissions to run glue jobs, but you may need to provide access to S3 or other resources.
 
-##### `glue_job_prefix`
+#### `glue_job_prefix`
 
 A string specifying the prefix for Glue job definitions created and used by redun. Defaults to `REDUN`.
 
-##### `spark_history_dir`
+#### `spark_history_dir`
 
 String specifying an S3 path to the location where Spark will log history information that can be used by a
 Spark History Server to visualize and monitor job progress. Defaults to `f"{s3_scratch_path}/glue/spark_history"`
 
-##### `job_monitor_interval`
+#### `job_monitor_interval`
 
 Float specifying how frequently to query AWS for the status of running Glue jobs. Defaults to 10.0 seconds.
 
-##### `job_retry_interval`
+#### `job_retry_interval`
 
 Float specifying how frequently to retry submitting Glue jobs that were not able to be started due to resource
 constraints. Five attempts will be made to submit pending jobs, and then the retry period will pass. Defaults
 to 60.0 seconds.
 
-##### `timeout`
+#### `timeout`
 
 Integer number of minutes to run jobs before they are killed. Defaults to 2880 (48 hours). Useful for preventing
 cost overruns.
 
-##### `code_package`
+#### `code_package`
 
 A bool (default: True) that specifies whether to perform [code packaging](executors.md#code-packaging).
 
-##### `code_includes`
+#### `code_includes`
 
 A string (default: `**/*.py`) that specifies a pattern for which files should be included in a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 
-##### `code_excludes`
+#### `code_excludes`
 
 A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 

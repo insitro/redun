@@ -1,5 +1,5 @@
 ---
-tocdepth: 2
+tocpdeth: 3
 ---
 
 # Tasks
@@ -38,16 +38,16 @@ def main(input: File) -> list:
 
 Lastly, several task options, such as [`image`](config.md#image) or [`memory`](config.md#memory), can be inherited by the [executor configuration](config.md#executors). 
 
-##### `cache`
+### `cache`
 
 A bool (default: true) that defines whether the cache can be used to fast forward through the task's execution. If set to `False`, the task will run every time the task is called in a workflow.
 
-##### `check_valid`
+### `check_valid`
 
 A string (default: `"full"`) that defines whether cached results are checked for validity in the entire subtree
 beneath this task (`"full"`) or whether just this task's results need to be valid (`"shallow"`). This can be used to dramatically speed up resuming large workflows.
 
-##### `config_args`
+### `config_args`
 
 A list of strings defining config args for this task.
 Config args will be ignored when hashing a task meaning that changes in config args' values will not cause tasks to re-evaluate.
@@ -62,35 +62,35 @@ def task1(arg1: int, memory: int) -> int:
 
 The `memory` arg in `task1` will be ignored when hashing a task and changing that value will not trigger re-evaluation of the task.
 
-##### `executor`
+### `executor`
 
 A string (default: `default`) that defines which executor the task executes on. See [Executors](executors.md) for more information.
 
-##### `hash_includes`
+### `hash_includes`
 
 A list of data to include in the task hash. Changing the hash will invalidate cached execution results.
 
-##### `limits`
+### `limits`
 
 A list or dict of resources needed for this task to execute. See the [Limits](config.md#limits) feature for more information.
 
-##### `load_module`
+### `load_module`
 
 The name of a python module that can be loaded to recreate this task. For example, this is part of how a remote worker is instructed to initialize itself, in preparation for running a task. 
 
-##### `name`
+### `name`
 
 A string (default: `func.__name__`) naming the task. Task name must use only alphanumeric characters and underscore '_'.
 
 Every task in a workflow needs a unique name. By default this is automatically inferred from the function's name (e.g. `func.__name__`). However, the user may use the `name` task option to explicitly set a task's name. See [Task naming](design.md#task-naming) for more.
 
-##### `namespace`
+### `namespace`
 
 A string defining the namespace for a task. Task namespace must use only alphanumeric characters, underscore '_', and dot '.', and may not start with a dot.
 
 Ideally, tasks should be uniquely identified across workflows by their fullname, which is a combination of their namespace and name. Typically, the namespace is set for the entire python module using the `redun_namespace` global variable (See [Task naming](design.md#task-naming) for more). However, the namespace can also be configured explicitly using this task option.
 
-##### `nout`
+### `nout`
 
 An optional int (default: `None`) that can be used for tasks that return a tuple or list of length `nout`. Typically, tasks return lazy results with unknown length (`nout=None`). This prevents users from iterating or destructuring results like they could with a normal tuple or list. Using `nout`, a user can iterate and destructure results.
 
@@ -112,11 +112,11 @@ def main() -> str:
     return [name, age, results]
 ```
 
-##### `script`
+### `script`
 
 A bool (default: `False`) that defines whether this task is a [script task](design.md#script-tasks).
 
-##### `version`
+### `version`
 
 An optional string (default: None) defining the version of the task. If defined, the task version helps to determine the hash for a task. When not given, the task hash will depend on the task's source code. Therefore, an explicit version allows the user to safely refactor a task without causing unnecessary re-execution of their pipeline.
 

@@ -1,5 +1,5 @@
 ---
-tocdepth: 2
+tocpdeth: 3
 ---
 
 # Database repo
