@@ -1,3 +1,7 @@
+---
+tocdepth: 2
+---
+
 # Type checking
 
 redun supports type checking workflows using [Python's type hints](https://docs.python.org/3/library/typing.html) and [mypy](https://github.com/python/mypy).

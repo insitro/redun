@@ -1,3 +1,7 @@
+---
+tocdepth: 2
+---
+
 # Configuration
 
 A redun workflow is configured using a configuration file called `.redun/redun.ini` which follows the [INI format](https://en.wikipedia.org/wiki/INI_file)). Here is an example:

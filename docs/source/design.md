@@ -1,3 +1,7 @@
+---
+tocdepth: 2
+---
+
 # Design overview
 
 Here, we describe the high-level design features of redun.

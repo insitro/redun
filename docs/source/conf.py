@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'redun'
+html_title = 'redun'
 copyright = '2020, Matt Rasmussen'
 author = 'Matt Rasmussen'
 

@@ -1,3 +1,7 @@
+---
+tocdepth: 2
+---
+
 # Developer guide
 
 ## Development installation

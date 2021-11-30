@@ -1,3 +1,7 @@
+---
+tocdepth: 2
+---
+
 # Tasks
 
 Tasks are the basic unit of work in a redun workflow. For a review of their basic features see [Tasks as pure functions](design.md#tasks-as-pure-functions), [Task hashing](design.md#task-hashing), and [Task naming](design.md#task-naming).

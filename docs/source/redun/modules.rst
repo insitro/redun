@@ -1,5 +1,5 @@
-redun
-=====
+API docs
+========
 
 .. toctree::
    :maxdepth: 4

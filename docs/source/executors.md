@@ -1,3 +1,7 @@
+---
+tocdepth: 2
+---
+
 # Executors
 
 redun is able to perform task execution across various compute infrastructure using modules called Executors. For example, redun supports executors that execute jobs on threads, processes, and AWS Batch jobs. New kinds of infrastructure can be utilized by registering additional Executor modules.

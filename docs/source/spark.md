@@ -1,3 +1,7 @@
+---
+tocdepth: 2
+---
+
 # Spark
 
 Redun can now launch jobs using [AWS Glue](https://aws.amazon.com/glue) to run

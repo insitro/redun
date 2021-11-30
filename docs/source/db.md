@@ -1,3 +1,7 @@
+---
+tocdepth: 2
+---
+
 # Database repo
 
 redun stores data provenance and cached values in *repositories*, (repos for short), similar to how [git stores commit graphs in repos](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository).
