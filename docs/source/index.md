@@ -70,7 +70,7 @@ CHANGELOG
 :hidden:
 
 redun/modules
-GitHub Repository <https://github.com/insitro/redun>
+GitHub repository <https://github.com/insitro/redun>
 ```
 
 
