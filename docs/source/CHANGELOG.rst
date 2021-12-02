@@ -2,6 +2,20 @@
 Changelog
 *********
 
+0.8.4
+=====
+:Date: December 02, 2021
+
+* Merge remote-tracking branch 'pub/main'
+* Merge pull request #58 from insitro/DE-3970-empty-string-vs-none-namespace
+* Merge pull request #45 from insitro/DE3937-glue-imports
+* `#11` - Fixes for several problems davidek saw
+* `#55` - DE-3967 Fix case where subpromise is resolved first for Promise.all()
+* `#46` - DE-3940 Variadic arguments should contribute to the eval_hash
+* `#48` - Show a better error for workflow script not found
+* `#43` - DE-3900 Handle missing logstream
+* `#5` - Fix typos discovered by codespell
+
 0.8.3
 =====
 :Date: November 10, 2021
