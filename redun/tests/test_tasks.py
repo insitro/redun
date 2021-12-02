@@ -270,6 +270,7 @@ def test_override_source() -> None:
     Task source can be overridden
     """
 
+    # A task's source can be overridden
     @task()
     def task1():
         return 10
@@ -280,14 +281,40 @@ def test_override_source() -> None:
 
     assert task1.source == task2.source == get_func_source(task1.func)
 
-    # Assert task2's overridden source is not altered during unpickling.
+    # A task's source is not pickled
+    assert "source" not in task2.__getstate__()
+
+    # But unpickling will reconstruct task.source from a same-name in-registry task.
     data = pickle_dumps(task2)
     task2b = pickle.loads(data)
-
     # Ensure task deserialized correctly.
-    assert task2b.fullname == task2.fullname
-    assert task2b.func == task2.func
-    assert task2b.source == task2.source == get_func_source(task1.func)
+    assert task2b.source == get_task_registry().get("task2").source
+
+
+def test_hash_uses_source_instead_of_inspect() -> None:
+    """For version=None tasks, the hash uses task.source instead of dynamic inspection."""
+
+    # Use type ignore so we can redefine task3 multiple times
+    @task  # type: ignore
+    def task3():
+        return 30
+
+    hash3a = task3.get_hash()
+
+    @task  # type: ignore
+    def task3():
+        return 30
+
+    hash3b = task3.get_hash()
+
+    @task(override_source="some source")  # type: ignore
+    def task3():
+        return 30
+
+    hash3c = task3.get_hash()
+
+    assert hash3a == hash3b
+    assert hash3a != hash3c
 
 
 def test_task_options() -> None:
