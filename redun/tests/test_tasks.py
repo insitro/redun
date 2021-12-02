@@ -265,6 +265,31 @@ def test_get_func_source() -> None:
     )
 
 
+def test_override_source() -> None:
+    """
+    Task source can be overridden
+    """
+
+    @task()
+    def task1():
+        return 10
+
+    @task(override_source=get_func_source(task1.func))
+    def task2():
+        return 20
+
+    assert task1.source == task2.source == get_func_source(task1.func)
+
+    # Assert task2's overridden source is not altered during unpickling.
+    data = pickle_dumps(task2)
+    task2b = pickle.loads(data)
+
+    # Ensure task deserialized correctly.
+    assert task2b.fullname == task2.fullname
+    assert task2b.func == task2.func
+    assert task2b.source == task2.source == get_func_source(task1.func)
+
+
 def test_task_options() -> None:
     """
     Task options should be available on the task and updates by options().
