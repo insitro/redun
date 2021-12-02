@@ -395,7 +395,7 @@ class Task(Value, Generic[Func]):
         # This key name is mismatched to avoid a trivial schema update.
         self._task_options_override = state.get("task_options", {})
 
-        # Set func from TaskRegistry.
+        # Set func from TaskRegistry (will not be available when dynamically rehydrating tasks).
         registry = get_task_registry()
         _task = registry.get(self.fullname)
         if _task:
@@ -404,6 +404,9 @@ class Task(Value, Generic[Func]):
             self.source = _task.source or get_func_source(self.func)
             self._hash_includes = _task._hash_includes
         else:
+            # For dynamic rehydration, the _task won't be available in the registry at pickling
+            # time. The rehydrator is responsible for setting the func, source and refreshing the
+            # hash.
             self.func = lambda *args, **kwargs: undefined_task(self.fullname, *args, **kwargs)
             self._task_options_base = {}
             self.source = ""
