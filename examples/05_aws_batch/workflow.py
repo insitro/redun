@@ -26,7 +26,7 @@ def task_on_default(x: int) -> list:
     ]
 
 
-@task(executor='batch', memory=.5, cpus=1, batch_tags={"stage": "2", "level": "high"})
+@task(executor='batch', memory=.5, vcpus=1, batch_tags={"stage": "2", "level": "high"})
 def task_on_batch(x: int) -> list:
     # As you can see in the task options, this task will run on the 'batch' executor.
     # We have configured .5Gb of memory and 1 vCPU.
