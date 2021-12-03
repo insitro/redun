@@ -1,2 +1,2 @@
 awscli
--e redun/
+redun/
