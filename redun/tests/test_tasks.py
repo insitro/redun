@@ -275,7 +275,7 @@ def test_override_source() -> None:
     def task1():
         return 10
 
-    @task(override_source=get_func_source(task1.func))
+    @task(source=get_func_source(task1.func))
     def task2():
         return 20
 
@@ -307,7 +307,7 @@ def test_hash_uses_source_instead_of_inspect() -> None:
 
     hash3b = task3.get_hash()
 
-    @task(override_source="some source")  # type: ignore
+    @task(source="some source")  # type: ignore
     def task3():
         return 30
 

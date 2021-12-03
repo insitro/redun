@@ -131,13 +131,13 @@ class Task(Value, Generic[Func]):
         task_options_base: Optional[dict] = None,
         task_options_override: Optional[dict] = None,
         hash_includes: Optional[list] = None,
-        override_source: Optional[str] = None,
+        source: Optional[str] = None,
     ):
         self.name = name or func.__name__
         self.namespace = self._compute_namespace(func, namespace)
         self.func = func
-        if override_source is not None:
-            self.source = override_source
+        if source is not None:
+            self.source = source
         else:
             self.source = get_func_source(func)
 
@@ -327,7 +327,7 @@ class Task(Value, Generic[Func]):
             version=self.version,
             compat=self.compat,
             script=self.script,
-            override_source=self.source,
+            source=self.source,
             task_options_base=self._task_options_base,
             task_options_override=new_task_options_update,
         )
@@ -354,8 +354,10 @@ class Task(Value, Generic[Func]):
             hash_includes_hash = []
 
         if self.version is None:
-            if self.func:
-                source = self.source if self.source else get_func_source(self.func)
+            if self.source:
+                source = self.source
+            elif self.func:
+                source = get_func_source(self.func)
             else:
                 source = ""
             return hash_struct(
@@ -395,7 +397,7 @@ class Task(Value, Generic[Func]):
         # This key name is mismatched to avoid a trivial schema update.
         self._task_options_override = state.get("task_options", {})
 
-        # Set func from TaskRegistry (will not be available when dynamically rehydrating tasks).
+        # Set func from TaskRegistry.
         registry = get_task_registry()
         _task = registry.get(self.fullname)
         if _task:
@@ -404,9 +406,6 @@ class Task(Value, Generic[Func]):
             self.source = _task.source or get_func_source(self.func)
             self._hash_includes = _task._hash_includes
         else:
-            # For dynamic rehydration, the _task won't be available in the registry at pickling
-            # time. The rehydrator is responsible for setting the func, source and refreshing the
-            # hash.
             self.func = lambda *args, **kwargs: undefined_task(self.fullname, *args, **kwargs)
             self._task_options_base = {}
             self.source = ""
@@ -588,7 +587,7 @@ def task(
     compat: Optional[List[str]] = None,
     script: bool = False,
     hash_includes: Optional[list] = None,
-    override_source: Optional[str] = None,
+    source: Optional[str] = None,
     **task_options_base: Any,
 ) -> Callable[[Func], Task[Func]]:
     ...
@@ -603,7 +602,7 @@ def task(
     compat: Optional[List[str]] = None,
     script: bool = False,
     hash_includes: Optional[list] = None,
-    override_source: Optional[str] = None,
+    source: Optional[str] = None,
     **task_options_base: Any,
 ) -> Union[Task[Func], Callable[[Func], Task[Func]]]:
     """
@@ -630,7 +629,7 @@ def task(
         If provided, extra data that should be hashed. That is, extra data that should be
         considered as part of cache invalidation. This list may be reordered without impacting
         the computation. Each list item must be hashable by `redun.value.TypeRegistry.get_hash`.
-    override_source : Optional[str]
+    source : Optional[str]
         If provided, task.source will be set to this string.
     **task_options_base
         Additional options for configuring a task or specifying behaviors of tasks. Since
@@ -655,7 +654,7 @@ def task(
             script=script,
             task_options_base=task_options_base,
             hash_includes=hash_includes,
-            override_source=override_source,
+            source=source,
         )
         get_task_registry().add(_task)
         return _task
