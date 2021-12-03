@@ -131,11 +131,16 @@ class Task(Value, Generic[Func]):
         task_options_base: Optional[dict] = None,
         task_options_override: Optional[dict] = None,
         hash_includes: Optional[list] = None,
+        source: Optional[str] = None,
     ):
         self.name = name or func.__name__
         self.namespace = self._compute_namespace(func, namespace)
         self.func = func
-        self.source = get_func_source(func)
+        if source is not None:
+            self.source = source
+        else:
+            self.source = get_func_source(func)
+
         self.version = version
         self.compat = compat or []
         self.script = script
@@ -322,6 +327,7 @@ class Task(Value, Generic[Func]):
             version=self.version,
             compat=self.compat,
             script=self.script,
+            source=self.source,
             task_options_base=self._task_options_base,
             task_options_override=new_task_options_update,
         )
@@ -348,7 +354,12 @@ class Task(Value, Generic[Func]):
             hash_includes_hash = []
 
         if self.version is None:
-            source = get_func_source(self.func) if self.func else ""
+            if self.source:
+                source = self.source
+            elif self.func:
+                source = get_func_source(self.func)
+            else:
+                source = ""
             return hash_struct(
                 ["Task", self.fullname, "source", source] + hash_includes_hash + task_options_hash
             )
@@ -392,7 +403,7 @@ class Task(Value, Generic[Func]):
         if _task:
             self.func = _task.func
             self._task_options_base = _task._task_options_base
-            self.source = get_func_source(self.func)
+            self.source = _task.source or get_func_source(self.func)
             self._hash_includes = _task._hash_includes
         else:
             self.func = lambda *args, **kwargs: undefined_task(self.fullname, *args, **kwargs)
@@ -576,6 +587,7 @@ def task(
     compat: Optional[List[str]] = None,
     script: bool = False,
     hash_includes: Optional[list] = None,
+    source: Optional[str] = None,
     **task_options_base: Any,
 ) -> Callable[[Func], Task[Func]]:
     ...
@@ -590,6 +602,7 @@ def task(
     compat: Optional[List[str]] = None,
     script: bool = False,
     hash_includes: Optional[list] = None,
+    source: Optional[str] = None,
     **task_options_base: Any,
 ) -> Union[Task[Func], Callable[[Func], Task[Func]]]:
     """
@@ -616,6 +629,8 @@ def task(
         If provided, extra data that should be hashed. That is, extra data that should be
         considered as part of cache invalidation. This list may be reordered without impacting
         the computation. Each list item must be hashable by `redun.value.TypeRegistry.get_hash`.
+    source : Optional[str]
+        If provided, task.source will be set to this string.
     **task_options_base
         Additional options for configuring a task or specifying behaviors of tasks. Since
         these are provided at task construction time (this is typically at Python module-load
@@ -639,6 +654,7 @@ def task(
             script=script,
             task_options_base=task_options_base,
             hash_includes=hash_includes,
+            source=source,
         )
         get_task_registry().add(_task)
         return _task
@@ -897,5 +913,5 @@ class TaskRegistry:
         return iter(self._tasks.values())
 
 
-# Global signleton task registry.
+# Global singleton task registry.
 _task_registry = TaskRegistry()
