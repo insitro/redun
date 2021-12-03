@@ -276,6 +276,23 @@ def test_all() -> None:
     mock.assert_called_with([1, 2])
 
 
+def test_all_first() -> None:
+    """
+    Promise.all() should resolve even when all child promises resolve first.
+    """
+    promise1: Promise[int] = Promise()
+    promise2: Promise[int] = Promise()
+    promise1.do_resolve(1)
+    promise2.do_resolve(2)
+
+    promises = Promise.all([promise1, promise2])
+
+    mock = Mock()
+    promises.then(mock)
+
+    mock.assert_called_with([1, 2])
+
+
 def test_all_reject() -> None:
     """
     Promise.all() should reject when any child promise rejects.
@@ -291,4 +308,22 @@ def test_all_reject() -> None:
     error = ValueError("boom")
     promise1.do_resolve(1)
     promise2.do_reject(error)
+    mock.assert_called_with(error)
+
+
+def test_all_reject_first() -> None:
+    """
+    Promise.all() should reject even when a child promise rejects first.
+    """
+    error = ValueError("boom")
+    promise1: Promise[int] = Promise()
+    promise2: Promise[int] = Promise()
+    promise1.do_resolve(1)
+    promise2.do_reject(error)
+
+    promises = Promise.all([promise1, promise2])
+
+    mock = Mock()
+    promises.then(None, mock)
+
     mock.assert_called_with(error)

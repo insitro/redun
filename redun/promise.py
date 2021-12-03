@@ -1,4 +1,4 @@
-from typing import Callable, Generic, Iterable, List, Optional, TypeVar, cast
+from typing import Callable, Generic, List, Optional, Sequence, TypeVar, cast
 
 S = TypeVar("S")
 T = TypeVar("T")
@@ -150,7 +150,7 @@ class Promise(Generic[T]):
         return self.then(None, rejector)
 
     @classmethod
-    def all(cls, subpromises: Iterable["Promise[T]"]) -> "Promise[List[T]]":
+    def all(cls, subpromises: Sequence["Promise[T]"]) -> "Promise[List[T]]":
         """
         Return a promise that waits for all subpromises to resolve.
         """
@@ -177,8 +177,8 @@ class Promise(Generic[T]):
             # This function gives us a closure for i.
             return lambda result: then(i, result)
 
+        results = [None] * len(subpromises)
         for i, subpromise in enumerate(subpromises):
-            results.append(None)
             subpromise.then(make_then(i), fail)
 
         if len(results) == 0:

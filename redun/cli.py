@@ -722,8 +722,8 @@ def import_script(filename_or_module: str, add_cwd: bool = True) -> ModuleType:
 
     try:
         module = importlib.import_module(module_name)
-    except ModuleNotFoundError as e:
-        raise RedunClientError(f"Failed to run workflow from Python script file named {filename_or_module}.")
+    except ModuleNotFoundError:
+        raise RedunClientError(f"Cannot find Python script file or module: {filename_or_module}")
     return module
 
 

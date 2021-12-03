@@ -741,7 +741,7 @@ list_files_result <-- <********> list_files()
 @use_tempdir
 def test_default_argument_names(scheduler: Scheduler, backend: RedunBackendDb) -> None:
     """
-    Dataflow should handle tracing subvalues that route in parallel.
+    Dataflow should use the right argument names for parameters with default values.
     """
 
     @task()
