@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     from awsglue.job import Job as GlueJob
     from pyspark.context import SparkContext
     from pyspark.sql import DataFrame, SparkSession
-    from pyspark.sql.types import DataType
+    from pyspark.sql.types import DataType  # noqa: F401
 
 
 def setup_glue_job(job_name: str, job_args: List[str]) -> "GlueJob":
@@ -133,7 +133,7 @@ def load_datacatalog_spark_dataset(
     return dataset.toDF()
 
 
-def sql_query(dataset: "DataFrame", query: str, dataset_alias: str = "dataset"):
+def sql_query(dataset: "DataFrame", query: str, dataset_alias: str = "dataset") -> "DataFrame":
     """
     Runs a SQL-style query on a Spark DataFrame.
 
