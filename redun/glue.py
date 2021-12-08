@@ -145,7 +145,7 @@ def sql_query(dataset: "DataFrame", query: str, dataset_alias: str = "dataset") 
     query : str
         SQL query string.
 
-    alias : str
+    dataset_alias : str
         Name for dataset in SQL context. Defaults to "dataset".
         The SQL query should reference the alias like `"SELECT * FROM {dataset_alias}"`
     """
