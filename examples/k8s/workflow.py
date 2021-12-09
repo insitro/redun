@@ -7,12 +7,12 @@ from redun import File, script, task
 
 redun_namespace = "redun.examples.k8s"
 
-#@task(executor='k8s')
-# def task_on_k8s() -> list:
-#      return [
-#         'task_on_k8s',
-#         subprocess.check_output(['uname', '-a']),
-#     ]
+@task(executor='k8s')
+def task_on_k8s() -> list:
+     return [
+        'task_on_k8s',
+        subprocess.check_output(['uname', '-a']),
+    ]
 
 
 @task(executor='batch')
@@ -30,6 +30,6 @@ def main() -> list:
     # results will be combined into one nested list as shown below.
     return [
         'main',
-        #task_on_k8s(),
-        task_on_batch(),
+        task_on_k8s(),
+        #task_on_batch(),
     ]
