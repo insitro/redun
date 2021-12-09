@@ -5,6 +5,7 @@ import yaml
 
 from kubernetes import client, config
 
+
 def get_k8s_client():
     config.load_kube_config()
     batch_v1 = client.BatchV1Api()
@@ -38,6 +39,19 @@ def create_job(api_instance, job):
         body=job,
         namespace="default")
     print("Job created. status='%s'" % str(api_response.status))
+    return api_response
+
+def get_job_status(api_instance, job):
+    job_completed = False
+    while not job_completed:
+        api_response = api_instance.read_namespaced_job_status(
+            name=job.metadata.name,
+            namespace="default")
+        if api_response.status.succeeded is not None or \
+                api_response.status.failed is not None:
+            job_completed = True
+        sleep(1)
+        print("Job status='%s'" % str(api_response.status))
 
 
 def main():
@@ -51,6 +65,7 @@ def main():
     job = create_job_object("redunjob", "242314368270.dkr.ecr.us-west-2.amazonaws.com/bioformats2raw", ["/opt/bioformats2raw/bin/bioformats2raw"])
 
     create_job(batch_v1, job)
-
+    get_job_status(batch_v1, job)
+    
 if __name__ == '__main__':
     main()
