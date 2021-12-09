@@ -1,17 +1,14 @@
 black==20.8b1
 flake8
 freezegun
-furo
 isort==5.7.0
 moto==1.3.16
 mypy==0.790
-myst-parser
 numpydoc==1.1.0
 pandas
 pdbpp
 pyarrow
 pyspark==3.1.1
 pytest==6.2.5
-sphinx
 tox
 vcrpy==4.1.1
