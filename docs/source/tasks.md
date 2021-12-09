@@ -4,13 +4,13 @@ tocpdeth: 3
 
 # Tasks
 
-Tasks are the basic unit of work in a redun workflow. For a review of their basic features see [Tasks as pure functions](design.md#tasks-as-pure-functions), [Task hashing](design.md#task-hashing), and [Task naming](design.md#task-naming).
+Tasks are the basic unit of work in a redun workflow. For a review of their basic features see [Tasks as pure functions](design.html#tasks-as-pure-functions), [Task hashing](design.html#task-hashing), and [Task naming](design.html#task-naming).
 
 ## Task options
 
 Tasks can be configured in many ways to adjust how they are executed and cached. For example, the [`executor`](#executor) task option defines which [executor](executors.md) system (local, AWS Batch, etc) the task should execute on, and the [`cache`](#cache) task option defines whether the cache can be used to fast forward through the task.
 
-The most common way to configure a task is with the [`@task`](redun/redun.md#redun.task.task) decorator. For example, this task runs on AWS Batch with 4Gb of memory and without using caching:
+The most common way to configure a task is with the [`@task`](redun/redun.html#redun.task.task) decorator. For example, this task runs on AWS Batch with 4Gb of memory and without using caching:
 
 ```py
 @task(executor="batch", memory=4, cache=False)
@@ -23,7 +23,7 @@ def process_dataset(dataset: list, col: str, value: Any) -> list:
     return dataset2
 ```
 
-Tasks options can also be overridden at call-time using [`Task.options()`](redun/redun.md#redun.task.Task). For example, we could dynamically set the memory required for a AWS Batch task based on the dataset size.
+Tasks options can also be overridden at call-time using [`Task.options()`](redun/redun.html#redun.task.Task). For example, we could dynamically set the memory required for a AWS Batch task based on the dataset size.
 
 ```py
 @task()
@@ -36,7 +36,7 @@ def main(input: File) -> list:
     return dataset2
 ```
 
-Lastly, several task options, such as [`image`](config.md#image) or [`memory`](config.md#memory), can be inherited by the [executor configuration](config.md#executors). 
+Lastly, several task options, such as [`image`](config.html#image) or [`memory`](config.html#memory), can be inherited by the [executor configuration](config.html#executors). 
 
 ### `cache`
 
@@ -72,7 +72,7 @@ A list of data to include in the task hash. Changing the hash will invalidate ca
 
 ### `limits`
 
-A list or dict of resources needed for this task to execute. See the [Limits](config.md#limits) feature for more information.
+A list or dict of resources needed for this task to execute. See the [Limits](config.html#limits) feature for more information.
 
 ### `load_module`
 
@@ -82,13 +82,13 @@ The name of a python module that can be loaded to recreate this task. For exampl
 
 A string (default: `func.__name__`) naming the task. Task name must use only alphanumeric characters and underscore '_'.
 
-Every task in a workflow needs a unique name. By default this is automatically inferred from the function's name (e.g. `func.__name__`). However, the user may use the `name` task option to explicitly set a task's name. See [Task naming](design.md#task-naming) for more.
+Every task in a workflow needs a unique name. By default this is automatically inferred from the function's name (e.g. `func.__name__`). However, the user may use the `name` task option to explicitly set a task's name. See [Task naming](design.html#task-naming) for more.
 
 ### `namespace`
 
 A string defining the namespace for a task. Task namespace must use only alphanumeric characters, underscore '_', and dot '.', and may not start with a dot.
 
-Ideally, tasks should be uniquely identified across workflows by their fullname, which is a combination of their namespace and name. Typically, the namespace is set for the entire python module using the `redun_namespace` global variable (See [Task naming](design.md#task-naming) for more). However, the namespace can also be configured explicitly using this task option.
+Ideally, tasks should be uniquely identified across workflows by their fullname, which is a combination of their namespace and name. Typically, the namespace is set for the entire python module using the `redun_namespace` global variable (See [Task naming](design.html#task-naming) for more). However, the namespace can also be configured explicitly using this task option.
 
 ### `nout`
 
@@ -114,10 +114,10 @@ def main() -> str:
 
 ### `script`
 
-A bool (default: `False`) that defines whether this task is a [script task](design.md#script-tasks).
+A bool (default: `False`) that defines whether this task is a [script task](design.html#script-tasks).
 
 ### `version`
 
 An optional string (default: None) defining the version of the task. If defined, the task version helps to determine the hash for a task. When not given, the task hash will depend on the task's source code. Therefore, an explicit version allows the user to safely refactor a task without causing unnecessary re-execution of their pipeline.
 
-See [Task hashing](design.md#task-hashing) for more.
+See [Task hashing](design.html#task-hashing) for more.
