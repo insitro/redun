@@ -49,7 +49,7 @@ A string that specifies the location of a user-defined function for setting up t
 - `{file_or_module}` should be a filename relative to the `redun.ini` file (e.g. `../workflow.py`), or a python module using dot-syntax (e.g. `workflow_lib.utils.scheduler`).
 - `{function_name}` should the name of a function, typically `setup_scheduler`.
 
-The user function `setup_scheduler()` should take as its first argument `config` (see [Config](redun/redun.html#redun.config.Config)) and it should return an instantiated `scheduler` (see [Scheduler](redun/redun.html#redun.scheduler.Scheduler)).
+The user function `setup_scheduler()` should take as its first argument `config` (see [Config](redun/redun.md#redun.config.Config)) and it should return an instantiated `scheduler` (see [Scheduler](redun/redun.md#redun.scheduler.Scheduler)).
 
 ```py
 from redun.config import config
@@ -209,7 +209,7 @@ A string that specifies the executor module (e.g. `local`, `aws_batch`, etc) to 
 
 #### Local executor
 
-The [Local executor](executors.html#local-executor) (`type = local`) executes tasks on the local machine using either multiple threads or processes. 
+The [Local executor](executors.md#local-executor) (`type = local`) executes tasks on the local machine using either multiple threads or processes. 
 
 #### `mode`
 
@@ -227,7 +227,7 @@ A string (default: `fork`) that specifies the [start method](https://docs.python
 
 #### AWS Batch executor
 
-The [AWS Batch executor](executors.html#aws-batch-executor) (`type = aws_batch`) executes tasks on the AWS Batch compute service.
+The [AWS Batch executor](executors.md#aws-batch-executor) (`type = aws_batch`) executes tasks on the AWS Batch compute service.
 
 #### `image`
 
@@ -239,7 +239,7 @@ A string that specifies the default AWS Batch queue to use for submitting jobs. 
 
 #### `s3_scratch`
 
-A string that specifies the [S3 scratch space](executors.html#s3-scratch-space) used to communicate with AWS Batch jobs.
+A string that specifies the [S3 scratch space](executors.md#s3-scratch-space) used to communicate with AWS Batch jobs.
 
 #### `aws_region`
 
@@ -271,19 +271,19 @@ A string (default: `batch-job`) that specifies the prefix to use for AWS Batch j
 
 #### `code_package`
 
-A bool (default: True) that specifies whether to perform [code packaging](executors.html#code-packaging).
+A bool (default: True) that specifies whether to perform [code packaging](executors.md#code-packaging).
 
 #### `code_includes`
 
-A string (default: `**/*.py`) that specifies a pattern for which files should be included in a [code package](executors.html#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
+A string (default: `**/*.py`) that specifies a pattern for which files should be included in a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 
 #### `code_excludes`
 
-A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.html#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
+A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 
 #### `debug`
 
-A bool (default: False) that specifies whether to run the [Docker container locally](executors.html#local-debugging).
+A bool (default: False) that specifies whether to run the [Docker container locally](executors.md#local-debugging).
 
 #### `job_monitor_interval`
 
@@ -325,11 +325,11 @@ A bool (default: True) that specifies whether redun should add default tags to a
 
 #### AWS Glue executor
 
-The [AWS Glue executor](executors.html#aws-glue-executor) (`type = aws_glue`) executes tasks on the AWS Glue compute service.
+The [AWS Glue executor](executors.md#aws-glue-executor) (`type = aws_glue`) executes tasks on the AWS Glue compute service.
 
 #### `s3_scratch`
 
-A string that specifies the [S3 scratch space](executors.html#s3-scratch-space) used to communicate with AWS Glue jobs.
+A string that specifies the [S3 scratch space](executors.md#s3-scratch-space) used to communicate with AWS Glue jobs.
 
 #### `workers`
 
@@ -382,13 +382,13 @@ cost overruns.
 
 #### `code_package`
 
-A bool (default: True) that specifies whether to perform [code packaging](executors.html#code-packaging).
+A bool (default: True) that specifies whether to perform [code packaging](executors.md#code-packaging).
 
 #### `code_includes`
 
-A string (default: `**/*.py`) that specifies a pattern for which files should be included in a [code package](executors.html#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
+A string (default: `**/*.py`) that specifies a pattern for which files should be included in a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 
 #### `code_excludes`
 
-A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.html#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
+A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 

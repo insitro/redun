@@ -392,7 +392,7 @@ October 14th, 2020
 ## 0.2.4
 October 6, 2020
 
-* Encourage defining task namespaces by raising a warning. The warning can be ignored using a [configuration option](config.html#ignore-warnings).
+* Encourage defining task namespaces by raising a warning. The warning can be ignored using a [configuration option](config.md#ignore-warnings).
 
 
 ## 0.2.3

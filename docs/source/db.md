@@ -68,7 +68,7 @@ Downgrades can be done with `redun db downgrade <version>`.
 For the most common use case, the redun CLI uses a local sqlite database file (e.g. `.redun/redun.db`).
 Since such a database is used by only one client, it is typically safe to automatically upgrade the database if needed.
 Such an upgrade will happen automatically on the next `redun run ...` command.
-If you would like to disable automatic upgrades, it can be turned off with the [`automigrate`](config.html#automigrate) configuration option.
+If you would like to disable automatic upgrades, it can be turned off with the [`automigrate`](config.md#automigrate) configuration option.
 Automigration is not used for non-sqlite databases, since a centrally used database will likely need more coordination to not disrupt clients.
 
 ## Optional value store
