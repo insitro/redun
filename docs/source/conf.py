@@ -29,7 +29,6 @@ author = 'Matt Rasmussen'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'myst_parser',
 ]
@@ -45,20 +44,6 @@ exclude_patterns = []
 
 source_suffix = ['.rst', '.md']
 
-
-'''
-from recommonmark.transform import AutoStructify
-
-github_doc_root = 'https://github.com/rtfd/recommonmark/tree/master/doc/'
-def setup(app):
-    app.add_config_value('recommonmark_config', {
-            'url_resolver': lambda url: github_doc_root + url,
-            'auto_toc_tree_section': 'Contents',
-            }, True)
-    app.add_transform(AutoStructify)
-'''
-
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -70,5 +55,5 @@ html_theme = 'furo'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = []
 html_extra_path = ['redun-call-graph.svg']

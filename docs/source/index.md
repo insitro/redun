@@ -69,7 +69,6 @@ CHANGELOG
 :caption: Reference
 :hidden:
 
-redun/modules
 GitHub repository <https://github.com/insitro/redun>
 ```
 
