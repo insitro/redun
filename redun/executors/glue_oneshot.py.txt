@@ -14,7 +14,6 @@ from redun.utils import pickle_dump
 ARGS = [
     "JOB_NAME",
     "check-version",
-    "code",
     "error",
     "input",
     "job-hash",
@@ -36,14 +35,6 @@ if __name__ == "__main__":
                 version=redun.__version__, required_version=args["check_version"]
             )
         )
-
-    # Set up job
-    if args["code"]:
-        code_file = BaseFile(args["code"])
-        extract_tar(code_file, ".")
-
-    # TODO: Setup import paths
-    # or detect imports that aren't allowed? eurgh
 
     # Get main task
     import_script(args["script"])
