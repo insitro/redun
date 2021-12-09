@@ -18,7 +18,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, cast
 from urllib.error import URLError
 from urllib.request import urlopen
 
-from redun.executors import k8s_utils, s3_utils
+from redun.executors import k8s_utils, s3_utils, aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.file import File
 from redun.job_array import AWS_ARRAY_VAR, JobArrayer
@@ -60,6 +60,7 @@ def k8s_submit(
     batch_tags: Optional[Dict[str, str]] = None,
     propagate_tags: bool = True,
 ) -> Dict[str, Any]:
+    print("====== k8s submit")
     # batch_run = batch_client.submit_job(
     #     jobName=job_name,
     #     jobQueue=queue,
@@ -167,7 +168,7 @@ def run_docker(
 
 def get_k8s_job_name(prefix: str, job_hash: str, array: bool = False) -> str:
     """
-    Return a AWS Batch Job name by either job or job hash.
+    Return a K8S Job name by either job or job hash.
     """
     return "{}-{}{}".format(prefix, job_hash, f"-{ARRAY_JOB_SUFFIX}" if array else "")
 
@@ -175,7 +176,7 @@ def get_k8s_job_name(prefix: str, job_hash: str, array: bool = False) -> str:
 def get_hash_from_job_name(job_name: str) -> Optional[str]:
     """
     Returns the job/task eval_hash that corresponds with a particular job name
-    on AWS Batch.
+    on K8S.
     """
     # Remove array job suffix, if present.
     array_suffix = "-" + ARRAY_JOB_SUFFIX
@@ -200,7 +201,7 @@ def get_hash_from_job_name(job_name: str) -> Optional[str]:
 
 def get_k8s_job_options(job_options: dict) -> dict:
     """
-    Returns AWS Batch-specific job options from general job options.
+    Returns K8S-specific job options from general job options.
     """
     keys = [
         "vcpus",
@@ -240,8 +241,9 @@ def submit_task(
     code_file: Optional[File] = None,
 ) -> Dict[str, Any]:
     """
-    Submit a redun Task to AWS Batch or Docker (debug=True).
+    Submit a redun Task to K8S or Docker (debug=True).
     """
+    print("======= SUBMIT TASK")
     if array_size:
         # Output_path will contain a pickled list of actual output paths, etc.
         # Want files that won't get clobbered when jobs actually run
@@ -259,21 +261,21 @@ def submit_task(
         input_path = None
         output_path = None
         error_path = None
-        # input_path = aws_utils.get_job_scratch_file(
-        #     s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT
-        # )
-        # output_path = aws_utils.get_job_scratch_file(
-        #     s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
-        # )
-        # error_path = aws_utils.get_job_scratch_file(
-        #     s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR
-        # )
+        input_path = aws_utils.get_job_scratch_file(
+            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT
+        )
+        output_path = aws_utils.get_job_scratch_file(
+            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
+        )
+        error_path = aws_utils.get_job_scratch_file(
+            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR
+        )
 
-        # # Serialize arguments to input file.
-        # # Array jobs set this up earlier, in `_submit_array_job`
-        # input_file = File(input_path)
-        # with input_file.open("wb") as out:
-        #     pickle_dump([args, kwargs], out)
+        # Serialize arguments to input file.
+        # Array jobs set this up earlier, in `_submit_array_job`
+        input_file = File(input_path)
+        with input_file.open("wb") as out:
+            pickle_dump([args, kwargs], out)
 
     # Determine additional python import paths.
     import_args = []
@@ -354,6 +356,7 @@ def submit_command(
     """
     Submit a shell command to K8S or Docker (debug=True).
     """
+    print("====== submit command")
     input_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT)
     output_path = aws_utils.get_job_scratch_file(
         s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
@@ -451,7 +454,7 @@ def parse_task_error(
                 error = AWSBatchJobTimeoutError(BATCH_JOB_TIMEOUT_ERROR)
             else:
                 error = AWSBatchError(
-                    "Exception and traceback could not be found for AWS Batch Job."
+                    "Exception and traceback could not be found for K8S Job."
                 )
             error_traceback = Traceback.from_error(error)
     else:
@@ -459,7 +462,7 @@ def parse_task_error(
         if error_file.exists():
             error = ScriptError(cast(bytes, error_file.read("rb")))
         else:
-            error = AWSBatchError("stderr could not be found for AWS Batch Job.")
+            error = AWSBatchError("stderr could not be found for K8S Job.")
         error_traceback = Traceback.from_error(error)
 
     return error, error_traceback
@@ -471,7 +474,7 @@ def parse_task_logs(
     required: bool = True,
 ) -> Iterator[str]:
     """
-    Iterates through most recent CloudWatch logs of an AWS Batch Job.
+    Iterates through most recent CloudWatch logs of an K8S Job.
     """
     lines_iter = iter_batch_job_log_lines(
         batch_job_id, reverse=True, required=required,
@@ -487,9 +490,10 @@ def aws_describe_jobs(
     job_ids: List[str], chunk_size: int = 100, 
 ) -> Iterator[dict]:
     """
-    Returns AWS Batch Job descriptions from the AWS API.
+    Returns K8S Job descriptions from the AWS API.
     """
-    # The AWS Batch API can only query up to 100 jobs at a time.
+    print("====== aws_describe_jobs")
+    # The K8S API can only query up to 100 jobs at a time.
     batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
     for i in range(0, len(job_ids), chunk_size):
         chunk_job_ids = job_ids[i : i + chunk_size]
@@ -502,9 +506,9 @@ def iter_k8s_job_status(
     job_ids: List[str], pending_truncate: int = 10, 
 ) -> Iterator[dict]:
     """
-    Yields AWS Batch jobs statuses.
+    Yields K8S jobs statuses.
 
-    If pending_truncate is used (> 0) then rely on AWS Batch's behavior of running
+    If pending_truncate is used (> 0) then rely on K8S's behavior of running
     jobs approximately in order. This allows us to truncate the polling of jobs
     once we see a sufficient number of pending jobs.
 
@@ -518,6 +522,7 @@ def iter_k8s_job_status(
     aws_region : str
        AWS region that jobs are running in.
     """
+    print("====== iter_k8s_job_status")
     pending_run = 0
 
     # for job in aws_describe_jobs(job_ids, aws_region=aws_region):
@@ -597,7 +602,7 @@ def iter_k8s_job_logs(
     required: bool = True,
 ) -> Iterator[dict]:
     """
-    Iterate through the log events of an AWS Batch job.
+    Iterate through the log events of an K8S job.
     """
     raise StopIteration
 
@@ -627,7 +632,7 @@ def iter_batch_job_log_lines(
     required: bool = True,
 ) -> Iterator[str]:
     """
-    Iterate through the log lines of an AWS Batch job.
+    Iterate through the log lines of an K8S job.
     """
     events = iter_batch_job_logs(
         job_id,
@@ -680,7 +685,7 @@ class AWSBatchError(Exception):
 
 class AWSBatchJobTimeoutError(Exception):
     """
-    Custom exception to raise when AWS Batch Jobs are killed due to timeout.
+    Custom exception to raise when K8S Jobs are killed due to timeout.
     """
 
     pass
@@ -737,6 +742,8 @@ class K8SExecutor(Executor):
         self._aws_user: Optional[str] = None
 
     def gather_inflight_jobs(self) -> None:
+        print("====== gather_inflight_jobs")
+
         running_arrays: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
 
         # Get all running jobs by name
@@ -747,6 +754,7 @@ class K8SExecutor(Executor):
             print("job_name: ", job_name)
             print("job_id: ", job_id)
             # Single jobs can be simply added to dict of pre-existing jobs.
+            import pdb; pdb.set_trace()
             if not is_array_job_name(job_name):
                 job_hash = job.metadata.uid
                 self.preexisting_k8s_jobs[job_hash] = job_hash
@@ -787,6 +795,7 @@ class K8SExecutor(Executor):
         """
         Start monitoring thread.
         """
+        print("====== _start")
         if not self.is_running:
             # self._aws_user = aws_utils.get_aws_user()
 
@@ -803,20 +812,20 @@ class K8SExecutor(Executor):
 
     def _monitor(self) -> None:
         """
-        Thread for monitoring running AWS Batch jobs.
+        Thread for monitoring running K8S jobs.
 
-        We use the following process for monitoring AWS Batch jobs in order to
+        We use the following process for monitoring K8S jobs in order to
         achieve timely updates and avoid excessive API calls which can cause
         API throttling and slow downs.
 
         - We use the `describe_jobs()` API call on specific Batch job ids in order
-          to avoid processing status of unrelated jobs on the same AWS Batch queue.
+          to avoid processing status of unrelated jobs on the same K8S queue.
         - We call `describe_jobs()` with 100 job ids at a time to reduce the number
           of API calls. 100 job ids is the maximum supported amount by
           `describe_jobs()`.
         - We do only one describe_jobs() API call per monitor loop, and then
           sleep `self.interval` seconds.
-        - AWS Batch runs jobs in approximately the order submitted. So if we
+        - K8S runs jobs in approximately the order submitted. So if we
           monitor job statuses in submission order, a run of PENDING statuses
           (`pending_truncate`) suggests the rest of the jobs will be PENDING.
           Therefore, we can truncate our polling and restart at the beginning
@@ -827,6 +836,7 @@ class K8SExecutor(Executor):
         we stay under API rate limits, and we keep the compute in this
         thread low so as to not interfere with new submissions.
         """
+        print("====== _start")
         assert self.scheduler
         chunk_size = 100
         pending_truncate = 10
@@ -914,8 +924,9 @@ class K8SExecutor(Executor):
 
     def _process_job_status(self, job: dict) -> None:
         """
-        Process AWS Batch job statuses.
+        Process K8S job statuses.
         """
+        print("======== _process_job_stats")
         assert self.scheduler
         job_status: Optional[str] = None
 
@@ -927,7 +938,7 @@ class K8SExecutor(Executor):
             can_override, container_reason = self._can_override_failed(job)
             if can_override:
                 job_status = SUCCEEDED
-                self.scheduler.log("NOTE: Overriding AWS Batch error: {}".format(container_reason))
+                self.scheduler.log("NOTE: Overriding K8S error: {}".format(container_reason))
             else:
                 job_status = FAILED
         else:
@@ -963,7 +974,7 @@ class K8SExecutor(Executor):
                 self.s3_scratch_prefix, redun_job, k8s_job_metadata=job
             )
             if not self.debug:
-                logs = [f"*** CloudWatch logs for AWS Batch job {job['jobId']}:\n"]
+                logs = [f"*** CloudWatch logs for K8S job {job['jobId']}:\n"]
                 if container_reason:
                     logs.append(f"container.reason: {container_reason}\n")
 
@@ -1052,12 +1063,13 @@ class K8SExecutor(Executor):
         """
         Submit Job to executor.
         """
+        print("======== _submit")
         assert self.scheduler
         assert job.task
 
         # If we are not in debug mode and this is the first submission gather inflight jobs. In
-        # debug mode, we are running on docker locally so there is no need to hit the AWS Batch API to
-        # gather jobs as we are not going to run on AWS Batch. We also check is_running here as a way
+        # debug mode, we are running on docker locally so there is no need to hit the K8S API to
+        # gather jobs as we are not going to run on K8S. We also check is_running here as a way
         # of determining whether this is the first submission or not. If we are already running,
         # then we know we have already had jobs submitted and done the inflight check so no
         # reason to do that again here.
@@ -1073,14 +1085,14 @@ class K8SExecutor(Executor):
         #     assert isinstance(code_package, dict)
         #     self.code_file = aws_utils.package_code(self.s3_scratch_prefix, code_package)
 
-        # job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
-        # job_type = "AWS Batch job" if not self.debug else "Docker container"
+        job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
+        job_type = "K8S job" if not self.debug else "Docker container"
 
         # Determine job options.
         task_options = self._get_job_options(job)
         use_cache = task_options.get("cache", True)
 
-        # # Determine if we can reunite with a previous AWS Batch output or job.
+        # # Determine if we can reunite with a previous K8S output or job.
         k8s_job_id: Optional[str] = None
         # if use_cache and job.eval_hash in self.preexisting_k8s_jobs:
         #     k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
@@ -1118,6 +1130,7 @@ class K8SExecutor(Executor):
         self, jobs: List[Job], all_args: List[Tuple], all_kwargs: List[Dict]
     ) -> str:
         """Submits an array job, returning job name uuid"""
+        print("====== _submit_array_job")
         array_size = len(jobs)
         assert array_size == len(all_args) == len(all_kwargs)
 
@@ -1133,7 +1146,7 @@ class K8SExecutor(Executor):
         # Generate a unique name for job with no '-' to simplify job name parsing.
         array_uuid = str(uuid.uuid4()).replace("-", "")
 
-        job_type = "AWS Batch job" if not self.debug else "Docker container"
+        job_type = "K8S job" if not self.debug else "Docker container"
 
         # Setup input, output and error path files.
         # Input file is a pickled list of args, and kwargs, for each child job.
@@ -1225,14 +1238,15 @@ class K8SExecutor(Executor):
         Actually submits a job. Caching detects if it should be part
         of an array job
         """
+        print("====== _submit_single_job")
         assert job.task
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
 
 
         queue = None
-        #job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
-        #job_type = "AWS Batch job" if not self.debug else "Docker container"
+        job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
+        #job_type = "K8S job" if not self.debug else "Docker container"
 
         # Submit a new Batch job.
         if not job.task.script:
@@ -1261,8 +1275,7 @@ class K8SExecutor(Executor):
             )
 
         job_type = "k8s"
-        job_id = k8s_resp.metadata.name
-        job_dir = None
+        job_id = k8s_resp.metadata.uid
         job_name = k8s_resp.metadata.name
         retries = None # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
         self.log(
@@ -1287,19 +1300,21 @@ class K8SExecutor(Executor):
         """
         Submit Job to executor.
         """
+        print("====== submit")
         return self._submit(job, args, kwargs)
 
     def submit_script(self, job: Job, args: Tuple, kwargs: dict) -> None:
         """
         Submit Job for script task to executor.
         """
+        print("====== submit script")
         return self._submit(job, args, kwargs)
 
     def get_jobs(self, statuses: Optional[List[str]] = None) -> Iterator[dict]:
         """
-        Returns AWS Batch Job statuses from the AWS API.
+        Returns K8S Job statuses from the AWS API.
         """
-
+        print("==== get jobs")
         # batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
         # paginator = batch_client.get_paginator("list_jobs")
 
@@ -1315,7 +1330,6 @@ class K8SExecutor(Executor):
         #                 yield job
 
         api_instance = k8s_utils.get_k8s_client()
-        import pdb; pdb.set_trace()
         api_response = api_instance.list_job_for_all_namespaces(watch=False)
         return api_response
         
@@ -1323,6 +1337,7 @@ class K8SExecutor(Executor):
     def get_array_child_jobs(
         self, job_id: str, statuses: List[str] = [] #BATCH_JOB_STATUSES.inflight
     ) -> List[Dict[str, Any]]:
+        print("====== get_array_)child_jobs")
         #batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
         #paginator = batch_client.get_paginator("list_jobs")
 
@@ -1343,7 +1358,7 @@ class K8SExecutor(Executor):
         self, job_ids: Iterable[str], reason: str = "Terminated by user"
     ) -> Iterator[dict]:
         """
-        Kill AWS Batch Jobs.
+        Kill K8S Jobs.
         """
         batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
 
