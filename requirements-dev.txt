@@ -12,7 +12,6 @@ pdbpp
 pyarrow
 pyspark==3.1.1
 pytest==6.2.5
-recommonmark
 sphinx
 tox
 vcrpy==4.1.1
