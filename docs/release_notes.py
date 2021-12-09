@@ -20,10 +20,9 @@ def main():
     parser.add_argument("new_release_tag")
     args = parser.parse_args()
 
-    print(args.new_release_tag)
-    print("=" * len(args.new_release_tag))
+    print(f"## {args.new_release_tag}")
     today = date.today().strftime("%B %d, %Y")
-    print(f":Date: {today}\n")
+    print(f"{today}\n")
 
     merge_base = subprocess.check_output(
         f"git merge-base {args.current_release_tag} origin/main", shell=True
