@@ -12,7 +12,7 @@ $(VENV_ACTIVATE):
 	test -f $@ || python3 -m venv $(VENV_DIR)
 	$(WITH_VENV) pip install --upgrade pip
 	$(WITH_VENV) pip install -e .[postgres]
-	$(WITH_VENV) pip install -r requirements-dev.txt
+	$(WITH_VENV) pip install -r requirements-dev.txt -r docs/requirements.txt
 
 
 .PHONY: setup

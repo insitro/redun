@@ -1,3 +1,7 @@
+---
+tocpdeth: 3
+---
+
 # Spark
 
 Redun can now launch jobs using [AWS Glue](https://aws.amazon.com/glue) to run
@@ -101,7 +105,7 @@ def do_stuff():
 ### Accessing Spark contexts
 
 The `redun.glue` module contains helper functions to access the Spark Session and Context objects:
-`get_spark_context()` and `get_spark_session()`. [Full Documentation](redun/redun.html#module-redun.glue)
+`get_spark_context()` and `get_spark_session()`. [Full Documentation](redun/redun.md#module-redun.glue)
 
 ### User-defined functions
 
