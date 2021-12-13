@@ -73,7 +73,7 @@ def k8s_submit(
     #     body=job,
     #     namespace="default")
     api_instance = k8s_utils.get_k8s_client()
-    k8s_job = k8s_utils.create_job_object("redunjob", "242314368270.dkr.ecr.us-west-2.amazonaws.com/bioformats2raw", ["/opt/bioformats2raw/bin/bioformats2raw"])
+    k8s_job = k8s_utils.create_job_object(job_name, "242314368270.dkr.ecr.us-west-2.amazonaws.com/bioformats2raw", ["/opt/bioformats2raw/bin/bioformats2raw"])
     api_response = k8s_utils.create_job(api_instance, k8s_job)
     print("Job created. status='%s'" % str(api_response.status))
 
@@ -486,20 +486,29 @@ def parse_task_logs(
     yield from lines
 
 
-def aws_describe_jobs(
+def k8s_describe_jobs(
     job_ids: List[str], chunk_size: int = 100, 
 ) -> Iterator[dict]:
     """
     Returns K8S Job descriptions from the AWS API.
     """
     print("====== aws_describe_jobs")
+    api_instance = k8s_utils.get_k8s_client()
+    for job_id in job_ids:
+        api_response = api_instance.read_namespaced_job_status(
+                name=job_id,
+            namespace="default")
+        if api_response.status.succeeded is not None or \
+                api_response.status.failed is not None:
+            job_completed = True
+
     # The K8S API can only query up to 100 jobs at a time.
-    batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
-    for i in range(0, len(job_ids), chunk_size):
-        chunk_job_ids = job_ids[i : i + chunk_size]
-        response = batch_client.describe_jobs(jobs=chunk_job_ids)
-        for job in response["jobs"]:
-            yield job
+    # batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
+    # for i in range(0, len(job_ids), chunk_size):
+    #     chunk_job_ids = job_ids[i : i + chunk_size]
+    #     response = batch_client.describe_jobs(jobs=chunk_job_ids)
+    #     for job in response["jobs"]:
+    #         yield job
 
 
 def iter_k8s_job_status(
@@ -525,8 +534,8 @@ def iter_k8s_job_status(
     print("====== iter_k8s_job_status")
     pending_run = 0
 
-    # for job in aws_describe_jobs(job_ids, aws_region=aws_region):
-    #     yield job
+    for job in k8s_describe_jobs(job_ids):
+        yield job
 
     #     if job["status"] in BATCH_JOB_STATUSES.pending:
     #         pending_run += 1
@@ -754,7 +763,6 @@ class K8SExecutor(Executor):
             print("job_name: ", job_name)
             print("job_id: ", job_id)
             # Single jobs can be simply added to dict of pre-existing jobs.
-            import pdb; pdb.set_trace()
             if not is_array_job_name(job_name):
                 job_hash = job.metadata.uid
                 self.preexisting_k8s_jobs[job_hash] = job_hash
