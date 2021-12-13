@@ -494,21 +494,15 @@ def k8s_describe_jobs(
     """
     print("====== aws_describe_jobs")
     api_instance = k8s_utils.get_k8s_client()
-    for job_id in job_ids:
-        api_response = api_instance.read_namespaced_job_status(
-                name=job_id,
-            namespace="default")
-        if api_response.status.succeeded is not None or \
-                api_response.status.failed is not None:
-            job_completed = True
-
-    # The K8S API can only query up to 100 jobs at a time.
-    # batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
-    # for i in range(0, len(job_ids), chunk_size):
-    #     chunk_job_ids = job_ids[i : i + chunk_size]
-    #     response = batch_client.describe_jobs(jobs=chunk_job_ids)
-    #     for job in response["jobs"]:
-    #         yield job
+    job_ids_delimited = ','.join(job_ids)
+    label_selector = f"controller-uid in ({job_ids_delimited})"
+    api_response = api_instance.list_job_for_all_namespaces(
+        label_selector=label_selector)
+        # if api_response.status.succeeded is not None or \
+        #         api_response.status.failed is not None:
+        #     job_completed = True
+    assert(len(api_response.items) == 1)
+    return api_response.items[0]
 
 
 def iter_k8s_job_status(
@@ -764,8 +758,9 @@ class K8SExecutor(Executor):
             print("job_id: ", job_id)
             # Single jobs can be simply added to dict of pre-existing jobs.
             if not is_array_job_name(job_name):
-                job_hash = job.metadata.uid
-                self.preexisting_k8s_jobs[job_hash] = job_hash
+                job_hash = get_hash_from_job_name(job_name)
+                if job_hash:
+                    self.preexisting_k8s_jobs[job_hash] = job.metadata.uid
                 continue
 
         #     # Get all child jobs of running array jobs for reuniting.
@@ -851,6 +846,8 @@ class K8SExecutor(Executor):
 
         try:
             print("============ _monitor")
+            print("is_running:", self.is_running)
+            print(self.pending_k8s_jobs)
             while self.is_running and (self.pending_k8s_jobs or self.arrayer.num_pending):
 
                 print("====== monitort loop")
@@ -1102,30 +1099,29 @@ class K8SExecutor(Executor):
 
         # # Determine if we can reunite with a previous K8S output or job.
         k8s_job_id: Optional[str] = None
-        # if use_cache and job.eval_hash in self.preexisting_k8s_jobs:
-        #     k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
+        if use_cache and job.eval_hash in self.preexisting_k8s_jobs:
+            k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
+            print("got k8s_job_id", k8s_job_id)
 
-        #     # Make sure k8s API still has a status on this job.
-        #     existing_job = next(
-        #         aws_describe_jobs([k8s_job_id], aws_region=self.aws_region), None
-        #     )
+            # Make sure k8s API still has a status on this job.
+            existing_job = k8s_describe_jobs([k8s_job_id])
 
-        #     # Reunite with inflight k8s job, if present.
-        #     if existing_job:
-        #         k8s_job_id = existing_job["jobId"]
-        #         self.log(
-        #             "reunite redun job {redun_job} with {job_type} {k8s_job}:\n"
-        #             "  s3_scratch_path = {job_dir}".format(
-        #                 redun_job=job.id,
-        #                 job_type=job_type,
-        #                 k8s_job=k8s_job_id,
-        #                 job_dir=job_dir,
-        #             )
-        #         )
-        #         assert k8s_job_id
-        #         self.pending_k8s_jobs[k8s_job_id] = job
-        #     else:
-        #         k8s_job_id = None
+            # Reunite with inflight k8s job, if present.
+            if existing_job:
+                k8s_job_id = existing_job.metadata.uid
+                self.log(
+                    "reunite redun job {redun_job} with {job_type} {k8s_job}:\n"
+                    "  s3_scratch_path = {job_dir}".format(
+                        redun_job=job.id,
+                        job_type=job_type,
+                        k8s_job=k8s_job_id,
+                        job_dir=job_dir,
+                    )
+                )
+                assert k8s_job_id
+                self.pending_k8s_jobs[k8s_job_id] = job
+            else:
+                k8s_job_id = None
 
         # Job arrayer will handle actual submission after bunching to an array
         # job, if necessary.
