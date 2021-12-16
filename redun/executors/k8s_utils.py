@@ -6,10 +6,15 @@ import yaml
 from kubernetes import client, config
 
 
-def get_k8s_client():
+def get_k8s_batch_client():
     config.load_kube_config()
     batch_v1 = client.BatchV1Api()
     return batch_v1
+
+def get_k8s_core_client():
+    config.load_kube_config()
+    core_v1 = client.CoreV1Api()
+    return core_v1
 
 def create_job_object(job_name, image, command):
     container = client.V1Container(
