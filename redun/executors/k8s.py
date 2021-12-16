@@ -63,7 +63,7 @@ def k8s_submit(
     propagate_tags: bool = True,
 ) -> Dict[str, Any]:
     print("====== k8s submit")
-    api_instance = k8s_utils.get_k8s_client()
+    api_instance = k8s_utils.get_k8s_batch_client()
     k8s_job = k8s_utils.create_job_object(job_name, image, command)
     api_response = k8s_utils.create_job(api_instance, k8s_job)
     print("Job created. status='%s'" % str(api_response.status))
@@ -418,7 +418,7 @@ chmod +x .task_command
 
 
 def parse_task_error(
-    s3_scratch_prefix: str, job: Job, batch_job_metadata: Optional[dict] = None
+    s3_scratch_prefix: str, job: Job, k8s_job_metadata: Optional[dict] = None
 ) -> Tuple[Exception, "Traceback"]:
     """
     Parse task error from s3 scratch path.
@@ -442,9 +442,9 @@ def parse_task_error(
                 status_reason = ""
 
             if status_reason == BATCH_JOB_TIMEOUT_ERROR:
-                error = AWSBatchJobTimeoutError(BATCH_JOB_TIMEOUT_ERROR)
+                error = K8SBatchJobTimeoutError(BATCH_JOB_TIMEOUT_ERROR)
             else:
-                error = AWSBatchError(
+                error = K8SBatchError(
                     "Exception and traceback could not be found for K8S Job."
                 )
             error_traceback = Traceback.from_error(error)
@@ -453,7 +453,7 @@ def parse_task_error(
         if error_file.exists():
             error = ScriptError(cast(bytes, error_file.read("rb")))
         else:
-            error = AWSBatchError("stderr could not be found for K8S Job.")
+            error = K8SBatchError("stderr could not be found for K8S Job.")
         error_traceback = Traceback.from_error(error)
 
     return error, error_traceback
@@ -465,10 +465,10 @@ def parse_task_logs(
     required: bool = True,
 ) -> Iterator[str]:
     """
-    Iterates through most recent CloudWatch logs of an K8S Job.
+    Iterates through most recent logs of an K8S Job.
     """
-    lines_iter = iter_batch_job_log_lines(
-        batch_job_id, reverse=True, required=required,
+    lines_iter = iter_k8s_job_log_lines(
+        k8s_job_id, reverse=True, required=required,
     )
     lines = reversed(list(islice(lines_iter, 0, max_lines)))
 
@@ -483,8 +483,8 @@ def k8s_describe_jobs(
     """
     Returns K8S Job descriptions from the AWS API.
     """
-    print("====== aws_describe_jobs")
-    api_instance = k8s_utils.get_k8s_client()
+    print("====== k8s_describe_jobs")
+    api_instance = k8s_utils.get_k8s_batch_client()
     job_ids_delimited = ','.join(job_ids)
     label_selector = f"controller-uid in ({job_ids_delimited})"
     api_response = api_instance.list_job_for_all_namespaces(
@@ -528,59 +528,36 @@ def iter_k8s_job_status(
 
 
 def iter_log_stream(
-    log_group_name: str,
-    log_stream: str,
+    job_id: str,
     limit: Optional[int] = None,
     reverse: bool = False,
     required: bool = True,
 ) -> Iterator[dict]:
     """
-    Iterate through the events of logStream.
+    Iterate through the events of a K8S log.
     """
-    logs_client = aws_utils.get_aws_client("logs", aws_region=aws_region)
-    try:
-        response = logs_client.get_log_events(
-            logGroupName=log_group_name,
-            logStreamName=log_stream,
-            startFromHead=not reverse,
-            # boto API does not allow passing None, so we must fully exclude the parameter.
-            **{"limit": limit} if limit else {},
-        )
-    except logs_client.exceptions.ResourceNotFoundException as error:
-        if required:
-            # If logs are required, raise an error.
-            raise error
-        else:
-            return
-
-    while True:
-        events = response["events"]
-
-        # If no events, we are at the end of the stream.
-        if not events:
-            break
-
-        if reverse:
-            events = reversed(events)
-        yield from events
-
-        if not reverse:
-            next_token = response["nextForwardToken"]
-        else:
-            next_token = response["nextBackwardToken"]
-        response = logs_client.get_log_events(
-            logGroupName=log_group_name,
-            logStreamName=log_stream,
-            nextToken=next_token,
-            # boto API does not allow passing None, so we must fully exclude the parameter.
-            **{"limit": limit} if limit else {},
-        )
+    job = k8s_describe_jobs([job_id])[0]
+    api_instance = k8s_utils.get_k8s_core_client()
+    label_selector = f"job-name={job.metadata.name}"
+    api_response = api_instance.list_pod_for_all_namespaces(
+        label_selector=label_selector)
+    name = api_response.items[0].metadata.name
+    namespace = api_response.items[0].metadata.namespace
+    log_response = api_instance.read_namespaced_pod_log(name, namespace=namespace)
+    lines = log_response.split("\n")
+    
+    if reverse:
+        lines = reversed(lines)
+        yield from lines
 
 
+# Unused
+# TODO(davidek): figure out if we need to format the logs correct (withi timestamps?)
 def format_log_stream_event(event: dict) -> str:
     """
     Format a logStream event as a line.
     """
+    import pdb; pdb.set_trace()
     timestamp = str(datetime.datetime.fromtimestamp(event["timestamp"] / 1000))
     return "{timestamp}  {message}".format(timestamp=timestamp, message=event["message"])
 
@@ -594,29 +571,16 @@ def iter_k8s_job_logs(
     """
     Iterate through the log events of an K8S job.
     """
-    raise StopIteration
-
-    # Get job's log stream.
-    job = next(aws_describe_jobs([job_id], aws_region=aws_region), None)
-    if not job:
-        # Job is no longer present in AWS API. Return no logs.
-        return
-    log_stream = job["container"].get("logStreamName")
-    if not log_stream:
-        # No log stream is present. Return no logs.
-        return
 
     yield from iter_log_stream(
-        log_group_name=log_group_name,
-        log_stream=log_stream,
+        job_id=job_id,
         limit=limit,
         reverse=reverse,
         required=required,
-        aws_region=aws_region,
     )
 
 
-def iter_batch_job_log_lines(
+def iter_k8s_job_log_lines(
     job_id: str,
     reverse: bool = False,
     required: bool = True,
@@ -624,14 +588,12 @@ def iter_batch_job_log_lines(
     """
     Iterate through the log lines of an K8S job.
     """
-    events = iter_batch_job_logs(
+    log_lines = iter_k8s_job_logs(
         job_id,
         reverse=reverse,
-        log_group_name=log_group_name,
         required=required,
-        aws_region=aws_region,
     )
-    return map(format_log_stream_event, events)
+    return log_lines
 
 
 def iter_local_job_status(s3_scratch_prefix: str, job_id2job: Dict[str, "Job"]) -> Iterator[dict]:
@@ -879,31 +841,33 @@ class K8SExecutor(Executor):
 
         https://github.com/aws/amazon-ecs-agent/issues/2312
         """
-        try:
-            container_reason = job["attempts"][-1]["container"]["reason"]
-        except (KeyError, IndexError):
-            container_reason = ""
+        container_reason = "k8s stub"
 
-        if DOCKER_INSPECT_ERROR in container_reason:
-            redun_job = self.pending_k8s_jobs[job["jobId"]]
-            assert redun_job.task
-            if redun_job.task.script:
-                # Script tasks will report their status in a status file.
-                status_file = File(
-                    aws_utils.get_job_scratch_file(
-                        self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_STATUS
-                    )
-                )
-                if status_file.exists():
-                    return status_file.read().strip() == "ok", container_reason
-            else:
-                # Non-script tasks only create an output file if it is successful.
-                output_file = File(
-                    aws_utils.get_job_scratch_file(
-                        self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
-                    )
-                )
-                return output_file.exists(), container_reason
+        # try:
+        #     container_reason = job["attempts"][-1]["container"]["reason"]
+        # except (KeyError, IndexError):
+        #     container_reason = ""
+
+        # if DOCKER_INSPECT_ERROR in container_reason:
+        #     redun_job = self.pending_k8s_jobs[job["jobId"]]
+        #     assert redun_job.task
+        #     if redun_job.task.script:
+        #         # Script tasks will report their status in a status file.
+        #         status_file = File(
+        #             aws_utils.get_job_scratch_file(
+        #                 self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_STATUS
+        #             )
+        #         )
+        #         if status_file.exists():
+        #             return status_file.read().strip() == "ok", container_reason
+        #     else:
+        #         # Non-script tasks only create an output file if it is successful.
+        #         output_file = File(
+        #             aws_utils.get_job_scratch_file(
+        #                 self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
+        #             )
+        #         )
+        #         return output_file.exists(), container_reason
 
         return False, container_reason
 
@@ -915,17 +879,18 @@ class K8SExecutor(Executor):
         assert self.scheduler
         job_status: Optional[str] = None
         # Determine job status.
-        if job.status.completion_time:
-            if job.status.succeeded > 0:
+        if job.status.succeeded is not None and job.status.succeeded > 0:
+            job_status = SUCCEEDED
+        elif job.status.failed is not None and job.status.failed > 0:
+            can_override, container_reason = self._can_override_failed(job)
+            if can_override:
                 job_status = SUCCEEDED
-            elif job.status.failed > 0:
-                job_status = FAILED
+                self.scheduler.log("NOTE: Overriding K8S error: {}".format(container_reason))
             else:
-                print("Skipping job with status:", job.status)
+                job_status = FAILED
         else:
-            print("Skipping job that hasn't completed", job.status)
+            print("Skipping job with status:", job.status)
             return
-        
 
         # Determine redun Job and job_tags.
         redun_job = self.pending_k8s_jobs.pop(job.metadata.uid)
@@ -957,19 +922,19 @@ class K8SExecutor(Executor):
                 self.s3_scratch_prefix, redun_job, k8s_job_metadata=job
             )
             if not self.debug:
-                logs = [f"*** CloudWatch logs for K8S job {job['jobId']}:\n"]
+                logs = [f"*** CloudWatch logs for K8S job {job.metadata.uid}:\n"]
                 if container_reason:
                     logs.append(f"container.reason: {container_reason}\n")
 
                 try:
-                    status_reason = job["attempts"][-1]["statusReason"]
+                    status_reason = job.status.conditions[-1].message
                 except (KeyError, IndexError):
                     status_reason = ""
                 if status_reason:
                     logs.append(f"statusReason: {status_reason}\n")
 
                 logs.extend(
-                    parse_task_logs(job["jobId"], required=False, aws_region=self.aws_region)
+                    parse_task_logs(job.metadata.uid, required=False)
                 )
                 error_traceback.logs = logs
             else:
@@ -1297,21 +1262,7 @@ class K8SExecutor(Executor):
         Returns K8S Job statuses from the AWS API.
         """
         print("==== get jobs")
-        # batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
-        # paginator = batch_client.get_paginator("list_jobs")
-
-        # if not statuses:
-        #     statuses = BATCH_JOB_STATUSES.all
-        # job_name_prefix = self.default_task_options["job_name_prefix"]
-
-        # for status in statuses:
-        #     pages = paginator.paginate(jobQueue=self.queue, jobStatus=status)
-        #     for response in pages:
-        #         for job in response["jobSummaryList"]:
-        #             if job["jobName"].startswith(job_name_prefix):
-        #                 yield job
-
-        api_instance = k8s_utils.get_k8s_client()
+        api_instance = k8s_utils.get_k8s_batch_client()
         api_response = api_instance.list_job_for_all_namespaces(watch=False)
         return api_response
         
@@ -1328,7 +1279,7 @@ class K8SExecutor(Executor):
         #    pages = paginator.paginate(arrayJobId=job_id, jobStatus=status)
         #    found_jobs.extend([job for response in pages for job in response["jobSummaryList"]])
 
-        api_instance = k8s_utils.get_k8s_client()
+        api_instance = k8s_utils.get_k8s_batch_client()
 
         # job_name = 'redunjob'
         # api_response = api_instance.read_namespaced_job_status(
