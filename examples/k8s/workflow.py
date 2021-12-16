@@ -9,25 +9,21 @@ from redun import File, script, task
 redun_namespace = "redun.examples.k8s"
 
 @task(executor='k8s')
-def true_k8s() -> list:
-     return [
-        'true',
+def task_on_k8s() -> list:
+    return [
+        'task_on_k8s',
         print("hello stdout"),
         print("hello stderr", file=sys.stderr),
     ]
 
 @task(executor='k8s')
-def false_k8s() -> list:
-     return [
-        'false',
-        print("hello stdout"),
-        print("hello stderr", file=sys.stderr),
-    ]
+def failed_task_on_k8s() -> list:
+    raise RuntimeError
 
 
 @task(executor='batch')
 def task_on_batch() -> list:
-     return [
+    return [
         'task_on_batch',
         print("hello stdout"),
         print("hello stderr", file=sys.stderr),
@@ -41,7 +37,7 @@ def main() -> list:
     # results will be combined into one nested list as shown below.
     return [
         'main',
-        true_k8s(),
-        false_k8s(),
+        task_on_k8s(),
+        #failed_task_on_k8s(),
         task_on_batch(),
     ]
