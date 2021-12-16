@@ -36,6 +36,8 @@ DOCKER_INSPECT_ERROR = "CannotInspectContainerError: Could not transition to ins
 BATCH_JOB_TIMEOUT_ERROR = "Job attempt duration exceeded timeout"
 
 
+SUCCEEDED = 'SUCCEEDED'
+FAILED = 'FAILED'
 
 def is_array_job_name(job_name: str) -> bool:
     return job_name.endswith(f"-{ARRAY_JOB_SUFFIX}")
@@ -61,19 +63,8 @@ def k8s_submit(
     propagate_tags: bool = True,
 ) -> Dict[str, Any]:
     print("====== k8s submit")
-    # batch_run = batch_client.submit_job(
-    #     jobName=job_name,
-    #     jobQueue=queue,
-    #     jobDefinition=job_def["jobDefinitionArn"],
-    #     containerOverrides=container_overrides,
-    #     retryStrategy={"attempts": retries},
-    #     **batch_job_args,
-    # )
-    # api_response = api_instance.create_namespaced_job(
-    #     body=job,
-    #     namespace="default")
     api_instance = k8s_utils.get_k8s_client()
-    k8s_job = k8s_utils.create_job_object(job_name, "242314368270.dkr.ecr.us-west-2.amazonaws.com/bioformats2raw", ["/opt/bioformats2raw/bin/bioformats2raw"])
+    k8s_job = k8s_utils.create_job_object(job_name, image, command)
     api_response = k8s_utils.create_job(api_instance, k8s_job)
     print("Job created. status='%s'" % str(api_response.status))
 
@@ -292,9 +283,9 @@ def submit_task(
     cache_arg = [] if job_options.get("cache", True) else ["--no-cache"]
     command = (
         [
-            "aws_utils.REDUN_PROG",
+            aws_utils.REDUN_PROG,
             "--check-version",
-            "aws_utils.REDUN_REQUIRED_VERSION",
+            aws_utils.REDUN_REQUIRED_VERSION,
             "oneshot",
             a_task.load_module,
         ]
@@ -498,11 +489,7 @@ def k8s_describe_jobs(
     label_selector = f"controller-uid in ({job_ids_delimited})"
     api_response = api_instance.list_job_for_all_namespaces(
         label_selector=label_selector)
-        # if api_response.status.succeeded is not None or \
-        #         api_response.status.failed is not None:
-        #     job_completed = True
-    assert(len(api_response.items) == 1)
-    return api_response.items[0]
+    return api_response.items
 
 
 def iter_k8s_job_status(
@@ -708,7 +695,7 @@ class K8SExecutor(Executor):
 
         # Optional config.
         self.role = config.get("role")
-        #self.code_package = aws_utils.parse_code_package_config(config)
+        self.code_package = aws_utils.parse_code_package_config(config)
         self.code_file: Optional[File] = None
         self.debug = config.getboolean("debug", fallback=False)
 
@@ -864,17 +851,10 @@ class K8SExecutor(Executor):
                 if not self.debug:
                     # Copy pending_k8s_jobs.keys() since it can change due to new submissions.
                     print("Checking for", list(self.pending_k8s_jobs.keys()), self.arrayer.num_pending)
-                    # jobs = iter_k8s_job_status(
-                    #     list(self.pending_k8s_jobs.keys()),
-                    #     pending_truncate=pending_truncate,
-                    # )
-                    jobs = []
-                    for i, job in enumerate(jobs):
+                    jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
+                    for job in jobs:
                         self._process_job_status(job)
-                        if i % chunk_size == 0:
-                            # Sleep after every chunk to avoid excessive API calls.
-                            time.sleep(self.interval)
-
+                        
                 else:
                     # Copy pending_k8s_jobs since it can change due to new submissions.
                     jobs = iter_local_job_status(
@@ -934,29 +914,27 @@ class K8SExecutor(Executor):
         print("======== _process_job_stats")
         assert self.scheduler
         job_status: Optional[str] = None
-
         # Determine job status.
-        if job["status"] == SUCCEEDED:
-            job_status = SUCCEEDED
-
-        elif job["status"] == FAILED:
-            can_override, container_reason = self._can_override_failed(job)
-            if can_override:
+        if job.status.completion_time:
+            if job.status.succeeded > 0:
                 job_status = SUCCEEDED
-                self.scheduler.log("NOTE: Overriding K8S error: {}".format(container_reason))
-            else:
+            elif job.status.failed > 0:
                 job_status = FAILED
+            else:
+                print("Skipping job with status:", job.status)
         else:
+            print("Skipping job that hasn't completed", job.status)
             return
+        
 
         # Determine redun Job and job_tags.
-        redun_job = self.pending_k8s_jobs.pop(job["jobId"])
+        redun_job = self.pending_k8s_jobs.pop(job.metadata.uid)
         job_tags = []
         if not self.debug:
-            job_tags.append(("k8s_job", job["jobId"]))
-            log_stream = job.get("container", {}).get("logStreamName")
-            if log_stream:
-                job_tags.append(("aws_log_stream", log_stream))
+            job_tags.append(("k8s_job", job.metadata.uid))
+            # log_stream = job.get("container", {}).get("logStreamName")
+            # if log_stream:
+            #     job_tags.append(("aws_log_stream", log_stream))
 
         if job_status == SUCCEEDED:
             # Assume a recently completed job has valid results.
@@ -1085,10 +1063,10 @@ class K8SExecutor(Executor):
         # Package code if necessary and we have not already done so. If code_package is False,
         # then we can skip this step. Additionally, if we have already packaged and set code_file,
         # then we do not need to repackage.
-        # if self.code_package is not False and self.code_file is None:
-        #     code_package = self.code_package or {}
-        #     assert isinstance(code_package, dict)
-        #     self.code_file = aws_utils.package_code(self.s3_scratch_prefix, code_package)
+        if self.code_package is not False and self.code_file is None:
+            code_package = self.code_package or {}
+            assert isinstance(code_package, dict)
+            self.code_file = aws_utils.package_code(self.s3_scratch_prefix, code_package)
 
         job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
         job_type = "K8S job" if not self.debug else "Docker container"
@@ -1104,7 +1082,7 @@ class K8SExecutor(Executor):
             print("got k8s_job_id", k8s_job_id)
 
             # Make sure k8s API still has a status on this job.
-            existing_job = k8s_describe_jobs([k8s_job_id])
+            existing_job = k8s_describe_jobs([k8s_job_id])[0]
 
             # Reunite with inflight k8s job, if present.
             if existing_job:
