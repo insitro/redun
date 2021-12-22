@@ -827,6 +827,7 @@ class K8SExecutor(Executor):
                         self.s3_scratch_prefix, dict(self.pending_k8s_jobs)
                     )
                     for job in jobs:
+                        print("===== Process job: ", job)
                         self._process_job_status(job)
                 time.sleep(self.interval)
 
@@ -882,6 +883,7 @@ class K8SExecutor(Executor):
         assert self.scheduler
         job_status: Optional[str] = None
         # Determine job status.
+        print("==== job status:", job_status)
         if job.status.succeeded is not None and job.status.succeeded > 0:
             job_status = SUCCEEDED
         elif job.status.failed is not None and job.status.failed > 0:
@@ -940,7 +942,7 @@ class K8SExecutor(Executor):
                 )
                 error_traceback.logs = logs
             else:
-                error_traceback.logs = [line + "\n" for line in job["logs"].split("\n")]
+                error_traceback.logs = [line + "\n" for line in job.logs.split("\n")]
             self.scheduler.reject_job(
                 redun_job, error, error_traceback=error_traceback, job_tags=job_tags
             )
