@@ -2,6 +2,7 @@ name: tox
 on: pull_request
 jobs:
   tox:
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
