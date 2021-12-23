@@ -109,7 +109,7 @@ class JobArrayer:
     def executor(self):
         exec = self._executor()
         if exec is None:
-            raise ValueError("Exector was deleted?")
+            raise ValueError("Executor was deleted?")
         return exec
 
     def _monitor_stale_jobs(self):

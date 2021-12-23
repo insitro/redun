@@ -300,7 +300,7 @@ class Value(Base):
     tags = relationship(
         "Tag",
         foreign_keys=[value_hash],
-        primaryjoin=("(Value.value_hash == Tag.entity_id) & (Tag.is_current == True)"),
+        primaryjoin="(Value.value_hash == Tag.entity_id) & (Tag.is_current == True)",
         backref="values",
         uselist=True,
     )
@@ -500,7 +500,7 @@ class CallNode(Base):
     tags = relationship(
         "Tag",
         foreign_keys=[call_hash],
-        primaryjoin=("(CallNode.call_hash == Tag.entity_id) & (Tag.is_current == True)"),
+        primaryjoin="(CallNode.call_hash == Tag.entity_id) & (Tag.is_current == True)",
         backref="call_nodes",
         viewonly=True,
         uselist=True,
@@ -672,7 +672,7 @@ class Execution(Base):
     tags = relationship(
         "Tag",
         foreign_keys=[id],
-        primaryjoin=("(Execution.id == Tag.entity_id) & (Tag.is_current == True)"),
+        primaryjoin="(Execution.id == Tag.entity_id) & (Tag.is_current == True)",
         backref="executions",
         uselist=True,
     )
@@ -742,7 +742,7 @@ class Job(Base):
     tags = relationship(
         "Tag",
         foreign_keys=[id],
-        primaryjoin=("(Job.id == Tag.entity_id) & (Tag.is_current == True)"),
+        primaryjoin="(Job.id == Tag.entity_id) & (Tag.is_current == True)",
         backref="jobs",
         uselist=True,
     )
@@ -822,7 +822,7 @@ class Task(Base):
     tags = relationship(
         "Tag",
         foreign_keys=[hash],
-        primaryjoin=("(Task.hash == Tag.entity_id) & (Tag.is_current == True)"),
+        primaryjoin="(Task.hash == Tag.entity_id) & (Tag.is_current == True)",
         backref="tasks",
         uselist=True,
     )
@@ -873,8 +873,8 @@ class Tag(Base):
     parents = relationship(
         "Tag",
         secondary=TagEdit.__table__,
-        primaryjoin=("Tag.tag_hash == TagEdit.child_id"),
-        secondaryjoin=("Tag.tag_hash == TagEdit.parent_id"),
+        primaryjoin="Tag.tag_hash == TagEdit.child_id",
+        secondaryjoin="Tag.tag_hash == TagEdit.parent_id",
         backref="children",
     )
 
@@ -918,8 +918,8 @@ class Tag(Base):
         else:
             return ""
 
-    @classmethod
-    def get_delete_tag(self) -> "Tag":
+    @staticmethod
+    def get_delete_tag() -> "Tag":
         """
         Returns a delete tag, which can be used to mark parent tags deleted.
         """
@@ -942,7 +942,7 @@ RecordEdgeType = Tuple[str, Base, str]
 def get_execution_child_edges(session: Session, ids: Iterable[str]) -> Iterable[RecordEdgeType]:
     # Get Execution child ids.
     for (job_id,) in filter_in(session.query(Execution.job_id), Execution.id, ids):
-        yield ("Execution.job", Job, job_id)
+        yield "Execution.job", Job, job_id
 
 
 def get_job_child_edges(session: Session, ids: Iterable[str]) -> Iterable[RecordEdgeType]:
@@ -950,12 +950,12 @@ def get_job_child_edges(session: Session, ids: Iterable[str]) -> Iterable[Record
     for (task_hash, call_hash) in filter_in(
         session.query(Job.task_hash, Job.call_hash), Job.id, ids
     ):
-        yield ("Job.task", Task, task_hash)
-        yield ("Job.call_hash", CallNode, call_hash)
+        yield "Job.task", Task, task_hash
+        yield "Job.call_hash", CallNode, call_hash
 
     # Get Job child Jobs.
     for (job_id,) in filter_in(session.query(Job.id), Job.parent_id, ids):
-        yield ("Job.child_job", Job, job_id)
+        yield "Job.child_job", Job, job_id
 
 
 def get_call_node_child_edges(session: Session, ids: Iterable[str]) -> Iterable[RecordEdgeType]:
@@ -963,8 +963,8 @@ def get_call_node_child_edges(session: Session, ids: Iterable[str]) -> Iterable[
     for (task_hash, value_hash) in filter_in(
         session.query(CallNode.task_hash, CallNode.value_hash), CallNode.call_hash, ids
     ):
-        yield ("CallNode.task", Task, task_hash)
-        yield ("CallNode.result", Value, value_hash)
+        yield "CallNode.task", Task, task_hash
+        yield "CallNode.result", Value, value_hash
 
     query = session.query(
         Argument.arg_hash, Argument.value_hash, ArgumentResult.result_call_hash
@@ -973,16 +973,16 @@ def get_call_node_child_edges(session: Session, ids: Iterable[str]) -> Iterable[
     for arg_hash, value_hash, upstream_call_hash in filter_in(query, Argument.call_hash, ids):
         # Get CallNode argument value ids.
         if arg_hash not in seen_args:
-            yield ("CallNode.arg", Value, value_hash)
+            yield "CallNode.arg", Value, value_hash
             seen_args.add(arg_hash)
 
         # Get CallNode upstream CallNode ids.
         if upstream_call_hash:
-            yield ("CallNode.upstream", CallNode, upstream_call_hash)
+            yield "CallNode.upstream", CallNode, upstream_call_hash
 
     # Get CallNode child ids.
     for (child_id,) in filter_in(session.query(CallEdge.child_id), CallEdge.parent_id, ids):
-        yield ("CallNode.child_call_node", CallNode, child_id)
+        yield "CallNode.child_call_node", CallNode, child_id
 
 
 def get_value_child_edges(session: Session, ids: Iterable[str]) -> Iterable[RecordEdgeType]:
@@ -990,7 +990,7 @@ def get_value_child_edges(session: Session, ids: Iterable[str]) -> Iterable[Reco
     for (subvalue_id,) in filter_in(
         session.query(Subvalue.value_hash), Subvalue.parent_value_hash, ids
     ):
-        yield ("Value.subvalue", Value, subvalue_id)
+        yield "Value.subvalue", Value, subvalue_id
 
 
 def get_tag_child_edges(session: Session, ids: Iterable[str]) -> Iterable[RecordEdgeType]:
@@ -1000,17 +1000,17 @@ def get_tag_child_edges(session: Session, ids: Iterable[str]) -> Iterable[Record
 
     # Get Tag parents.
     for (parent_id,) in filter_in(session.query(TagEdit.parent_id), TagEdit.child_id, ids):
-        yield ("Tag.parent", Tag, parent_id)
+        yield "Tag.parent", Tag, parent_id
 
     # Get Tag children.
     for (child_id,) in filter_in(session.query(TagEdit.child_id), TagEdit.parent_id, ids):
-        yield ("Tag.child", Tag, child_id)
+        yield "Tag.child", Tag, child_id
 
 
 def get_tag_entity_child_edges(session: Session, ids: Iterable[str]) -> Iterable[RecordEdgeType]:
     # Get current Entity Tags.
     for (tag_hash,) in filter_in(session.query(Tag.tag_hash), Tag.entity_id, ids):
-        yield ("Entity.tag", Tag, tag_hash)
+        yield "Entity.tag", Tag, tag_hash
 
 
 def init_db(engine):
@@ -1101,13 +1101,15 @@ class RedunBackendDb(RedunBackend):
         self.session = self.Session()
         return self.engine
 
-    def get_db_version_required(self) -> Tuple[DBVersionInfo, DBVersionInfo]:
+    @staticmethod
+    def get_db_version_required() -> Tuple[DBVersionInfo, DBVersionInfo]:
         """
         Returns the DB version range required by this library.
         """
-        return (REDUN_DB_MIN_VERSION, REDUN_DB_MAX_VERSION)
+        return REDUN_DB_MIN_VERSION, REDUN_DB_MAX_VERSION
 
-    def get_all_db_versions(self) -> List[DBVersionInfo]:
+    @staticmethod
+    def get_all_db_versions() -> List[DBVersionInfo]:
         """
         Returns list of all DB versions and their migration ids.
         """
