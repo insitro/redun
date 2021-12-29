@@ -184,6 +184,8 @@ class Column(BaseColumn):
     Use non-null Columns by default.
     """
 
+    inherit_cache = True
+
     def __init__(self, *args, **kwargs):
         kwargs["nullable"] = kwargs.get("nullable", False)
         super().__init__(*args, **kwargs)
