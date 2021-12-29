@@ -214,6 +214,7 @@ def get_docker_job_options(job_options: dict) -> dict:
 
 
 class DockerResult:
+    """Data holder class that looks like a k8s response"""
     class _metadata:
         pass
     class _status:
@@ -759,8 +760,6 @@ class K8SExecutor(Executor):
         Start monitoring thread.
         """
         if not self.is_running:
-            # self._aws_user = aws_utils.get_aws_user()
-
             self.is_running = True
             self._thread = threading.Thread(target=self._monitor, daemon=False)
             self._thread.start()
