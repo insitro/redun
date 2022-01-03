@@ -39,5 +39,5 @@ def main() -> list:
         'main',
         task_on_k8s(),
         #failed_task_on_k8s(),
-        task_on_batch(),
+        #task_on_batch(),
     ]

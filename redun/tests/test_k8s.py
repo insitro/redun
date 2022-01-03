@@ -45,7 +45,10 @@ def mock_executor(scheduler, debug=False, code_package=False):
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
 
     executor.get_jobs = Mock()
-    executor.get_jobs.return_value = []
+    class GetJobResponse:
+        def __init__(self):
+            self.items = []
+    executor.get_jobs.return_value = GetJobResponse()
 
     executor.get_array_child_jobs = Mock()
     executor.get_array_child_jobs.return_value = []
@@ -81,9 +84,13 @@ def test_executor(
     executor = mock_executor(scheduler)
     executor.start()
 
-    k8s_submit_mock.return_value = {
-        "jobId": batch_job_id,
-    }
+    # needs to have a .metadata.uid
+
+    dr1 = DockerResult()
+    dr1.metadata.uid = batch_job_id
+    dr1.metadata.name = "DoNotUse"
+    k8s_submit_mock.return_value = dr1
+
 
     # Submit redun job that will succeed.
     expr = task1(10)
@@ -92,30 +99,23 @@ def test_executor(
     job.eval_hash = "eval_hash"
     executor.submit(job, [10], {})
 
-    # # Let job get stale so job arrayer actually submits it.
-    # wait_until(lambda: executor.arrayer.num_pending == 0)
+    # Let job get stale so job arrayer actually submits it.
+    wait_until(lambda: executor.arrayer.num_pending == 0)
 
     # # Ensure job options were passed correctly.
-    # assert batch_submit_mock.call_args
-    # assert batch_submit_mock.call_args[1] == {
-    #     "image": "my-image",
-    #     "job_name": "redun-job-eval_hash",
-    #     "job_def_suffix": "-redun-jd",
-    #     "array_size": 0,
-    #     "vcpus": 1,
-    #     "gpus": 0,
-    #     "memory": 4,
-    #     "role": None,
-    #     "retries": 1,
-    #     "aws_region": "us-west-2",
-    #     "batch_tags": {
-    #         "redun_aws_user": "alice",
-    #         "redun_execution_id": "",
-    #         "redun_job_id": job.id,
-    #         "redun_project": "",
-    #         "redun_task_name": "task1",
-    #     },
-    # }
+    assert k8s_submit_mock.call_args
+    print("Args:", k8s_submit_mock.call_args[1])
+    assert k8s_submit_mock.call_args[1] == {
+        "image": "my-image",
+        "job_name": "redun-job-eval_hash",
+        "job_def_suffix": "-redun-jd",
+        "array_size": 0,
+        "vcpus": 1,
+        "gpus": 0,
+        "memory": 4,
+        "role": None,
+        "retries": 1,
+    }
 
     # batch_submit_mock.return_value = {
     #     "jobId": batch_job2_id,
