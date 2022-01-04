@@ -359,6 +359,7 @@ def mock_scheduler():
             scheduler.job_errors[job.id] = error
         else:
             # Scheduler error, reraise it.
+            scheduler.job_errors[None] = error
             raise error
 
     def batch_wait(job_ids):

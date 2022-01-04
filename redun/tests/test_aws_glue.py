@@ -398,7 +398,7 @@ def test_glue_submission_retry(describe_jobs_mock) -> None:
 @patch("redun.executors.aws_glue.submit_glue_job")
 def test_glue_submit_job(submit_job_mock) -> None:
     scheduler = mock_scheduler()
-    executor = mock_executor(scheduler)
+    executor = mock_executor(scheduler, code_package=True)
 
     job = Job(task1(10))
     job.id = "123"

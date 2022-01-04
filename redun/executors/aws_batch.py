@@ -906,6 +906,7 @@ class AWSBatchExecutor(Executor):
         else:
             self.interval = config.getfloat("job_monitor_interval", 0.2)
 
+        self._thread: Optional[threading.Thread] = None
         self.arrayer = JobArrayer(
             executor=self,
             submit_interval=self.interval,
@@ -980,6 +981,14 @@ class AWSBatchExecutor(Executor):
         """
         self.arrayer.stop()
         self.is_running = False
+
+        # Stop monitor thread.
+        if (
+            self._thread
+            and self._thread.is_alive()
+            and threading.get_ident() != self._thread.ident
+        ):
+            self._thread.join()
 
     def _monitor(self) -> None:
         """

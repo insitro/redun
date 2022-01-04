@@ -912,7 +912,6 @@ def test_executor_multiple_start(
     executor._start()
     executor._start()
     executor.stop()
-    executor._thread.join()
 
 
 @mock_s3
@@ -950,7 +949,6 @@ def test_interactive(run_docker_mock, iter_local_job_status_mock, get_aws_user_m
 
     # Cleanly stop executor.
     executor.stop()
-    executor._thread.join()
 
 
 @mock_s3
@@ -1408,8 +1406,9 @@ def test_arrayer_thread():
 
 @mock_s3
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+@patch("redun.executors.aws_batch.aws_describe_jobs")
 @patch("redun.executors.aws_batch.submit_task")
-def test_jobs_are_arrayed(submit_task_mock, get_aws_user_mock):
+def test_jobs_are_arrayed(submit_task_mock, aws_describe_jobs_mock, get_aws_user_mock):
     """
     Tests repeated jobs are submitted as a single array job. Checks that
     job ID for the array job and child jobs end up tracked
@@ -1419,6 +1418,7 @@ def test_jobs_are_arrayed(submit_task_mock, get_aws_user_mock):
     executor.arrayer.min_array_size = 3
     executor.arrayer.max_array_size = 7
 
+    aws_describe_jobs_mock.return_value = iter([])
     redun.executors.aws_batch.submit_task.side_effect = [
         {"jobId": "first-array-job", "arrayProperties": {"size": 7}},
         {"jobId": "second-array-job", "arrayProperties": {"size": 3}},
