@@ -29,7 +29,6 @@ from redun.task import Task
 from redun.utils import get_import_paths, pickle_dump
 
 ARRAY_JOB_SUFFIX = "array"
-DOCKER_INSPECT_ERROR = "CannotInspectContainerError: Could not transition to inspecting"
 BATCH_JOB_TIMEOUT_ERROR = "Job attempt duration exceeded timeout"
 
 
@@ -78,79 +77,6 @@ def is_ec2_instance() -> bool:
     except URLError:
         return False
 
-
-def run_docker(
-    command: List[str],
-    image: str,
-    array_index: int = -1,
-    volumes: Optional[Iterable[Tuple[str, str]]] = None,
-    interactive: bool = True,
-    cleanup: bool = False,
-) -> str:
-    """
-    volumes: a list of ('host', 'container') path pairs for volume mouting.
-    """
-    # Add AWS credentials to environment for docker command.
-    env = dict(os.environ)
-    if not is_ec2_instance():
-        session = boto3.Session()
-        creds = session.get_credentials().get_frozen_credentials()
-        cred_map = {
-            "AWS_ACCESS_KEY_ID": creds.access_key,
-            "AWS_SECRET_ACCESS_KEY": creds.secret_key,
-            "AWS_SESSION_TOKEN": creds.token,
-        }
-        defined = {k: v for k, v in cred_map.items() if v}
-        env.update(defined)
-
-    common_args = []
-    if cleanup:
-        common_args.append("--rm")
-
-    # Environment args.
-    common_args.extend(
-        ["-e", "AWS_ACCESS_KEY_ID", "-e", "AWS_SECRET_ACCESS_KEY", "-e", "AWS_SESSION_TOKEN"]
-    )
-
-    # Add array index environment variable if running an array job
-    if array_index >= 0:
-        env.update({AWS_ARRAY_VAR: str(array_index)})
-        common_args.extend(["-e", AWS_ARRAY_VAR])
-
-    # Volume mounting args.
-    if not volumes:
-        volumes = []
-    for host, container in volumes:
-        common_args.extend(["-v", f"{host}:{container}"])
-
-    common_args.append(image)
-    common_args.extend(command)
-
-    if interactive:
-        # Adding this flag is necessary to prevent docker from hijacking the terminal and modifying
-        # the tty settings. One of the modifications it makes when it hijacks the terminal is to
-        # change the behavior of line endings which means output(like from logging) will be
-        # malformed until the docker container exits and the hijacked connection is closed which
-        # resets the tty settings.
-        env["NORAW"] = "true"
-
-        # Run Docker interactively.
-        fd, cidfile = mkstemp()
-        os.close(fd)
-        os.remove(cidfile)
-
-        docker_command = ["docker", "run", "-it", "--cidfile", cidfile] + common_args
-        subprocess.check_call(docker_command, env=env)
-        with open(cidfile) as infile:
-            container_id = infile.read().strip()
-        os.remove(cidfile)
-    else:
-        # Run Docker in the background.
-        import pdb; pdb.set_trace()
-        docker_command = ["docker", "run", "-d"] + common_args
-        container_id = subprocess.check_output(docker_command, env=env).strip().decode("utf8")
-
-    return container_id
 
 
 def get_k8s_job_name(prefix: str, job_hash: str, array: bool = False) -> str:
@@ -205,14 +131,6 @@ def get_k8s_job_options(job_options: dict) -> dict:
     return {key: job_options[key] for key in keys if key in job_options}
 
 
-def get_docker_job_options(job_options: dict) -> dict:
-    """
-    Returns Docker-specific job options from general job options.
-    """
-    keys = ["volumes", "interactive"]
-    return {key: job_options[key] for key in keys if key in job_options}
-
-
 
 class DockerResult:
     """Data holder class that looks like a k8s response"""
@@ -236,11 +154,10 @@ def submit_task(
     job_options: dict = {},
     array_uuid: Optional[str] = None,
     array_size: int = 0,
-    debug: bool = False,
     code_file: Optional[File] = None,
 ) -> Dict[str, Any]:
     """
-    Submit a redun Task to K8S or Docker (debug=True).
+    Submit a redun Task to K8S
     """
     if array_size:
         # Output_path will contain a pickled list of actual output paths, etc.
@@ -302,46 +219,27 @@ def submit_task(
         + cache_arg
         + ["--input", input_path, "--output", output_path, "--error", error_path, a_task.fullname]
     )
-    if not debug:
-        if array_uuid:
-            job_hash = array_uuid
-        else:
-            assert job.eval_hash
-            job_hash = job.eval_hash
-
-        # Submit to K8S
-        job_name = get_k8s_job_name(
-            job_options.get("job_name_prefix", "k8s-job"), job_hash, array=bool(array_size)
-        )
-
-        result = k8s_submit(
-            command,
-            queue,
-            image=image,
-            job_name=job_name,
-            job_def_suffix="-redun-jd",
-            array_size=array_size,
-            **get_k8s_job_options(job_options),
-        )
+    if array_uuid:
+        job_hash = array_uuid
     else:
-        # Submit to local Docker.
-        # This loop only runs if array_size > 0
-        result = DockerResult()
-        result.metadata.uid = []
-        result.metadata.redun_job_id = []
-        for i in range(array_size):
-            container_id = run_docker(
-                command, image=image, array_index=i, **get_docker_job_options(job_options)
-            )
-            result.uid.append(container_id)
-            result.redun_job_id.append(job.id)
+        assert job.eval_hash
+        job_hash = job.eval_hash
 
-        # Otherwise, submit one non-array job
-        if not array_size:
-            container_id = run_docker(command, image=image, **get_docker_job_options(job_options))
-            result.metadata.uid = container_id
-            result.metadata.redun_job_id = job.id
-            result.metadata.name = None
+    # Submit to K8S
+    job_name = get_k8s_job_name(
+        job_options.get("job_name_prefix", "k8s-job"), job_hash, array=bool(array_size)
+    )
+
+    result = k8s_submit(
+        command,
+        queue,
+        image=image,
+        job_name=job_name,
+        job_def_suffix="-redun-jd",
+        array_size=array_size,
+        **get_k8s_job_options(job_options),
+    )
+    
     return result
 
 
@@ -353,10 +251,9 @@ def submit_command(
     job: Job,
     command: str,
     job_options: dict = {},
-    debug: bool = False,
 ) -> dict:
     """
-    Submit a shell command to K8S or Docker (debug=True).
+    Submit a shell command to K8S
     """
     input_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT)
     output_path = aws_utils.get_job_scratch_file(
@@ -399,32 +296,25 @@ chmod +x .task_command
             output_path=quote(output_path),
             error_path=quote(error_path),
             status_path=quote(status_path),
-            exit_command="exit 1" if not debug else "",
+            exit_command="exit 1",
         ),
     ]
 
-    if not debug:
-        # Submit to K8S.
-        assert job.eval_hash
-        job_name = get_batch_job_name(
-            job_options.get("job_name_prefix", "k8s-job"), job.eval_hash
-        )
+    # Submit to K8S.
+    assert job.eval_hash
+    job_name = get_batch_job_name(
+        job_options.get("job_name_prefix", "k8s-job"), job.eval_hash
+    )
 
-        # Submit to K8S.
-        return k8s_submit(
-            shell_command,
-            queue,
-            image=image,
-            job_name=job_name,
-            job_def_suffix="-redun-jd",
-            **get_batch_job_options(job_options),
-        )
-    else:
-        # Submit to local Docker.
-        container_id = run_docker(
-            shell_command, image=image, **get_docker_job_options(job_options)
-        )
-        return {"jobId": container_id, "redun_job_id": job.id}
+    # Submit to K8S.
+    return k8s_submit(
+        shell_command,
+        queue,
+        image=image,
+        job_name=job_name,
+        job_def_suffix="-redun-jd",
+        **get_batch_job_options(job_options),
+    )
 
 
 def parse_task_error(
@@ -603,62 +493,6 @@ def iter_k8s_job_log_lines(
     return log_lines
 
 
-def iter_local_job_status(s3_scratch_prefix: str, job_id2job: Dict[str, "Job"]) -> Iterator[dict]:
-    """
-    Returns local Docker jobs grouped by their status.
-    """
-    running_containers = subprocess.check_output(["docker", "ps", "--no-trunc"]).decode("utf8")
-
-    for job_id, redun_job in job_id2job.items():
-        if job_id not in running_containers:
-            # Job is done running.
-            status_file = File(
-                aws_utils.get_job_scratch_file(
-                    s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_STATUS
-                )
-            )
-            output_file = File(
-                aws_utils.get_job_scratch_file(
-                    s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
-                )
-            )
-
-            # Get docker logs and remove container.
-            logs = subprocess.check_output(["docker", "logs", job_id]).decode("utf8")
-            logs += "Removing container...\n"
-            logs += subprocess.check_output(["docker", "rm", job_id]).decode("utf8")
-
-            # TODO: Simplify whether status file is always used or not.
-            if status_file.exists():
-                succeeded = status_file.read().strip() == "ok"
-            else:
-                succeeded = output_file.exists()
-
-            
-            status = SUCCEEDED if succeeded else FAILED
-            dr = DockerResult()
-            if succeeded:
-                dr.status.succeeded = 1
-                dr.status.failed = 0
-            else:
-                dr.status.succeeded = 0
-                dr.status.failed = 1
-            dr.metadata.uid = job_id
-            dr.logs = logs
-            yield dr
-
-
-class AWSBatchError(Exception):
-    pass
-
-
-class AWSBatchJobTimeoutError(Exception):
-    """
-    Custom exception to raise when K8S Jobs are killed due to timeout.
-    """
-
-    pass
-
 
 @register_executor("k8s")
 class K8SExecutor(Executor):
@@ -676,7 +510,6 @@ class K8SExecutor(Executor):
         self.role = config.get("role")
         self.code_package = aws_utils.parse_code_package_config(config)
         self.code_file: Optional[File] = None
-        self.debug = config.getboolean("debug", fallback=False)
 
         # Default task options.
         self.default_task_options = {
@@ -696,10 +529,7 @@ class K8SExecutor(Executor):
         self.pending_k8s_jobs: Dict[str, "Job"] = OrderedDict()
         self.preexisting_k8s_jobs: Dict[str, str] = {}  # Job hash -> Job ID
 
-        if not self.debug:
-            self.interval = config.getfloat("job_monitor_interval", 5.0)
-        else:
-            self.interval = config.getfloat("job_monitor_interval", 0.2)
+        self.interval = config.getfloat("job_monitor_interval", 5.0)
 
         self.arrayer = JobArrayer(
             executor=self,
@@ -816,19 +646,11 @@ class K8SExecutor(Executor):
                         + " ".join(sorted(self.pending_k8s_jobs.keys())),
                         level=logging.DEBUG,
                     )
-                if not self.debug:
-                    # Copy pending_k8s_jobs.keys() since it can change due to new submissions.
-                    jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
-                    for job in jobs:
-                        self._process_job_status(job)
-                        
-                else:
-                    # Copy pending_k8s_jobs since it can change due to new submissions.
-                    jobs = iter_local_job_status(
-                        self.s3_scratch_prefix, dict(self.pending_k8s_jobs)
-                    )
-                    for job in jobs:
-                        self._process_job_status(job)
+            
+                # Copy pending_k8s_jobs.keys() since it can change due to new submissions.
+                jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
+                for job in jobs:
+                    self._process_job_status(job)
                 time.sleep(self.interval)
 
         except Exception as error:
@@ -852,27 +674,6 @@ class K8SExecutor(Executor):
         #     container_reason = job["attempts"][-1]["container"]["reason"]
         # except (KeyError, IndexError):
         #     container_reason = ""
-
-        # if DOCKER_INSPECT_ERROR in container_reason:
-        #     redun_job = self.pending_k8s_jobs[job["jobId"]]
-        #     assert redun_job.task
-        #     if redun_job.task.script:
-        #         # Script tasks will report their status in a status file.
-        #         status_file = File(
-        #             aws_utils.get_job_scratch_file(
-        #                 self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_STATUS
-        #             )
-        #         )
-        #         if status_file.exists():
-        #             return status_file.read().strip() == "ok", container_reason
-        #     else:
-        #         # Non-script tasks only create an output file if it is successful.
-        #         output_file = File(
-        #             aws_utils.get_job_scratch_file(
-        #                 self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
-        #             )
-        #         )
-        #         return output_file.exists(), container_reason
 
         return False, container_reason
 
@@ -898,8 +699,7 @@ class K8SExecutor(Executor):
         # Determine redun Job and job_tags.
         redun_job = self.pending_k8s_jobs.pop(job.metadata.uid)
         job_tags = []
-        if not self.debug:
-            job_tags.append(("k8s_job", job.metadata.uid))
+        job_tags.append(("k8s_job", job.metadata.uid))
             # log_stream = job.get("container", {}).get("logStreamName")
             # if log_stream:
             #     job_tags.append(("aws_log_stream", log_stream))
@@ -924,24 +724,23 @@ class K8SExecutor(Executor):
             error, error_traceback = parse_task_error(
                 self.s3_scratch_prefix, redun_job, k8s_job_metadata=job
             )
-            if not self.debug:
-                logs = [f"*** CloudWatch logs for K8S job {job.metadata.uid}:\n"]
-                if container_reason:
-                    logs.append(f"container.reason: {container_reason}\n")
+        
+            logs = [f"*** CloudWatch logs for K8S job {job.metadata.uid}:\n"]
+            if container_reason:
+                logs.append(f"container.reason: {container_reason}\n")
 
-                try:
-                    status_reason = job.status.conditions[-1].message
-                except (KeyError, IndexError):
-                    status_reason = ""
-                if status_reason:
-                    logs.append(f"statusReason: {status_reason}\n")
+            try:
+                status_reason = job.status.conditions[-1].message
+            except (KeyError, IndexError):
+                status_reason = ""
+            if status_reason:
+                logs.append(f"statusReason: {status_reason}\n")
 
-                logs.extend(
-                    parse_task_logs(job.metadata.uid, required=False)
-                )
-                error_traceback.logs = logs
-            else:
-                error_traceback.logs = [line + "\n" for line in job.logs.split("\n")]
+            logs.extend(
+                parse_task_logs(job.metadata.uid, required=False)
+            )
+            error_traceback.logs = logs
+            
             self.scheduler.reject_job(
                 redun_job, error, error_traceback=error_traceback, job_tags=job_tags
             )
@@ -1017,13 +816,11 @@ class K8SExecutor(Executor):
         assert self.scheduler
         assert job.task
 
-        # If we are not in debug mode and this is the first submission gather inflight jobs. In
-        # debug mode, we are running on docker locally so there is no need to hit the K8S API to
-        # gather jobs as we are not going to run on K8S. We also check is_running here as a way
+        # If this is the first submission gather inflight jobs. We also check is_running here as a way
         # of determining whether this is the first submission or not. If we are already running,
         # then we know we have already had jobs submitted and done the inflight check so no
         # reason to do that again here.
-        if not self.debug and not self.is_running:
+        if not self.is_running:
             # Precompute existing inflight jobs for job reuniting.
             self.gather_inflight_jobs()
 
@@ -1036,7 +833,7 @@ class K8SExecutor(Executor):
             self.code_file = aws_utils.package_code(self.s3_scratch_prefix, code_package)
 
         job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
-        job_type = "K8S job" if not self.debug else "Docker container"
+        job_type = "K8S job"
 
         # Determine job options.
         task_options = self._get_job_options(job)
@@ -1093,7 +890,7 @@ class K8SExecutor(Executor):
         # Generate a unique name for job with no '-' to simplify job name parsing.
         array_uuid = str(uuid.uuid4()).replace("-", "")
 
-        job_type = "K8S job" if not self.debug else "Docker container"
+        job_type = "K8S job"
 
         # Setup input, output and error path files.
         # Input file is a pickled list of args, and kwargs, for each child job.
@@ -1141,23 +938,16 @@ class K8SExecutor(Executor):
             job,
             job.task,
             job_options=task_options,
-            debug=self.debug,
             code_file=self.code_file,
             aws_region=self.aws_region,
             array_uuid=array_uuid,
             array_size=array_size,
         )
 
-        if self.debug:
-            # Debug mode just starts N docker containers
-            array_job_id = "None"
-            for i in range(array_size):
-                self.pending_k8s_jobs[k8s_resp["jobId"][i]] = jobs[i]
-        else:
-            # Add entire array to array jobs, and all jobs in array to pending jobs.
-            array_job_id = k8s_resp["jobId"]
-            for i in range(array_size):
-                self.pending_k8s_jobs[f"{array_job_id}:{i}"] = jobs[i]
+        # Add entire array to array jobs, and all jobs in array to pending jobs.
+        array_job_id = k8s_resp["jobId"]
+        for i in range(array_size):
+            self.pending_k8s_jobs[f"{array_job_id}:{i}"] = jobs[i]
 
         self.log(
             "submit {array_size} redun job(s) as {job_type} {k8s_job}:\n"
@@ -1165,8 +955,7 @@ class K8SExecutor(Executor):
             "  array_job_name  = {job_name}\n"
             "  array_size      = {array_size}\n"
             "  s3_scratch_path = {job_dir}\n"
-            "  retry_attempts  = {retries}\n"
-            "  debug           = {debug}".format(
+            "  retry_attempts  = {retries}".format(
                 array_job_id=array_job_id,
                 array_size=array_size,
                 job_type=job_type,
@@ -1174,7 +963,6 @@ class K8SExecutor(Executor):
                 job_dir=aws_utils.get_array_scratch_file(self.s3_scratch_prefix, array_uuid, ""),
                 job_name=k8s_resp.get("jobName"),
                 retries=k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts"),
-                debug=self.debug,
             )
         )
 
@@ -1192,7 +980,7 @@ class K8SExecutor(Executor):
 
         queue = None
         job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
-        job_type = "K8S job" if not self.debug else "Docker container"
+        job_type = "K8S job"
 
         # Submit a new Batch job.
         if not job.task.script:
@@ -1205,7 +993,6 @@ class K8SExecutor(Executor):
                 args=args,
                 kwargs=kwargs,
                 job_options=task_options,
-                debug=self.debug,
                 code_file=self.code_file,
             )
         else:
@@ -1217,7 +1004,6 @@ class K8SExecutor(Executor):
                 job,
                 command,
                 job_options=task_options,
-                debug=self.debug,
             )
 
         print("k8s_resp:", k8s_resp)
@@ -1229,9 +1015,7 @@ class K8SExecutor(Executor):
             "  job_id          = {job_id}\n"
             "  job_name        = {job_name}\n"
             "  s3_scratch_path = {job_dir}\n"
-            "  retry_attempts  = {retries}\n"
-            "  debug           = {debug}".format(
-                debug=self.debug,
+            "  retry_attempts  = {retries}".format(
                 redun_job=job.id,
                 job_type=job_type,
                 job_id=job_id, 
