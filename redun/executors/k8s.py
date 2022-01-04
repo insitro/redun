@@ -41,7 +41,6 @@ def is_array_job_name(job_name: str) -> bool:
 
 def k8s_submit(
     command: List[str],
-    queue: str,
     image: str,
     job_def_name: Optional[str] = None,
     job_def_suffix: str = "-jd",
@@ -145,7 +144,6 @@ class DockerResult:
 
 def submit_task(
     image: str,
-    queue: str,
     s3_scratch_prefix: str,
     job: Job,
     a_task: Task,
@@ -232,7 +230,6 @@ def submit_task(
 
     result = k8s_submit(
         command,
-        queue,
         image=image,
         job_name=job_name,
         job_def_suffix="-redun-jd",
@@ -246,7 +243,6 @@ def submit_task(
 
 def submit_command(
     image: str,
-    queue: str,
     s3_scratch_prefix: str,
     job: Job,
     command: str,
@@ -309,7 +305,6 @@ chmod +x .task_command
     # Submit to K8S.
     return k8s_submit(
         shell_command,
-        queue,
         image=image,
         job_name=job_name,
         job_def_suffix="-redun-jd",
@@ -503,7 +498,6 @@ class K8SExecutor(Executor):
 
         # Required config.
         self.image = config["image"]
-        self.queue = config["queue"]
         self.s3_scratch_prefix = config["s3_scratch"]
 
         # Optional config.
@@ -657,7 +651,6 @@ class K8SExecutor(Executor):
             # the scheduler.
             self.scheduler.reject_job(None, error)
 
-        print('monitor loop done')
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
 
@@ -885,7 +878,6 @@ class K8SExecutor(Executor):
 
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
-        queue = task_options.pop("queue", self.queue)
         # Generate a unique name for job with no '-' to simplify job name parsing.
         array_uuid = str(uuid.uuid4()).replace("-", "")
 
@@ -932,7 +924,6 @@ class K8SExecutor(Executor):
 
         k8s_resp = submit_task(
             image,
-            queue,
             self.s3_scratch_prefix,
             job,
             job.task,
@@ -977,7 +968,6 @@ class K8SExecutor(Executor):
         image = task_options.pop("image", self.image)
 
 
-        queue = None
         job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
         job_type = "K8S job"
 
@@ -985,7 +975,6 @@ class K8SExecutor(Executor):
         if not job.task.script:
             k8s_resp = submit_task(
                 image,
-                queue,
                 self.s3_scratch_prefix,
                 job,
                 job.task,
@@ -998,7 +987,6 @@ class K8SExecutor(Executor):
             command = get_task_command(job.task, args, kwargs)
             k8s_resp = submit_command(
                 image,
-                queue,
                 self.s3_scratch_prefix,
                 job,
                 command,
@@ -1042,6 +1030,7 @@ class K8SExecutor(Executor):
         """
         api_instance = k8s_utils.get_k8s_batch_client()
         api_response = api_instance.list_job_for_all_namespaces(watch=False)
+        import pdb; pdb.set_trace()
         return api_response
         
 

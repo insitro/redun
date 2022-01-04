@@ -1,9 +1,13 @@
 import pickle
 from unittest.mock import Mock, patch
 import boto3
+import pytest
 from kubernetes import client
 from moto import mock_logs, mock_s3
+
+import redun.executors.k8s
 from redun import File, task
+from redun.cli import RedunClient, import_script
 from redun.config import Config
 from redun.tests.utils import mock_scheduler
 from redun.executors.k8s import (
@@ -17,16 +21,44 @@ from redun.executors.k8s import (
     parse_task_error,
     submit_task,
 )
+from redun.executors.aws_utils import (
+    REDUN_REQUIRED_VERSION,
+    create_tar,
+    extract_tar,
+    find_code_files,
+    get_array_scratch_file,
+    get_job_scratch_file,
+    package_code,
+    parse_code_package_config,
+)
+from redun.file import Dir
 from redun.scheduler import Execution, Job, Scheduler, Traceback
 from redun.tests.utils import mock_scheduler, use_tempdir, wait_until
 from redun.utils import pickle_dumps
+
+# skipped job_def tests here
+
+
+@pytest.mark.parametrize("array,suffix", [(False, ""), (True, "-array")])
+def test_get_hash_from_job_name(array, suffix) -> None:
+    """
+    Returns the Job hash from a AWS Batch job name.
+    """
+    prefix = "my-job-prefix"
+    job_hash = "c000d7f9b6275c58aff9d5466f6a1174e99195ca"
+    job_name = get_k8s_job_name(prefix, job_hash, array=array)
+    assert job_name.startswith(prefix)
+    assert job_name.endswith(suffix)
+
+    job_hash2 = get_hash_from_job_name(job_name)
+    assert job_hash2 == job_hash
+
 
 def mock_executor(scheduler, debug=False, code_package=False):
     """
     Returns an AWSBatchExecutor with AWS API mocks.
     """
     image = "my-image"
-    queue = "queue"
     s3_scratch_prefix = "s3://example-bucket/redun/"
 
     # Setup executor.
@@ -34,12 +66,10 @@ def mock_executor(scheduler, debug=False, code_package=False):
         {
             "k8s": {
                 "image": image,
-                "queue": queue,
                 "s3_scratch": s3_scratch_prefix,
                 "job_monitor_interval": 0.05,
                 "job_stale_time": 0.01,
                 "code_package": code_package,
-                "debug": debug,
             }
         }
     )
@@ -60,9 +90,190 @@ def mock_executor(scheduler, debug=False, code_package=False):
     return executor
 
 
+# skipped batch tags tests here
+
+def test_executor_config(scheduler: Scheduler) -> None:
+    """
+    Executor should be able to parse its config.
+    """
+    # Setup executor.
+    config = Config(
+        {
+            "k8s": {
+                "image": "image",
+                "s3_scratch": "s3_scratch_prefix",
+                "code_includes": "*.txt",
+            }
+        }
+    )
+    executor = K8SExecutor("k8s", scheduler, config["k8s"])
+
+    assert executor.image == "image"
+    assert executor.s3_scratch_prefix == "s3_scratch_prefix"
+    assert isinstance(executor.code_package, dict)
+    assert executor.code_package["includes"] == ["*.txt"]
+
+
 @task()
 def task1(x):
     return x + 10
+
+@task(load_module="custom.module")
+def task1_custom_module(x):
+    return x + 10
+
+
+
+@use_tempdir
+@mock_s3
+@patch("redun.executors.k8s.k8s_submit")
+@pytest.mark.parametrize(
+    "custom_module, expected_load_module, a_task",
+    [
+        (None, "redun.tests.test_k8s", task1),
+        ("custom.module", "custom.module", task1_custom_module),
+    ],
+)
+def test_submit_task(k8s_submit_mock, custom_module, expected_load_module, a_task):
+    job_id = "123"
+    image = "my-image"
+    s3_scratch_prefix = "s3://example-bucket/redun/"
+
+    client = boto3.client("s3", region_name="us-east-1")
+    client.create_bucket(Bucket="example-bucket")
+
+    redun.executors.k8s.k8s_submit.return_value = {"jobId": "batch-job-id"}
+
+    # Create example workflow script to be packaged.
+    File("workflow.py").write(
+        f"""
+@task(load_module={custom_module})
+def task1(x):
+    return x + 10
+    """
+    )
+
+    job = Job(a_task())
+    job.id = job_id
+    job.eval_hash = "eval_hash"
+    code_file = package_code(s3_scratch_prefix)
+    resp = submit_task(
+        image,
+        s3_scratch_prefix,
+        job,
+        a_task,
+        args=[10],
+        kwargs={},
+        code_file=code_file,
+    )
+
+    # We should get a AWS Batch job id back.
+    assert resp["jobId"] == "batch-job-id"
+
+    # Input files should be made.
+    assert File("s3://example-bucket/redun/jobs/eval_hash/input").exists()
+    [code_file] = list(Dir("s3://example-bucket/redun/code"))
+
+    # We should have submitted a job to AWS Batch.
+    redun.executors.k8s.k8s_submit.assert_called_with(
+        [
+            "redun",
+            "--check-version",
+            REDUN_REQUIRED_VERSION,
+            "oneshot",
+            expected_load_module,
+            "--code",
+            code_file.path,
+            "--input",
+            "s3://example-bucket/redun/jobs/eval_hash/input",
+            "--output",
+            "s3://example-bucket/redun/jobs/eval_hash/output",
+            "--error",
+            "s3://example-bucket/redun/jobs/eval_hash/error",
+            a_task.name,
+        ],
+        image="my-image",
+        job_def_suffix="-redun-jd",
+        job_name="k8s-job-eval_hash",
+        array_size=0,
+    )
+
+
+@use_tempdir
+@mock_s3
+@patch("redun.executors.k8s.k8s_submit")
+def test_submit_task_deep_file(k8s_submit_mock):
+    """
+    Executor should be able to submit a task defined in a deeply nested file path.
+    """
+    job_id = "123"
+    image = "my-image"
+    s3_scratch_prefix = "s3://example-bucket/redun/"
+
+    client = boto3.client("s3", region_name="us-east-1")
+    client.create_bucket(Bucket="example-bucket")
+
+    redun.executors.k8s.k8s_submit.return_value = {"jobId": "batch-job-id"}
+
+    # Create example workflow script to be packaged.
+    File("path/to/workflow.py").write(
+        """
+from redun import task
+
+@task()
+def task1(x):
+    return x + 10
+    """
+    )
+
+    module = import_script("path/to/workflow.py")
+
+    job = Job(module.task1())
+    job.id = job_id
+    job.eval_hash = "eval_hash"
+    code_file = package_code(s3_scratch_prefix)
+    resp = submit_task(
+        image,
+        s3_scratch_prefix,
+        job,
+        module.task1,
+        args=[10],
+        kwargs={},
+        code_file=code_file,
+    )
+
+    # We should get a AWS Batch job id back.
+    assert resp["jobId"] == "batch-job-id"
+
+    # Input files should be made.
+    assert File("s3://example-bucket/redun/jobs/eval_hash/input").exists()
+    [code_file] = list(Dir("s3://example-bucket/redun/code"))
+
+    # We should have submitted a job to AWS Batch.
+    redun.executors.k8s.k8s_submit.assert_called_with(
+        [
+            "redun",
+            "--check-version",
+            REDUN_REQUIRED_VERSION,
+            "oneshot",
+            "workflow",
+            "--import-path",
+            "path/to",
+            "--code",
+            code_file.path,
+            "--input",
+            "s3://example-bucket/redun/jobs/eval_hash/input",
+            "--output",
+            "s3://example-bucket/redun/jobs/eval_hash/output",
+            "--error",
+            "s3://example-bucket/redun/jobs/eval_hash/error",
+            "task1",
+        ],
+        image="my-image",
+        job_name="k8s-job-eval_hash",
+        job_def_suffix="-redun-jd",
+        array_size=0,
+    )
 
 @mock_s3
 @patch("redun.executors.k8s.parse_task_logs")
@@ -172,6 +383,606 @@ def test_executor(
     # # Assert job tags.
     job.job_tags == [("aws_batch_job", "batch-job-id"), ("aws_log_stream", "log1")]
     job.job_tags == [("aws_batch_job", "batch-job2-id"), ("aws_log_stream", "log2")]
+
+# skip test_executor_docker here
+
+# skip test_executor_error_override here
+# skip test_executor_multi_start here
+
+# skipped docker interactive
+
+@mock_s3
+def test_executor_handles_unrelated_jobs() -> None:
+    """
+    Regression test for https://insitro.atlassian.net/browse/DE-2632
+
+    There is an expanding pattern of using a "headnode" running in batch to trigger redun
+    pipelines. If the headnode and redun jobs that it spawns have a shared job_name_prefix then
+    the headnode job can get gathered in the `get_jobs` call and we will try to extract the hash.
+    However, since the headnode job is not a redun job, it will not have a hash and previously
+    caused execution failures.
+
+    This test confirms that jobs without hashes in their names are ignored which allows headnode
+    jobs(triggered via lambda or otherwise) to share job name prefixes with the redun jobs that
+    they spawn.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+
+    prefix = "liveratlas_spearmancor"
+    hash1 = "123456789"
+    hash2 = "987654321"
+
+    # Set up mocks to include a headnode job(no hash) and some redun jobs that it "spawned".
+    executor.get_jobs.return_value = [
+        # The headnode job. Note the job name has not hash in it as the hash appears after the "-"
+        # in a redun job name.
+        {"jobId": "headnode", "jobName": f"{prefix}_automation_headnode"},
+        # Redun jobs that were triggered by the "redun run" in the headnode.
+        {"jobId": "preprocess", "jobName": f"{prefix}_preprocess-{hash1}"},
+        {"jobId": "decode", "jobName": f"{prefix}_decode-{hash2}"},
+    ]
+
+    executor.gather_inflight_jobs()
+
+    assert executor.preexisting_batch_jobs == {
+        hash1: "preprocess",
+        hash2: "decode",
+    }
+
+
+# @mock_s3
+# def test_executor_inflight_array_job() -> None:
+#     """
+#     Ensure we reunite with an inflight array job
+#     """
+#     scheduler = mock_scheduler()
+#     executor = mock_executor(scheduler)
+
+#     # Set up mocks to indicate an array job is inflight.
+#     array_uuid = str(uuid.uuid4()).replace("-", "")
+#     executor.get_jobs.return_value = [
+#         {"jobId": "carrots", "jobName": f"redun-job-{array_uuid}-array"}
+#     ]
+#     executor.get_array_child_jobs.return_value = [
+#         {"jobId": "carrots:1", "arrayProperties": {"index": 1}},
+#         {"jobId": "carrots:0", "arrayProperties": {"index": 0}},
+#         {"jobId": "carrots:2", "arrayProperties": {"index": 2}},
+#     ]
+
+#     # Set up hash scratch file
+#     eval_file = File(f"s3://example-bucket/redun/array_jobs/{array_uuid}/eval_hashes")
+#     with eval_file.open("w") as eval_f:
+#         eval_f.write("zero\none\ntwo")
+
+#     # Force the scheduler to gather the inflight jobs. This normally happens on
+#     # first job submission but we want to just check that we can join here.
+#     executor.gather_inflight_jobs()
+
+#     # Check query for child job happened.
+#     assert executor.get_array_child_jobs.call_args
+#     assert executor.get_array_child_jobs.call_args[0] == ("carrots", BATCH_JOB_STATUSES.inflight)
+
+#     # Make sure child jobs (and not parent) ended up in pending batch jobs.
+#     assert executor.preexisting_batch_jobs == {
+#         "zero": "carrots:0",
+#         "one": "carrots:1",
+#         "two": "carrots:2",
+#     }
+
+
+# @mock_s3
+# @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+# @patch("redun.executors.aws_utils.package_code")
+# def test_code_packaging(package_code_mock, get_aws_user_mock) -> None:
+#     """
+#     Ensure that code packaging only happens on first submission.
+#     """
+#     package_code_mock.return_value = "s3://fake-bucket/code.tar.gz"
+
+#     scheduler = mock_scheduler()
+#     executor = mock_executor(scheduler, debug=True, code_package=True)
+#     executor.start()
+
+#     # Starting the executor should not have triggered code packaging.
+#     assert executor.code_file is None
+#     assert package_code_mock.call_count == 0
+
+#     # Hand create jobs.
+#     job1 = Job(task1(10))
+#     job1.id = "1"
+#     job1.task = task1
+#     job1.eval_hash = "eval_hash"
+
+#     job2 = Job(task1(20))
+#     job2.id = "2"
+#     job2.task = task1
+#     job2.eval_hash = "eval_hash"
+
+#     # Submit a job and ensure that the code was packaged.
+#     executor.submit(job1, [10], {})
+#     assert executor.code_file == "s3://fake-bucket/code.tar.gz"
+#     assert package_code_mock.call_count == 1
+
+#     # Submit another job and ensure that code was not packaged again.
+#     executor.submit(job2, [20], {})
+#     assert package_code_mock.call_count == 1
+
+#     executor.stop()
+
+
+# @mock_s3
+# @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+# def test_inflight_join_disabled_in_debug(get_aws_user_mock) -> None:
+#     """
+#     Ensure that debug=True disables inflight job gathering as it is unnecessary.
+#     """
+#     scheduler = mock_scheduler()
+#     executor = mock_executor(scheduler, debug=True)
+#     executor.start()
+
+#     # Hand create job.
+#     job = Job(task1(10))
+#     job.id = "123"
+#     job.task = task1
+#     job.eval_hash = "eval_hash"
+
+#     # Submit redun job.
+#     executor.submit(job, [10], {})
+
+#     # Ensure that inflight jobs were not gathered.
+#     assert executor.get_jobs.call_count == 0
+
+#     executor.stop()
+
+
+# @mock_s3
+# @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+# @patch("redun.executors.aws_batch.aws_describe_jobs")
+# def test_inflight_join_only_on_first_submission(aws_describe_jobs_mock, get_aws_user_mock) -> None:
+#     """
+#     Ensure that inflight jobs are only gathered once and not on every job submission.
+#     """
+#     scheduler = mock_scheduler()
+#     executor = mock_executor(scheduler)
+
+#     executor.start()
+
+#     # Hand create jobs.
+#     job1 = Job(task1(10))
+#     job1.id = "1"
+#     job1.task = task1
+#     job1.eval_hash = "eval_hash"
+
+#     job2 = Job(task1(20))
+#     job2.id = "2"
+#     job2.task = task1
+#     job2.eval_hash = "eval_hash"
+
+#     # Submit redun job.
+#     executor.submit(job1, [10], {})
+
+#     # Ensure that inflight jobs were gathered.
+#     assert executor.get_jobs.call_count == 1
+
+#     # Submit the second job and confirm that job reuniting was not done again.
+#     executor.submit(job2, [20], {})
+#     assert executor.get_jobs.call_count == 1
+
+#     executor.stop()
+
+
+# @mock_s3
+# @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+# @patch("redun.executors.aws_batch.aws_describe_jobs")
+# @patch("redun.executors.aws_batch.iter_batch_job_status")
+# @patch("redun.executors.aws_batch.batch_submit")
+# def test_executor_inflight_job(
+#     batch_submit_mock,
+#     iter_batch_job_status_mock,
+#     aws_describe_jobs_mock,
+#     get_aws_user_mock,
+# ) -> None:
+#     """
+#     Ensure we reunite with an inflight job.
+#     """
+#     batch_job_id = "333"
+
+#     # Setup AWS Batch mocks.
+#     iter_batch_job_status_mock.return_value = iter([])
+#     aws_describe_jobs_mock.return_value = iter(
+#         [
+#             {
+#                 "jobId": batch_job_id,
+#             }
+#         ]
+#     )
+
+#     scheduler = mock_scheduler()
+#     executor = mock_executor(scheduler)
+#     executor.get_jobs.return_value = [{"jobId": batch_job_id, "jobName": "redun-job-eval_hash"}]
+#     executor.start()
+
+#     # Hand create job.
+#     job = Job(task1(10))
+#     job.id = "123"
+#     job.task = task1
+#     job.eval_hash = "eval_hash"
+
+#     # Submit redun job.
+#     executor.submit(job, [10], {})
+
+#     # Ensure no batch jobs were submitted.
+#     assert batch_submit_mock.call_count == 0
+
+#     # Simulate AWS Batch completing with valid value.
+#     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
+#     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
+
+#     iter_batch_job_status_mock.return_value = iter([{"jobId": batch_job_id, "status": SUCCEEDED}])
+
+#     scheduler.batch_wait([job.id])
+
+#     # Simulate pre-existing job output.
+#     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
+#     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
+
+#     # Ensure redun job is completed.
+#     assert scheduler.job_results[job.id] == 20
+
+#     executor.stop()
+
+
+# @task(limits={"cpu": 1}, random_option=5)
+# def array_task(x):
+#     return x + 10
+
+
+# @task()
+# def other_task(x, y):
+#     return x - y
+
+
+# # Tests begin here
+# def test_job_descrs():
+#     """Tests the JobDescription class used to determine if Jobs are equivalent"""
+#     j1 = Job(array_task(1))
+#     j1.task = array_task
+
+#     j2 = Job(array_task(2))
+#     j2.task = array_task
+
+#     a = job_array.JobDescription(j1)
+#     b = job_array.JobDescription(j2)
+
+#     assert hash(a) == hash(b)
+#     assert a == b
+
+#     # JobDescription should validate that Job has a task set.
+#     j3 = Job(other_task(1, y=2))
+#     with pytest.raises(AssertionError):
+#         c = job_array.JobDescription(j3)
+#     j3.task = other_task
+#     c = job_array.JobDescription(j3)
+
+#     assert a != c
+
+
+# @mock_s3
+# def test_job_staleness():
+#     """Tests staleness criteria for array'ing jobs"""
+#     j1 = Job(array_task(1))
+#     j1.task = array_task
+#     d = job_array.JobDescription(j1)
+
+#     sched = mock_scheduler()
+#     exec = mock_executor(sched)
+#     arr = job_array.JobArrayer(exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5)
+
+#     for i in range(10):
+#         arr.add_job(j1, args=(i), kwargs={})
+
+#     assert arr.get_stale_descrs() == []
+#     wait_until(lambda: arr.get_stale_descrs() == [d])
+
+
+# @mock_s3
+# def test_arrayer_thread():
+#     """Tests that the arrayer monitor thread can be restarted after exit"""
+#     j1 = Job(array_task(1))
+#     j1.task = array_task
+
+#     sched = mock_scheduler()
+#     exec = mock_executor(sched)
+#     arr = job_array.JobArrayer(exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5)
+
+#     arr.add_job(j1, args=(1), kwargs={})
+#     assert arr._monitor_thread.is_alive()
+
+#     # Stop the monitoring thread.
+#     arr.stop()
+#     assert not arr._monitor_thread.is_alive()
+
+#     # Submitting an additional job should restart the thread.
+#     arr.add_job(j1, args=(2), kwargs={})
+#     assert arr._monitor_thread.is_alive()
+
+#     arr.stop()
+
+
+# @mock_s3
+# @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+# @patch("redun.executors.aws_batch.submit_task")
+# def test_jobs_are_arrayed(submit_task_mock, get_aws_user_mock):
+#     """
+#     Tests repeated jobs are submitted as a single array job. Checks that
+#     job ID for the array job and child jobs end up tracked
+#     """
+#     scheduler = mock_scheduler()
+#     executor = mock_executor(scheduler)
+#     executor.arrayer.min_array_size = 3
+#     executor.arrayer.max_array_size = 7
+
+#     redun.executors.aws_batch.submit_task.side_effect = [
+#         {"jobId": "first-array-job", "arrayProperties": {"size": 7}},
+#         {"jobId": "second-array-job", "arrayProperties": {"size": 3}},
+#         {"jobId": "single-job"},
+#     ]
+
+#     test_jobs = []
+#     for i in range(10):
+#         job = Job(array_task(i))
+#         job.id = f"task_{i}"
+#         job.task = array_task
+#         job.eval_hash = f"eval_hash_{i}"
+
+#         executor.submit(job, (i), {})
+#         test_jobs.append(job)
+
+#     # Wait for jobs to get submitted from arrayer to executor.
+#     wait_until(lambda: len(executor.pending_batch_jobs) == 10)
+
+#     # Two array jobs, of size 7 and 3, should have been submitted.
+#     pending_correct = {
+#         f"first-array-job:{i}": test_jobs[i] for i in range(executor.arrayer.max_array_size)
+#     }
+#     pending_correct.update(
+#         {
+#             f"second-array-job:{i}": j
+#             for i, j in enumerate(test_jobs[executor.arrayer.max_array_size :])
+#         }
+#     )
+#     assert executor.pending_batch_jobs == pending_correct
+
+#     # Two array jobs should have been submitted
+#     assert submit_task_mock.call_count == 2
+
+#     # Submit a different kind of job now.
+#     j = Job(other_task(3, 5))
+#     j.id = "other_task"
+#     j.task = other_task
+#     j.eval_hash = "hashbrowns"
+#     executor.submit(j, (3, 5), {})
+
+#     assert len(executor.arrayer.pending) == 1
+#     pending_correct["single-job"] = j
+#     wait_until(lambda: executor.pending_batch_jobs == pending_correct)
+
+#     # Make monitor thread exit correctly
+#     executor.stop()
+
+
+# @use_tempdir
+# @mock_s3
+# @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+# @patch("redun.executors.aws_batch.AWSBatchExecutor._submit_single_job")
+# def test_array_disabling(submit_single_mock, get_aws_user_mock):
+#     """
+#     Tests setting `min_array_size=0` disables job arraying.
+#     """
+#     # Setup executor.
+#     config = Config(
+#         {
+#             "batch": {
+#                 "image": "image",
+#                 "queue": "queue",
+#                 "s3_scratch": "s3_scratch_prefix",
+#                 "code_includes": "*.txt",
+#                 "min_array_size": 0,
+#             }
+#         }
+#     )
+#     scheduler = mock_scheduler()
+
+#     executor = AWSBatchExecutor("batch", scheduler, config["batch"])
+#     executor.get_jobs = Mock()
+#     executor.get_jobs.return_value = []
+
+#     # Submit one test job.
+#     job = Job(other_task(5, 3))
+#     job.id = "carrots"
+#     job.task = other_task
+#     job.eval_hash = "why do i always say carrots in test cases idk"
+#     executor.submit(job, [5, 3], {})
+
+#     # Job should be submitted immediately.
+#     assert submit_single_mock.call_args
+#     assert submit_single_mock.call_args[0] == (job, [5, 3], {})
+
+#     # Monitor thread should not run.
+#     assert not executor.arrayer._monitor_thread.is_alive()
+#     executor.stop()
+
+
+# @mock_s3
+# @use_tempdir
+# @patch("redun.executors.aws_batch.batch_submit")
+# def test_array_job_s3_setup(batch_submit_mock):
+#     """
+#     Tests that args, kwargs, and output file paths end up
+#     in the correct locations in S3 as the right data structure
+#     """
+#     scheduler = mock_scheduler()
+#     executor = mock_executor(scheduler)
+#     executor.s3_scratch_prefix = "./evil\ndirectory"
+
+#     redun.executors.aws_batch.batch_submit.return_value = {
+#         "jobId": "array-job-id",
+#         "arrayProperties": {"size": "10"},
+#     }
+
+#     test_jobs = []
+#     for i in range(10):
+#         job = Job(other_task(i, y=2 * i))
+#         job.id = f"task_{i}"
+#         job.task = other_task
+#         job.eval_hash = f"hash_{i}"
+#         test_jobs.append(job)
+
+#     pending_jobs = [job_array.PendingJob(test_jobs[i], (i), {"y": 2 * i}) for i in range(10)]
+#     array_uuid = executor.arrayer.submit_array_job(pending_jobs)
+
+#     # Check input file is on S3 and contains list of (args, kwargs) tuples
+#     input_file = File(
+#         get_array_scratch_file(
+#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_INPUT
+#         )
+#     )
+#     assert input_file.exists()
+
+#     with input_file.open("rb") as infile:
+#         arglist, kwarglist = pickle.load(infile)
+#     assert arglist == [(i) for i in range(10)]
+#     assert kwarglist == [{"y": 2 * i} for i in range(10)]
+
+#     # Check output paths file is on S3 and contains correct output paths
+#     output_file = File(
+#         get_array_scratch_file(
+#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
+#         )
+#     )
+#     assert output_file.exists()
+#     ofiles = json.load(output_file)
+
+#     assert ofiles == [
+#         get_job_scratch_file(
+#             executor.s3_scratch_prefix, j, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
+#         )
+#         for j in test_jobs
+#     ]
+
+#     # Error paths are the same as output, basically
+#     error_file = File(
+#         get_array_scratch_file(
+#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_ERROR
+#         )
+#     )
+#     assert error_file.exists()
+#     efiles = json.load(error_file)
+
+#     assert efiles == [
+#         get_job_scratch_file(
+#             executor.s3_scratch_prefix, j, redun.executors.aws_utils.S3_SCRATCH_ERROR
+#         )
+#         for j in test_jobs
+#     ]
+
+#     # Child job eval hashes should be present as well.
+#     eval_file = File(
+#         get_array_scratch_file(
+#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_HASHES
+#         )
+#     )
+#     with eval_file.open("r") as evfile:
+#         hashes = evfile.read().splitlines()
+
+#     assert hashes == [job.eval_hash for job in test_jobs]
+
+#     # Make monitor thread exit correctly
+#     executor.stop()
+
+
+# @mock_s3
+# @use_tempdir
+# @patch("redun.executors.aws_batch.batch_submit")
+# def test_array_oneshot(batch_submit_mock):
+#     """
+#     Checks array child jobs can fetch their args and kwargs, and
+#     put their (correct) output in the right place.
+#     """
+#     # Create a code file
+#     file = File("workflow.py")
+#     file.write(
+#         """
+# from redun import task
+
+# @task()
+# def other_task(x, y):
+#    return x - y
+#         """
+#     )
+#     create_tar("code.tar.gz", ["workflow.py"])
+#     file.remove()
+
+#     # Submit 10 jobs that will be arrayed
+#     scheduler = mock_scheduler()
+#     executor = mock_executor(scheduler)
+#     executor.s3_scratch_prefix = "."
+
+#     redun.executors.aws_batch.batch_submit.return_value = {
+#         "jobId": "array-job-id",
+#         "arrayProperties": {"size": "10"},
+#     }
+
+#     test_jobs = []
+#     for i in range(3):
+#         job = Job(other_task(i, y=2 * i))
+#         job.id = f"task_{i}"
+#         job.task = other_task
+#         job.eval_hash = f"hash_{i}"
+#         test_jobs.append(job)
+
+#     pending_jobs = [job_array.PendingJob(test_jobs[i], (i,), {"y": 2 * i}) for i in range(3)]
+#     array_uuid = executor.arrayer.submit_array_job(pending_jobs)
+
+#     # Now run 2 of those jobs and make sure they work ok
+#     client = RedunClient()
+#     array_dir = os.path.join(executor.s3_scratch_prefix, "array_jobs", array_uuid)
+#     input_path = os.path.join(array_dir, redun.executors.aws_utils.S3_SCRATCH_INPUT)
+#     output_path = os.path.join(array_dir, redun.executors.aws_utils.S3_SCRATCH_OUTPUT)
+#     error_path = os.path.join(array_dir, redun.executors.aws_utils.S3_SCRATCH_ERROR)
+#     executor.stop()
+
+#     for i in range(3):
+#         os.environ[job_array.AWS_ARRAY_VAR] = str(i)
+#         client.execute(
+#             [
+#                 "redun",
+#                 "oneshot",
+#                 "workflow.py",
+#                 "--code",
+#                 "code.tar.gz",
+#                 "--array-job",
+#                 "--input",
+#                 input_path,
+#                 "--output",
+#                 output_path,
+#                 "--error",
+#                 error_path,
+#                 "other_task",
+#             ]
+#         )
+
+#         # Check output files are there
+#         output_file = File(
+#             get_job_scratch_file(
+#                 executor.s3_scratch_prefix,
+#                 test_jobs[i],
+#                 redun.executors.aws_utils.S3_SCRATCH_OUTPUT,
+#             )
+#         )
+
+#         assert pickle.loads(cast(bytes, output_file.read("rb"))) == i - 2 * i
 
 
 if __name__ == '__main__':
