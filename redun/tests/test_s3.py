@@ -1,7 +1,7 @@
 import boto3
-from moto import mock_s3
 
 from redun import Dir, File
+from redun.tests.utils import mock_s3
 
 
 @mock_s3

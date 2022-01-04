@@ -8,9 +8,10 @@ from unittest.mock import Mock, patch
 import boto3
 import pytest
 from freezegun import freeze_time
-from moto import mock_logs, mock_s3
+from moto import mock_logs
 
 import redun.executors.aws_batch
+import redun.tests.utils
 from redun import File, job_array, task
 from redun.cli import RedunClient, import_script
 from redun.config import Config
@@ -44,7 +45,7 @@ from redun.executors.aws_utils import (
 from redun.file import Dir
 from redun.scheduler import Execution, Job, Scheduler, Traceback
 from redun.scripting import ScriptError
-from redun.tests.utils import mock_scheduler, use_tempdir, wait_until
+from redun.tests.utils import mock_s3, mock_scheduler, use_tempdir, wait_until
 from redun.utils import pickle_dumps
 
 

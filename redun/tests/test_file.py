@@ -5,11 +5,10 @@ import shutil
 import boto3
 import pytest
 import vcr
-from moto import mock_s3
 
 from redun import File, Scheduler, ShardedS3Dataset, task
 from redun.file import Dir, StagingDir, StagingFile, get_filesystem, glob_file
-from redun.tests.utils import use_tempdir
+from redun.tests.utils import mock_s3, use_tempdir
 from redun.tools import copy_file
 from redun.value import get_type_registry
 

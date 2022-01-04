@@ -10,10 +10,97 @@ from functools import wraps
 from inspect import getmembers, getmodule, isclass, isfunction, ismethod, ismodule
 from itertools import zip_longest
 from typing import Any, Callable, Dict, Iterator, List, NamedTuple, Optional, Type
+from unittest.mock import patch
 
 import sqlalchemy.event
+from aiobotocore.response import StreamingBody
+from botocore.awsrequest import AWSResponse
+from moto import mock_s3 as _mock_s3
+from moto.core.models import MockRawResponse
 
 from redun import Scheduler
+
+"""
+Current moto (1.3.16) is not fully compatible with the latest s3fs (2021.11.1),
+because of s3fs's use of aiobotocore. Here we define a small monkey patch
+to make moto compatible enough for our needs. If future versions of moto
+gain full support, these patches can be removed.
+"""
+
+
+class AsyncMockedRawResponse(MockRawResponse):
+    """
+    Wraps a moto MockRawResponse in order to provide an async read method.
+    """
+
+    def __init__(self, response):
+        self._response = response
+
+    async def read(self, *args, **kwargs):
+        # Provide an async version of the read method.
+        return self._response.read(*args, **kwargs)
+
+    def _sync_read(self, *args, **kwargs):
+        return self._response.read(*args, **kwargs)
+
+    def stream(self, **kwargs):
+        # We override stream in order to call the original synchronous read.
+        contents = self._sync_read()
+        while contents:
+            yield contents
+            contents = self._sync_read()
+
+
+class MonkeyPatchedAWSResponse(AWSResponse):
+    """
+    Subclasses AWSRespnse in order to provide an async read and raw headers.
+
+    Inspiration: https://github.com/aio-libs/aiobotocore/issues/755#issuecomment-807325931
+    """
+
+    def __init__(self, url, status_code, headers, raw):
+        async_raw = StreamingBody(AsyncMockedRawResponse(raw), headers.get("content-length"))
+        super().__init__(url, status_code, headers, async_raw)
+
+    @property
+    def raw_headers(self):
+        # Raw headers are expected to be an iterable of pairs of bytes. We can
+        # reconstruct the raw headers from the parsed ones.
+        return [
+            (key.encode("utf-8"), str(value).encode("utf-8"))
+            for key, value in self.headers.items()
+        ]
+
+    async def read(self):
+        return self.text
+
+
+def patch_aws(func: Callable) -> Callable:
+    """
+    Fix botocore and moto to work together.
+
+    This patch is needed until moto is fully compatiable with latest botocore.
+    """
+
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        # Apply patches.
+        with patch("botocore.awsrequest.AWSResponse", MonkeyPatchedAWSResponse), patch(
+            "moto.core.models.AWSResponse", MonkeyPatchedAWSResponse
+        ):
+            return func(*args, **kwargs)
+
+    return wrapped
+
+
+def mock_s3(func: Callable) -> Callable:
+    """
+    This is redun's wrapped mock_s3 with applies patch_aws.
+
+    All uses of mock_s3 should use this one in order to make sure the moto
+    compatibility fixes are in place.
+    """
+    return patch_aws(_mock_s3(func))
 
 
 def clean_dir(path: str) -> None:
