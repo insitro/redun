@@ -1402,3 +1402,27 @@ def test_no_default_root(scheduler: Scheduler, session: Session) -> None:
 
     # We should have the default root task.
     assert exec1.job.task.name == "task1"
+
+
+def test_default_args_expression(scheduler: Scheduler) -> None:
+    """
+    Task default arguments should support expressions.
+    """
+
+    @task
+    def add(a: int, b: int) -> int:
+        return a + b
+
+    @task
+    def main(x: int = add(1, 2)) -> int:
+        return x
+
+    assert scheduler.run(main()) == 3
+    assert scheduler.run(main(4)) == 4
+
+    @task
+    def main2(x: List[int] = [add(1, 2)]) -> List[int]:
+        # Default argument might contain an expression within a nested value (e.g. list).
+        return x
+
+    assert scheduler.run(main2()) == [3]

@@ -753,8 +753,8 @@ def get_task_arg_parser(
         opt = add_value_arg_parser(
             parser,
             param.name,
-            param.annotation if param.annotation != param.empty else None,
-            param.default if param.default != param.empty else None,
+            param.annotation if param.annotation is not param.empty else None,
+            param.default if param.default is not param.empty else None,
         )
         cli2arg[opt.dest] = param.name
 
