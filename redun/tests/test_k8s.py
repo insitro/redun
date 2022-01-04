@@ -85,17 +85,10 @@ def test_executor(
     executor = mock_executor(scheduler)
     executor.start()
 
-    # needs to have a .metadata.uid
-
-    md = client.V1ObjectMeta()
-    md.uid = batch_job_id
-    md.name = "DoNotUse"
-    k8s_job = client.V1Job(
+    k8s_submit_mock.return_value = client.V1Job(
         api_version="batch/v1",
-        metadata = md,
+        metadata = client.V1ObjectMeta(uid=batch_job_id, name="DoNotUse"),
         kind="Job")
-    k8s_submit_mock.return_value = k8s_job
-
 
     # Submit redun job that will succeed.
     expr = task1(10)
@@ -121,10 +114,10 @@ def test_executor(
         "retries": 1,
     }
 
-    k8s_job = client.V1Job(
+    k8s_submit_mock.return_value = client.V1Job(
         api_version="batch/v1",
+        metadata = client.V1ObjectMeta(uid=batch_job2_id, name="DoNotUse"),
         kind="Job")
-    k8s_submit_mock_return_value = k8s_job
 
     # Submit redun job that will fail.
     expr2 = task1.options(memory=8)("a")
@@ -160,8 +153,12 @@ def test_executor(
 
     iter_k8s_job_status_mock.return_value = iter(
         [
-            {"jobId": batch_job_id, "status": "SUCCEEDED", "container": {"logStreamName": "log1"}},
-            {"jobId": batch_job2_id, "status": "FAILED", "container": {"logStreamName": "log2"}},
+            client.V1Job(
+                metadata = client.V1ObjectMeta(uid=batch_job_id),
+                status = client.V1JobStatus(succeeded=1)),
+             client.V1Job(
+                metadata = client.V1ObjectMeta(uid=batch_job2_id),
+                status = client.V1JobStatus(failed=1)),
         ]
     )
 
@@ -173,8 +170,8 @@ def test_executor(
     assert isinstance(scheduler.job_errors[job2.id], ValueError)
 
     # # Assert job tags.
-    # job.job_tags == [("aws_batch_job", "batch-job-id"), ("aws_log_stream", "log1")]
-    # job.job_tags == [("aws_batch_job", "batch-job2-id"), ("aws_log_stream", "log2")]
+    job.job_tags == [("aws_batch_job", "batch-job-id"), ("aws_log_stream", "log1")]
+    job.job_tags == [("aws_batch_job", "batch-job2-id"), ("aws_log_stream", "log2")]
 
 
 if __name__ == '__main__':

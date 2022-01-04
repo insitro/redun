@@ -545,7 +545,6 @@ class K8SExecutor(Executor):
 
         # Get all running jobs by name
         inflight_jobs = self.get_jobs([]) #BATCH_JOB_STATUSES.inflight)
-        print("inflight jobs:", inflight_jobs)
         for job in inflight_jobs.items:
             job_name = job.metadata.name
             job_id = job.metadata.uid
@@ -635,7 +634,6 @@ class K8SExecutor(Executor):
 
         try:
             while self.is_running and (self.pending_k8s_jobs or self.arrayer.num_pending):
-
                 if self.scheduler.logger.level >= logging.DEBUG:
                     self.log(
                         f"Preparing {self.arrayer.num_pending} job(s) for Job Arrays.",
@@ -648,7 +646,7 @@ class K8SExecutor(Executor):
                     )
             
                 # Copy pending_k8s_jobs.keys() since it can change due to new submissions.
-                jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
+                jobs = iter_k8s_job_status(list(self.pending_k8s_jobs.keys()))
                 for job in jobs:
                     self._process_job_status(job)
                 time.sleep(self.interval)
@@ -659,6 +657,7 @@ class K8SExecutor(Executor):
             # the scheduler.
             self.scheduler.reject_job(None, error)
 
+        print('monitor loop done')
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
 
@@ -731,7 +730,7 @@ class K8SExecutor(Executor):
 
             try:
                 status_reason = job.status.conditions[-1].message
-            except (KeyError, IndexError):
+            except (KeyError, IndexError, TypeError):
                 status_reason = ""
             if status_reason:
                 logs.append(f"statusReason: {status_reason}\n")
@@ -1006,7 +1005,6 @@ class K8SExecutor(Executor):
                 job_options=task_options,
             )
 
-        print("k8s_resp:", k8s_resp)
         job_id = k8s_resp.metadata.uid
         job_name = k8s_resp.metadata.name
         retries = None # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
