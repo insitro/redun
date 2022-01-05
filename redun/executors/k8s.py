@@ -1032,23 +1032,7 @@ class K8SExecutor(Executor):
         api_response = api_instance.list_job_for_all_namespaces(watch=False)
         import pdb; pdb.set_trace()
         return api_response
-        
-
-    def get_array_child_jobs(
-        self, job_id: str, statuses: List[str] = [] #BATCH_JOB_STATUSES.inflight
-    ) -> List[Dict[str, Any]]:
-        pass
-        # batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
-        # paginator = batch_client.get_paginator("list_jobs")
-        # found_jobs = []
-        # for status in statuses:
-        #     pages = paginator.paginate(arrayJobId=job_id, jobStatus=status)
-        #     found_jobs.extend([job for response in pages for job in response["jobSummaryList"]])
-        # job_name = 'redunjob'
-        # api_response = api_instance.read_namespaced_job_status(
-        #     name=job_name,
-        #     namespace="default")
-        # return api_response
+      
 
     def kill_jobs(
         self, job_ids: Iterable[str], reason: str = "Terminated by user"

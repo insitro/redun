@@ -2,6 +2,7 @@ import pickle
 from unittest.mock import Mock, patch
 import boto3
 import pytest
+import uuid
 from kubernetes import client
 from moto import mock_logs, mock_s3
 
@@ -54,7 +55,7 @@ def test_get_hash_from_job_name(array, suffix) -> None:
     assert job_hash2 == job_hash
 
 
-def mock_executor(scheduler, debug=False, code_package=False):
+def mock_executor(scheduler, code_package=False):
     """
     Returns an AWSBatchExecutor with AWS API mocks.
     """
@@ -76,13 +77,11 @@ def mock_executor(scheduler, debug=False, code_package=False):
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
 
     executor.get_jobs = Mock()
+    # TODO(dek): construct V1JobList
     class GetJobResponse:
         def __init__(self):
             self.items = []
     executor.get_jobs.return_value = GetJobResponse()
-
-    executor.get_array_child_jobs = Mock()
-    executor.get_array_child_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")
     s3_client.create_bucket(Bucket="example-bucket")
@@ -414,162 +413,94 @@ def test_executor_handles_unrelated_jobs() -> None:
     hash2 = "987654321"
 
     # Set up mocks to include a headnode job(no hash) and some redun jobs that it "spawned".
-    executor.get_jobs.return_value = [
-        # The headnode job. Note the job name has not hash in it as the hash appears after the "-"
-        # in a redun job name.
-        {"jobId": "headnode", "jobName": f"{prefix}_automation_headnode"},
-        # Redun jobs that were triggered by the "redun run" in the headnode.
-        {"jobId": "preprocess", "jobName": f"{prefix}_preprocess-{hash1}"},
-        {"jobId": "decode", "jobName": f"{prefix}_decode-{hash2}"},
-    ]
+    executor.get_jobs.return_value = client.V1JobList(items=[
+            client.V1Job(metadata=client.V1ObjectMeta(uid='headnode', name=f"{prefix}_automation_headnode")),
+            client.V1Job(metadata=client.V1ObjectMeta(uid='preprocess', name=f"{prefix}_preprocess-{hash1}")),
+            client.V1Job(metadata=client.V1ObjectMeta(uid='decode', name=f"{prefix}_decode-{hash2}"))])
 
     executor.gather_inflight_jobs()
 
-    assert executor.preexisting_batch_jobs == {
+    assert executor.preexisting_k8s_jobs == {
         hash1: "preprocess",
         hash2: "decode",
     }
 
 
-# @mock_s3
-# def test_executor_inflight_array_job() -> None:
-#     """
-#     Ensure we reunite with an inflight array job
-#     """
-#     scheduler = mock_scheduler()
-#     executor = mock_executor(scheduler)
 
-#     # Set up mocks to indicate an array job is inflight.
-#     array_uuid = str(uuid.uuid4()).replace("-", "")
-#     executor.get_jobs.return_value = [
-#         {"jobId": "carrots", "jobName": f"redun-job-{array_uuid}-array"}
-#     ]
-#     executor.get_array_child_jobs.return_value = [
-#         {"jobId": "carrots:1", "arrayProperties": {"index": 1}},
-#         {"jobId": "carrots:0", "arrayProperties": {"index": 0}},
-#         {"jobId": "carrots:2", "arrayProperties": {"index": 2}},
-#     ]
+@mock_s3
+@patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+@patch("redun.executors.aws_utils.package_code")
+def test_code_packaging(package_code_mock, get_aws_user_mock) -> None:
+    """
+    Ensure that code packaging only happens on first submission.
+    """
+    package_code_mock.return_value = "s3://fake-bucket/code.tar.gz"
 
-#     # Set up hash scratch file
-#     eval_file = File(f"s3://example-bucket/redun/array_jobs/{array_uuid}/eval_hashes")
-#     with eval_file.open("w") as eval_f:
-#         eval_f.write("zero\none\ntwo")
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler, code_package=True)
+    executor.start()
 
-#     # Force the scheduler to gather the inflight jobs. This normally happens on
-#     # first job submission but we want to just check that we can join here.
-#     executor.gather_inflight_jobs()
+    # Starting the executor should not have triggered code packaging.
+    assert executor.code_file is None
+    assert package_code_mock.call_count == 0
 
-#     # Check query for child job happened.
-#     assert executor.get_array_child_jobs.call_args
-#     assert executor.get_array_child_jobs.call_args[0] == ("carrots", BATCH_JOB_STATUSES.inflight)
+    # Hand create jobs.
+    job1 = Job(task1(10))
+    job1.id = "1"
+    job1.task = task1
+    job1.eval_hash = "eval_hash"
 
-#     # Make sure child jobs (and not parent) ended up in pending batch jobs.
-#     assert executor.preexisting_batch_jobs == {
-#         "zero": "carrots:0",
-#         "one": "carrots:1",
-#         "two": "carrots:2",
-#     }
+    job2 = Job(task1(20))
+    job2.id = "2"
+    job2.task = task1
+    job2.eval_hash = "eval_hash"
 
+    # Submit a job and ensure that the code was packaged.
+    executor.submit(job1, [10], {})
+    assert executor.code_file == "s3://fake-bucket/code.tar.gz"
+    assert package_code_mock.call_count == 1
 
-# @mock_s3
-# @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
-# @patch("redun.executors.aws_utils.package_code")
-# def test_code_packaging(package_code_mock, get_aws_user_mock) -> None:
-#     """
-#     Ensure that code packaging only happens on first submission.
-#     """
-#     package_code_mock.return_value = "s3://fake-bucket/code.tar.gz"
+    # Submit another job and ensure that code was not packaged again.
+    executor.submit(job2, [20], {})
+    assert package_code_mock.call_count == 1
 
-#     scheduler = mock_scheduler()
-#     executor = mock_executor(scheduler, debug=True, code_package=True)
-#     executor.start()
-
-#     # Starting the executor should not have triggered code packaging.
-#     assert executor.code_file is None
-#     assert package_code_mock.call_count == 0
-
-#     # Hand create jobs.
-#     job1 = Job(task1(10))
-#     job1.id = "1"
-#     job1.task = task1
-#     job1.eval_hash = "eval_hash"
-
-#     job2 = Job(task1(20))
-#     job2.id = "2"
-#     job2.task = task1
-#     job2.eval_hash = "eval_hash"
-
-#     # Submit a job and ensure that the code was packaged.
-#     executor.submit(job1, [10], {})
-#     assert executor.code_file == "s3://fake-bucket/code.tar.gz"
-#     assert package_code_mock.call_count == 1
-
-#     # Submit another job and ensure that code was not packaged again.
-#     executor.submit(job2, [20], {})
-#     assert package_code_mock.call_count == 1
-
-#     executor.stop()
+    executor.stop()
 
 
-# @mock_s3
-# @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
-# def test_inflight_join_disabled_in_debug(get_aws_user_mock) -> None:
-#     """
-#     Ensure that debug=True disables inflight job gathering as it is unnecessary.
-#     """
-#     scheduler = mock_scheduler()
-#     executor = mock_executor(scheduler, debug=True)
-#     executor.start()
+@mock_s3
+@patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+@patch("redun.executors.aws_batch.aws_describe_jobs")
+def test_inflight_join_only_on_first_submission(aws_describe_jobs_mock, get_aws_user_mock) -> None:
+    """
+    Ensure that inflight jobs are only gathered once and not on every job submission.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
 
-#     # Hand create job.
-#     job = Job(task1(10))
-#     job.id = "123"
-#     job.task = task1
-#     job.eval_hash = "eval_hash"
+    executor.start()
 
-#     # Submit redun job.
-#     executor.submit(job, [10], {})
+    # Hand create jobs.
+    job1 = Job(task1(10))
+    job1.id = "1"
+    job1.task = task1
+    job1.eval_hash = "eval_hash"
 
-#     # Ensure that inflight jobs were not gathered.
-#     assert executor.get_jobs.call_count == 0
+    job2 = Job(task1(20))
+    job2.id = "2"
+    job2.task = task1
+    job2.eval_hash = "eval_hash"
 
-#     executor.stop()
+    # Submit redun job.
+    executor.submit(job1, [10], {})
 
+    # Ensure that inflight jobs were gathered.
+    assert executor.get_jobs.call_count == 1
 
-# @mock_s3
-# @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
-# @patch("redun.executors.aws_batch.aws_describe_jobs")
-# def test_inflight_join_only_on_first_submission(aws_describe_jobs_mock, get_aws_user_mock) -> None:
-#     """
-#     Ensure that inflight jobs are only gathered once and not on every job submission.
-#     """
-#     scheduler = mock_scheduler()
-#     executor = mock_executor(scheduler)
+    # Submit the second job and confirm that job reuniting was not done again.
+    executor.submit(job2, [20], {})
+    assert executor.get_jobs.call_count == 1
 
-#     executor.start()
-
-#     # Hand create jobs.
-#     job1 = Job(task1(10))
-#     job1.id = "1"
-#     job1.task = task1
-#     job1.eval_hash = "eval_hash"
-
-#     job2 = Job(task1(20))
-#     job2.id = "2"
-#     job2.task = task1
-#     job2.eval_hash = "eval_hash"
-
-#     # Submit redun job.
-#     executor.submit(job1, [10], {})
-
-#     # Ensure that inflight jobs were gathered.
-#     assert executor.get_jobs.call_count == 1
-
-#     # Submit the second job and confirm that job reuniting was not done again.
-#     executor.submit(job2, [20], {})
-#     assert executor.get_jobs.call_count == 1
-
-#     executor.stop()
+    executor.stop()
 
 
 # @mock_s3
