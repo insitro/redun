@@ -70,7 +70,6 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
         )
 
     def get_job_run(self, **kwargs):
-        # breakpoint()
         return {
             "JobRun": {
                 # "JobRunState": "SUCCEEDED",
