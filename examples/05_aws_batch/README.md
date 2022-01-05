@@ -30,9 +30,9 @@ make push
 
 ## Executors
 
-redun is able to perform task execution across various compute infrastructure using modules called [Executors](../../docs/source/executors.md). For example, redun supports executors that execute jobs on threads, processes, and AWS Batch jobs. New kinds of infrastructure can be utilized by registering additional Executor modules.
+redun is able to perform task execution across various compute infrastructure using modules called [Executors](https://insitro.github.io/redun/executors.html). For example, redun supports executors that execute jobs on threads, processes, and AWS Batch jobs. New kinds of infrastructure can be utilized by registering additional Executor modules.
 
-Executors are defined by sections in the [redun configuration](../../docs/source/config.md) ([`.redun/redun.ini`](.redun/redun.ini)) following the format `[executors.{executor_name}]`, where `{executor_name}` is a user-specific name for the executor, such as `default`, `batch`, or `my_executor`. These names can then be referenced in workflows using the `executor` task option to indicate on which executor the task should use:
+Executors are defined by sections in the [redun configuration](https://insitro.github.io/redun/config.html) ([`.redun/redun.ini`](.redun/redun.ini)) following the format `[executors.{executor_name}]`, where `{executor_name}` is a user-specific name for the executor, such as `default`, `batch`, or `my_executor`. These names can then be referenced in workflows using the `executor` task option to indicate on which executor the task should use:
 
 ```py
 @task(executor="my_executor")
@@ -218,9 +218,9 @@ You can see how the output is partially evaluated. That is there are some expres
 
 ## Code packaging
 
-How did our Python code get inside the Docker container? It was not part of the image building we did during the setup. The answer is redun's feature called [code packaging](../../docs/source/executors.md#code-packaging).
+How did our Python code get inside the Docker container? It was not part of the image building we did during the setup. The answer is redun's feature called [code packaging](https://insitro.github.io/redun/executors.html#code-packaging).
 
-Briefly, redun creates a tar file of all Python code found recursively from the working directory (`**/*.py`). This pattern is configurable by the configuration option [code_includes](../../docs/source/config.html#code-includes). This tar file is copied into the S3 scratch space. You can see the tar files using this command:
+Briefly, redun creates a tar file of all Python code found recursively from the working directory (`**/*.py`). This pattern is configurable by the configuration option [code_includes](https://insitro.github.io/redun/config.html#code-includes). This tar file is copied into the S3 scratch space. You can see the tar files using this command:
 
 ```
 aws s3 ls s3://YOUR_BUCKET/redun/code/

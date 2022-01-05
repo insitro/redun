@@ -2,7 +2,7 @@
 hide-toc: true
 ---
 
-# redun
+<img src="redun.svg" width="200"/>
 
 *yet another redundant workflow engine*
 

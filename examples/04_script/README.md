@@ -1,6 +1,6 @@
 # Running scripts
 
-It is common, especially in bioinformatics, to use workflow engines to combine together unix programs into a computational pipeline. Typically, each program exchanges data with each other through input and output files. redun provides [several features](../../docs/source/design.md#shell-scripting) to ease the calling of programs through scripts and managing their input and output files.
+It is common, especially in bioinformatics, to use workflow engines to combine together unix programs into a computational pipeline. Typically, each program exchanges data with each other through input and output files. redun provides [several features](https://insitro.github.io/redun/design.html#shell-scripting) to ease the calling of programs through scripts and managing their input and output files.
 
 This example is focused solely on calling scripts. We will soon see in later examples, how this combines nicely with redun's other features of running commands within Docker as well as running Docker containers in the cloud.
 
