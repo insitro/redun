@@ -5,13 +5,14 @@
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Design overview" href="design.html" />
 
-    <meta name="generator" content="sphinx-4.3.2, furo 2021.11.23"/>
+    <meta name="generator" content="sphinx-4.3.2, furo 2022.01.02"/>
         <title>redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=7f0192ddeb2adecfbaa87ffbcf67d16358b30bc1" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=0af69da206d614734f649b27d4cdc2dd6c31f41d" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=df49af52631e7917044a9c21a57f7b83170a6dd0" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=fade93df149f7c5fedb3ff897f799dc7d283b420" />
     
     
+
 
 <style>
   body {
@@ -197,8 +198,7 @@
           </label>
         </div>
         <article role="main">
-          <section class="tex2jax_ignore mathjax_ignore" id="redun">
-<h1>redun<a class="headerlink" href="#redun" title="Permalink to this headline">¶</a></h1>
+          <img src="redun.svg" width="200"/>
 <p><em>yet another redundant workflow engine</em></p>
 <p><strong>redun</strong> aims to be a more expressive and efficient workflow framework, built on top of the popular Python programming language.
 It takes the somewhat contrarian view that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, compositiblity, recursion, high order functions, etc).
@@ -216,13 +216,13 @@ redun’s key insight is that workflows can be expressed as <span class="xref my
 <p>See the <a class="reference internal" href="design.html"><span class="doc std std-doc">docs</span></a>, <a class="reference external" href="https://github.com/insitro/redun/tree/main/examples">tutorial</a>, and <a class="reference internal" href="design.html#influences"><span class="std std-doc">influences</span></a> for more.</p>
 <p><em>About the name:</em> The name “redun” is self deprecating (there are <a class="reference external" href="https://github.com/pditommaso/awesome-pipeline">A LOT</a> of workflow engines), but it is also a reference to its original inspiration, the <a class="reference external" href="https://apenwarr.ca/log/20101214">redo</a> build system.</p>
 <section id="install">
-<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<h1>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h1>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip install redun
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="developing.html"><span class="doc std std-doc">developing</span></a> for more information on working with the code.</p>
 <section id="postgres-backend">
-<h3>Postgres backend<a class="headerlink" href="#postgres-backend" title="Permalink to this headline">¶</a></h3>
+<h2>Postgres backend<a class="headerlink" href="#postgres-backend" title="Permalink to this headline">¶</a></h2>
 <p>To use postgres as a recording backend, use</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip install redun<span class="o">[</span>postgres<span class="o">]</span>
 </pre></div>
@@ -238,7 +238,6 @@ redun’s key insight is that workflows can be expressed as <span class="xref my
 </div>
 <div class="toctree-wrapper compound">
 </div>
-</section>
 </section>
 </section>
 
