@@ -23,7 +23,7 @@ def create_job_object(job_name, image, command):
         command=command)
     # Create and configurate a spec section
     template = client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(labels={"app": job_name}),
+        metadata=client.V1ObjectMeta(),#labels={"app": job_name}),
         spec=client.V1PodSpec(restart_policy="Never", containers=[container]))
     # Create the specification of deployment
     spec = client.V1JobSpec(
@@ -57,20 +57,6 @@ def get_job_status(api_instance, job):
             job_completed = True
         sleep(1)
         print("Job status='%s'" % str(api_response.status))
-
-
-def main():
-    # Configs can be set in Configuration class directly or using helper
-    # utility. If no argument provided, the config will be loaded from
-    # default location.
-    config.load_kube_config()
-    batch_v1 = client.BatchV1Api()
-    # Create a job object with client-python API. The job we
-    # created is same as the `pi-job.yaml` in the /examples folder.
-    job = create_job_object("redunjob", "242314368270.dkr.ecr.us-west-2.amazonaws.com/bioformats2raw", ["/opt/bioformats2raw/bin/bioformats2raw"])
-
-    create_job(batch_v1, job)
-    get_job_status(batch_v1, job)
     
 if __name__ == '__main__':
     main()
