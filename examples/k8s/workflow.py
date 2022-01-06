@@ -16,6 +16,15 @@ def task_on_k8s() -> list:
         print("hello stderr", file=sys.stderr),
     ]
 
+@task()
+def script_on_k8s() -> File:
+   # The outer task is just for preparing the script and its arguments.
+    return script(  # This inner task will run as a bash script inside the container.
+        f"ls /", 
+        executor="k8s",
+        outputs=File("-"),
+    )
+
 @task(executor='k8s')
 def failed_task_on_k8s() -> list:
     raise RuntimeError
@@ -37,7 +46,8 @@ def main() -> list:
     # results will be combined into one nested list as shown below.
     return [
         'main',
-        task_on_k8s(),
+        #task_on_k8s(),
+        script_on_k8s(),
         #failed_task_on_k8s(),
         #task_on_batch(),
     ]

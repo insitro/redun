@@ -298,7 +298,7 @@ chmod +x .task_command
 
     # Submit to K8S.
     assert job.eval_hash
-    job_name = get_batch_job_name(
+    job_name = get_k8s_job_name(
         job_options.get("job_name_prefix", "k8s-job"), job.eval_hash
     )
 
@@ -308,7 +308,7 @@ chmod +x .task_command
         image=image,
         job_name=job_name,
         job_def_suffix="-redun-jd",
-        **get_batch_job_options(job_options),
+        **get_k8s_job_options(job_options),
     )
 
 
@@ -330,16 +330,13 @@ def parse_task_error(
         else:
             if k8s_job_metadata:
                 try:
-                    status_reason = k8s_job_metadata["attempts"][-1]["statusReason"]
-                except (KeyError, IndexError):
+                    status_reason = k8s_job_metadata.status.conditions[-1].message
+                except (KeyError, IndexError, TypeError):
                     status_reason = ""
             else:
                 status_reason = ""
 
-            if status_reason == BATCH_JOB_TIMEOUT_ERROR:
-                error = K8SBatchJobTimeoutError(BATCH_JOB_TIMEOUT_ERROR)
-            else:
-                error = K8SBatchError(
+            error = K8SError(
                     "Exception and traceback could not be found for K8S Job."
                 )
             error_traceback = Traceback.from_error(error)
@@ -348,7 +345,7 @@ def parse_task_error(
         if error_file.exists():
             error = ScriptError(cast(bytes, error_file.read("rb")))
         else:
-            error = K8SBatchError("stderr could not be found for K8S Job.")
+            error = K8SError("stderr could not be found for K8S Job.")
         error_traceback = Traceback.from_error(error)
 
     return error, error_traceback
@@ -487,6 +484,10 @@ def iter_k8s_job_log_lines(
     )
     return log_lines
 
+
+
+class K8SError(Exception):
+    pass
 
 
 @register_executor("k8s")
@@ -1030,7 +1031,6 @@ class K8SExecutor(Executor):
         """
         api_instance = k8s_utils.get_k8s_batch_client()
         api_response = api_instance.list_job_for_all_namespaces(watch=False)
-        import pdb; pdb.set_trace()
         return api_response
       
 

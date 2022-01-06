@@ -43,7 +43,7 @@ from redun.utils import pickle_dumps
 @pytest.mark.parametrize("array,suffix", [(False, ""), (True, "-array")])
 def test_get_hash_from_job_name(array, suffix) -> None:
     """
-    Returns the Job hash from a AWS Batch job name.
+    Returns the Job hash from a k8s job name.
     """
     prefix = "my-job-prefix"
     job_hash = "c000d7f9b6275c58aff9d5466f6a1174e99195ca"
@@ -57,7 +57,7 @@ def test_get_hash_from_job_name(array, suffix) -> None:
 
 def mock_executor(scheduler, code_package=False):
     """
-    Returns an AWSBatchExecutor with AWS API mocks.
+    Returns an K8SExecutor with AWS API mocks.
     """
     image = "my-image"
     s3_scratch_prefix = "s3://example-bucket/redun/"
@@ -141,7 +141,7 @@ def test_submit_task(k8s_submit_mock, custom_module, expected_load_module, a_tas
     client = boto3.client("s3", region_name="us-east-1")
     client.create_bucket(Bucket="example-bucket")
 
-    redun.executors.k8s.k8s_submit.return_value = {"jobId": "batch-job-id"}
+    redun.executors.k8s.k8s_submit.return_value = {"jobId": "k8s-job-id"}
 
     # Create example workflow script to be packaged.
     File("workflow.py").write(
@@ -166,14 +166,14 @@ def task1(x):
         code_file=code_file,
     )
 
-    # We should get a AWS Batch job id back.
-    assert resp["jobId"] == "batch-job-id"
+    # We should get a k8s job id back.
+    assert resp["jobId"] == "k8s-job-id"
 
     # Input files should be made.
     assert File("s3://example-bucket/redun/jobs/eval_hash/input").exists()
     [code_file] = list(Dir("s3://example-bucket/redun/code"))
 
-    # We should have submitted a job to AWS Batch.
+    # We should have submitted a job to K8S.
     redun.executors.k8s.k8s_submit.assert_called_with(
         [
             "redun",
@@ -212,7 +212,7 @@ def test_submit_task_deep_file(k8s_submit_mock):
     client = boto3.client("s3", region_name="us-east-1")
     client.create_bucket(Bucket="example-bucket")
 
-    redun.executors.k8s.k8s_submit.return_value = {"jobId": "batch-job-id"}
+    redun.executors.k8s.k8s_submit.return_value = {"jobId": "k8s-job-id"}
 
     # Create example workflow script to be packaged.
     File("path/to/workflow.py").write(
@@ -241,14 +241,14 @@ def task1(x):
         code_file=code_file,
     )
 
-    # We should get a AWS Batch job id back.
-    assert resp["jobId"] == "batch-job-id"
+    # We should get a k8s job id back.
+    assert resp["jobId"] == "k8s-job-id"
 
     # Input files should be made.
     assert File("s3://example-bucket/redun/jobs/eval_hash/input").exists()
     [code_file] = list(Dir("s3://example-bucket/redun/code"))
 
-    # We should have submitted a job to AWS Batch.
+    # We should have submitted a job to k8s.
     redun.executors.k8s.k8s_submit.assert_called_with(
         [
             "redun",
@@ -282,10 +282,10 @@ def test_executor(
     k8s_submit_mock, iter_k8s_job_status_mock, parse_task_logs_mock
 ) -> None:
     """
-    Ensure that we can submit job to AWSBatchExecutor.
+    Ensure that we can submit job to K8SExecutor.
     """
-    batch_job_id = "batch-job-id"
-    batch_job2_id = "batch-job2-id"
+    k8s_job_id = "k8s-job-id"
+    k8s_job2_id = "k8s-job2-id"
 
     # Setup K8S mocks.
     iter_k8s_job_status_mock.return_value = iter([])
@@ -297,7 +297,7 @@ def test_executor(
 
     k8s_submit_mock.return_value = client.V1Job(
         api_version="batch/v1",
-        metadata = client.V1ObjectMeta(uid=batch_job_id, name="DoNotUse"),
+        metadata = client.V1ObjectMeta(uid=k8s_job_id, name="DoNotUse"),
         kind="Job")
 
     # Submit redun job that will succeed.
@@ -326,7 +326,7 @@ def test_executor(
 
     k8s_submit_mock.return_value = client.V1Job(
         api_version="batch/v1",
-        metadata = client.V1ObjectMeta(uid=batch_job2_id, name="DoNotUse"),
+        metadata = client.V1ObjectMeta(uid=k8s_job2_id, name="DoNotUse"),
         kind="Job")
 
     # Submit redun job that will fail.
@@ -352,11 +352,11 @@ def test_executor(
         "retries": 1,
     }
 
-    # Simulate AWS Batch completing job.
+    # Simulate k8s completing job.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
-    # Simulate AWS Batch failing.
+    # Simulate k8s failing.
     error = ValueError("Boom")
     error_file = File("s3://example-bucket/redun/jobs/eval_hash2/error")
     error_file.write(pickle_dumps((error, Traceback.from_error(error))), mode="wb")
@@ -364,10 +364,10 @@ def test_executor(
     iter_k8s_job_status_mock.return_value = iter(
         [
             client.V1Job(
-                metadata = client.V1ObjectMeta(uid=batch_job_id),
+                metadata = client.V1ObjectMeta(uid=k8s_job_id),
                 status = client.V1JobStatus(succeeded=1)),
              client.V1Job(
-                metadata = client.V1ObjectMeta(uid=batch_job2_id),
+                metadata = client.V1ObjectMeta(uid=k8s_job2_id),
                 status = client.V1JobStatus(failed=1)),
         ]
     )
@@ -380,8 +380,8 @@ def test_executor(
     assert isinstance(scheduler.job_errors[job2.id], ValueError)
 
     # # Assert job tags.
-    job.job_tags == [("aws_batch_job", "batch-job-id"), ("aws_log_stream", "log1")]
-    job.job_tags == [("aws_batch_job", "batch-job2-id"), ("aws_log_stream", "log2")]
+    job.job_tags == [("k8s_job", "k8s-job-id"), ("aws_log_stream", "log1")]
+    job.job_tags == [("k8s_job", "k8s-job2-id"), ("aws_log_stream", "log2")]
 
 # skip test_executor_docker here
 
@@ -469,7 +469,7 @@ def test_code_packaging(package_code_mock, get_aws_user_mock) -> None:
 
 @mock_s3
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
-@patch("redun.executors.aws_batch.aws_describe_jobs")
+@patch("redun.executors.k8s.aws_describe_jobs")
 def test_inflight_join_only_on_first_submission(aws_describe_jobs_mock, get_aws_user_mock) -> None:
     """
     Ensure that inflight jobs are only gathered once and not on every job submission.
@@ -505,33 +505,33 @@ def test_inflight_join_only_on_first_submission(aws_describe_jobs_mock, get_aws_
 
 @mock_s3
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
-@patch("redun.executors.aws_batch.aws_describe_jobs")
-@patch("redun.executors.aws_batch.iter_batch_job_status")
-@patch("redun.executors.aws_batch.batch_submit")
+@patch("redun.executors.k8s.aws_describe_jobs")
+@patch("redun.executors.k8s.iter_k8s_job_status")
+@patch("redun.executors.k8s.k8s_submit")
 def test_executor_inflight_job(
-    batch_submit_mock,
-    iter_batch_job_status_mock,
+    k8s_submit_mock,
+    iter_k8s_job_status_mock,
     aws_describe_jobs_mock,
     get_aws_user_mock,
 ) -> None:
     """
     Ensure we reunite with an inflight job.
     """
-    batch_job_id = "333"
+    k8s_job_id = "333"
 
-    # Setup AWS Batch mocks.
-    iter_batch_job_status_mock.return_value = iter([])
+    # Setup k8s mocks.
+    iter_k8s_job_status_mock.return_value = iter([])
     aws_describe_jobs_mock.return_value = iter(
         [
             {
-                "jobId": batch_job_id,
+                "jobId": k8s_job_id,
             }
         ]
     )
 
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
-    executor.get_jobs.return_value = [{"jobId": batch_job_id, "jobName": "redun-job-eval_hash"}]
+    executor.get_jobs.return_value = [{"jobId": k8s_job_id, "jobName": "redun-job-eval_hash"}]
     executor.start()
 
     # Hand create job.
@@ -543,14 +543,14 @@ def test_executor_inflight_job(
     # Submit redun job.
     executor.submit(job, [10], {})
 
-    # Ensure no batch jobs were submitted.
-    assert batch_submit_mock.call_count == 0
+    # Ensure no k8s jobs were submitted.
+    assert k8s_submit_mock.call_count == 0
 
-    # Simulate AWS Batch completing with valid value.
+    # Simulate K8S completing with valid value.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
-    iter_batch_job_status_mock.return_value = iter([{"jobId": batch_job_id, "status": SUCCEEDED}])
+    iter_k8s_job_status_mock.return_value = iter([{"jobId": k8s_job_id, "status": SUCCEEDED}])
 
     scheduler.batch_wait([job.id])
 
