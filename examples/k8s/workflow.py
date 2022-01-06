@@ -7,6 +7,10 @@ from redun import File, script, task
 
 
 redun_namespace = "redun.examples.k8s"
+   
+@task(script=True, executor="k8s")
+def sleepy_script_on_k8s():
+    return "sleep 60"
 
 @task(executor='k8s')
 def task_on_k8s() -> list:
@@ -46,8 +50,9 @@ def main() -> list:
     # results will be combined into one nested list as shown below.
     return [
         'main',
+        sleepy_script_on_k8s(),
         #task_on_k8s(),
-        script_on_k8s(),
+        #script_on_k8s(),
         #failed_task_on_k8s(),
         #task_on_batch(),
     ]
