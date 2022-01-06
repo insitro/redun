@@ -28,15 +28,11 @@ from redun.scripting import ScriptError, get_task_command
 from redun.task import Task
 from redun.utils import get_import_paths, pickle_dump
 
-ARRAY_JOB_SUFFIX = "array"
 BATCH_JOB_TIMEOUT_ERROR = "Job attempt duration exceeded timeout"
 
 
 SUCCEEDED = 'SUCCEEDED'
 FAILED = 'FAILED'
-
-def is_array_job_name(job_name: str) -> bool:
-    return job_name.endswith(f"-{ARRAY_JOB_SUFFIX}")
 
 
 def k8s_submit(
@@ -45,7 +41,6 @@ def k8s_submit(
     job_def_name: Optional[str] = None,
     job_def_suffix: str = "-jd",
     job_name: str = "k8s-job",
-    array_size: int = 0,
     memory: int = 4,
     vcpus: int = 1,
     gpus: int = 0,
@@ -60,7 +55,6 @@ def k8s_submit(
     api_instance = k8s_utils.get_k8s_batch_client()
     k8s_job = k8s_utils.create_job_object(job_name, image, command)
     api_response = k8s_utils.create_job(api_instance, k8s_job)
-
     return api_response
 
 
@@ -78,11 +72,11 @@ def is_ec2_instance() -> bool:
 
 
 
-def get_k8s_job_name(prefix: str, job_hash: str, array: bool = False) -> str:
+def get_k8s_job_name(prefix: str, job_hash: str) -> str:
     """
     Return a K8S Job name by either job or job hash.
     """
-    return "{}-{}{}".format(prefix, job_hash, f"-{ARRAY_JOB_SUFFIX}" if array else "")
+    return "{}-{}{}".format(prefix, job_hash, "")
 
 
 def get_hash_from_job_name(job_name: str) -> Optional[str]:
@@ -90,10 +84,6 @@ def get_hash_from_job_name(job_name: str) -> Optional[str]:
     Returns the job/task eval_hash that corresponds with a particular job name
     on K8S.
     """
-    # Remove array job suffix, if present.
-    array_suffix = "-" + ARRAY_JOB_SUFFIX
-    if job_name.endswith(array_suffix):
-        job_name = job_name[: -len(array_suffix)]
 
     # It's possible we found jobs that are unrelated to the this work based off the job_name_prefix
     # matching when fetching in get_jobs. These jobs will not have hashes so we can ignore them.
@@ -150,45 +140,29 @@ def submit_task(
     args: Tuple = (),
     kwargs: Dict[str, Any] = {},
     job_options: dict = {},
-    array_uuid: Optional[str] = None,
-    array_size: int = 0,
     code_file: Optional[File] = None,
 ) -> Dict[str, Any]:
     """
     Submit a redun Task to K8S
     """
-    if array_size:
-        # Output_path will contain a pickled list of actual output paths, etc.
-        # Want files that won't get clobbered when jobs actually run
-        assert array_uuid
-        input_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_INPUT
-        )
-        output_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_OUTPUT
-        )
-        error_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_ERROR
-        )
-    else:
-        input_path = None
-        output_path = None
-        error_path = None
-        input_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT
-        )
-        output_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
-        )
-        error_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR
-        )
 
-        # Serialize arguments to input file.
-        # Array jobs set this up earlier, in `_submit_array_job`
-        input_file = File(input_path)
-        with input_file.open("wb") as out:
-            pickle_dump([args, kwargs], out)
+    input_path = None
+    output_path = None
+    error_path = None
+    input_path = aws_utils.get_job_scratch_file(
+        s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT
+    )
+    output_path = aws_utils.get_job_scratch_file(
+        s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
+    )
+    error_path = aws_utils.get_job_scratch_file(
+        s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR
+    )
+
+    # Serialize arguments to input file.
+    input_file = File(input_path)
+    with input_file.open("wb") as out:
+        pickle_dump([args, kwargs], out)
 
     # Determine additional python import paths.
     import_args = []
@@ -201,7 +175,6 @@ def submit_task(
 
     # Build job command.
     code_arg = ["--code", code_file.path] if code_file else []
-    array_arg = ["--array-job"] if array_size else []
     cache_arg = [] if job_options.get("cache", True) else ["--no-cache"]
     command = (
         [
@@ -213,19 +186,15 @@ def submit_task(
         ]
         + import_args
         + code_arg
-        + array_arg
         + cache_arg
         + ["--input", input_path, "--output", output_path, "--error", error_path, a_task.fullname]
     )
-    if array_uuid:
-        job_hash = array_uuid
-    else:
-        assert job.eval_hash
-        job_hash = job.eval_hash
+    assert job.eval_hash
+    job_hash = job.eval_hash
 
     # Submit to K8S
     job_name = get_k8s_job_name(
-        job_options.get("job_name_prefix", "k8s-job"), job_hash, array=bool(array_size)
+        job_options.get("job_name_prefix", "k8s-job"), job_hash
     )
 
     result = k8s_submit(
@@ -233,7 +202,6 @@ def submit_task(
         image=image,
         job_name=job_name,
         job_def_suffix="-redun-jd",
-        array_size=array_size,
         **get_k8s_job_options(job_options),
     )
     
@@ -543,43 +511,11 @@ class K8SExecutor(Executor):
         for job in inflight_jobs.items:
             job_name = job.metadata.name
             job_id = job.metadata.uid
-            # Single jobs can be simply added to dict of pre-existing jobs.
-            if not is_array_job_name(job_name):
-                job_hash = get_hash_from_job_name(job_name)
-                if job_hash:
-                    self.preexisting_k8s_jobs[job_hash] = job.metadata.uid
-                continue
-
-        #     # Get all child jobs of running array jobs for reuniting.
-        #     running_arrays[name] = [
-        #         (child_job["jobId"], child_job["arrayProperties"]["index"])
-        #         for child_job in self.get_array_child_jobs(
-        #             job["jobId"], BATCH_JOB_STATUSES.inflight
-        #         )
-        #     ]
-        # # Match up running array jobs with consistent redun job naming scheme.
-        # for array_name, child_job_indices in running_arrays.items():
-
-        #     # Get path to array file directory on S3 from array job name.
-        #     parent_hash = get_hash_from_job_name(array_name)
-        #     if not parent_hash:
-        #         continue
-        #     eval_file = File(
-        #         aws_utils.get_array_scratch_file(
-        #             self.s3_scratch_prefix, parent_hash, s3_utils.S3_SCRATCH_HASHES
-        #         )
-        #     )
-        #     if not eval_file.exists():
-        #         # Eval file does not exist, so we cannot reunite with this array job.
-        #         continue
-
-        #     # Get eval_hash for all jobs that were part of the array
-        #     eval_hashes = cast(str, eval_file.read("r")).splitlines()
-
-        #     # Now match up indices to eval hashes to populate pending jobs by name.
-        #     for job_id, job_index in child_job_indices:
-        #         job_hash = eval_hashes[job_index]
-        #         self.preexisting_k8s_jobs[job_hash] = job_id
+        
+            job_hash = get_hash_from_job_name(job_name)
+            if job_hash:
+                self.preexisting_k8s_jobs[job_hash] = job.metadata.uid
+            continue
 
     def _start(self) -> None:
         """
@@ -693,10 +629,6 @@ class K8SExecutor(Executor):
         redun_job = self.pending_k8s_jobs.pop(job.metadata.uid)
         job_tags = []
         job_tags.append(("k8s_job", job.metadata.uid))
-            # log_stream = job.get("container", {}).get("logStreamName")
-            # if log_stream:
-            #     job_tags.append(("aws_log_stream", log_stream))
-
         if job_status == SUCCEEDED:
             # Assume a recently completed job has valid results.
             result, exists = self._get_job_output(redun_job, check_valid=False)
@@ -836,19 +768,17 @@ class K8SExecutor(Executor):
         k8s_job_id: Optional[str] = None
         if use_cache and job.eval_hash in self.preexisting_k8s_jobs:
             k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
-
             # Make sure k8s API still has a status on this job.
             existing_job = k8s_describe_jobs([k8s_job_id])[0]
-
             # Reunite with inflight k8s job, if present.
             if existing_job:
                 k8s_job_id = existing_job.metadata.uid
                 self.log(
-                    "reunite redun job {redun_job} with {job_type} {k8s_job}:\n"
+                    "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
                     "  s3_scratch_path = {job_dir}".format(
                         redun_job=job.id,
                         job_type=job_type,
-                        k8s_job=k8s_job_id,
+                        k8s_job_id=k8s_job_id,
                         job_dir=job_dir,
                     )
                 )
@@ -864,105 +794,10 @@ class K8SExecutor(Executor):
 
         self._start()
 
-    def _submit_array_job(
-        self, jobs: List[Job], all_args: List[Tuple], all_kwargs: List[Dict]
-    ) -> str:
-        """Submits an array job, returning job name uuid"""
-        array_size = len(jobs)
-        assert array_size == len(all_args) == len(all_kwargs)
-
-        # All jobs identical so just grab the first one
-        job = jobs[0]
-        assert job.task
-        if job.task.script:
-            raise NotImplementedError("Array jobs not supported for scripts")
-
-        task_options = self._get_job_options(job)
-        image = task_options.pop("image", self.image)
-        # Generate a unique name for job with no '-' to simplify job name parsing.
-        array_uuid = str(uuid.uuid4()).replace("-", "")
-
-        job_type = "K8S job"
-
-        # Setup input, output and error path files.
-        # Input file is a pickled list of args, and kwargs, for each child job.
-        input_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_INPUT
-        )
-        with File(input_file).open("wb") as out:
-            pickle_dump([all_args, all_kwargs], out)
-
-        # Output file is a plaintext list of output paths, for each child job.
-        output_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_OUTPUT
-        )
-        output_paths = [
-            aws_utils.get_job_scratch_file(
-                self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
-            )
-            for job in jobs
-        ]
-        with File(output_file).open("w") as ofile:
-            json.dump(output_paths, ofile)
-
-        # Error file is a plaintext list of error paths, one for each child job.
-        error_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_ERROR
-        )
-        error_paths = [
-            aws_utils.get_job_scratch_file(self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR)
-            for job in jobs
-        ]
-        with File(error_file).open("w") as efile:
-            json.dump(error_paths, efile)
-
-        # Eval hash file is plaintext hashes of child jobs for matching for job reuniting.
-        eval_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_HASHES
-        )
-        with File(eval_file).open("w") as eval_f:
-            eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
-
-        k8s_resp = submit_task(
-            image,
-            self.s3_scratch_prefix,
-            job,
-            job.task,
-            job_options=task_options,
-            code_file=self.code_file,
-            aws_region=self.aws_region,
-            array_uuid=array_uuid,
-            array_size=array_size,
-        )
-
-        # Add entire array to array jobs, and all jobs in array to pending jobs.
-        array_job_id = k8s_resp["jobId"]
-        for i in range(array_size):
-            self.pending_k8s_jobs[f"{array_job_id}:{i}"] = jobs[i]
-
-        self.log(
-            "submit {array_size} redun job(s) as {job_type} {k8s_job}:\n"
-            "  array_job_id    = {array_job_id}\n"
-            "  array_job_name  = {job_name}\n"
-            "  array_size      = {array_size}\n"
-            "  s3_scratch_path = {job_dir}\n"
-            "  retry_attempts  = {retries}".format(
-                array_job_id=array_job_id,
-                array_size=array_size,
-                job_type=job_type,
-                k8s_job=array_job_id,
-                job_dir=aws_utils.get_array_scratch_file(self.s3_scratch_prefix, array_uuid, ""),
-                job_name=k8s_resp.get("jobName"),
-                retries=k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts"),
-            )
-        )
-
-        return array_uuid
 
     def _submit_single_job(self, job: Job, args: Tuple, kwargs: dict) -> None:
         """
-        Actually submits a job. Caching detects if it should be part
-        of an array job
+        Actually submits a job. 
         """
         assert job.task
         task_options = self._get_job_options(job)
@@ -994,18 +829,18 @@ class K8SExecutor(Executor):
                 job_options=task_options,
             )
 
-        job_id = k8s_resp.metadata.uid
+        k8s_job_id = k8s_resp.metadata.uid
         job_name = k8s_resp.metadata.name
         retries = None # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
         self.log(
-            "submit redun job {redun_job} as {job_type} {job_id}:\n"
-            "  job_id          = {job_id}\n"
+            "submit redun job {redun_job} as {job_type} {k8s_job_id}:\n"
+            "  job_id          = {k8s_job_id}\n"
             "  job_name        = {job_name}\n"
             "  s3_scratch_path = {job_dir}\n"
             "  retry_attempts  = {retries}".format(
                 redun_job=job.id,
                 job_type=job_type,
-                job_id=job_id, 
+                k8s_job_id=k8s_job_id, 
                 job_dir=job_dir,
                 job_name=job_name,
                 retries=retries,
@@ -1030,6 +865,7 @@ class K8SExecutor(Executor):
         Returns K8S Job statuses from the AWS API.
         """
         api_instance = k8s_utils.get_k8s_batch_client()
+        # We don't currently filter on "inflight" jobs, but that's what the aws_batch implementation does.
         api_response = api_instance.list_job_for_all_namespaces(watch=False)
         return api_response
       
