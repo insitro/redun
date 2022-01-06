@@ -846,7 +846,7 @@ class K8SExecutor(Executor):
                 retries=retries,
             )
         )
-        self.pending_k8s_jobs[job_id] = job
+        self.pending_k8s_jobs[k8s_job_id] = job
 
     def submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
         """
