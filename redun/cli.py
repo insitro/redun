@@ -693,7 +693,7 @@ def is_python_filename(name: str) -> bool:
     """
     Returns True if string looks like a python filename.
     """
-    return os.path.exists(name) and name.endswith(".py")
+    return name.endswith(".py")
 
 
 def import_script(filename_or_module: str, add_cwd: bool = True) -> ModuleType:
@@ -721,8 +721,15 @@ def import_script(filename_or_module: str, add_cwd: bool = True) -> ModuleType:
 
     try:
         module = importlib.import_module(module_name)
-    except ModuleNotFoundError:
-        raise RedunClientError(f"Cannot find Python script file or module: {filename_or_module}")
+    except ModuleNotFoundError as error:
+        if error.name == module_name:
+            # Give nicer import error for top-level import.
+            raise RedunClientError(
+                f"Cannot find Python script file or module: {filename_or_module}"
+            )
+        else:
+            # Let other import errors propogate as is.
+            raise
     return module
 
 
