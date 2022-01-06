@@ -27,7 +27,6 @@ from redun.executors.aws_utils import (
     create_tar,
     extract_tar,
     find_code_files,
-    get_array_scratch_file,
     get_job_scratch_file,
     package_code,
     parse_code_package_config,
@@ -39,16 +38,16 @@ from redun.utils import pickle_dumps
 
 # skipped job_def tests here
 
-
-@pytest.mark.parametrize("array,suffix", [(False, ""), (True, "-array")])
-def test_get_hash_from_job_name(array, suffix) -> None:
+@pytest.mark.parametrize("suffix", ["c000d7f9b6275c58aff9d5466f6a1174e99195ca"])
+def test_get_hash_from_job_name(suffix) -> None:
     """
     Returns the Job hash from a k8s job name.
     """
     prefix = "my-job-prefix"
     job_hash = "c000d7f9b6275c58aff9d5466f6a1174e99195ca"
-    job_name = get_k8s_job_name(prefix, job_hash, array=array)
+    job_name = get_k8s_job_name(prefix, job_hash)
     assert job_name.startswith(prefix)
+    print("suffix:", suffix)
     assert job_name.endswith(suffix)
 
     job_hash2 = get_hash_from_job_name(job_name)
@@ -194,7 +193,6 @@ def task1(x):
         image="my-image",
         job_def_suffix="-redun-jd",
         job_name="k8s-job-eval_hash",
-        array_size=0,
     )
 
 
@@ -271,7 +269,6 @@ def task1(x):
         image="my-image",
         job_name="k8s-job-eval_hash",
         job_def_suffix="-redun-jd",
-        array_size=0,
     )
 
 @mock_s3
@@ -316,7 +313,6 @@ def test_executor(
         "image": "my-image",
         "job_name": "redun-job-eval_hash",
         "job_def_suffix": "-redun-jd",
-        "array_size": 0,
         "vcpus": 1,
         "gpus": 0,
         "memory": 4,
@@ -344,7 +340,6 @@ def test_executor(
         "image": "my-image",
         "job_name": "redun-job-eval_hash2",
         "job_def_suffix": "-redun-jd",
-        "array_size": 0,
         "vcpus": 1,
         "gpus": 0,
         "memory": 8,
@@ -469,8 +464,8 @@ def test_code_packaging(package_code_mock, get_aws_user_mock) -> None:
 
 @mock_s3
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
-@patch("redun.executors.k8s.aws_describe_jobs")
-def test_inflight_join_only_on_first_submission(aws_describe_jobs_mock, get_aws_user_mock) -> None:
+@patch("redun.executors.k8s.k8s_describe_jobs")
+def test_inflight_join_only_on_first_submission(k8s_describe_jobs_mock, get_aws_user_mock) -> None:
     """
     Ensure that inflight jobs are only gathered once and not on every job submission.
     """
@@ -505,13 +500,13 @@ def test_inflight_join_only_on_first_submission(aws_describe_jobs_mock, get_aws_
 
 @mock_s3
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
-@patch("redun.executors.k8s.aws_describe_jobs")
+@patch("redun.executors.k8s.k8s_describe_jobs")
 @patch("redun.executors.k8s.iter_k8s_job_status")
 @patch("redun.executors.k8s.k8s_submit")
 def test_executor_inflight_job(
     k8s_submit_mock,
     iter_k8s_job_status_mock,
-    aws_describe_jobs_mock,
+    k8s_describe_jobs_mock,
     get_aws_user_mock,
 ) -> None:
     """
@@ -520,18 +515,19 @@ def test_executor_inflight_job(
     k8s_job_id = "333"
 
     # Setup k8s mocks.
+    
     iter_k8s_job_status_mock.return_value = iter([])
-    aws_describe_jobs_mock.return_value = iter(
-        [
-            {
-                "jobId": k8s_job_id,
-            }
-        ]
-    )
+    #make sure this matches reality, the test errors with
+    # >           existing_job = k8s_describe_jobs([k8s_job_id])[0]
+    # E           TypeError: 'V1JobList' object is not subscriptable
+    k8s_describe_jobs_mock.return_value = [
+            client.V1Job(metadata=client.V1ObjectMeta(uid=k8s_job_id))]
 
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
-    executor.get_jobs.return_value = [{"jobId": k8s_job_id, "jobName": "redun-job-eval_hash"}]
+    # need to make sure 
+    executor.get_jobs.return_value = client.V1JobList(items=[
+            client.V1Job(metadata=client.V1ObjectMeta(uid=k8s_job_id, name='redun-job-eval_hash'))])
     executor.start()
 
     # Hand create job.
@@ -550,10 +546,14 @@ def test_executor_inflight_job(
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
-    iter_k8s_job_status_mock.return_value = iter([{"jobId": k8s_job_id, "status": SUCCEEDED}])
-
+    iter_k8s_job_status_mock.return_value = iter(
+        [
+            client.V1Job(
+                metadata = client.V1ObjectMeta(uid=k8s_job_id),
+                status = client.V1JobStatus(succeeded=1)),
+        ]
+    )
     scheduler.batch_wait([job.id])
-
     # Simulate pre-existing job output.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
