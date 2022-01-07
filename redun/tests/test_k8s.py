@@ -38,6 +38,7 @@ from redun.utils import pickle_dumps
 
 # skipped job_def tests here
 
+# TODO(dek): figure out why the suffix isn't "
 @pytest.mark.parametrize("suffix", ["c000d7f9b6275c58aff9d5466f6a1174e99195ca"])
 def test_get_hash_from_job_name(suffix) -> None:
     """
@@ -47,7 +48,6 @@ def test_get_hash_from_job_name(suffix) -> None:
     job_hash = "c000d7f9b6275c58aff9d5466f6a1174e99195ca"
     job_name = get_k8s_job_name(prefix, job_hash)
     assert job_name.startswith(prefix)
-    print("suffix:", suffix)
     assert job_name.endswith(suffix)
 
     job_hash2 = get_hash_from_job_name(job_name)
