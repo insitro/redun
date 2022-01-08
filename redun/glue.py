@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     from awsglue.job import Job as GlueJob
     from pyspark.context import SparkContext
     from pyspark.sql import DataFrame, SparkSession
-    from pyspark.sql.types import DataType  # noqa: F401
+    from pyspark.sql.types import DataType
 
 
 def setup_glue_job(job_name: str, job_args: List[str]) -> "GlueJob":
