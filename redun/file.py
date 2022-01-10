@@ -1067,6 +1067,62 @@ class ShardedS3Dataset(Value):
         context.purge_s3_path(self.path, options=options)
         self.update_hash()
 
+    @classmethod
+    def from_data(
+        cls,
+        dataset: Union["pandas.DataFrame", "pyspark.sql.DataFrame"],
+        output_path: str,
+        format: str = "parquet",
+        partition_keys: List[str] = [],
+        catalog_database: str = "default",
+        catalog_table: Optional[str] = None,
+        format_options: Dict[str, Any] = {},
+    ):
+        """
+        Helper function to create a ShardedS3Dataset from an existing DataFrame-like object.
+
+        Parameters
+        ----------
+        dataset : Union[pandas.DataFrame, pyspark.sql.DataFrame]
+            Dataset to save
+
+        output_path : str
+            Path on S3 to which data will be saved as multiple files of format `format`.
+
+        format : str
+            Format to save the data in. Supported formats are:
+            `["avro", "csv", "ion", "grokLog", "json", "orc", "parquet", "xml"]`
+            Defaults to parquet.
+
+        partition_keys : List[str]
+            Dataset keys to partition on. Each key will be a subdirectory in
+            `self.path` containing data for each value of that key. For
+            example, partition on the column 'K', will make subdirectores
+            'K=1', 'K=2', 'K=3', etc.
+
+        catalog_database : str
+            Datacatalog name to write to, if creating a table in the Data Catalog.
+            Defaults to 'default'
+
+        catalog_table : Optional[str]
+            If present, written data will be available in AWS Data Catalog / Glue / Athena
+            with the indicated table name.
+
+        format_options : Dict[str, Any]
+            Additional options for the data loader. Documented here:
+            https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format.html
+        """
+        result = ShardedS3Dataset(output_path, format, recurse=False)
+
+        result.save_spark(
+            dataset,
+            partition_keys=partition_keys,
+            catalog_database=catalog_database,
+            catalog_table=catalog_table,
+            format_options=format_options,
+        )
+        return result
+
 
 T = TypeVar("T")
 
