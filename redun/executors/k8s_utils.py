@@ -6,6 +6,7 @@ import yaml
 from kubernetes import client, config
 
 DEFAULT_JOB_PREFIX='redun-job'
+
 def get_k8s_batch_client():
     config.load_kube_config()
     batch_v1 = client.BatchV1Api()
