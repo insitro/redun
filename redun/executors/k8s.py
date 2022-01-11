@@ -38,8 +38,6 @@ FAILED = 'FAILED'
 def k8s_submit(
     command: List[str],
     image: str,
-    job_def_name: Optional[str] = None,
-    job_def_suffix: str = "-jd",
     job_name: str = "k8s-job",
     memory: int = 4,
     vcpus: int = 1,
@@ -49,12 +47,13 @@ def k8s_submit(
     privileged: bool = False,
     autocreate_job: bool = True,
     timeout: Optional[int] = None,
-    batch_tags: Optional[Dict[str, str]] = None,
-    propagate_tags: bool = True,
+    k8s_labels: Optional[Dict[str, str]] = None,
+    propagate_labels: bool = True,
 ) -> Dict[str, Any]:
     api_instance = k8s_utils.get_k8s_batch_client()
-    k8s_job = k8s_utils.create_job_object(job_name, image, command)
+    k8s_job = k8s_utils.create_job_object(job_name, image, command, k8s_labels)
     api_response = k8s_utils.create_job(api_instance, k8s_job)
+    print("k8s_job:", api_response)
     return api_response
 
 
@@ -115,7 +114,7 @@ def get_k8s_job_options(job_options: dict) -> dict:
         "job_def_name",
         "autocreate_job",
         "timeout",
-        "batch_tags",
+        "k8s_labels",
     ]
     return {key: job_options[key] for key in keys if key in job_options}
 
@@ -196,12 +195,10 @@ def submit_task(
     job_name = get_k8s_job_name(
         job_options.get("job_name_prefix", "k8s-job"), job_hash
     )
-
     result = k8s_submit(
         command,
         image=image,
         job_name=job_name,
-        job_def_suffix="-redun-jd",
         **get_k8s_job_options(job_options),
     )
     
@@ -275,7 +272,6 @@ chmod +x .task_command
         shell_command,
         image=image,
         job_name=job_name,
-        job_def_suffix="-redun-jd",
         **get_k8s_job_options(job_options),
     )
 
@@ -338,17 +334,17 @@ def parse_task_logs(
 
 
 def k8s_describe_jobs(
-    job_ids: List[str], chunk_size: int = 100, 
+    job_names: List[str], chunk_size: int = 100, 
 ) -> Iterator[dict]:
     """
     Returns K8S Job descriptions from the AWS API.
     """
     api_instance = k8s_utils.get_k8s_batch_client()
-    job_ids_delimited = ','.join(job_ids)
-    label_selector = f"controller-uid in ({job_ids_delimited})"
-    api_response = api_instance.list_job_for_all_namespaces(
-        label_selector=label_selector)
-    return api_response.items
+    responses = []
+    for job_name in job_names:
+        api_response = api_instance.read_namespaced_job(job_name, namespace='default')
+        responses.append(api_response)
+    return responses
 
 
 def iter_k8s_job_status(
@@ -483,9 +479,9 @@ class K8SExecutor(Executor):
             "role": config.get("role"),
             "job_name_prefix": config.get("job_name_prefix", "redun-job"),
         }
-        if config.get("k8s_tags"):
-            self.default_task_options["k8s_tags"] = json.loads(config.get("k8s_tags"))
-        self.use_default_k8s_tags = config.getboolean("default_k8s_tags", True)
+        if config.get("k8s_labels"):
+            self.default_task_options["k8s_labels"] = json.loads(config.get("k8s_labels"))
+        self.use_default_k8s_labels = config.getboolean("default_k8s_labels", True)
 
         self.is_running = False
         # We use an OrderedDict in order to retain submission order.
@@ -625,15 +621,15 @@ class K8SExecutor(Executor):
         else:
             return
 
-        # Determine redun Job and job_tags.
-        redun_job = self.pending_k8s_jobs.pop(job.metadata.uid)
-        job_tags = []
-        job_tags.append(("k8s_job", job.metadata.uid))
+        # Determine redun Job and job_labels.
+        redun_job = self.pending_k8s_jobs.pop(job.metadata.name)
+        k8s_labels = []
+        k8s_labels.append(("k8s_job", job.metadata.uid))
         if job_status == SUCCEEDED:
             # Assume a recently completed job has valid results.
             result, exists = self._get_job_output(redun_job, check_valid=False)
             if exists:
-                self.scheduler.done_job(redun_job, result, job_tags=job_tags)
+                self.scheduler.done_job(redun_job, result, job_tags=k8s_labels)
             else:
                 # This can happen if job ended in an inconsistent state.
                 self.scheduler.reject_job(
@@ -643,7 +639,7 @@ class K8SExecutor(Executor):
                             self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
                         )
                     ),
-                    job_tags=job_tags,
+                    job_labels=job_labels,
                 )
         elif job_status == FAILED:
             error, error_traceback = parse_task_error(
@@ -667,7 +663,7 @@ class K8SExecutor(Executor):
             error_traceback.logs = logs
             
             self.scheduler.reject_job(
-                redun_job, error, error_traceback=error_traceback, job_tags=job_tags
+                redun_job, error, error_traceback=error_traceback, job_tags=k8s_labels
             )
 
     def _get_job_options(self, job: Job) -> dict:
@@ -686,15 +682,15 @@ class K8SExecutor(Executor):
             **job_options,
         }
 
-        # Add default k8s tags to the job.
-        if self.use_default_k8s_tags:
+        # Add default k8s labels to the job.
+        if self.use_default_k8s_labels:
             execution = job.execution
             project = (
                 execution.job.task.namespace
                 if execution and execution.job and execution.job.task
                 else ""
             )
-            default_tags = {
+            default_labels = {
                 "redun_job_id": job.id,
                 "redun_task_name": job.task.fullname,
                 "redun_execution_id": execution.id if execution else "",
@@ -702,16 +698,16 @@ class K8SExecutor(Executor):
                 "redun_aws_user": self._aws_user or "",
             }
         else:
-            default_tags = {}
+            default_labels = {}
 
-        # Merge k8s_tags if needed.
-        k8s_tags = {
-            **self.default_task_options.get("k8s_tags", {}),
-            **default_tags,
-            **job_options.get("k8s_tags", {}),
+        # Merge k8s_labels if needed.
+        k8s_labels = {
+            **self.default_task_options.get("k8s_labels", {}),
+            **default_labels,
+            **job_options.get("k8s_labels", {}),
         }
-        if k8s_tags:
-            task_options["k8s_tags"] = k8s_tags
+        if k8s_labels:
+            task_options["k8s_labels"] = k8s_labels
 
         return task_options
 
@@ -769,7 +765,9 @@ class K8SExecutor(Executor):
         if use_cache and job.eval_hash in self.preexisting_k8s_jobs:
             k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
             # Make sure k8s API still has a status on this job.
-            existing_job = k8s_describe_jobs([k8s_job_id])[0]
+            job_name = 'redun-job-' + job.eval_hash
+            existing_jobs = k8s_describe_jobs([job_name])
+            existing_job = existing_jobs[0]
             # Reunite with inflight k8s job, if present.
             if existing_job:
                 k8s_job_id = existing_job.metadata.uid
@@ -783,7 +781,7 @@ class K8SExecutor(Executor):
                     )
                 )
                 assert k8s_job_id
-                self.pending_k8s_jobs[k8s_job_id] = job
+                self.pending_k8s_jobs[job_name] = job
             else:
                 k8s_job_id = None
 
@@ -802,7 +800,6 @@ class K8SExecutor(Executor):
         assert job.task
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
-
 
         job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
         job_type = "K8S job"
@@ -846,7 +843,7 @@ class K8SExecutor(Executor):
                 retries=retries,
             )
         )
-        self.pending_k8s_jobs[k8s_job_id] = job
+        self.pending_k8s_jobs[job_name] = job
 
     def submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
         """

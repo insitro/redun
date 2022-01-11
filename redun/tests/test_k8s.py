@@ -137,10 +137,13 @@ def test_submit_task(k8s_submit_mock, custom_module, expected_load_module, a_tas
     image = "my-image"
     s3_scratch_prefix = "s3://example-bucket/redun/"
 
-    client = boto3.client("s3", region_name="us-east-1")
-    client.create_bucket(Bucket="example-bucket")
+    s3_client = boto3.client("s3", region_name="us-east-1")
+    s3_client.create_bucket(Bucket="example-bucket")
 
-    redun.executors.k8s.k8s_submit.return_value = {"jobId": "k8s-job-id"}
+    redun.executors.k8s.k8s_submit.return_value = client.V1Job(
+        api_version="batch/v1",
+        metadata = client.V1ObjectMeta(uid=job_id),
+        kind="Job")
 
     # Create example workflow script to be packaged.
     File("workflow.py").write(
@@ -164,11 +167,10 @@ def task1(x):
         kwargs={},
         code_file=code_file,
     )
+    # # We should get a k8s job id back.
+    assert resp.metadata.uid == job_id
 
-    # We should get a k8s job id back.
-    assert resp["jobId"] == "k8s-job-id"
-
-    # Input files should be made.
+    # # Input files should be made.
     assert File("s3://example-bucket/redun/jobs/eval_hash/input").exists()
     [code_file] = list(Dir("s3://example-bucket/redun/code"))
 
@@ -191,7 +193,6 @@ def task1(x):
             a_task.name,
         ],
         image="my-image",
-        job_def_suffix="-redun-jd",
         job_name="k8s-job-eval_hash",
     )
 
@@ -268,7 +269,6 @@ def task1(x):
         ],
         image="my-image",
         job_name="k8s-job-eval_hash",
-        job_def_suffix="-redun-jd",
     )
 
 @mock_s3
@@ -294,7 +294,7 @@ def test_executor(
 
     k8s_submit_mock.return_value = client.V1Job(
         api_version="batch/v1",
-        metadata = client.V1ObjectMeta(uid=k8s_job_id, name="DoNotUse"),
+        metadata = client.V1ObjectMeta(uid=k8s_job_id, name="redun-job-eval_hash"),
         kind="Job")
 
     # Submit redun job that will succeed.
@@ -305,24 +305,29 @@ def test_executor(
     executor.submit(job, [10], {})
 
     # Let job get stale so job arrayer actually submits it.
-    wait_until(lambda: executor.arrayer.num_pending == 0)
-
-    # # Ensure job options were passed correctly.
+    wait_until(lambda: executor.arrayer.num_pending == 0, timeout=1000)
+    # # # Ensure job options were passed correctly.
     assert k8s_submit_mock.call_args
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
         "job_name": "redun-job-eval_hash",
-        "job_def_suffix": "-redun-jd",
         "vcpus": 1,
         "gpus": 0,
         "memory": 4,
         "role": None,
         "retries": 1,
+        "k8s_labels": {
+            'redun_aws_user': '',
+            'redun_execution_id': '',
+            'redun_job_id': job.id,
+            'redun_project': '',
+            'redun_task_name': 'task1'
+        }
     }
 
     k8s_submit_mock.return_value = client.V1Job(
         api_version="batch/v1",
-        metadata = client.V1ObjectMeta(uid=k8s_job2_id, name="DoNotUse"),
+        metadata = client.V1ObjectMeta(uid=k8s_job2_id, name="redun-job-eval_hash2"),
         kind="Job")
 
     # Submit redun job that will fail.
@@ -332,26 +337,32 @@ def test_executor(
     job2.eval_hash = "eval_hash2"
     executor.submit(job2, ["a"], {})
 
-    # Let job get stale so job arrayer actually submits it.
+    # # # Let job get stale so job arrayer actually submits it.
     wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # # Ensure job options were passed correctly.
+    # # # Ensure job options were passed correctly.
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
         "job_name": "redun-job-eval_hash2",
-        "job_def_suffix": "-redun-jd",
         "vcpus": 1,
         "gpus": 0,
         "memory": 8,
         "role": None,
         "retries": 1,
-    }
+        "k8s_labels": {
+            'redun_aws_user': '',
+            'redun_execution_id': '',
+            'redun_job_id': job2.id,
+            'redun_project': '',
+            'redun_task_name': 'task1'
+            }
+        }
 
-    # Simulate k8s completing job.
+    # # Simulate k8s completing job.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
-    # Simulate k8s failing.
+    # # Simulate k8s failing.
     error = ValueError("Boom")
     error_file = File("s3://example-bucket/redun/jobs/eval_hash2/error")
     error_file.write(pickle_dumps((error, Traceback.from_error(error))), mode="wb")
@@ -359,10 +370,10 @@ def test_executor(
     iter_k8s_job_status_mock.return_value = iter(
         [
             client.V1Job(
-                metadata = client.V1ObjectMeta(uid=k8s_job_id),
+                metadata = client.V1ObjectMeta(uid=k8s_job_id, name="redun-job-eval_hash"),
                 status = client.V1JobStatus(succeeded=1)),
              client.V1Job(
-                metadata = client.V1ObjectMeta(uid=k8s_job2_id),
+                metadata = client.V1ObjectMeta(uid=k8s_job2_id, name="redun-job-eval_hash2"),
                 status = client.V1JobStatus(failed=1)),
         ]
     )
@@ -370,7 +381,7 @@ def test_executor(
     scheduler.batch_wait([job.id, job2.id])
     executor.stop()
 
-    # Job results and errors should be sent back to scheduler.
+    # # Job results and errors should be sent back to scheduler.
     assert scheduler.job_results[job.id] == 20
     assert isinstance(scheduler.job_errors[job2.id], ValueError)
 
@@ -517,11 +528,8 @@ def test_executor_inflight_job(
     # Setup k8s mocks.
     
     iter_k8s_job_status_mock.return_value = iter([])
-    #make sure this matches reality, the test errors with
-    # >           existing_job = k8s_describe_jobs([k8s_job_id])[0]
-    # E           TypeError: 'V1JobList' object is not subscriptable
     k8s_describe_jobs_mock.return_value = [
-            client.V1Job(metadata=client.V1ObjectMeta(uid=k8s_job_id))]
+            client.V1Job(metadata=client.V1ObjectMeta(uid=k8s_job_id, name='redun-job-eval_hash'))]
 
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
@@ -549,7 +557,7 @@ def test_executor_inflight_job(
     iter_k8s_job_status_mock.return_value = iter(
         [
             client.V1Job(
-                metadata = client.V1ObjectMeta(uid=k8s_job_id),
+                metadata = client.V1ObjectMeta(uid=k8s_job_id, name='redun-job-eval_hash'),
                 status = client.V1JobStatus(succeeded=1)),
         ]
     )
@@ -567,4 +575,4 @@ def test_executor_inflight_job(
 # skipped job array tests
 
 if __name__ == '__main__':
-    test_executor()
+    test_executor_inflight_job()

@@ -16,14 +16,14 @@ def get_k8s_core_client():
     core_v1 = client.CoreV1Api()
     return core_v1
 
-def create_job_object(job_name, image, command):
+def create_job_object(job_name, image, command, labels):
     container = client.V1Container(
         name=job_name,
         image=image,
         command=command)
     # Create and configurate a spec section
     template = client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(),#labels={"app": job_name}),
+        metadata=client.V1ObjectMeta(),
         spec=client.V1PodSpec(restart_policy="Never", containers=[container]))
     # Create the specification of deployment
     spec = client.V1JobSpec(
@@ -33,7 +33,7 @@ def create_job_object(job_name, image, command):
     job = client.V1Job(
         api_version="batch/v1",
         kind="Job",
-        metadata=client.V1ObjectMeta(name=job_name),
+        metadata=client.V1ObjectMeta(name=job_name, labels=labels),
         spec=spec)
 
     return job
