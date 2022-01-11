@@ -14,6 +14,7 @@ import sys
 import textwrap
 from argparse import Namespace
 from collections import Counter, defaultdict
+from collections.abc import Callable as AbstractCallable
 from contextlib import contextmanager
 from itertools import chain, islice
 from pprint import pprint
@@ -88,7 +89,7 @@ from redun.tags import (
 )
 from redun.task import Task as BaseTask
 from redun.utils import add_import_path, format_table, pickle_dump, trim_string
-from redun.value import NoneType, get_type_registry
+from redun.value import NoneType, function_type, get_type_registry
 
 # Constants.
 REDUN_DESCRIPTION = """\
@@ -491,6 +492,30 @@ def make_parse_arg_func(arg_anno: Any) -> Callable[[str], Any]:
     return parse_arg
 
 
+def get_anno_origin(anno: Any) -> Optional[Any]:
+    """
+    Returns the origin of an annotation.
+
+    Origin is Python's term for the main type of a generic type. For example,
+    the origin of `List[int]` is `list` and its argument is `int`. This function
+    abstracts away change that have occurred in the  Python API since 3.6.
+
+    https://docs.python.org/3/library/typing.html#typing.get_origin
+    """
+    if sys.version_info < (3, 8):
+        try:
+            # Python 3.6
+            return anno.__extra__
+        except AttributeError:
+            # Python 3.7
+            return getattr(anno, "__origin__", None)
+    else:
+        # Python 3.8+
+        from typing import get_origin
+
+        return get_origin(anno)
+
+
 def add_value_arg_parser(
     parser: argparse.ArgumentParser, arg_name: str, anno: Any, default: Any
 ) -> argparse.Action:
@@ -498,16 +523,12 @@ def add_value_arg_parser(
     Add argument parser inferred from a parameter type.
     """
 
-    def is_typed_list(anno: Any) -> bool:
-        try:
-            if sys.version_info < (3, 7):
-                klass = anno.__extra__
-            else:
-                klass = anno.__origin__
-        except AttributeError:
-            return False
+    def is_callable(anno: Any) -> bool:
+        return get_anno_origin(anno) == AbstractCallable
 
-        return inspect.isclass(klass) and issubclass(klass, list) and bool(anno.__args__)
+    def is_typed_list(anno: Any) -> bool:
+        klass = get_anno_origin(anno)
+        return isinstance(klass, type) and issubclass(klass, list) and bool(anno.__args__)
 
     def is_optional(anno: Any) -> bool:
         """
@@ -518,16 +539,12 @@ def add_value_arg_parser(
         largely undocumented __args__ which will be a 2-tuple of classes T and NoneType in the
         case we started with Optional[T].
 
-        NOTE: Once we are on Python 3.8+, we can use the helpter get_origin and get_args. For more
+        NOTE: Once we are on Python 3.8+, we can use the helper get_origin and get_args. For more
         on these introspection helpers, see:
 
             https://docs.python.org/3/library/typing.html#typing.get_args
         """
-        try:
-            klass = anno.__origin__
-        except AttributeError:
-            return False
-
+        klass = get_anno_origin(anno)
         if klass is not Union:
             return False
 
@@ -545,11 +562,16 @@ def add_value_arg_parser(
         # argument we receive on the CLI and need to parse.
         if is_typed_list(anno):
             arg_anno = anno.__args__[0]
+
         elif is_optional(anno):
             # We know that the first class in the tuple is the class of the arg when present and
             # the second is class NoneType so we take the first. For more info, see the docstring
             # for is_optional above.
             arg_anno = anno.__args__[0]
+
+        elif is_callable(anno):
+            arg_anno = function_type
+
         else:
             arg_anno = anno
 

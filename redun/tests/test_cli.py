@@ -472,7 +472,7 @@ def test_task_parse_arg(print_mock, arg_exit_mock) -> None:
     File("workflow.py").write(
         """
 from enum import Enum
-from typing import List, Optional
+from typing import Callable, List, Optional
 from redun import task
 
 @task()
@@ -506,11 +506,26 @@ def optional_arg(x: Optional[int] = None) -> int:
     if not x:
         return -1
     return 10 * x
+
+def hello(name: str) -> str:
+    return f"Hello, {name}!"
+
+@task()
+def call_hello(func: Callable[[str], str]) -> str:
+    # We should be able to pass functions for a Callable that specifies its
+    # argument and result types.
+    return func("Alice")
+
+@task()
+def call_hello2(func: Callable) -> str:
+    # We should be able to pass functions for a Callable that does not specify its
+    # argument or result types.
+    return func("Alice")
 """
     )
 
-    def arg_exit(*args, **kwargs):
-        raise ValueError()
+    def arg_exit(status=0, message=None):
+        raise ValueError(message)
 
     arg_exit_mock.side_effect = arg_exit
     client = RedunClient()
@@ -527,7 +542,7 @@ def optional_arg(x: Optional[int] = None) -> int:
     ) == (20, False)
 
     # Catch invalid arguments.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="argument --x: invalid int value: 'boom'"):
         assert client.execute(["redun", "run", "workflow.py", "main", "--x", "boom"])
 
     # Parse argument to int and bool.
@@ -551,7 +566,7 @@ def optional_arg(x: Optional[int] = None) -> int:
     ) == ["Color.red", "Color.blue"]
 
     # Confirm list args are validated against their type.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="argument --colors: invalid Color value"):
         # black is not a color in the enum, should raise an error.
         assert client.execute(
             ["redun", "run", "workflow.py", "color_to_string", "--colors", "Color.red", "black"]
@@ -562,6 +577,35 @@ def optional_arg(x: Optional[int] = None) -> int:
 
     # Confirm optional args are typed correctly when supplied in the CLI
     assert client.execute(["redun", "run", "workflow.py", "optional_arg", "--x", "2"]) == 20
+
+    # Parse argument as a function.
+    assert (
+        client.execute(["redun", "run", "workflow.py", "call_hello", "--func", "workflow.hello"])
+        == "Hello, Alice!"
+    )
+    assert (
+        client.execute(["redun", "run", "workflow.py", "call_hello2", "--func", "workflow.hello"])
+        == "Hello, Alice!"
+    )
+
+    # Detect errors when parsing a function name.
+    with pytest.raises(
+        ValueError, match="argument --func: invalid function value: 'bad_workflow.hello'"
+    ):
+        client.execute(
+            ["redun", "run", "workflow.py", "call_hello2", "--func", "bad_workflow.hello"]
+        )
+
+    with pytest.raises(
+        ValueError, match="argument --func: invalid function value: 'workflow.bad_func'"
+    ):
+        client.execute(
+            ["redun", "run", "workflow.py", "call_hello2", "--func", "workflow.bad_func"]
+        )
+
+    with pytest.raises(ValueError, match="argument --func: invalid function value: 'hello'"):
+        # Module ('workflow') must be included for the argument `--func`.
+        client.execute(["redun", "run", "workflow.py", "call_hello2", "--func", "hello"])
 
 
 @use_tempdir
@@ -599,8 +643,8 @@ def main(x: int = 10, memory: int = 4):
 """
     )
 
-    def arg_exit(*args, **kwargs):
-        raise ValueError()
+    def arg_exit(status=0, message=None):
+        raise ValueError(message)
 
     arg_exit_mock.side_effect = arg_exit
     client = RedunClient()
@@ -619,7 +663,7 @@ def main(x: int = 10, memory: int = 4):
     ) == (20, 5)
 
     # Catch invalid config arg.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="argument --memory: invalid int value: 'boom'"):
         assert client.execute(
             ["redun", "run", "workflow.py", "main", "--x", "10", "--memory", "boom"]
         )

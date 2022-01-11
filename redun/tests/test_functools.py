@@ -6,6 +6,8 @@ import pytest
 from redun import Scheduler, task
 from redun.backends.db import Execution, Job, Session
 from redun.functools import (
+    apply_func,
+    as_task,
     compose,
     const,
     delay,
@@ -103,6 +105,37 @@ def test_const(scheduler: Scheduler) -> None:
 
     assert scheduler.run(const(1, 2)) == 1
     assert scheduler.run(const(2, 1)) == 2
+
+
+def add(a: int, b: int) -> int:
+    return a + b
+
+
+@task(namespace="redun.tests")
+def range_(start, stop):
+    return list(range(start, stop))
+
+
+def test_apply_func(scheduler: Scheduler) -> None:
+    """
+    apply_func() should call a plain python function on lazy args.
+    """
+    assert scheduler.run(apply_func(max, 30, 20, 10)) == 30
+    assert scheduler.run(apply_func(add, 10, b=20)) == 30
+    assert scheduler.run(apply_func(add, a=2, b=20)) == 22
+
+    assert scheduler.run(apply_func(max, range_(1, 4))) == 3
+
+
+def test_as_task(scheduler: Scheduler) -> None:
+    """
+    as_task() should convert a python function to a redun Task.
+    """
+    assert scheduler.run(as_task(max)(range_(1, 4))) == 3
+
+    inc = as_task(add).partial(1)
+    assert scheduler.run(map_(inc, range_(1, 4))) == [2, 3, 4]
+    assert scheduler.run(as_task(len)(range_(1, 4))) == 3
 
 
 def test_eval(scheduler: Scheduler) -> None:

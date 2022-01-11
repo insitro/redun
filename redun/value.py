@@ -2,7 +2,7 @@ import importlib
 import os
 import pickle
 from enum import Enum
-from typing import Any, Dict, Iterator, Optional, Type, cast
+from typing import Any, Callable, Dict, Iterator, Optional, Type, cast
 
 from redun.hashing import hash_bytes, hash_tag_bytes
 from redun.utils import iter_nested_value, pickle_dumps
@@ -441,6 +441,119 @@ class EnumType(ProxyValue):
             return name2item[arg]
         except KeyError:
             raise ValueError("{} is not a valid {}".format(arg, raw_type.__name__))
+
+
+# Get the type for python functions.
+function_type = type(lambda: None)
+
+
+def make_unknown_function(func_name: str) -> Callable:
+    """
+    Returns a stub function in place of a function that could not be reimported.
+    """
+
+    def unknown_function(*args, **kwargs):
+        raise ValueError(f"Function '{func_name}' cannot be found.")
+
+    # Mark this function as an unknown function.
+    unknown_function.unknown_function = True  # type: ignore
+    return unknown_function
+
+
+def is_unknown_function(func: Callable) -> bool:
+    """
+    Returns True if the function was unknown when trying to reimport.
+    """
+    return getattr(func, "unknown_function", False)
+
+
+class Function(ProxyValue):
+    """
+    Value class to allow redun to hash and cache plain Python functions.
+    """
+
+    type = function_type
+    type_name = "builtins.function"
+
+    def __init__(self, instance: Callable):
+        super().__init__(instance)
+        self.module = instance.__module__
+        self.name = instance.__name__
+        self._hash = self._calc_hash()
+
+        if not is_unknown_function(instance) and "<locals>" in instance.__qualname__:
+            raise InvalidValueError(
+                "functions used as redun arguments or results must be defined globally."
+            )
+
+    def __repr__(self) -> str:
+        return f"<function {self.fullname}>"
+
+    @property
+    def fullname(self) -> str:
+        """
+        Return a fullname for a function including its module.
+        """
+        return f"{self.module}.{self.name}"
+
+    def _calc_hash(self) -> str:
+        # Hash is based on fully qualified function name.
+        return hash_tag_bytes("Value.function", self.fullname.encode("utf8"))
+
+    def __getstate__(self) -> dict:
+        return {
+            "hash": self._hash,
+            "module": self.module,
+            "name": self.name,
+        }
+
+    def __setstate__(self, state: dict) -> None:
+        self._hash = state["hash"]
+        self.module = state["module"]
+        self.name = state["name"]
+        try:
+            # Try to reassociate the function based on its name.
+            module = importlib.import_module(self.module)
+            self.instance = getattr(module, self.name)
+        except (ModuleNotFoundError, AttributeError):
+            self.instance = make_unknown_function(self.fullname)
+
+    def get_hash(self, data: Optional[bytes] = None) -> str:
+        return self._hash
+
+    def is_valid(self) -> bool:
+        """
+        Value is valid to use from the cache if we can reassociate the function.
+        """
+        return not is_unknown_function(self.instance)
+
+    def serialize(self) -> bytes:
+        # Serialize the Function wrapper.
+        return pickle_dumps(self)
+
+    @classmethod
+    def deserialize(self, raw_type: Any, data: bytes) -> Any:
+        # Deserialize the Function wrapper and return the inner python function.
+        func_wrapper = pickle.loads(data)
+        return func_wrapper.instance
+
+    @classmethod
+    def parse_arg(cls, raw_type: Type, arg: str) -> Any:
+        """
+        Parses function by fully qualified name from command-line.
+        """
+        try:
+            module_name, func_name = arg.rsplit(".", 1)
+        except ValueError:
+            raise ValueError(f"Unexpected format for function name: {arg}")
+
+        try:
+            module = importlib.import_module(module_name)
+            func = getattr(module, func_name)
+        except (ModuleNotFoundError, AttributeError):
+            raise ValueError(f"Function not found: {arg}")
+
+        return func
 
 
 class FileCache(ProxyValue):

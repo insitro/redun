@@ -105,6 +105,34 @@ def const(x: T, _: Any) -> T:
 
 
 @task(namespace="redun", version="1")
+def apply_func(func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    """
+    Apply a Python function to possibly lazy arguments.
+
+    The function `func` must be defined at the module-level.
+
+    .. code-block:: python
+
+        lazy_list = a_task_returning_a_list()
+        lazy_length = apply_func(len)(lazy_list)
+    """
+    return func(*args, **kwargs)
+
+
+def as_task(func: Callable[..., T]) -> Task[Callable[..., T]]:
+    """
+    Transform a plain Python function into a redun Task.
+
+    The function `func` must be defined at the module-level.
+
+    .. code-block:: python
+
+        assert as_task(max)(10, 20, 30, 25) == 30
+    """
+    return apply_func.partial(func)
+
+
+@task(namespace="redun", version="1")
 def eval_(code: str, *args: Any, **kwargs: Any) -> Any:
     """
     Evaluate `code` with `kwargs` as local variables.
