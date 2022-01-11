@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.8.5
+January 11, 2022
+
+* `#66` - Treat functions as a valid redun Value
+* Merge pull request #65 from insitro/DE4020-shardeddataset-save
+* Remove superfluous type hint
+* `#70` - improve module not found error
+* `#76` - Link docs
+* `#77` - Use a separate boto session per thread
+* `#74` - Fix aws batch test warnings: DescribeJobs operation: The security token included in the request is invalid
+* `#75` - DE-4104 Proposed fix for the s3fs dep issues
+* `#54` - DE-3969 Evaluate default args in case they have expressions
+* `#73` - DE-4102 Add inhert_cache=True to Column to suppress sqlalchemy warning
+* Merge pull request #72 from insitro/typos_and_cleanups
+* Correct misspellings of executor
+* Remove superfluous parens
+* Merge pull request #71 from insitro/add_build_timeout
+* Add gh-actions build timeout
+* `#67` - Generate public documents
+* Add SQL query helper function for glue
+* Add from_data constructor for ShardedS3Dataset
+* `#13` - no need to use editable mode for redun install in examples
+* Merge pull request #62 from insitro/DE-3993-override-source
+* Clarifying comments on task.source during unpickling
+
 ## 0.8.4
 December 02, 2021
 
