@@ -487,7 +487,6 @@ class K8SExecutor(Executor):
             min_array_size=config.getint("min_array_size", 5),
             max_array_size=config.getint("max_array_size", 1000),
         )
-        self._aws_user: Optional[str] = None
 
     def gather_inflight_jobs(self) -> None:
         running_arrays: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
@@ -685,7 +684,6 @@ class K8SExecutor(Executor):
                 "redun_task_name": job.task.fullname,
                 "redun_execution_id": execution.id if execution else "",
                 "redun_project": project,
-                "redun_aws_user": self._aws_user or "",
             }
         else:
             default_labels = {}

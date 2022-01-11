@@ -308,7 +308,6 @@ def test_executor(
         "role": None,
         "retries": 1,
         "k8s_labels": {
-            'redun_aws_user': '',
             'redun_execution_id': '',
             'redun_job_id': job.id,
             'redun_project': '',
@@ -338,7 +337,6 @@ def test_executor(
         "role": None,
         "retries": 1,
         "k8s_labels": {
-            'redun_aws_user': '',
             'redun_execution_id': '',
             'redun_job_id': job2.id,
             'redun_project': '',
@@ -415,9 +413,8 @@ def test_executor_handles_unrelated_jobs() -> None:
     }
 
 @mock_s3
-@patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
 @patch("redun.executors.aws_utils.package_code")
-def test_code_packaging(package_code_mock, get_aws_user_mock) -> None:
+def test_code_packaging(package_code_mock) -> None:
     """
     Ensure that code packaging only happens on first submission.
     """
@@ -455,9 +452,8 @@ def test_code_packaging(package_code_mock, get_aws_user_mock) -> None:
 
 
 @mock_s3
-@patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
 @patch("redun.executors.k8s.k8s_describe_jobs")
-def test_inflight_join_only_on_first_submission(k8s_describe_jobs_mock, get_aws_user_mock) -> None:
+def test_inflight_join_only_on_first_submission(k8s_describe_jobs_mock) -> None:
     """
     Ensure that inflight jobs are only gathered once and not on every job submission.
     """
@@ -491,7 +487,6 @@ def test_inflight_join_only_on_first_submission(k8s_describe_jobs_mock, get_aws_
 
 
 @mock_s3
-@patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
 @patch("redun.executors.k8s.k8s_describe_jobs")
 @patch("redun.executors.k8s.iter_k8s_job_status")
 @patch("redun.executors.k8s.k8s_submit")
@@ -499,7 +494,6 @@ def test_executor_inflight_job(
     k8s_submit_mock,
     iter_k8s_job_status_mock,
     k8s_describe_jobs_mock,
-    get_aws_user_mock,
 ) -> None:
     """
     Ensure we reunite with an inflight job.
