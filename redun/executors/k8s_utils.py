@@ -16,9 +16,9 @@ def get_k8s_core_client():
     core_v1 = client.CoreV1Api()
     return core_v1
 
-def create_job_object(job_name, image, command, labels):
+def create_job_object(name="redun-job", image="bash", command="false", labels={}, uid=None):
     container = client.V1Container(
-        name=job_name,
+        name=name,
         image=image,
         command=command)
     # Create and configurate a spec section
@@ -33,11 +33,9 @@ def create_job_object(job_name, image, command, labels):
     job = client.V1Job(
         api_version="batch/v1",
         kind="Job",
-        metadata=client.V1ObjectMeta(name=job_name, labels=labels),
+        metadata=client.V1ObjectMeta(name=name, labels=labels, uid=uid),
         spec=spec)
-
     return job
-
 
 def create_job(api_instance, job):
     api_response = api_instance.create_namespaced_job(
