@@ -14,13 +14,11 @@ from redun.tests.utils import mock_scheduler
 from redun.executors.k8s_utils import create_job_object, DEFAULT_JOB_PREFIX
 from redun.executors.k8s import (
     K8SExecutor,
-    DockerResult,
     k8s_submit,
     get_k8s_job_name,
     get_hash_from_job_name,
     iter_k8s_job_log_lines,
     iter_k8s_job_logs,
-    parse_task_error,
     submit_task,
 )
 from redun.executors.aws_utils import (

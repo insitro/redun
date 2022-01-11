@@ -115,18 +115,6 @@ def get_k8s_job_options(job_options: dict) -> dict:
     return {key: job_options[key] for key in keys if key in job_options}
 
 
-
-class DockerResult:
-    """Data holder class that looks like a k8s response"""
-    class _metadata:
-        pass
-    class _status:
-        pass
-    def __init__(self):
-        self.metadata = DockerResult._metadata()
-        self.status = DockerResult._status()
-
-
 def submit_task(
     image: str,
     s3_scratch_prefix: str,
