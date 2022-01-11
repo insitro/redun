@@ -11,7 +11,7 @@ from redun import File, task
 from redun.cli import RedunClient, import_script
 from redun.config import Config
 from redun.tests.utils import mock_scheduler
-from redun.executors.k8s_utils import create_job_object
+from redun.executors.k8s_utils import create_job_object, DEFAULT_JOB_PREFIX
 from redun.executors.k8s import (
     K8SExecutor,
     DockerResult,
@@ -287,8 +287,7 @@ def test_executor(
     executor = mock_executor(scheduler)
     executor.start()
 
-    # DO NOT SUBMIT: DRY the job name
-    k8s_submit_mock.return_value = create_job_object(name="redun-job-eval_hash", uid=k8s_job_id)
+    k8s_submit_mock.return_value = create_job_object(name=DEFAULT_JOB_PREFIX+ "-eval_hash", uid=k8s_job_id)
     # Submit redun job that will succeed.
     expr = task1(10)
     job = Job(expr)
@@ -297,13 +296,12 @@ def test_executor(
     executor.submit(job, [10], {})
 
     # Let job get stale so job arrayer actually submits it.
-    wait_until(lambda: executor.arrayer.num_pending == 0, timeout=1000)
+    wait_until(lambda: executor.arrayer.num_pending == 0)
     # # # Ensure job options were passed correctly.
     assert k8s_submit_mock.call_args
-    # DO NOT SUBMIT: DRY the job name
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
-        "job_name": "redun-job-eval_hash",
+        "job_name": DEFAULT_JOB_PREFIX + "-eval_hash",
         "vcpus": 1,
         "gpus": 0,
         "memory": 4,
@@ -318,8 +316,7 @@ def test_executor(
         }
     }
 
-    # DO NOT SUBMIT: DRY the job name
-    k8s_submit_mock.return_value = create_job_object(name="redun-job-eval_hash2", uid=k8s_job2_id)
+    k8s_submit_mock.return_value = create_job_object(name=DEFAULT_JOB_PREFIX + "-eval_hash2", uid=k8s_job2_id)
 
     # Submit redun job that will fail.
     expr2 = task1.options(memory=8)("a")
@@ -332,10 +329,9 @@ def test_executor(
     wait_until(lambda: executor.arrayer.num_pending == 0)
 
     # # # Ensure job options were passed correctly.
-    # DO NOT SUBMIT: compute the job name properly
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
-        "job_name": "redun-job-eval_hash2",
+        "job_name": DEFAULT_JOB_PREFIX + "-eval_hash2",
         "vcpus": 1,
         "gpus": 0,
         "memory": 8,
@@ -359,9 +355,9 @@ def test_executor(
     error_file = File("s3://example-bucket/redun/jobs/eval_hash2/error")
     error_file.write(pickle_dumps((error, Traceback.from_error(error))), mode="wb")
 
-    fake_k8s_job = create_job_object(uid=k8s_job_id, name="redun-job-eval_hash")
+    fake_k8s_job = create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")
     fake_k8s_job.status = client.V1JobStatus(succeeded=1)
-    fake_k8s_job2 = create_job_object(uid=k8s_job2_id, name="redun-job-eval_hash2")
+    fake_k8s_job2 = create_job_object(uid=k8s_job2_id, name=DEFAULT_JOB_PREFIX + "-eval_hash2")
     fake_k8s_job2.status = client.V1JobStatus(failed=1)
     iter_k8s_job_status_mock.return_value = iter([fake_k8s_job, fake_k8s_job2])
     
@@ -513,15 +509,12 @@ def test_executor_inflight_job(
     # Setup k8s mocks.
     
     iter_k8s_job_status_mock.return_value = iter([])
-                    # DO NOT SUBMIT: DRY
-
-    k8s_describe_jobs_mock.return_value = [create_job_object(uid=k8s_job_id, name='redun-job-eval_hash')]
+    k8s_describe_jobs_mock.return_value = [create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")]
 
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
     executor.get_jobs.return_value = client.V1JobList(items=[
-                 # DO NOT SUBMIT: DRY
-           create_job_object(uid=k8s_job_id, name='redun-job-eval_hash')])
+           create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")])
     executor.start()
 
     # Hand create job.
@@ -540,7 +533,7 @@ def test_executor_inflight_job(
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
-    k8s_job = create_job_object(uid=k8s_job_id, name='redun-job-eval_hash')
+    k8s_job = create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")
     k8s_job.status = client.V1JobStatus(succeeded=1)
     iter_k8s_job_status_mock.return_value = [k8s_job]
     scheduler.batch_wait([job.id])

@@ -53,7 +53,6 @@ def k8s_submit(
     api_instance = k8s_utils.get_k8s_batch_client()
     k8s_job = k8s_utils.create_job_object(job_name, image, command, k8s_labels)
     api_response = k8s_utils.create_job(api_instance, k8s_job)
-    print("k8s_job:", api_response)
     return api_response
 
 
@@ -367,19 +366,9 @@ def iter_k8s_job_status(
     aws_region : str
        AWS region that jobs are running in.
     """
-    pending_run = 0
-
+    # Currently an identity implementation; we don't use the pending feature from the aws_batch implementation we copied.
     for job in k8s_describe_jobs(job_ids):
         yield job
-
-    #     if job["status"] in BATCH_JOB_STATUSES.pending:
-    #         pending_run += 1
-    #     else:
-    #         pending_run = 0
-
-    #     if pending_truncate > 0 and pending_run > pending_truncate:
-    #         break
-
 
 def iter_log_stream(
     job_id: str,
@@ -405,7 +394,7 @@ def iter_log_stream(
         yield from lines
 
 
-# Unused
+# Currently unused
 # TODO(davidek): figure out if we need to format the logs correct (withi timestamps?)
 def format_log_stream_event(event: dict) -> str:
     """
@@ -425,6 +414,7 @@ def iter_k8s_job_logs(
     Iterate through the log events of an K8S job.
     """
 
+    # another pass-through implementation due to copying the aws_batch implementation.
     yield from iter_log_stream(
         job_id=job_id,
         limit=limit,
@@ -477,7 +467,7 @@ class K8SExecutor(Executor):
             "memory": config.getint("memory", 4),
             "retries": config.getint("retries", 1),
             "role": config.get("role"),
-            "job_name_prefix": config.get("job_name_prefix", "redun-job"),
+            "job_name_prefix": config.get("job_name_prefix", k8s_utils.DEFAULT_JOB_PREFIX),
         }
         if config.get("k8s_labels"):
             self.default_task_options["k8s_labels"] = json.loads(config.get("k8s_labels"))
@@ -502,7 +492,7 @@ class K8SExecutor(Executor):
     def gather_inflight_jobs(self) -> None:
         running_arrays: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
 
-        # Get all running jobs by name
+        # Get all running jobs by name.
         inflight_jobs = self.get_jobs([]) #BATCH_JOB_STATUSES.inflight)
         for job in inflight_jobs.items:
             job_name = job.metadata.name
@@ -765,7 +755,7 @@ class K8SExecutor(Executor):
         if use_cache and job.eval_hash in self.preexisting_k8s_jobs:
             k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
             # Make sure k8s API still has a status on this job.
-            job_name = 'redun-job-' + job.eval_hash
+            job_name = task_options['job_name_prefix'] + "-" + job.eval_hash
             existing_jobs = k8s_describe_jobs([job_name])
             existing_job = existing_jobs[0]
             # Reunite with inflight k8s job, if present.

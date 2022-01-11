@@ -5,7 +5,7 @@ import yaml
 
 from kubernetes import client, config
 
-
+DEFAULT_JOB_PREFIX='redun-job'
 def get_k8s_batch_client():
     config.load_kube_config()
     batch_v1 = client.BatchV1Api()
@@ -16,7 +16,7 @@ def get_k8s_core_client():
     core_v1 = client.CoreV1Api()
     return core_v1
 
-def create_job_object(name="redun-job", image="bash", command="false", labels={}, uid=None):
+def create_job_object(name=DEFAULT_JOB_PREFIX, image="bash", command="false", labels={}, uid=None):
     container = client.V1Container(
         name=name,
         image=image,
@@ -41,7 +41,6 @@ def create_job(api_instance, job):
     api_response = api_instance.create_namespaced_job(
         body=job,
         namespace="default")
-    print("Job created. status='%s'" % str(api_response.status))
     return api_response
 
 def get_job_status(api_instance, job):
