@@ -28,9 +28,6 @@ from redun.scripting import ScriptError, get_task_command
 from redun.task import Task
 from redun.utils import get_import_paths, pickle_dump
 
-BATCH_JOB_TIMEOUT_ERROR = "Job attempt duration exceeded timeout"
-
-
 SUCCEEDED = 'SUCCEEDED'
 FAILED = 'FAILED'
 
