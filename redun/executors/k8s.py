@@ -2,12 +2,14 @@ import pdb
 import boto3
 import datetime
 import json
+import kubernetes
 import logging
 import os
 import pickle
 import re
 import subprocess
 import threading
+import typing
 import time
 import uuid
 from collections import OrderedDict, defaultdict
@@ -261,7 +263,7 @@ chmod +x .task_command
 
 
 def parse_task_error(
-    s3_scratch_prefix: str, job: Job, k8s_job_metadata: Optional[dict] = None
+    s3_scratch_prefix: str, job: Job, k8s_job_metadata: Optional[kubernetes.client.V1Job] = None
 ) -> Tuple[Exception, "Traceback"]:
     """
     Parse task error from s3 scratch path.
@@ -316,10 +318,9 @@ def parse_task_logs(
         yield "\n*** Earlier logs are truncated ***\n"
     yield from lines
 
-
 def k8s_describe_jobs(
     job_names: List[str], chunk_size: int = 100, 
-) -> Iterator[dict]:
+) -> typing.List[str]:
     """
     Returns K8S Job descriptions from the AWS API.
     """
@@ -331,27 +332,7 @@ def k8s_describe_jobs(
     return responses
 
 
-def iter_k8s_job_status(
-    job_ids: List[str], pending_truncate: int = 10, 
-) -> Iterator[dict]:
-    """
-    Yields K8S jobs statuses.
-
-    If pending_truncate is used (> 0) then rely on K8S's behavior of running
-    jobs approximately in order. This allows us to truncate the polling of jobs
-    once we see a sufficient number of pending jobs.
-
-    Parameters
-    ----------
-    job_ids : List[str]
-      Batch job ids that should be in order of submission.
-    pending_truncate : int
-      After seeing `pending_truncate` number of pending jobs, assume the rest are pending.
-      Use a negative int to disable this optimization.
-    aws_region : str
-       AWS region that jobs are running in.
-    """
-    # Currently an identity implementation; we don't use the pending feature from the aws_batch implementation we copied.
+def iter_k8s_job_status(job_ids):
     for job in k8s_describe_jobs(job_ids):
         yield job
 
@@ -548,6 +529,8 @@ class K8SExecutor(Executor):
             
                 # Copy pending_k8s_jobs.keys() since it can change due to new submissions.
                 jobs = iter_k8s_job_status(list(self.pending_k8s_jobs.keys()))
+                # changing this breaks inflight test
+                #jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
                 for job in jobs:
                     self._process_job_status(job)
                 time.sleep(self.interval)

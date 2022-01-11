@@ -266,10 +266,10 @@ def task1(x):
 
 @mock_s3
 @patch("redun.executors.k8s.parse_task_logs")
-@patch("redun.executors.k8s.iter_k8s_job_status")
+@patch("redun.executors.k8s.k8s_describe_jobs")
 @patch("redun.executors.k8s.k8s_submit")
 def test_executor(
-    k8s_submit_mock, iter_k8s_job_status_mock, parse_task_logs_mock
+    k8s_submit_mock, k8s_describe_jobs_mock, parse_task_logs_mock
 ) -> None:
     """
     Ensure that we can submit job to K8SExecutor.
@@ -278,7 +278,7 @@ def test_executor(
     k8s_job2_id = "k8s-job2-id"
 
     # Setup K8S mocks.
-    iter_k8s_job_status_mock.return_value = iter([])
+    k8s_describe_jobs_mock.return_value = []
     parse_task_logs_mock.return_value = []
 
     scheduler = mock_scheduler()
@@ -355,7 +355,7 @@ def test_executor(
     fake_k8s_job.status = client.V1JobStatus(succeeded=1)
     fake_k8s_job2 = create_job_object(uid=k8s_job2_id, name=DEFAULT_JOB_PREFIX + "-eval_hash2")
     fake_k8s_job2.status = client.V1JobStatus(failed=1)
-    iter_k8s_job_status_mock.return_value = iter([fake_k8s_job, fake_k8s_job2])
+    k8s_describe_jobs_mock.return_value = [fake_k8s_job, fake_k8s_job2]
     
     scheduler.batch_wait([job.id, job2.id])
     executor.stop()
@@ -501,12 +501,12 @@ def test_executor_inflight_job(
     # Setup k8s mocks.
     
     iter_k8s_job_status_mock.return_value = iter([])
-    k8s_describe_jobs_mock.return_value = [create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")]
+    k8s_job = create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")
+    k8s_describe_jobs_mock.return_value = [k8s_job]
 
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
-    executor.get_jobs.return_value = client.V1JobList(items=[
-           create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")])
+    executor.get_jobs.return_value = client.V1JobList(items=[k8s_job])
     executor.start()
 
     # Hand create job.
@@ -525,9 +525,9 @@ def test_executor_inflight_job(
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
-    k8s_job = create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")
     k8s_job.status = client.V1JobStatus(succeeded=1)
     iter_k8s_job_status_mock.return_value = [k8s_job]
+    #k8s_describe_jobs_mock.return_value = [k8s_job]
     scheduler.batch_wait([job.id])
     # Simulate pre-existing job output.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
