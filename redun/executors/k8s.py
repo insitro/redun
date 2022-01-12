@@ -126,7 +126,7 @@ def submit_task(
     kwargs: Dict[str, Any] = {},
     job_options: dict = {},
     code_file: Optional[File] = None,
-) -> Dict[str, Any]:
+) -> kubernetes.client.V1Job:
     """
     Submit a redun Task to K8S
     """
@@ -198,7 +198,7 @@ def submit_command(
     job: Job,
     command: str,
     job_options: dict = {},
-) -> dict:
+) -> kubernetes.client.V1Job:
     """
     Submit a shell command to K8S
     """
@@ -320,7 +320,7 @@ def parse_task_logs(
 
 def k8s_describe_jobs(
     job_names: List[str], chunk_size: int = 100, 
-) -> typing.List[str]:
+) -> typing.List[kubernetes.client.V1Job]:
     """
     Returns K8S Job descriptions from the AWS API.
     """
@@ -341,7 +341,7 @@ def iter_log_stream(
     limit: Optional[int] = None,
     reverse: bool = False,
     required: bool = True,
-) -> Iterator[dict]:
+) -> Iterator[str]:
     """
     Iterate through the events of a K8S log.
     """
@@ -369,13 +369,13 @@ def format_log_stream_event(event: dict) -> str:
     timestamp = str(datetime.datetime.fromtimestamp(event["timestamp"] / 1000))
     return "{timestamp}  {message}".format(timestamp=timestamp, message=event["message"])
 
-
+# DO NOT SUBMIT: can we get rid of this function?
 def iter_k8s_job_logs(
     job_id: str,
     limit: Optional[int] = None,
     reverse: bool = False,
     required: bool = True,
-) -> Iterator[dict]:
+) -> Iterator[str]:
     """
     Iterate through the log events of an K8S job.
     """
@@ -388,7 +388,7 @@ def iter_k8s_job_logs(
         required=required,
     )
 
-
+# DO NOT SUBMIT: can we get rid of this whole function?
 def iter_k8s_job_log_lines(
     job_id: str,
     reverse: bool = False,
@@ -559,7 +559,7 @@ class K8SExecutor(Executor):
 
         return False, container_reason
 
-    def _process_job_status(self, job: dict) -> None:
+    def _process_job_status(self, job: kubernetes.client.V1Job) -> None:
         """
         Process K8S job statuses.
         """
@@ -596,7 +596,7 @@ class K8SExecutor(Executor):
                             self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
                         )
                     ),
-                    job_labels=job_labels,
+                    job_tags=k8s_labels,
                 )
         elif job_status == FAILED:
             error, error_traceback = parse_task_error(
