@@ -1,8 +1,3 @@
-from os import path
-from time import sleep
-
-import yaml
-
 from kubernetes import client, config
 
 DEFAULT_JOB_PREFIX='redun-job'
@@ -17,7 +12,11 @@ def get_k8s_core_client():
     core_v1 = client.CoreV1Api()
     return core_v1
 
-def create_job_object(name=DEFAULT_JOB_PREFIX, image="bash", command="false", labels={}, uid=None):
+def create_job_object(name=DEFAULT_JOB_PREFIX, image="bash", command="false",
+    labels=None, uid=None):
+    if labels is None:
+        labels = {}
+
     container = client.V1Container(
         name=name,
         image=image,
@@ -43,5 +42,3 @@ def create_job(api_instance, job):
         body=job,
         namespace="default")
     return api_response
-
-    

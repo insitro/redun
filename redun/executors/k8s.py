@@ -1,31 +1,27 @@
-import pdb
-import boto3
 import datetime
-import json
-import kubernetes
 import logging
 import os
+import json
 import pickle
 import re
-import subprocess
 import threading
 import typing
 import time
-import uuid
-from collections import OrderedDict, defaultdict
-from functools import lru_cache
+
+from collections import OrderedDict
 from itertools import islice
 from shlex import quote
-from tempfile import mkstemp
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, cast
 from urllib.error import URLError
 from urllib.request import urlopen
 
+import kubernetes
+
 from redun.executors import k8s_utils, s3_utils, aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.file import File
-from redun.job_array import AWS_ARRAY_VAR, JobArrayer
-from redun.scheduler import Job, Scheduler, Traceback
+from redun.job_array import JobArrayer
+from redun.scheduler import Job, Traceback
 from redun.scripting import ScriptError, get_task_command
 from redun.task import Task
 from redun.utils import get_import_paths, pickle_dump
@@ -38,6 +34,7 @@ def k8s_submit(
     command: List[str],
     image: str,
     job_name: str = "k8s-job",
+    # TODO(dek): configure container
     memory: int = 4,
     vcpus: int = 1,
     gpus: int = 0,
@@ -68,12 +65,11 @@ def is_ec2_instance() -> bool:
         return False
 
 
-
 def get_k8s_job_name(prefix: str, job_hash: str) -> str:
     """
     Return a K8S Job name by either job or job hash.
     """
-    return "{}-{}{}".format(prefix, job_hash, "")
+    return f"{prefix}-{job_hash}"
 
 
 def get_hash_from_job_name(job_name: str) -> Optional[str]:
@@ -123,14 +119,18 @@ def submit_task(
     job: Job,
     a_task: Task,
     args: Tuple = (),
-    kwargs: Dict[str, Any] = {},
-    job_options: dict = {},
+    kwargs: Dict[str, Any] = None,
+    job_options: dict = None,
     code_file: Optional[File] = None,
 ) -> kubernetes.client.V1Job:
     """
     Submit a redun Task to K8S
     """
-
+    # To avoid dangerous default {}
+    if kwargs is None:
+        kwargs = {}
+    if job_options is None:
+        job_options = {}
     input_path = None
     output_path = None
     error_path = None
@@ -187,9 +187,8 @@ def submit_task(
         job_name=job_name,
         **get_k8s_job_options(job_options),
     )
-    
-    return result
 
+    return result
 
 
 def submit_command(
@@ -197,11 +196,14 @@ def submit_command(
     s3_scratch_prefix: str,
     job: Job,
     command: str,
-    job_options: dict = {},
+    job_options: dict = None,
 ) -> kubernetes.client.V1Job:
     """
     Submit a shell command to K8S
     """
+    # to avoid dangerous default dict
+    if job_options is None:
+        job_options = {}
     input_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT)
     output_path = aws_utils.get_job_scratch_file(
         s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
@@ -262,9 +264,7 @@ chmod +x .task_command
     )
 
 
-def parse_task_error(
-    s3_scratch_prefix: str, job: Job, k8s_job_metadata: Optional[kubernetes.client.V1Job] = None
-) -> Tuple[Exception, "Traceback"]:
+def parse_task_error(s3_scratch_prefix: str, job: Job) -> Tuple[Exception, "Traceback"]:
     """
     Parse task error from s3 scratch path.
     """
@@ -278,17 +278,9 @@ def parse_task_error(
         if error_file.exists():
             error, error_traceback = pickle.loads(cast(bytes, error_file.read("rb")))
         else:
-            if k8s_job_metadata:
-                try:
-                    status_reason = k8s_job_metadata.status.conditions[-1].message
-                except (KeyError, IndexError, TypeError):
-                    status_reason = ""
-            else:
-                status_reason = ""
-
             error = K8SError(
-                    "Exception and traceback could not be found for K8S Job."
-                )
+                "Exception and traceback could not be found for K8S Job."
+            )
             error_traceback = Traceback.from_error(error)
     else:
         # Script task.
@@ -318,8 +310,9 @@ def parse_task_logs(
         yield "\n*** Earlier logs are truncated ***\n"
     yield from lines
 
+
 def k8s_describe_jobs(
-    job_names: List[str], chunk_size: int = 100, 
+    job_names: List[str],
 ) -> typing.List[kubernetes.client.V1Job]:
     """
     Returns K8S Job descriptions from the AWS API.
@@ -336,11 +329,10 @@ def iter_k8s_job_status(job_ids):
     for job in k8s_describe_jobs(job_ids):
         yield job
 
+
 def iter_log_stream(
     job_id: str,
-    limit: Optional[int] = None,
     reverse: bool = False,
-    required: bool = True,
 ) -> Iterator[str]:
     """
     Iterate through the events of a K8S log.
@@ -354,7 +346,7 @@ def iter_log_stream(
     namespace = api_response.items[0].metadata.namespace
     log_response = api_instance.read_namespaced_pod_log(name, namespace=namespace)
     lines = log_response.split("\n")
-    
+
     if reverse:
         lines = reversed(lines)
         yield from lines
@@ -367,14 +359,12 @@ def format_log_stream_event(event: dict) -> str:
     Format a logStream event as a line.
     """
     timestamp = str(datetime.datetime.fromtimestamp(event["timestamp"] / 1000))
-    return "{timestamp}  {message}".format(timestamp=timestamp, message=event["message"])
+    return f"{timestamp}  {event['message']}"
 
 # DO NOT SUBMIT: can we get rid of this function?
 def iter_k8s_job_logs(
     job_id: str,
-    limit: Optional[int] = None,
     reverse: bool = False,
-    required: bool = True,
 ) -> Iterator[str]:
     """
     Iterate through the log events of an K8S job.
@@ -383,12 +373,12 @@ def iter_k8s_job_logs(
     # another pass-through implementation due to copying the aws_batch implementation.
     yield from iter_log_stream(
         job_id=job_id,
-        limit=limit,
         reverse=reverse,
-        required=required,
     )
 
 # DO NOT SUBMIT: can we get rid of this whole function?
+
+
 def iter_k8s_job_log_lines(
     job_id: str,
     reverse: bool = False,
@@ -403,7 +393,6 @@ def iter_k8s_job_log_lines(
         required=required,
     )
     return log_lines
-
 
 
 class K8SError(Exception):
@@ -424,6 +413,7 @@ class K8SExecutor(Executor):
         # Optional config.
         self.role = config.get("role")
         self.code_package = aws_utils.parse_code_package_config(config)
+
         self.code_file: Optional[File] = None
 
         # Default task options.
@@ -455,17 +445,15 @@ class K8SExecutor(Executor):
         )
 
     def gather_inflight_jobs(self) -> None:
-        running_arrays: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
-
         # Get all running jobs by name.
-        inflight_jobs = self.get_jobs([]) #BATCH_JOB_STATUSES.inflight)
+        inflight_jobs = self.get_jobs([])  # BATCH_JOB_STATUSES.inflight)
         for job in inflight_jobs.items:
             job_name = job.metadata.name
             job_id = job.metadata.uid
-        
+
             job_hash = get_hash_from_job_name(job_name)
             if job_hash:
-                self.preexisting_k8s_jobs[job_hash] = job.metadata.uid
+                self.preexisting_k8s_jobs[job_hash] = job_id
             continue
 
     def _start(self) -> None:
@@ -511,8 +499,6 @@ class K8SExecutor(Executor):
         thread low so as to not interfere with new submissions.
         """
         assert self.scheduler
-        chunk_size = 100
-        pending_truncate = 10
 
         try:
             while self.is_running and (self.pending_k8s_jobs or self.arrayer.num_pending):
@@ -526,10 +512,10 @@ class K8SExecutor(Executor):
                         + " ".join(sorted(self.pending_k8s_jobs.keys())),
                         level=logging.DEBUG,
                     )
-            
+
                 # Copy pending_k8s_jobs.keys() since it can change due to new submissions.
                 jobs = iter_k8s_job_status(list(self.pending_k8s_jobs.keys()))
-                # changing this breaks inflight test
+                # changing this (IE, removing iter_k8s_job_status) breaks inflight test
                 #jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
                 for job in jobs:
                     self._process_job_status(job)
@@ -544,21 +530,6 @@ class K8SExecutor(Executor):
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
 
-    def _can_override_failed(self, job: dict) -> Tuple[bool, str]:
-        """
-        Certain AWS errors can be ignored that do not effect the result.
-
-        https://github.com/aws/amazon-ecs-agent/issues/2312
-        """
-        container_reason = "k8s stub"
-
-        # try:
-        #     container_reason = job["attempts"][-1]["container"]["reason"]
-        # except (KeyError, IndexError):
-        #     container_reason = ""
-
-        return False, container_reason
-
     def _process_job_status(self, job: kubernetes.client.V1Job) -> None:
         """
         Process K8S job statuses.
@@ -569,12 +540,7 @@ class K8SExecutor(Executor):
         if job.status.succeeded is not None and job.status.succeeded > 0:
             job_status = SUCCEEDED
         elif job.status.failed is not None and job.status.failed > 0:
-            can_override, container_reason = self._can_override_failed(job)
-            if can_override:
-                job_status = SUCCEEDED
-                self.scheduler.log("NOTE: Overriding K8S error: {}".format(container_reason))
-            else:
-                job_status = FAILED
+            job_status = FAILED
         else:
             return
 
@@ -600,12 +566,10 @@ class K8SExecutor(Executor):
                 )
         elif job_status == FAILED:
             error, error_traceback = parse_task_error(
-                self.s3_scratch_prefix, redun_job, k8s_job_metadata=job
+                self.s3_scratch_prefix, redun_job
             )
-        
-            logs = [f"*** CloudWatch logs for K8S job {job.metadata.uid}:\n"]
-            if container_reason:
-                logs.append(f"container.reason: {container_reason}\n")
+
+            logs = [f"*** Logs for K8S job {job.metadata.uid}:\n"]
 
             try:
                 status_reason = job.status.conditions[-1].message
@@ -618,7 +582,7 @@ class K8SExecutor(Executor):
                 parse_task_logs(job.metadata.uid, required=False)
             )
             error_traceback.logs = logs
-            
+
             self.scheduler.reject_job(
                 redun_job, error, error_traceback=error_traceback, job_tags=k8s_labels
             )
@@ -693,10 +657,11 @@ class K8SExecutor(Executor):
         assert self.scheduler
         assert job.task
 
-        # If this is the first submission gather inflight jobs. We also check is_running here as a way
-        # of determining whether this is the first submission or not. If we are already running,
-        # then we know we have already had jobs submitted and done the inflight check so no
-        # reason to do that again here.
+        # If this is the first submission gather inflight jobs. We also check
+        # is_running here as a way of determining whether this is the first
+        # submission or not. If we are already running, then we know we have
+        # already had jobs submitted and done the inflight check so no reason
+        # to do that again here.
         if not self.is_running:
             # Precompute existing inflight jobs for job reuniting.
             self.gather_inflight_jobs()
@@ -748,10 +713,9 @@ class K8SExecutor(Executor):
 
         self._start()
 
-
     def _submit_single_job(self, job: Job, args: Tuple, kwargs: dict) -> None:
         """
-        Actually submits a job. 
+        Actually submits a job.
         """
         assert job.task
         task_options = self._get_job_options(job)
@@ -784,7 +748,7 @@ class K8SExecutor(Executor):
 
         k8s_job_id = k8s_resp.metadata.uid
         job_name = k8s_resp.metadata.name
-        retries = None # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
+        retries = None  # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
         self.log(
             "submit redun job {redun_job} as {job_type} {k8s_job_id}:\n"
             "  job_id          = {k8s_job_id}\n"
@@ -793,7 +757,7 @@ class K8SExecutor(Executor):
             "  retry_attempts  = {retries}".format(
                 redun_job=job.id,
                 job_type=job_type,
-                k8s_job_id=k8s_job_id, 
+                k8s_job_id=k8s_job_id,
                 job_dir=job_dir,
                 job_name=job_name,
                 retries=retries,
@@ -813,23 +777,24 @@ class K8SExecutor(Executor):
         """
         return self._submit(job, args, kwargs)
 
-    def get_jobs(self, statuses: Optional[List[str]] = None) -> Iterator[dict]:
+    def get_jobs(self) -> Iterator[dict]:
         """
         Returns K8S Job statuses from the AWS API.
         """
         api_instance = k8s_utils.get_k8s_batch_client()
-        # We don't currently filter on "inflight" jobs, but that's what the aws_batch implementation does.
+        # We don't currently filter on "inflight" jobs, but that's what the
+        # aws_batch implementation does.
         api_response = api_instance.list_job_for_all_namespaces(watch=False)
         return api_response
-      
 
-    def kill_jobs(
-        self, job_ids: Iterable[str], reason: str = "Terminated by user"
-    ) -> Iterator[dict]:
-        """
-        Kill K8S Jobs.
-        """
-        batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
+    # TODO(davidek): fix or remove
+    # def kill_jobs(
+    #     self, job_ids: Iterable[str], reason: str = "Terminated by user"
+    # ) -> Iterator[dict]:
+    #     """
+    #     Kill K8S Jobs.
+    #     """
+    #     batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
 
-        for job_id in job_ids:
-            yield batch_client.terminate_job(jobId=job_id, reason=reason)
+    #     for job_id in job_ids:
+    #         yield batch_client.terminate_job(jobId=job_id, reason=reason)

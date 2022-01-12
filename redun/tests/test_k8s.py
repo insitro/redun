@@ -1,16 +1,14 @@
-import pickle
 from unittest.mock import Mock, patch
 import boto3
 import pytest
-import uuid
 from kubernetes import client
-from moto import mock_logs, mock_s3
+from moto import mock_s3
 
 import redun.executors.k8s
 from redun import File, task
-from redun.cli import RedunClient, import_script
+from redun.cli import import_script
 from redun.config import Config
-from redun.tests.utils import mock_scheduler
+from redun.tests.utils import mock_scheduler, use_tempdir, wait_until
 from redun.executors.k8s_utils import create_job_object, DEFAULT_JOB_PREFIX
 from redun.executors.k8s import (
     K8SExecutor,
@@ -23,16 +21,10 @@ from redun.executors.k8s import (
 )
 from redun.executors.aws_utils import (
     REDUN_REQUIRED_VERSION,
-    create_tar,
-    extract_tar,
-    find_code_files,
-    get_job_scratch_file,
     package_code,
-    parse_code_package_config,
 )
 from redun.file import Dir
-from redun.scheduler import Execution, Job, Scheduler, Traceback
-from redun.tests.utils import mock_scheduler, use_tempdir, wait_until
+from redun.scheduler import Job, Scheduler, Traceback
 from redun.utils import pickle_dumps
 
 # skipped job_def tests here
@@ -75,7 +67,6 @@ def mock_executor(scheduler, code_package=False):
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
 
     executor.get_jobs = Mock()
-            
     executor.get_jobs.return_value = client.V1JobList(items=[])
 
     s3_client = boto3.client("s3", region_name="us-east-1")
@@ -285,7 +276,8 @@ def test_executor(
     executor = mock_executor(scheduler)
     executor.start()
 
-    k8s_submit_mock.return_value = create_job_object(name=DEFAULT_JOB_PREFIX+ "-eval_hash", uid=k8s_job_id)
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash", uid=k8s_job_id)
     # Submit redun job that will succeed.
     expr = task1(10)
     job = Job(expr)
@@ -313,7 +305,8 @@ def test_executor(
         }
     }
 
-    k8s_submit_mock.return_value = create_job_object(name=DEFAULT_JOB_PREFIX + "-eval_hash2", uid=k8s_job2_id)
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash2", uid=k8s_job2_id)
 
     # Submit redun job that will fail.
     expr2 = task1.options(memory=8)("a")
