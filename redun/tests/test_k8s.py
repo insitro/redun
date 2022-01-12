@@ -109,7 +109,7 @@ def test_executor_config(scheduler: Scheduler) -> None:
 
 
 @task()
-def task1(x):
+def task1(x: int):
     return x + 10
 
 @task(load_module="custom.module")
@@ -156,7 +156,7 @@ def task1(x):
         s3_scratch_prefix,
         job,
         a_task,
-        args=[10],
+        args=(10,),
         kwargs={},
         code_file=code_file,
     )
@@ -228,7 +228,7 @@ def task1(x):
         s3_scratch_prefix,
         job,
         module.task1,
-        args=[10],
+        args=(10,),
         kwargs={},
         code_file=code_file,
     )
@@ -540,6 +540,3 @@ def test_executor_inflight_job(
 
 
 # skipped job array tests
-
-if __name__ == '__main__':
-    test_executor_inflight_job()
