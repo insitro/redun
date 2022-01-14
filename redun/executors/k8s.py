@@ -295,14 +295,12 @@ def parse_task_error(s3_scratch_prefix: str, job: Job) -> Tuple[Exception, "Trac
 
 def parse_task_logs(
     k8s_job_id: str,
-    max_lines: int = 1000,
-    required: bool = True,
-) -> Iterator[str]:
+    max_lines: int = 1000) -> Iterator[str]:
     """
     Iterates through most recent logs of an K8S Job.
     """
     lines_iter = iter_k8s_job_log_lines(
-        k8s_job_id, reverse=True, required=required,
+        k8s_job_id, reverse=True,
     )
     lines = reversed(list(islice(lines_iter, 0, max_lines)))
 
@@ -320,7 +318,10 @@ def k8s_describe_jobs(
     api_instance = k8s_utils.get_k8s_batch_client()
     responses = []
     for job_name in job_names:
-        api_response = api_instance.read_namespaced_job(job_name, namespace='default')
+        try:
+            api_response = api_instance.read_namespaced_job(job_name, namespace='default')
+        except:
+            raise
         responses.append(api_response)
     return responses
 
@@ -382,7 +383,6 @@ def iter_k8s_job_logs(
 def iter_k8s_job_log_lines(
     job_id: str,
     reverse: bool = False,
-    required: bool = True,
 ) -> Iterator[str]:
     """
     Iterate through the log lines of an K8S job.
@@ -390,7 +390,6 @@ def iter_k8s_job_log_lines(
     log_lines = iter_k8s_job_logs(
         job_id,
         reverse=reverse,
-        required=required,
     )
     return log_lines
 
@@ -436,6 +435,7 @@ class K8SExecutor(Executor):
 
         self.interval = config.getfloat("job_monitor_interval", 5.0)
 
+        print("min array size:", config.getint('min_array_size'))
         self.arrayer = JobArrayer(
             executor=self,
             submit_interval=self.interval,
@@ -446,7 +446,7 @@ class K8SExecutor(Executor):
 
     def gather_inflight_jobs(self) -> None:
         # Get all running jobs by name.
-        inflight_jobs = self.get_jobs([])  # BATCH_JOB_STATUSES.inflight)
+        inflight_jobs = self.get_jobs()
         for job in inflight_jobs.items:
             job_name = job.metadata.name
             job_id = job.metadata.uid
@@ -578,9 +578,12 @@ class K8SExecutor(Executor):
             if status_reason:
                 logs.append(f"statusReason: {status_reason}\n")
 
-            logs.extend(
-                parse_task_logs(job.metadata.uid, required=False)
-            )
+            try:
+                logs.extend(
+                    parse_task_logs(job.metadata.name)
+                )
+            except Exception as e:
+                logs.append("Failed to parse task logs for: " + job.metadata.name + " " + str(e))
             error_traceback.logs = logs
 
             self.scheduler.reject_job(
