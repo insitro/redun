@@ -1,6 +1,7 @@
 import sys
 import os
 import subprocess
+import time
 from typing import Dict
 
 from redun import File, script, task
@@ -8,6 +9,12 @@ from redun import File, script, task
 
 redun_namespace = "redun.examples.k8s"
    
+
+@task(executor="k8s")
+def subtask(x):
+    time.sleep(100)
+    return x
+    
 @task(script=True, executor="k8s")
 def sleepy_script_on_k8s():
     return "sleep 60"
@@ -34,25 +41,14 @@ def failed_task_on_k8s() -> list:
     raise RuntimeError
 
 
-@task(executor='batch')
-def task_on_batch() -> list:
-    return [
-        'task_on_batch',
-        print("hello stdout"),
-        print("hello stderr", file=sys.stderr),
-    ]
+@task
+def main(n=10):
+    return [subtask(i) for i in range(n)]
 
-
-@task()
-def main() -> list:
-    # This is the top-level task of the workflow. Here, we are invoking the
-    # different examples of running tasks on different executors. All of their
-    # results will be combined into one nested list as shown below.
-    return [
-        'main',
-        sleepy_script_on_k8s(),
-        #task_on_k8s(),
-        #script_on_k8s(),
-        #failed_task_on_k8s(),
-        #task_on_batch(),
-    ]
+#     return [
+#         'main',
+#         sleepy_script_on_k8s(),
+#         #task_on_k8s(),
+#         #script_on_k8s(),
+#         #failed_task_on_k8s(),
+#     ]
