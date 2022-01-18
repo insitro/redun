@@ -178,6 +178,7 @@ def task1(x):
         ],
         image="my-image",
         job_name="k8s-job-eval_hash",
+        array_size=0
     )
 
 
@@ -253,14 +254,15 @@ def task1(x):
         ],
         image="my-image",
         job_name="k8s-job-eval_hash",
+        array_size=0
     )
 
 @mock_s3
 @patch("redun.executors.k8s.parse_task_logs")
-@patch("redun.executors.k8s.k8s_describe_jobs")
+@patch("redun.executors.k8s.iter_k8s_job_status")
 @patch("redun.executors.k8s.k8s_submit")
 def test_executor(
-    k8s_submit_mock, k8s_describe_jobs_mock, parse_task_logs_mock
+    k8s_submit_mock, iter_k8s_job_status_mock, parse_task_logs_mock
 ) -> None:
     """
     Ensure that we can submit job to K8SExecutor.
@@ -269,7 +271,7 @@ def test_executor(
     k8s_job2_id = "k8s-job2-id"
 
     # Setup K8S mocks.
-    k8s_describe_jobs_mock.return_value = []
+    iter_k8s_job_status_mock.return_value = iter([])
     parse_task_logs_mock.return_value = []
 
     scheduler = mock_scheduler()
@@ -285,13 +287,14 @@ def test_executor(
     job.eval_hash = "eval_hash"
     executor.submit(job, [10], {})
 
-    # Let job get stale so job arrayer actually submits it.
+    # # Let job get stale so job arrayer actually submits it.
     wait_until(lambda: executor.arrayer.num_pending == 0)
-    # # # Ensure job options were passed correctly.
+    # # # # Ensure job options were passed correctly.
     assert k8s_submit_mock.call_args
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash",
+        "array_size": 0,
         "vcpus": 1,
         "gpus": 0,
         "memory": 4,
@@ -318,10 +321,11 @@ def test_executor(
     # # # Let job get stale so job arrayer actually submits it.
     wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # # # Ensure job options were passed correctly.
+    # # # # Ensure job options were passed correctly.
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash2",
+        "array_size": 0,
         "vcpus": 1,
         "gpus": 0,
         "memory": 8,
@@ -335,11 +339,11 @@ def test_executor(
             }
         }
 
-    # # Simulate k8s completing job.
+    # Simulate k8s completing job.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
-    # # Simulate k8s failing.
+    # Simulate k8s failing.
     error = ValueError("Boom")
     error_file = File("s3://example-bucket/redun/jobs/eval_hash2/error")
     error_file.write(pickle_dumps((error, Traceback.from_error(error))), mode="wb")
@@ -348,12 +352,12 @@ def test_executor(
     fake_k8s_job.status = client.V1JobStatus(succeeded=1)
     fake_k8s_job2 = create_job_object(uid=k8s_job2_id, name=DEFAULT_JOB_PREFIX + "-eval_hash2")
     fake_k8s_job2.status = client.V1JobStatus(failed=1)
-    k8s_describe_jobs_mock.return_value = [fake_k8s_job, fake_k8s_job2]
+    iter_k8s_job_status_mock.return_value = [fake_k8s_job, fake_k8s_job2]
     
     scheduler.batch_wait([job.id, job2.id])
     executor.stop()
 
-    # # Job results and errors should be sent back to scheduler.
+    # # # # Job results and errors should be sent back to scheduler.
     assert scheduler.job_results[job.id] == 20
     assert isinstance(scheduler.job_errors[job2.id], ValueError)
 
@@ -467,10 +471,10 @@ def test_inflight_join_only_on_first_submission(k8s_describe_jobs_mock) -> None:
     # Submit redun job.
     executor.submit(job1, [10], {})
 
-    # Ensure that inflight jobs were gathered.
+    # # Ensure that inflight jobs were gathered.
     assert executor.get_jobs.call_count == 1
 
-    # Submit the second job and confirm that job reuniting was not done again.
+    # # Submit the second job and confirm that job reuniting was not done again.
     executor.submit(job2, [20], {})
     assert executor.get_jobs.call_count == 1
 
@@ -533,3 +537,6 @@ def test_executor_inflight_job(
 
 
 # skipped job array tests
+
+if __name__ == '__main__':
+    test_executor()
