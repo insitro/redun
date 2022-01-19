@@ -7,6 +7,7 @@ import re
 import threading
 import typing
 import time
+import uuid
 
 from collections import OrderedDict, defaultdict
 from itertools import islice
@@ -806,11 +807,10 @@ class K8SExecutor(Executor):
 
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
-        queue = task_options.pop("queue", self.queue)
         # Generate a unique name for job with no '-' to simplify job name parsing.
         array_uuid = str(uuid.uuid4()).replace("-", "")
 
-        job_type = "AWS Batch job" if not self.debug else "Docker container"
+        job_type = "K8S job"
 
         # Setup input, output and error path files.
         # Input file is a pickled list of args, and kwargs, for each child job.
@@ -851,30 +851,23 @@ class K8SExecutor(Executor):
         with File(eval_file).open("w") as eval_f:
             eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
 
-        batch_resp = submit_task(
+        k8s_resp = submit_task(
             image,
-            queue,
             self.s3_scratch_prefix,
             job,
             job.task,
             job_options=task_options,
-            debug=self.debug,
             code_file=self.code_file,
-            aws_region=self.aws_region,
             array_uuid=array_uuid,
             array_size=array_size,
         )
 
-        if self.debug:
-            # Debug mode just starts N docker containers
-            array_job_id = "None"
-            for i in range(array_size):
-                self.pending_batch_jobs[batch_resp["jobId"][i]] = jobs[i]
-        else:
-            # Add entire array to array jobs, and all jobs in array to pending jobs.
-            array_job_id = batch_resp["jobId"]
-            for i in range(array_size):
-                self.pending_batch_jobs[f"{array_job_id}:{i}"] = jobs[i]
+        import pdb; pdb.set_trace()
+    
+        # Add entire array to array jobs, and all jobs in array to pending jobs.
+        array_job_id = k8s_resp.metadata.uid
+        for i in range(array_size):
+            self.pending_k8s_jobs[f"{array_job_id}:{i}"] = jobs[i]
 
         self.log(
             "submit {array_size} redun job(s) as {job_type} {batch_job}:\n"
@@ -882,16 +875,14 @@ class K8SExecutor(Executor):
             "  array_job_name  = {job_name}\n"
             "  array_size      = {array_size}\n"
             "  s3_scratch_path = {job_dir}\n"
-            "  retry_attempts  = {retries}\n"
-            "  debug           = {debug}".format(
+            "  retry_attempts  = {retries}".format(
                 array_job_id=array_job_id,
                 array_size=array_size,
                 job_type=job_type,
                 batch_job=array_job_id,
                 job_dir=aws_utils.get_array_scratch_file(self.s3_scratch_prefix, array_uuid, ""),
-                job_name=batch_resp.get("jobName"),
-                retries=batch_resp.get("ResponseMetadata", {}).get("RetryAttempts"),
-                debug=self.debug,
+                job_name=k8s_resp.metadata.name,
+                retries=0, #k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts"),
             )
         )
 
