@@ -1,8 +1,10 @@
 import datetime
+import importlib
 import inspect
 import linecache
 import logging
 import os
+import pprint
 import queue
 import shlex
 import sys
@@ -1929,3 +1931,196 @@ def apply_tags(
         return value
 
     return scheduler.evaluate((value, tags), parent_job=parent_job).then(then)
+
+
+@task(
+    namespace="redun",
+    name="subrun_root_task",
+    version="1",
+    config_args=["config", "load_modules", "run_config"],
+)
+def _subrun_root_task(
+    expr: Any,
+    config: Dict[str, Dict],
+    load_modules: List[str],
+    run_config: Dict[str, Any],
+) -> Any:
+    """
+    Launches a sub-scheduler and runs the provided expression by first "unwrapping" it.
+    The evaluated result is returned within a dict alongside other sub-scheduler-related
+    state to the caller.
+
+    Parameters
+    ----------
+    expr: TaskExpression
+        TaskExpression to be run by sub-scheduler.
+    config
+        A two-level python dict to configure the sub-scheduler.  (Will be used to initialize a
+        :class:`Config` object via the `config_dict` kwarg.)
+    load_modules
+        List of modules that must be imported before starting the sub-scheduler. Before
+        launching the sub-scheduler, the modules that define the user tasks must be imported.
+    run_config
+        Sub-scheduler run() kwargs. These are typically the local-scheduler run() kwargs that
+        should also apply to the sub-scheduler such as `dryrun` and `cache` settings.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Returns a dict result from running the sub-scheduler on `expr`.  The dict contains extra
+        information pertaining to the sub-scheduler as follows:
+        {
+          'result': sub-scheduler evaluation of `expr`
+          'status': sub-scheduler final job status poll (list of str)
+          'config': sub-scheduler config dict (useful for confirming exactly what config
+            settings were used).
+        }
+    """
+    from redun.functools import force
+
+    sub_scheduler = Scheduler(config=Config(config_dict=config))
+    sub_scheduler.load()
+
+    # Import user modules.  The user is responsible for ensuring that the Executor that runs this
+    # task has access to all these modules' code.  Additionally, any other user modules imported
+    # by these modules must also be accessible.
+    if load_modules:
+        for module in load_modules:
+            importlib.import_module(module)
+
+    result = sub_scheduler.run(force(expr), **run_config)
+    return {
+        "result": result,
+        "status": sub_scheduler.get_job_status_report(),
+        "config": sub_scheduler.config.get_config_dict(),
+        "run_config": {
+            "dryrun": sub_scheduler.dryrun,
+            "cache": sub_scheduler.use_cache,
+        },
+    }
+
+
+@scheduler_task(namespace="redun", version="1")
+def subrun(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    expr: Any,
+    executor: str,
+    config: Optional[Dict[str, Any]] = None,
+    **task_options: dict,
+) -> Promise:
+    """
+    Evaluate an expression `expr` in a sub-scheduler.
+
+    subrun() is a scheduler_task that evaluates a `_subrun_root_task`, which in turn launches the
+    sub-scheduler.
+
+    `expr` is the TaskExpression that the sub-scheduler will evaluate.
+
+    `executor` and optional `task_options` are used to configure the special redun task (
+    _subrun_root_task) that starts the sub-scheduler. For example, you can configure the task
+    with a batch executor to run the sub-scheduler on AWS Batch.
+
+    `config`: To ease configuration management of the sub-scheduler, you can pass a `config`
+    dict which contains configuration that would otherwise require a redun.ini file in the
+    sub-scheduler environment.
+        WARNING: Do not include database credentials in this config as they will be
+    logged as clear text in the redun call graph.  You should instead specify a database secret
+    (see `db_aws_secret_name`).
+        If you do not pass a config, the local scheduler's config will be forwarded to the
+    sub-scheduler (replacing the local `config_dir` with "."). In practice, the sub-scheduler's
+    `config_dir` should be less important as you probably want to log both local and sub-scheduler
+    call graphs to a common database.
+        You can also obtain a copy of the local scheduler's config and customize it as needed.
+    Instantiate the scheduler directly instead of calling `redun run`.  Then access its
+    connfig via `scheduler.py::get_scheduler_config_dict()`.
+
+    Note on code packaging: The user is responsible for ensuring that the chosen Executor for
+    invoking the sub-scheduler copies over all user-task scripts.  E.g. the local scheduler may
+    be launched on local tasks defined in workflow1.py but subrun(executor="batch) is invoked on
+    taskX defined in workflow2.py.  In this case, the user must ensure workflow2.py is copied to
+    the batch node by placing it within the same directory tree as workflow1.py.
+
+    Parameters
+    ----------
+    expr
+        Expression to be run by sub-scheduler.
+    executor
+        Executor name for the special redun task that launches the sub-scheduler
+        (_subrun_root_task). E.g. `batch` to launch the sub-scheduler in AWS Batch. Note
+        that this is a config key in the  *local* scheduler's config.
+    config
+        Optional sub-scheduler config dict. Must be a two-level dict that can be used to
+        initialize a :class:`Config` object [see :method:`Config.get_config_dict()`.  If None or
+        empty, the local Scheduler's config will be passed to the sub-scheduler and any values
+        with local config_dir will be replaced with ".".  Do not include database credentials as
+        they will be logged as clear text in the call graph.
+    task_options
+        Task options for _subrun_root_task.  E.g. when running the sub-scheduler via Batch
+        executor, you can pass ECS configuration (e.g. `memory`, `vcpus`, `batch_tags`).
+
+    Returns
+    -------
+    Dict[str, Any]
+        Returns a dict result of evaluating the _subrun_root_task
+    """
+    from redun.functools import delay
+
+    # If a config wasn't provided, forward the parent scheduler's backend config to the
+    # sub-scheduler, replacing the local config_dir with "."
+    if not config:
+        config = scheduler.config.get_config_dict(replace_config_dir=".")
+
+    # Collect a list of all modules that define user task.  This list will include the initial
+    # task(s) to be subrun() as these are registered in the local task registry during subrun()
+    # argument formulation.
+    registry = get_task_registry()
+    load_modules = set()
+    for _task in registry:
+        module_name = _task.load_module
+        if module_name.startswith("redun.") and not module_name.startswith("redun.tests."):
+            continue
+        load_modules.add(module_name)
+
+    subrun_root_task_expr = _subrun_root_task.options(executor=executor, **task_options)(
+        expr=delay(expr),
+        config=config,
+        load_modules=sorted(load_modules),
+        run_config={
+            "dryrun": scheduler.dryrun,
+            "cache": scheduler.use_cache,
+        },
+    )
+
+    def log_banner(msg):
+        scheduler.log("-" * 79)
+        scheduler.log(msg)
+        scheduler.log("-" * 79)
+
+    def then(subrun_result):
+        # Echo subs-scheduler report.
+        scheduler.log()
+        log_banner(
+            f"BEGIN: Sub-scheduler report (executor='{executor}'), {trim_string(repr(expr))}"
+        )
+
+        scheduler.log("Sub-scheduler config:")
+        scheduler.log(pprint.pformat(subrun_result["config"]))
+
+        scheduler.log()
+        scheduler.log("Sub-scheduler run_config:")
+        scheduler.log(pprint.pformat(subrun_result["run_config"]))
+
+        scheduler.log()
+        scheduler.log("Sub-scheduler final job status:")
+        for report_line in subrun_result["status"]:
+            scheduler.log(report_line)
+
+        log_banner("END: Sub-scheduler report")
+        scheduler.log()
+
+        # Return the user's result.
+        return subrun_result["result"]
+
+    return scheduler.evaluate(subrun_root_task_expr, parent_job=parent_job).then(then)

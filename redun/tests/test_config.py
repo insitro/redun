@@ -1,9 +1,11 @@
+import os
 from configparser import SectionProxy
 
 import pytest
 
-from redun.cli import postprocess_config
+from redun.cli import get_config_dir, postprocess_config, setup_scheduler
 from redun.config import Config
+from redun.tests.utils import use_tempdir
 
 
 def test_config_parse_sections():
@@ -69,6 +71,39 @@ def test_get_config_dict(sample_config):
     assert config["executors"]["batch"]["queue"] == "queue"
     assert config["executors"]["batch2"]["type"] == "aws_batch"
     assert config["executors"]["batch2"]["queue"] == "queue2"
+
+
+@use_tempdir
+def test_get_config_dict_replace_config_dir(sample_config):
+    """Verify replace_config_dir behavior"""
+    os.makedirs(".redun")
+    with open(".redun/redun.ini", "w") as out:
+        out.write(
+            """
+[backend]
+db_uri = sqlite:///redun.db
+"""
+        )
+
+    scheduler = setup_scheduler()
+
+    # Ensure initial config dir and files are created.
+    assert os.path.exists(".redun/redun.ini")
+    assert os.path.exists(".redun/redun.db")
+
+    conf = scheduler.config.get_config_dict()
+    local_config_dir = get_config_dir()
+    db_uri = conf["backend"]["db_uri"]
+    assert db_uri == f"sqlite:///{local_config_dir}/redun.db"
+    assert conf["backend"]["config_dir"] == local_config_dir
+    assert conf["repos.default"]["config_dir"] == local_config_dir
+
+    replacement = "/tmp/xyz"
+    conf = scheduler.config.get_config_dict(replace_config_dir=replacement)
+    db_uri = conf["backend"]["db_uri"]
+    assert db_uri == f"sqlite:///{replacement}/redun.db"
+    assert conf["backend"]["config_dir"] == replacement
+    assert conf["repos.default"]["config_dir"] == replacement
 
 
 def test_postprocess_config(sample_config):

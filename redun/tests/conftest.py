@@ -159,7 +159,7 @@ def session(backend: RedunBackendDb) -> Session:
 
 
 @pytest.fixture(autouse=True)
-def redun_globals():
+def redun_globals(request):
     """
     pytest fixture for resetting redun global state during tests.
 
@@ -171,7 +171,23 @@ def redun_globals():
     init_module_names = set(sys.modules.keys())
     init_sys_path = list(sys.path)
     task_registry = get_task_registry()
-    init_tasks = task_registry._tasks
+
+    # Temporarily remove unrelated tests from the task registry to prevent interference
+    # (Note: Resetting the task registry to its original state at the end of this function doesn't
+    # work because pytest loads all code modules before running any tests which means at this
+    # point, all tasks across all unit tests are present in the task registry.)
+    tasks_to_hide = {}
+    for task_fullname in list(task_registry._tasks):
+        if task_fullname.startswith("redun."):
+            continue
+        if task_fullname.startswith(request.module.__name__):
+            continue
+        if hasattr(request.module, "redun_namespace") and task_fullname.startswith(
+            request.module.redun_namespace
+        ):
+            continue
+        tasks_to_hide[task_fullname] = task_registry.get(task_fullname)
+        del task_registry._tasks[task_fullname]
 
     yield
 
@@ -186,5 +202,6 @@ def redun_globals():
     # Reset redun extra import paths.
     clear_import_paths()
 
-    # Reset registered task.
-    task_registry._tasks = init_tasks
+    # Restore temporarily deleted task
+    for k, v in tasks_to_hide.items():
+        task_registry._tasks[k] = v
