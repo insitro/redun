@@ -2347,7 +2347,8 @@ class RedunBackendDb(RedunBackend):
             * dbname
 
         """
-        from redun.executors.aws_utils import get_aws_client, DEFAULT_AWS_REGION
+        from redun.executors.aws_utils import DEFAULT_AWS_REGION, get_aws_client
+
         aws_region = os.environ.get("AWS_REGION", DEFAULT_AWS_REGION)
         client = get_aws_client("secretsmanager", aws_region)
 
