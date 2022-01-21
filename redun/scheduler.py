@@ -1002,7 +1002,13 @@ class Scheduler:
             # Evaluate task_name to specific task.
             # TaskRegistry is like an environment.
             job.task = self.task_registry.get(expr.task_name)
-            assert job.task
+            if not job.task:
+                raise AssertionError(
+                    f"Task not found in registry: {expr.task_name}.  This can occur if the "
+                    "script that defines a user task wasn't loaded or, in the case of redun "
+                    "tasks, if an executor is loading a different version of redun that fails to "
+                    "define the task"
+                )
 
             # Make default arguments explicit in case they need to be evaluated.
             expr_args = set_arg_defaults(job.task, expr.args, expr.kwargs)
