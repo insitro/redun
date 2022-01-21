@@ -21,7 +21,7 @@ import kubernetes
 from redun.executors import k8s_utils, s3_utils, aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.file import File
-from redun.job_array import JobArrayer
+from redun.job_array import AWS_ARRAY_VAR, JobArrayer
 from redun.scheduler import Job, Traceback
 from redun.scripting import ScriptError, get_task_command
 from redun.task import Task
@@ -30,7 +30,6 @@ from redun.utils import get_import_paths, pickle_dump
 SUCCEEDED = 'SUCCEEDED'
 FAILED = 'FAILED'
 ARRAY_JOB_SUFFIX = "array"
-
 
 
 def is_array_job_name(job_name: str) -> bool:
@@ -57,8 +56,10 @@ def k8s_submit(
     api_instance = k8s_utils.get_k8s_batch_client()
     k8s_job = k8s_utils.create_job_object(job_name, image, command, k8s_labels)
     # TODO(dek): DO NOT SUBMIT
-    # if array_size > 0:
-    #     batch_job_args["arrayProperties"] = {"size": array_size}
+    if array_size > 0:
+        k8s_job.spec.completions = array_size
+        k8s_job.spec.parallelism = array_size
+        k8s_job.spec.completion_mode = 'Indexed'
     # if timeout:
     #     batch_job_args["timeout"] = {"attemptDurationSeconds": timeout}
     # if batch_tags:
@@ -92,6 +93,10 @@ def get_hash_from_job_name(job_name: str) -> Optional[str]:
     Returns the job/task eval_hash that corresponds with a particular job name
     on K8S.
     """
+    # Remove array job suffix, if present.
+    array_suffix = "-" + ARRAY_JOB_SUFFIX
+    if job_name.endswith(array_suffix):
+        job_name = job_name[: -len(array_suffix)]
 
     # It's possible we found jobs that are unrelated to the this work based off the job_name_prefix
     # matching when fetching in get_jobs. These jobs will not have hashes so we can ignore them.
@@ -379,6 +384,8 @@ def iter_log_stream(
     """
     job = k8s_describe_jobs([job_id])[0]
     api_instance = k8s_utils.get_k8s_core_client()
+    # DO NOT SUBMIT
+    # TODO(dek): make sure this works for array logs
     label_selector = f"job-name={job.metadata.name}"
     api_response = api_instance.list_pod_for_all_namespaces(
         label_selector=label_selector)
@@ -489,22 +496,17 @@ class K8SExecutor(Executor):
         inflight_jobs = self.get_jobs()
         for job in inflight_jobs.items:
             job_name = job.metadata.name
+
             if not is_array_job_name(job_name):
                 job_hash = get_hash_from_job_name(job_name)
                 if job_hash:
                     self.preexisting_k8s_jobs[job_hash] = job.metadata.uid
                 continue
-    
-
-
-            # Get all child jobs of running array jobs for reuniting.
+            # Get all child pods of running array jobs for reuniting.
             running_arrays[job_name] = [
-                (child_job.metadata.uid, child_job["arrayProperties"]["index"])
-                for child_job in self.get_array_child_jobs(
-                    job.metadata.uid
-                )
+                (child_pod.metadata.name, int(child_pod.metadata.annotations['batch.kubernetes.io/job-completion-index']))
+                for child_pod in self.get_array_child_pods(job.metadata.name).items
             ]
-
         # Match up running array jobs with consistent redun job naming scheme.
         for array_name, child_job_indices in running_arrays.items():
 
@@ -587,10 +589,10 @@ class K8SExecutor(Executor):
                     )
 
                 # Copy pending_k8s_jobs.keys() since it can change due to new submissions.
-                jobs = iter_k8s_job_status(list(self.pending_k8s_jobs.keys()))
+                pending_jobs = list(self.pending_k8s_jobs.keys())
+                jobs = iter_k8s_job_status(pending_jobs)
                 # changing this (IE, removing iter_k8s_job_status) breaks inflight test
                 #jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
-                #import pdb; pdb.set_trace()
                 for job in jobs:
                     self._process_job_status(job)
                 time.sleep(self.interval)
@@ -599,7 +601,6 @@ class K8SExecutor(Executor):
             # Since we run this is method at the top-level of a thread, we
             # need to catch all exceptions so we can properly report them to
             # the scheduler.
-            #import pdb; pdb.set_trace()
             self.log("_monitor got exception", level=logging.INFO)
             self.scheduler.reject_job(None, error)
 
@@ -744,7 +745,6 @@ class K8SExecutor(Executor):
         if not self.is_running:
             # Precompute existing inflight jobs for job reuniting.
             self.gather_inflight_jobs()
-
         # Package code if necessary and we have not already done so. If code_package is False,
         # then we can skip this step. Additionally, if we have already packaged and set code_file,
         # then we do not need to repackage.
@@ -861,28 +861,26 @@ class K8SExecutor(Executor):
             array_uuid=array_uuid,
             array_size=array_size,
         )
-
-        import pdb; pdb.set_trace()
     
         # Add entire array to array jobs, and all jobs in array to pending jobs.
-        array_job_id = k8s_resp.metadata.uid
+        array_job_name = k8s_resp.metadata.name
         for i in range(array_size):
-            self.pending_k8s_jobs[f"{array_job_id}:{i}"] = jobs[i]
+            self.pending_k8s_jobs[f"{array_job_name}:{i}"] = jobs[i]
 
+        retries = None  # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
         self.log(
-            "submit {array_size} redun job(s) as {job_type} {batch_job}:\n"
-            "  array_job_id    = {array_job_id}\n"
+            "submit {array_size} redun job(s) as {job_type} {k8s_job_id}:\n"
+            "  array_job_id    = {k8s_job_id}\n"
             "  array_job_name  = {job_name}\n"
             "  array_size      = {array_size}\n"
             "  s3_scratch_path = {job_dir}\n"
             "  retry_attempts  = {retries}".format(
-                array_job_id=array_job_id,
                 array_size=array_size,
                 job_type=job_type,
-                batch_job=array_job_id,
+                k8s_job_id=array_job_name,
                 job_dir=aws_utils.get_array_scratch_file(self.s3_scratch_prefix, array_uuid, ""),
-                job_name=k8s_resp.metadata.name,
-                retries=0, #k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts"),
+                job_name=array_job_name,
+                retries=retries,
             )
         )
 
@@ -964,18 +962,14 @@ class K8SExecutor(Executor):
         return api_response
 
 
-    def get_array_child_jobs(
-        self, job_id: str
+    def get_array_child_pods(
+        self, job_name: str
     ) -> List[Dict[str, Any]]:
-        batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
-        paginator = batch_client.get_paginator("list_jobs")
-
-        found_jobs = []
-        for status in statuses:
-            pages = paginator.paginate(arrayJobId=job_id, jobStatus=status)
-            found_jobs.extend([job for response in pages for job in response["jobSummaryList"]])
-
-        return found_job
+        api_instance = k8s_utils.get_k8s_core_client()
+        # pods=$(kubectl get pods --selector=job-name=pi --output=jsonpath='{.items[*].metadata.name}')
+        label_selector = f"job-name={job_name}"
+        api_response = api_instance.list_pod_for_all_namespaces(watch=False, label_selector=label_selector)
+        return api_response
 
     # TODO(davidek): fix or remove
     # def kill_jobs(
