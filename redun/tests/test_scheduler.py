@@ -682,8 +682,10 @@ def test_log_job_status(scheduler: Scheduler) -> None:
         logs.extend(messages)
 
     with patch.object(scheduler, "log", wraps=log):
+        report = scheduler.get_job_status_report()
         scheduler.log_job_statuses()
 
+    assert report == logs
     assert logs[1:] == [
         "| TASK    PENDING RUNNING  FAILED  CACHED    DONE   TOTAL",
         "| ",

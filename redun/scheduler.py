@@ -864,10 +864,7 @@ class Scheduler:
         # Print final job statuses.
         self.log_job_statuses()
 
-    def log_job_statuses(self) -> None:
-        """
-        Display Job statuses.
-        """
+    def get_job_status_report(self) -> List[str]:
         # Gather job status information.
         status_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
         for job in self._jobs:
@@ -895,14 +892,21 @@ class Scheduler:
             ]
         )
 
-        # Display job status table.
-        self.log()
         now = datetime.datetime.now()
-        self.log("| JOB STATUS {}".format(now.strftime("%Y/%m/%d %H:%M:%S")))
+        report_lines: List[str] = []
+        report_lines.append("| JOB STATUS {}".format(now.strftime("%Y/%m/%d %H:%M:%S")))
 
-        lines = format_table(table, "lrrrrrr", min_width=7)
-        for line in lines:
-            self.log("| " + line)
+        for line in format_table(table, "lrrrrrr", min_width=7):
+            report_lines.append("| " + line)
+        return report_lines
+
+    def log_job_statuses(self) -> None:
+        """
+        Display Job statuses.
+        """
+        self.log()
+        for report_line in self.get_job_status_report():
+            self.log(report_line)
         self.log()
 
     def evaluate(self, expr: AnyExpression, parent_job: Optional[Job] = None) -> Promise:
