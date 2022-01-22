@@ -379,7 +379,7 @@ def postprocess_config(config: Config, config_dir: str) -> Config:
     Postprocess config.
     """
     # Add default repository if not specified in config.
-    default_repo = {"config_dir": config_dir}
+    default_repo = create_config_section({"config_dir": config_dir})
     if config.get("repos"):
         config["repos"][DEFAULT_REPO_NAME] = default_repo
     else:
