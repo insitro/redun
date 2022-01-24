@@ -1443,7 +1443,7 @@ class RedunBackendDb(RedunBackend):
 
         self.session.commit()
 
-    def record_value(self, value: Any, data=None) -> str:
+    def record_value(self, value: Any, data: Optional[bytes] = None) -> str:
         """
         Return a Value into the datastore.
         """
@@ -1456,7 +1456,8 @@ class RedunBackendDb(RedunBackend):
         if len(data) > self._max_value_size:
             raise RedunDatabaseError(
                 f"Value {trim_string(repr(value))} is too large (> {self._max_value_size}) "
-                f"to store in the redun database."
+                f"to store in the redun database. If you need to store larger values,"
+                f"increase the `max_value_size` setting and consider using a value store."
             )
 
         value_hash = value_interface.get_hash(data=data)
