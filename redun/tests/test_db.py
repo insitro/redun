@@ -853,8 +853,8 @@ def test_simple_expression_upstreams(scheduler: Scheduler, session: Session) -> 
     assert scheduler.run(main(1)) == 11
 
     # Redefine the task.
-    @task()  # type: ignore # noqa: F811
-    def get_data() -> dict:
+    @task()  # type: ignore[no-redef]
+    def get_data() -> dict:  # noqa: F811
         return {"key": -10}
 
     # Running the scheduler a second time will use the cached result for main(), which is
