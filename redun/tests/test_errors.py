@@ -156,7 +156,7 @@ def test_exception_call_graph(scheduler: Scheduler, session: Session) -> None:
     # Exceptions should not be cached. Let's fix the bug without bump version.
 
     @task(version="1")  # type: ignore[no-redef]
-    def faulty():  # noqa: F811
+    def faulty():
         return 20
 
     assert scheduler.run(task1.options(check_valid="shallow")()) == [11, 20]

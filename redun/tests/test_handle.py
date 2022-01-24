@@ -295,7 +295,7 @@ def test_handle_tasks(scheduler: Scheduler) -> None:
 
     # Change the update_db task.
     @task(version="v2")  # type: ignore[no-redef]
-    def update_db(conn: DbHandle):  # noqa: F811
+    def update_db(conn: DbHandle):
         task_calls.append("update_db2")
         handles["update_db2"] = conn
         conn.execute("INSERT INTO ... something different;")
@@ -326,7 +326,7 @@ def test_handle_tasks(scheduler: Scheduler) -> None:
 
     # Revert the update_db task.
     @task(version="v1")  # type: ignore[no-redef]
-    def update_db(conn: DbHandle):  # noqa: F811
+    def update_db(conn: DbHandle):
         task_calls.append("update_db")
         handles["update_db"] = conn
         conn.execute("INSERT INTO ...")
@@ -572,7 +572,7 @@ def test_handle_implicit_fork(scheduler: Scheduler) -> None:
     # Without explicit forks our heuristic (call order) for Handle
     # reconciliation isn't good enough. Let's just confirm that.
     @task(version="2")  # type: ignore[no-redef]
-    def task2(conn, arg):  # noqa: F811
+    def task2(conn, arg):
         task_calls.append(arg)
         return conn
 
