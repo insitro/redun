@@ -1456,8 +1456,9 @@ class RedunBackendDb(RedunBackend):
         if len(data) > self._max_value_size:
             raise RedunDatabaseError(
                 f"Value {trim_string(repr(value))} is too large (> {self._max_value_size}) "
-                f"to store in the redun database. If you need to store larger values,"
-                f"increase the `max_value_size` setting and consider using a value store."
+                f"to store in the redun database. If you need to store larger values, "
+                f"increase the `max_value_size` setting and consider using a value store "
+                f"(`value_store_path`)."
             )
 
         value_hash = value_interface.get_hash(data=data)
