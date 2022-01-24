@@ -1,4 +1,4 @@
-black==20.8b1
+black==21.12b0
 flake8
 freezegun
 isort==5.7.0
