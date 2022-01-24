@@ -1,4 +1,4 @@
-name: tox
+name: Test pull request
 on: pull_request
 jobs:
   tox:
@@ -17,3 +17,12 @@ jobs:
       - run: pip install --upgrade pip
       - run: pip install tox
       - run: tox -e py
+  lint:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - run: make lint
