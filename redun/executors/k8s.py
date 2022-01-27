@@ -215,6 +215,7 @@ def submit_task(
         + ["--input", input_path, "--output", output_path, "--error", error_path, a_task.fullname]
     )
     if array_uuid:
+        print("Using array id", array_uuid, "for job hash")
         job_hash = array_uuid
     else:
         assert job.eval_hash
@@ -352,9 +353,8 @@ def parse_task_logs(
         yield "\n*** Earlier logs are truncated ***\n"
     yield from lines
 
-
 def k8s_describe_jobs(
-    job_names: List[str],
+    job_names: List[str]
 ) -> typing.List[kubernetes.client.V1Job]:
     """
     Returns K8S Job descriptions from the AWS API.
@@ -362,11 +362,26 @@ def k8s_describe_jobs(
     api_instance = k8s_utils.get_k8s_batch_client()
     responses = []
     for job_name in job_names:
-        try:
-            api_response = api_instance.read_namespaced_job(job_name, namespace='default')
-        except:
-            raise
-        responses.append(api_response)
+        print("Look up job:", job_name)
+        # if job name matches regex :\d+$, it's a pod index.
+        # lookup the pod corresponding to the job
+        result = re.match("^(.+):(\d+)$", job_name)
+        if result:
+            trimmed_job_name = result.groups()[0]
+            index = int(result.groups()[1])
+            print("Job is actually a job array index")
+            core_api_instance = k8s_utils.get_k8s_core_client()
+            label_selector = f"job-name={trimmed_job_name}"
+            api_response = core_api_instance.list_pod_for_all_namespaces(
+                label_selector=label_selector)
+            print("Adding", api_response.items[index])
+            responses.append(api_response.items[index])
+        else:
+            try:
+                api_response = api_instance.read_namespaced_job(job_name, namespace='default')
+            except:
+                raise
+            responses.append(api_response)
     return responses
 
 
@@ -481,7 +496,6 @@ class K8SExecutor(Executor):
 
         self.interval = config.getfloat("job_monitor_interval", 5.0)
 
-        print("min array size:", config.getint('min_array_size'))
         self.arrayer = JobArrayer(
             executor=self,
             submit_interval=self.interval,
@@ -503,9 +517,12 @@ class K8SExecutor(Executor):
                     self.preexisting_k8s_jobs[job_hash] = job.metadata.uid
                 continue
             # Get all child pods of running array jobs for reuniting.
-            running_arrays[job_name] = [
+            print("Get child pods for", job.metadata.name)
+            for child_pod in self.get_array_child_pods(job.metadata.name).items:
+                print("child pod", child_pod.metadata.name)
+                running_arrays[job_name] = [
                 (child_pod.metadata.name, int(child_pod.metadata.annotations['batch.kubernetes.io/job-completion-index']))
-                for child_pod in self.get_array_child_pods(job.metadata.name).items
+               
             ]
         # Match up running array jobs with consistent redun job naming scheme.
         for array_name, child_job_indices in running_arrays.items():
@@ -848,6 +865,7 @@ class K8SExecutor(Executor):
         eval_file = aws_utils.get_array_scratch_file(
             self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_HASHES
         )
+        print("Write eval hashes for jobs:", [job.eval_hash for job in jobs])
         with File(eval_file).open("w") as eval_f:
             eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
 
@@ -866,18 +884,20 @@ class K8SExecutor(Executor):
         array_job_name = k8s_resp.metadata.name
         for i in range(array_size):
             self.pending_k8s_jobs[f"{array_job_name}:{i}"] = jobs[i]
+        array_job_id = k8s_resp.metadata.uid
 
         retries = None  # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
         self.log(
             "submit {array_size} redun job(s) as {job_type} {k8s_job_id}:\n"
-            "  array_job_id    = {k8s_job_id}\n"
+            "  array_job_id    = {array_job_id}\n"
             "  array_job_name  = {job_name}\n"
             "  array_size      = {array_size}\n"
             "  s3_scratch_path = {job_dir}\n"
             "  retry_attempts  = {retries}".format(
-                array_size=array_size,
+                array_job_id=array_job_id,
                 job_type=job_type,
-                k8s_job_id=array_job_name,
+                array_size=array_size,
+                k8s_job_id=array_job_id,
                 job_dir=aws_utils.get_array_scratch_file(self.s3_scratch_prefix, array_uuid, ""),
                 job_name=array_job_name,
                 retries=retries,
@@ -943,6 +963,7 @@ class K8SExecutor(Executor):
         """
         Submit Job to executor.
         """
+        print("submit job", job)
         return self._submit(job, args, kwargs)
 
     def submit_script(self, job: Job, args: Tuple, kwargs: dict) -> None:
