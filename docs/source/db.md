@@ -8,8 +8,8 @@ redun stores data provenance and cached values in *repositories*, (repos for sho
 redun repos are currently implemented using either sqlite (the default) or PostgreSQL.
 Additionally, users may specify an external key-value store to avoid bloating the primary repo with large binary objects.
 
-For background information on the database versioning design see the [redun repo database versioning tech spec](https://docs.google.com/document/d/1PLMFwbrLqwRhkwO5iKzhNDsYo5EZaThrjtIYikkvaq0/edit#).
-
+Once your workflows mature to the point where you want to share them or their results with collaborators, we recommend configuring a persisted database repo for provenance tracking.
+See the [backend configuration](config.md#backend) section for details.
 
 ## Database migration
 
