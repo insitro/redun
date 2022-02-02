@@ -778,7 +778,7 @@ class ShardedS3Dataset(Value):
 
         if format not in ["avro", "csv", "ion", "grokLog", "json", "orc", "parquet", "xml"]:
             raise ValueError(f"Invalid format {format}")
-        self.format = format
+        self._format = format
 
         self.filesystem: FileSystem = get_filesystem(url=self.path)
         self._filenames: List[str] = self._gather_files()
@@ -786,9 +786,9 @@ class ShardedS3Dataset(Value):
     def _gather_files(self) -> List[str]:
 
         # If recursing, look in subdirectories too.
-        files = glob_file(f"{self.path}/*.{self.format}")
+        files = glob_file(f"{self._path}/*.{self._format}")
         if self.recurse:
-            files.extend(glob_file(f"{self.path}/**/*.{self.format}"))
+            files.extend(glob_file(f"{self._path}/**/*.{self._format}"))
 
         # Work around differences between fsspec's interpretation of ** on S3 vs.local
         # by removing any duplicate file names from the list.
@@ -800,6 +800,15 @@ class ShardedS3Dataset(Value):
     def postprocess(self, postprocess_args) -> "ShardedS3Dataset":
         self.update_hash()
         return self
+
+    @property
+    def format(self) -> str:
+        return self._format
+
+    @format.setter
+    def format(self, value: str):
+        self._format = format
+        self._calc_hash()
 
     @property
     def recurse(self) -> bool:
