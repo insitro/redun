@@ -770,10 +770,10 @@ class ShardedS3Dataset(Value):
 
     type_name = "redun.ShardedS3Dataset"
 
-    def __init__(self, path: str, format: str = "parquet", recurse: bool = False):
+    def __init__(self, path: str, format: str = "parquet", recurse: bool = True):
         path = path.rstrip("/")
-        self.path = path
-        self.recurse = recurse
+        self._path = path
+        self._recurse = recurse
         self._hash: Optional[str] = None
 
         if format not in ["avro", "csv", "ion", "grokLog", "json", "orc", "parquet", "xml"]:
@@ -800,6 +800,28 @@ class ShardedS3Dataset(Value):
     def postprocess(self, postprocess_args) -> "ShardedS3Dataset":
         self.update_hash()
         return self
+
+    @property
+    def recurse(self) -> bool:
+        return self._recurse
+
+    @recurse.setter
+    def recurse(self, value):
+        self._recurse = value
+        self._calc_hash()
+
+    @property
+    def filenames(self) -> List[str]:
+        return self._filenames
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+    @path.setter
+    def path(self, value):
+        self._path = value
+        self._calc_hash()
 
     @property
     def hash(self) -> str:

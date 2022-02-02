@@ -466,12 +466,16 @@ def test_sharded_dataset() -> None:
     decoy = File("s3://example-bucket/data/not_a_csv.txt")
     decoy.write("i am not valid input")
 
-    dataset = ShardedS3Dataset(path="s3://example-bucket/data", format="csv", recurse=False)
+    dataset = ShardedS3Dataset(path="s3://example-bucket/data", format="csv", recurse=True)
     dataset2 = ShardedS3Dataset(path="s3://example-bucket/data", format="csv", recurse=True)
 
     # Check the correct files are pulled in.
-    assert sorted(dataset._filenames) == sorted([file1.path, file2.path])
+    assert sorted(dataset._filenames) == sorted([file1.path, file2.path, file3.path])
     assert sorted(dataset2._filenames) == sorted([file1.path, file2.path, file3.path])
+
+    # Update the recurse value and ensure the list of files is updated.
+    dataset.recurse = False
+    assert sorted(dataset._filenames) == sorted([file1.path, file2.path])
 
     # Check hashing changes when list of files changes.
     assert dataset.hash == "3394197d206ea0ef46795131b98f86c52ab9a508"
@@ -480,6 +484,10 @@ def test_sharded_dataset() -> None:
     file3.remove()
     assert dataset.is_valid()
     assert not dataset2.is_valid()
+
+    # Changing the path should update the list of files.
+    dataset2.path = "s3://example-bucket/nonexistent"
+    assert dataset2.filenames == []
 
     # Load should not work without glue context.
     with pytest.raises(ValueError):
