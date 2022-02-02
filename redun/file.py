@@ -806,7 +806,7 @@ class ShardedS3Dataset(Value):
         return self._format
 
     @format.setter
-    def format(self, value: str):
+    def format(self, value):
         self._format = format
         self._calc_hash()
 
@@ -863,17 +863,17 @@ class ShardedS3Dataset(Value):
 
     def __getstate__(self) -> dict:
         return {
-            "path": self.path,
-            "format": self.format,
-            "recurse": self.recurse,
+            "path": self._path,
+            "format": self._format,
+            "recurse": self._recurse,
             "hash": self._hash,
             "files": self._filenames,
         }
 
     def __setstate__(self, state: dict) -> None:
-        self.path = state["path"]
-        self.format = state["format"]
-        self.recurse = state["recurse"]
+        self._path = state["path"]
+        self._format = state["format"]
+        self._recurse = state["recurse"]
         self._filenames = state["files"]
         self._hash = state["hash"]
 
