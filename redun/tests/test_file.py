@@ -489,6 +489,11 @@ def test_sharded_dataset() -> None:
     dataset2.path = "s3://example-bucket/nonexistent"
     assert dataset2.filenames == []
 
+    # Changing the format should as well.
+    dataset2.path = "s3://example-bucket/data"
+    dataset2.format = "parquet"
+    assert dataset2.filenames == []
+
     # Load should not work without glue context.
     with pytest.raises(ValueError):
         _ = dataset.load_spark()
