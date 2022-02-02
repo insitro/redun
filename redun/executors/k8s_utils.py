@@ -28,7 +28,7 @@ def create_job_object(name=DEFAULT_JOB_PREFIX, image="bash", command="false",
     # Create the specification of deployment
     spec = client.V1JobSpec(
         template=template,
-        backoff_limit=0)
+        backoff_limit=1)
     # Instantiate the job object
     job = client.V1Job(
         api_version="batch/v1",

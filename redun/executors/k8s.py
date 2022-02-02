@@ -31,6 +31,25 @@ SUCCEEDED = 'SUCCEEDED'
 FAILED = 'FAILED'
 ARRAY_JOB_SUFFIX = "array"
 
+#CompletedIndexes holds the completed indexes when .spec.completionMode = "Indexed" in a text format. 
+#The indexes are represented as decimal integers separated by commas. The numbers are listed in increasing order.
+#Three or more consecutive numbers are compressed and represented by the first and last element of the series, separated by a hyphen. 
+#For example, if the completed indexes are 1, 3, 4, 5 and 7, they are represented as "1,3-5,7".
+def parse_completed_indexes(completed_indexes, parallelism):
+    if completed_indexes is None:
+        return []
+    print("CI: ", completed_indexes)
+    print("PA: ", parallelism)
+    indexes = []
+    index_groups = completed_indexes.split(",")
+    for index_group in index_groups:
+        if "-" in index_group:
+            r1, r2 = index_group.split("-")
+            indexes.extend(range(int(r1),int(r2)+1))
+        else:
+            indexes.append(int(index_group))
+    return indexes
+
 
 def is_array_job_name(job_name: str) -> bool:
     return job_name.endswith(f"-{ARRAY_JOB_SUFFIX}")
@@ -60,6 +79,7 @@ def k8s_submit(
         k8s_job.spec.completions = array_size
         k8s_job.spec.parallelism = array_size
         k8s_job.spec.completion_mode = 'Indexed'
+        k8s_job.spec.backoff_limit = array_size+1
     # if timeout:
     #     batch_job_args["timeout"] = {"attemptDurationSeconds": timeout}
     # if batch_tags:
@@ -363,31 +383,17 @@ def k8s_describe_jobs(
     responses = []
     for job_name in job_names:
         print("Look up job:", job_name)
-        # if job name matches regex :\d+$, it's a pod index.
-        # lookup the pod corresponding to the job
-        result = re.match("^(.+):(\d+)$", job_name)
-        if result:
-            trimmed_job_name = result.groups()[0]
-            index = int(result.groups()[1])
-            print("Job is actually a job array index")
-            core_api_instance = k8s_utils.get_k8s_core_client()
-            label_selector = f"job-name={trimmed_job_name}"
-            api_response = core_api_instance.list_pod_for_all_namespaces(
-                label_selector=label_selector)
-            print("Adding", api_response.items[index])
-            responses.append(api_response.items[index])
-        else:
-            try:
-                api_response = api_instance.read_namespaced_job(job_name, namespace='default')
-            except:
-                raise
-            responses.append(api_response)
+        try:
+            api_response = api_instance.read_namespaced_job(job_name, namespace='default')
+        except:
+            raise
+        responses.append(api_response)
     return responses
 
 
-def iter_k8s_job_status(job_ids):
-    for job in k8s_describe_jobs(job_ids):
-        yield job
+# def iter_k8s_job_status(job_ids):
+#     for job in k8s_describe_jobs(job_ids):
+#         yield job
 
 
 def iter_log_stream(
@@ -607,9 +613,9 @@ class K8SExecutor(Executor):
 
                 # Copy pending_k8s_jobs.keys() since it can change due to new submissions.
                 pending_jobs = list(self.pending_k8s_jobs.keys())
-                jobs = iter_k8s_job_status(pending_jobs)
+                jobs = k8s_describe_jobs(pending_jobs)
                 # changing this (IE, removing iter_k8s_job_status) breaks inflight test
-                #jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
+                # jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
                 for job in jobs:
                     self._process_job_status(job)
                 time.sleep(self.interval)
@@ -630,59 +636,132 @@ class K8SExecutor(Executor):
         """
         assert self.scheduler
         job_status: Optional[str] = None
-        # Determine job status.
-        if job.status.succeeded is not None and job.status.succeeded > 0:
-            job_status = SUCCEEDED
-        elif job.status.failed is not None and job.status.failed > 0:
-            job_status = FAILED
-        else:
-            return
 
-        # Determine redun Job and job_labels.
-        redun_job = self.pending_k8s_jobs.pop(job.metadata.name)
-        k8s_labels = []
-        k8s_labels.append(("k8s_job", job.metadata.uid))
-        if job_status == SUCCEEDED:
-            # Assume a recently completed job has valid results.
-            result, exists = self._get_job_output(redun_job, check_valid=False)
-            if exists:
-                self.scheduler.done_job(redun_job, result, job_tags=k8s_labels)
+
+        # single job with single pod:
+        # 'status': {'active': None,
+        #     'completed_indexes': None,
+        #     'completion_time': datetime.datetime(2022, 1, 27, 22, 1, 50, tzinfo=tzlocal()),
+        #     'conditions': [{'last_probe_time': datetime.datetime(2022, 1, 27, 22, 1, 50, tzinfo=tzlocal()),
+        #                     'last_transition_time': datetime.datetime(2022, 1, 27, 22, 1, 50, tzinfo=tzlocal()),
+        #                     'message': None,
+        #                     'reason': None,
+        #                     'status': 'True',
+        #                     'type': 'Complete'}],
+        #     'failed': None,
+        #     'start_time': datetime.datetime(2022, 1, 27, 22, 0, 4, tzinfo=tzlocal()),
+        #     'succeeded': 1}}
+
+        print("job", job.metadata.name, "parallelism", job.spec.parallelism, "succeeded", job.status.succeeded, "failed", job.status.failed)
+        if job.spec.parallelism == 1:
+            if job.status.succeeded is not None and job.status.succeeded > 0:
+                job_status = SUCCEEDED
+            elif job.status.failed is not None and job.status.failed > 0:
+                job_status = FAILED
             else:
-                # This can happen if job ended in an inconsistent state.
+                return
+
+            # Determine redun Job and job_labels.
+            redun_job = self.pending_k8s_jobs.pop(job.metadata.name)
+            k8s_labels = []
+            k8s_labels.append(("k8s_job", job.metadata.uid))
+            if job_status == SUCCEEDED:
+                # Assume a recently completed job has valid results.
+                result, exists = self._get_job_output(redun_job, check_valid=False)
+                if exists:
+                    self.scheduler.done_job(redun_job, result, job_tags=k8s_labels)
+                else:
+                    # This can happen if job ended in an inconsistent state.
+                    self.scheduler.reject_job(
+                        redun_job,
+                        FileNotFoundError(
+                            aws_utils.get_job_scratch_file(
+                                self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
+                            )
+                        ),
+                        job_tags=k8s_labels,
+                    )
+            elif job_status == FAILED:
+                error, error_traceback = parse_task_error(
+                    self.s3_scratch_prefix, redun_job
+                )
+
+                logs = [f"*** Logs for K8S job {job.metadata.uid}:\n"]
+
+                try:
+                    status_reason = job.status.conditions[-1].message
+                except (KeyError, IndexError, TypeError):
+                    status_reason = ""
+                if status_reason:
+                    logs.append(f"statusReason: {status_reason}\n")
+
+                try:
+                    logs.extend(
+                        parse_task_logs(job.metadata.name)
+                    )
+                except Exception as e:
+                    logs.append("Failed to parse task logs for: " + job.metadata.name + " " + str(e))
+                error_traceback.logs = logs
+
                 self.scheduler.reject_job(
-                    redun_job,
-                    FileNotFoundError(
-                        aws_utils.get_job_scratch_file(
-                            self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
-                        )
-                    ),
-                    job_tags=k8s_labels,
+                    redun_job, error, error_traceback=error_traceback, job_tags=k8s_labels
                 )
-        elif job_status == FAILED:
-            error, error_traceback = parse_task_error(
-                self.s3_scratch_prefix, redun_job
-            )
-
-            logs = [f"*** Logs for K8S job {job.metadata.uid}:\n"]
-
-            try:
-                status_reason = job.status.conditions[-1].message
-            except (KeyError, IndexError, TypeError):
-                status_reason = ""
-            if status_reason:
-                logs.append(f"statusReason: {status_reason}\n")
-
-            try:
-                logs.extend(
-                    parse_task_logs(job.metadata.name)
-                )
-            except Exception as e:
-                logs.append("Failed to parse task logs for: " + job.metadata.name + " " + str(e))
-            error_traceback.logs = logs
-
-            self.scheduler.reject_job(
-                redun_job, error, error_traceback=error_traceback, job_tags=k8s_labels
-            )
+        else:
+            print("job", job.metadata.name)
+            label_selector = f"job-name={job.metadata.name}"
+            k8s_pods = self.get_array_child_pods(job.metadata.name)
+            redun_job = self.pending_k8s_jobs[job.metadata.name]
+            for item in k8s_pods.items:
+                pod_name = item.metadata.name
+                pod_namespace = item.metadata.namespace
+                index = int(item.metadata.annotations['batch.kubernetes.io/job-completion-index'])
+                if index in redun_job:
+                    container_statuses = item.status.container_statuses
+                    if container_statuses is None:
+                        #print("Job", job.metadata.name, "with index", index, "has no container status (yet?)")
+                        continue
+                    print("There are", len(container_statuses), "container statuses")
+                    for container_status in container_statuses:
+                        print("Job", job.metadata.name, container_status)
+                        terminated = container_status.state.terminated
+                        if terminated is None:
+                            #print("Job", job.metadata.name, "with index", index, "has not terminated yet")
+                            continue
+                        if terminated.exit_code != 0:
+                            print("Task failed with non-zero code.", index, terminated.exit_code, terminated.reason)
+                            
+                            api_instance = k8s_utils.get_k8s_core_client()
+                            log_response = api_instance.read_namespaced_pod_log(pod_name, namespace=pod_namespace)
+                            self.scheduler.reject_job(
+                                redun_job, K8SError("K8S pod exited with error code") )
+                        else:
+                            print("Task succeeded with zero code.", terminated.exit_code)
+                            result, exists = self._get_job_output(redun_job[index], check_valid=False)
+                            if exists:
+                                print("Marking job done successfully")
+                                self.scheduler.done_job(redun_job[index], result)                            
+                            else:
+                                # This can happen if job ended in an inconsistent state.
+                                print("Marking job as failed because no job output")
+                                self.scheduler.reject_job(
+                                    redun_job,
+                                    FileNotFoundError(
+                                        aws_utils.get_job_scratch_file(
+                                            self.s3_scratch_prefix, redun_job[index], s3_utils.S3_SCRATCH_OUTPUT
+                                        )
+                                    ),
+                                )   
+                        print(index, terminated.exit_code, terminated.reason)
+                        print("Remove", index, "from ", job.metadata.name)
+                        del self.pending_k8s_jobs[job.metadata.name][index]
+                        if len(redun_job) == 0:
+                            print("job finished")
+                            del self.pending_k8s_jobs[job.metadata.name]
+                else:
+                    pass
+                    #print("Ignoring already processed", job.metadata.name, index)
+            
+            print("Tasks remaining: ", len(redun_job.keys()))
 
     def _get_job_options(self, job: Job) -> dict:
         """
@@ -882,8 +961,9 @@ class K8SExecutor(Executor):
     
         # Add entire array to array jobs, and all jobs in array to pending jobs.
         array_job_name = k8s_resp.metadata.name
+        self.pending_k8s_jobs[array_job_name] = {}
         for i in range(array_size):
-            self.pending_k8s_jobs[f"{array_job_name}:{i}"] = jobs[i]
+            self.pending_k8s_jobs[array_job_name][i] = jobs[i]
         array_job_id = k8s_resp.metadata.uid
 
         retries = None  # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
