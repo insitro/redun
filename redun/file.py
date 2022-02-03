@@ -839,6 +839,11 @@ class ShardedS3Dataset(Value):
         return self._hash
 
     def _calc_hash(self) -> str:
+        """
+        Recalculates the hash of the dataset. We re-gather all the files at
+        this time as new files may have been created in the meantime, such as
+        writing output from a Spark/Glue job.
+        """
         self._filenames = self._gather_files()
         return hash_struct(["ShardedS3Dataset"] + sorted(self._filenames))
 
