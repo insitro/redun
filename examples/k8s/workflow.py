@@ -13,12 +13,12 @@ redun_namespace = "redun.examples.k8s"
 
 
 @task(script=True, executor="k8s")
-def script_false_on_k8s():
+def script_false_on_k8s(i):
     return "false"
 
 
 @task(script=True, executor="k8s")
-def script_true_on_k8s():
+def script_true_on_k8s(i):
     return "true"
 
 
@@ -33,7 +33,7 @@ def subtask_sysexit0(x):
 
 @task(executor="k8s")
 def subtask_random_sleep(x):
-    t = random.uniform(10,60)
+    t = random.uniform(1,2)
     time.sleep(t)
     coin = random.getrandbits(1)
     print(coin)
@@ -41,7 +41,7 @@ def subtask_random_sleep(x):
 
 @task(executor="k8s")
 def subtask(x):
-    time.sleep(100)
+    time.sleep(10)
     coin = random.getrandbits(1)
     print(coin)
     return coin
@@ -79,11 +79,20 @@ def failed_task_on_k8s() -> list:
     raise RuntimeError
 
 
+
+@task()
+def script_on_k8s() -> File:
+   # The outer task is just for preparing the script and its arguments.
+    return script(  # This inner task will run as a bash script inside the container.
+        f"false", 
+    )
+
+
 @task
 def main(n: int=10):
-    #return [subtask_random_sleep(i) for i in range(n)]
-    return [subtask(i) for i in range(n)]
-    #return [script_fail_on_k8s() for i in range(n)]
+    return [subtask_random_sleep(i) for i in range(n)]
+    #return [subtask(i) for i in range(n)]
+    #return [script_true_on_k8s(i) for i in range(n)]
     #return [batch_subtask(i) for i in range(n)]
 
 #     return [
