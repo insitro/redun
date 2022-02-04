@@ -297,7 +297,7 @@ def test_executor(
 
     # # Let job get stale so job arrayer actually submits it.
     wait_until(lambda: executor.arrayer.num_pending == 0)
-    # # # # Ensure job options were passed correctly.
+    # # # # # Ensure job options were passed correctly.
     assert k8s_submit_mock.call_args
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
@@ -319,17 +319,17 @@ def test_executor(
     k8s_submit_mock.return_value = create_job_object(
         name=DEFAULT_JOB_PREFIX + "-eval_hash2", uid=k8s_job2_id)
 
-    # Submit redun job that will fail.
+    # # Submit redun job that will fail.
     expr2 = task1.options(memory=8)("a")
     job2 = Job(expr2)
     job2.task = task1
     job2.eval_hash = "eval_hash2"
     executor.submit(job2, ["a"], {})
 
-    # # # Let job get stale so job arrayer actually submits it.
+    # # # # # Let job get stale so job arrayer actually submits it.
     wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # # # # Ensure job options were passed correctly.
+    # # # # # Ensure job options were passed correctly.
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash2",
@@ -347,7 +347,7 @@ def test_executor(
             }
         }
 
-    # Simulate k8s completing job.
+    # # # Simulate k8s completing job.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
@@ -365,7 +365,7 @@ def test_executor(
     scheduler.batch_wait([job.id, job2.id])
     executor.stop()
 
-    # # # # Job results and errors should be sent back to scheduler.
+    # # # # # Job results and errors should be sent back to scheduler.
     assert scheduler.job_results[job.id] == 20
     assert isinstance(scheduler.job_errors[job2.id], ValueError)
 
@@ -380,6 +380,9 @@ def test_executor(
 
 # skipped docker interactive
 
+
+
+# skipped docker interactive
 @mock_s3
 def test_executor_handles_unrelated_jobs() -> None:
     """
@@ -654,33 +657,33 @@ def test_jobs_are_arrayed(submit_task_mock, get_aws_user_mock):
     # Wait for jobs to get submitted from arrayer to executor.
     wait_until(lambda: len(executor.pending_k8s_jobs) == 10, timeout=10000)
 
-    # # Two array jobs, of size 7 and 3, should have been submitted.
-    # pending_correct = {
-    #     f"first-array-job:{i}": test_jobs[i] for i in range(executor.arrayer.max_array_size)
-    # }
-    # pending_correct.update(
-    #     {
-    #         f"second-array-job:{i}": j
-    #         for i, j in enumerate(test_jobs[executor.arrayer.max_array_size :])
-    #     }
-    # )
-    # assert executor.pending_k8s_jobs == pending_correct
+    # Two array jobs, of size 7 and 3, should have been submitted.
+    pending_correct = {
+        f"first-array-job:{i}": test_jobs[i] for i in range(executor.arrayer.max_array_size)
+    }
+    pending_correct.update(
+        {
+            f"second-array-job:{i}": j
+            for i, j in enumerate(test_jobs[executor.arrayer.max_array_size :])
+        }
+    )
+    assert executor.pending_k8s_jobs == pending_correct
 
-    # # Two array jobs should have been submitted
-    # assert submit_task_mock.call_count == 2
+    # Two array jobs should have been submitted
+    assert submit_task_mock.call_count == 2
 
-    # # Submit a different kind of job now.
-    # j = Job(other_task(3, 5))
-    # j.id = "other_task"
-    # j.task = other_task
-    # j.eval_hash = "hashbrowns"
-    # executor.submit(j, (3, 5), {})
+    # Submit a different kind of job now.
+    j = Job(other_task(3, 5))
+    j.id = "other_task"
+    j.task = other_task
+    j.eval_hash = "hashbrowns"
+    executor.submit(j, (3, 5), {})
 
-    # assert len(executor.arrayer.pending) == 1
-    # pending_correct["single-job"] = j
-    # wait_until(lambda: executor.pending_k8s_jobs == pending_correct)
+    assert len(executor.arrayer.pending) == 1
+    pending_correct["single-job"] = j
+    wait_until(lambda: executor.pending_k8s_jobs == pending_correct)
 
-    # # Make monitor thread exit correctly
+    # Make monitor thread exit correctly
     executor.stop()
 
 
@@ -725,94 +728,94 @@ def test_array_disabling(submit_single_mock, get_aws_user_mock):
     executor.stop()
 
 
-@mock_s3
-@use_tempdir
-@patch("redun.executors.k8s.k8s_submit")
-def test_array_job_s3_setup(k8s_submit_mock):
-    """
-    Tests that args, kwargs, and output file paths end up
-    in the correct locations in S3 as the right data structure
-    """
-    scheduler = mock_scheduler()
-    executor = mock_executor(scheduler)
-    executor.s3_scratch_prefix = "./evil\ndirectory"
+# @mock_s3
+# @use_tempdir
+# @patch("redun.executors.k8s.k8s_submit")
+# def test_array_job_s3_setup(k8s_submit_mock):
+#     """
+#     Tests that args, kwargs, and output file paths end up
+#     in the correct locations in S3 as the right data structure
+#     """
+#     scheduler = mock_scheduler()
+#     executor = mock_executor(scheduler)
+#     executor.s3_scratch_prefix = "./evil\ndirectory"
 
-    redun.executors.k8s.k8s_submit.return_value = create_job_object(uid=job_id)
+#     redun.executors.k8s.k8s_submit.return_value = create_job_object(uid=job_id)
 
-    # redun.executors.k8s.k8s_submit.return_value = {
-    #     "jobId": "array-job-id",
-    #     "arrayProperties": {"size": "10"},
-    # }
+#     # redun.executors.k8s.k8s_submit.return_value = {
+#     #     "jobId": "array-job-id",
+#     #     "arrayProperties": {"size": "10"},
+#     # }
 
-    test_jobs = []
-    for i in range(10):
-        job = Job(other_task(i, y=2 * i))
-        job.id = f"task_{i}"
-        job.task = other_task
-        job.eval_hash = f"hash_{i}"
-        test_jobs.append(job)
+#     test_jobs = []
+#     for i in range(10):
+#         job = Job(other_task(i, y=2 * i))
+#         job.id = f"task_{i}"
+#         job.task = other_task
+#         job.eval_hash = f"hash_{i}"
+#         test_jobs.append(job)
 
-    pending_jobs = [job_array.PendingJob(test_jobs[i], (i), {"y": 2 * i}) for i in range(10)]
-    array_uuid = executor.arrayer.submit_array_job(pending_jobs)
+#     pending_jobs = [job_array.PendingJob(test_jobs[i], (i), {"y": 2 * i}) for i in range(10)]
+#     array_uuid = executor.arrayer.submit_array_job(pending_jobs)
 
-    # Check input file is on S3 and contains list of (args, kwargs) tuples
-    input_file = File(
-        get_array_scratch_file(
-            executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_INPUT
-        )
-    )
-    assert input_file.exists()
+#     # Check input file is on S3 and contains list of (args, kwargs) tuples
+#     input_file = File(
+#         get_array_scratch_file(
+#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_INPUT
+#         )
+#     )
+#     assert input_file.exists()
 
-    with input_file.open("rb") as infile:
-        arglist, kwarglist = pickle.load(infile)
-    assert arglist == [(i) for i in range(10)]
-    assert kwarglist == [{"y": 2 * i} for i in range(10)]
+#     with input_file.open("rb") as infile:
+#         arglist, kwarglist = pickle.load(infile)
+#     assert arglist == [(i) for i in range(10)]
+#     assert kwarglist == [{"y": 2 * i} for i in range(10)]
 
-    # Check output paths file is on S3 and contains correct output paths
-    output_file = File(
-        get_array_scratch_file(
-            executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
-        )
-    )
-    assert output_file.exists()
-    ofiles = json.load(output_file)
+#     # Check output paths file is on S3 and contains correct output paths
+#     output_file = File(
+#         get_array_scratch_file(
+#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
+#         )
+#     )
+#     assert output_file.exists()
+#     ofiles = json.load(output_file)
 
-    assert ofiles == [
-        get_job_scratch_file(
-            executor.s3_scratch_prefix, j, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
-        )
-        for j in test_jobs
-    ]
+#     assert ofiles == [
+#         get_job_scratch_file(
+#             executor.s3_scratch_prefix, j, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
+#         )
+#         for j in test_jobs
+#     ]
 
-    # Error paths are the same as output, basically
-    error_file = File(
-        get_array_scratch_file(
-            executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_ERROR
-        )
-    )
-    assert error_file.exists()
-    efiles = json.load(error_file)
+#     # Error paths are the same as output, basically
+#     error_file = File(
+#         get_array_scratch_file(
+#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_ERROR
+#         )
+#     )
+#     assert error_file.exists()
+#     efiles = json.load(error_file)
 
-    assert efiles == [
-        get_job_scratch_file(
-            executor.s3_scratch_prefix, j, redun.executors.aws_utils.S3_SCRATCH_ERROR
-        )
-        for j in test_jobs
-    ]
+#     assert efiles == [
+#         get_job_scratch_file(
+#             executor.s3_scratch_prefix, j, redun.executors.aws_utils.S3_SCRATCH_ERROR
+#         )
+#         for j in test_jobs
+#     ]
 
-    # Child job eval hashes should be present as well.
-    eval_file = File(
-        get_array_scratch_file(
-            executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_HASHES
-        )
-    )
-    with eval_file.open("r") as evfile:
-        hashes = evfile.read().splitlines()
+#     # Child job eval hashes should be present as well.
+#     eval_file = File(
+#         get_array_scratch_file(
+#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_HASHES
+#         )
+#     )
+#     with eval_file.open("r") as evfile:
+#         hashes = evfile.read().splitlines()
 
-    assert hashes == [job.eval_hash for job in test_jobs]
+#     assert hashes == [job.eval_hash for job in test_jobs]
 
-    # Make monitor thread exit correctly
-    executor.stop()
+#     # Make monitor thread exit correctly
+#     executor.stop()
 
 
 @mock_s3
@@ -899,4 +902,4 @@ def other_task(x, y):
         assert pickle.loads(cast(bytes, output_file.read("rb"))) == i - 2 * i
 
 if __name__ == '__main__':
-    test_array_disabling()
+    test_jobs_are_arrayed()
