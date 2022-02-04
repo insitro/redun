@@ -638,10 +638,20 @@ def test_jobs_are_arrayed(submit_task_mock, get_aws_user_mock):
     executor.arrayer.min_array_size = 3
     executor.arrayer.max_array_size = 7
 
+    faj = create_job_object(uid="first-array-job")
+    faj.spec.parallelism = 3
+    faj.spec.completions = 3
+    faj.spec.completion_mode = 'Indexed'
+
+    saj = create_job_object(uid="second-array-job")
+    saj.spec.parallelism = 7
+    saj.spec.completions = 7
+    saj.spec.completion_mode = 'Indexed'
+
     redun.executors.k8s.submit_task.side_effect = [
-        {"jobId": "first-array-job", "arrayProperties": {"size": 7}},
-        {"jobId": "second-array-job", "arrayProperties": {"size": 3}},
-        {"jobId": "single-job"},
+        faj,
+        saj,
+        create_job_object(uid="single-job"),
     ]
 
     test_jobs = []
@@ -650,12 +660,11 @@ def test_jobs_are_arrayed(submit_task_mock, get_aws_user_mock):
         job.id = f"task_{i}"
         job.task = array_task
         job.eval_hash = f"eval_hash_{i}"
-
         executor.submit(job, (i), {})
         test_jobs.append(job)
 
     # Wait for jobs to get submitted from arrayer to executor.
-    wait_until(lambda: len(executor.pending_k8s_jobs) == 10, timeout=10000)
+    wait_until(lambda: len(executor.pending_k8s_jobs) == 10)
 
     # Two array jobs, of size 7 and 3, should have been submitted.
     pending_correct = {
@@ -845,11 +854,11 @@ def other_task(x, y):
     executor = mock_executor(scheduler)
     executor.s3_scratch_prefix = "."
 
-    redun.executors.k8s.k8s_submit.return_value = create_job_object(uid="array-job-id")
-    # redun.executors.k8s.k8s_submit.return_value = {
-    #     "jobId": "array-job-id",
-    #     "arrayProperties": {"size": "10"},
-    # }
+    jo = create_job_object(uid="array-job-id")
+    jo.spec.parallelism = 10
+    jo.spec.completions = 10
+    jo.spec.completion_mode = "Indexed"
+    redun.executors.k8s.k8s_submit.return_value = jo
 
     test_jobs = []
     for i in range(3):
