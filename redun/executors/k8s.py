@@ -56,6 +56,7 @@ def is_array_job_name(job_name: str) -> bool:
 def k8s_submit(
     command: List[str],
     image: str,
+    namespace: str,
     job_name: str = "k8s-job",
     array_size: int = 0,
     # TODO(dek): configure container
@@ -83,7 +84,7 @@ def k8s_submit(
     #     batch_job_args["timeout"] = {"attemptDurationSeconds": timeout}
     # if batch_tags:
     #     batch_job_args["tags"] = batch_tags
-    api_response = k8s_utils.create_job(api_instance, k8s_job)
+    api_response = k8s_utils.create_job(api_instance, k8s_job, namespace)
     return api_response
 
 
@@ -154,6 +155,7 @@ def get_k8s_job_options(job_options: dict) -> dict:
 
 def submit_task(
     image: str,
+    namespace: str,
     s3_scratch_prefix: str,
     job: Job,
     a_task: Task,
@@ -246,6 +248,7 @@ def submit_task(
     result = k8s_submit(
         command,
         image=image,
+        namespace=namespace,
         job_name=job_name,
         array_size=array_size,
         **get_k8s_job_options(job_options),
@@ -256,6 +259,7 @@ def submit_task(
 
 def submit_command(
     image: str,
+    namespace: str,
     s3_scratch_prefix: str,
     job: Job,
     command: str,
@@ -322,6 +326,7 @@ chmod +x .task_command
     return k8s_submit(
         shell_command,
         image=image,
+        namespace=namespace,
         job_name=job_name,
         **get_k8s_job_options(job_options),
     )
@@ -358,12 +363,13 @@ def parse_task_error(s3_scratch_prefix: str, job: Job) -> Tuple[Exception, "Trac
 
 def parse_task_logs(
     k8s_job_id: str,
+    namespace,
     max_lines: int = 1000) -> Iterator[str]:
     """
     Iterates through most recent logs of an K8S Job.
     """
     lines_iter = iter_k8s_job_log_lines(
-        k8s_job_id, reverse=True,
+        k8s_job_id, namespace, reverse=True,
     )
     lines = reversed(list(islice(lines_iter, 0, max_lines)))
 
@@ -372,7 +378,8 @@ def parse_task_logs(
     yield from lines
 
 def k8s_describe_jobs(
-    job_names: List[str]
+    job_names: List[str],
+    namespace: str
 ) -> typing.List[kubernetes.client.V1Job]:
     """
     Returns K8S Job descriptions from the AWS API.
@@ -381,26 +388,27 @@ def k8s_describe_jobs(
     responses = []
     for job_name in job_names:
         try:
-            api_response = api_instance.read_namespaced_job(job_name, namespace='default')
+            api_response = api_instance.read_namespaced_job(job_name, namespace=namespace)
         except:
             raise
         responses.append(api_response)
     return responses
 
 
-def iter_k8s_job_status(job_ids):
-    for job in k8s_describe_jobs(job_ids):
+def iter_k8s_job_status(job_ids, namespace):
+    for job in k8s_describe_jobs(job_ids, namespace):
         yield job
 
 
 def iter_log_stream(
     job_id: str,
+    namespace: str,
     reverse: bool = False,
 ) -> Iterator[str]:
     """
     Iterate through the events of a K8S log.
     """
-    job = k8s_describe_jobs([job_id])[0]
+    job = k8s_describe_jobs([job_id], namespace)[0]
     api_instance = k8s_utils.get_k8s_core_client()
     # DO NOT SUBMIT
     # TODO(dek): make sure this works for array logs
@@ -429,6 +437,7 @@ def format_log_stream_event(event: dict) -> str:
 # TODO(dek): DO NOT SUBMIT: can we get rid of this function?
 def iter_k8s_job_logs(
     job_id: str,
+    namespace: str,
     reverse: bool = False,
 ) -> Iterator[str]:
     """
@@ -438,12 +447,14 @@ def iter_k8s_job_logs(
     # another pass-through implementation due to copying the aws_batch implementation.
     yield from iter_log_stream(
         job_id=job_id,
+        namespace=namespace,
         reverse=reverse,
     )
 
 # DO NOT SUBMIT: can we get rid of this whole function?
 def iter_k8s_job_log_lines(
     job_id: str,
+    namespace,
     reverse: bool = False,
 ) -> Iterator[str]:
     """
@@ -451,6 +462,7 @@ def iter_k8s_job_log_lines(
     """
     log_lines = iter_k8s_job_logs(
         job_id,
+        namespace,
         reverse=reverse,
     )
     return log_lines
@@ -469,6 +481,8 @@ class K8SExecutor(Executor):
 
         # Required config.
         self.image = config["image"]
+        self.namespace = config.get("namespace", "default")
+
         self.s3_scratch_prefix = config["s3_scratch"]
 
         # Optional config.
@@ -606,7 +620,7 @@ class K8SExecutor(Executor):
 
                 # Copy pending_k8s_jobs.keys() since it can change due to new submissions.
                 pending_jobs = list(self.pending_k8s_jobs.keys())
-                jobs = iter_k8s_job_status(pending_jobs)
+                jobs = iter_k8s_job_status(pending_jobs, self.namespace)
                 # changing this (IE, removing iter_k8s_job_status) breaks inflight test
                 # jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
                 for job in jobs:
@@ -676,7 +690,7 @@ class K8SExecutor(Executor):
 
                 try:
                     logs.extend(
-                        parse_task_logs(job.metadata.name)
+                        parse_task_logs(job.metadata.name, self.namespace)
                     )
                 except Exception as e:
                     logs.append("Failed to parse task logs for: " + job.metadata.name + " " + str(e))
@@ -824,7 +838,7 @@ class K8SExecutor(Executor):
             k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
             # Make sure k8s API still has a status on this job.
             job_name = task_options['job_name_prefix'] + "-" + job.eval_hash
-            existing_jobs = k8s_describe_jobs([job_name])
+            existing_jobs = k8s_describe_jobs([job_name], namespace=self.namespace)
             existing_job = existing_jobs[0]
             # Reunite with inflight k8s job, if present.
             if existing_job:
@@ -865,6 +879,7 @@ class K8SExecutor(Executor):
 
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
+        namespace = task_options.pop("namespace", self.namespace)
         # Generate a unique name for job with no '-' to simplify job name parsing.
         array_uuid = str(uuid.uuid4()).replace("-", "")
 
@@ -911,6 +926,7 @@ class K8SExecutor(Executor):
 
         k8s_resp = submit_task(
             image,
+            namespace,
             self.s3_scratch_prefix,
             job,
             job.task,
@@ -955,6 +971,7 @@ class K8SExecutor(Executor):
         assert job.task
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
+        namespace = task_options.pop("namespace", self.namespace)
 
         job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
         job_type = "K8S job"
@@ -963,6 +980,7 @@ class K8SExecutor(Executor):
         if not job.task.script:
             k8s_resp = submit_task(
                 image,
+                namespace,
                 self.s3_scratch_prefix,
                 job,
                 job.task,
@@ -975,6 +993,7 @@ class K8SExecutor(Executor):
             command = get_task_command(job.task, args, kwargs)
             k8s_resp = submit_command(
                 image,
+                namespace,
                 self.s3_scratch_prefix,
                 job,
                 command,

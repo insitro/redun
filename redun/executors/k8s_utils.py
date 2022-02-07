@@ -37,8 +37,8 @@ def create_job_object(name=DEFAULT_JOB_PREFIX, image="bash", command="false",
         spec=spec)
     return job
 
-def create_job(api_instance, job):
+def create_job(api_instance, job, namespace):
     api_response = api_instance.create_namespaced_job(
         body=job,
-        namespace="default")
+        namespace=namespace)
     return api_response

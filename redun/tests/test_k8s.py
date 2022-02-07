@@ -34,7 +34,6 @@ from redun.utils import pickle_dumps
 
 # skipped job_def tests here
 
-# TODO(dek): figure out why the suffix isn't "
 @pytest.mark.parametrize("array,suffix", [(False, ""), (True, "-array")])
 def test_get_hash_from_job_name(array, suffix) -> None:
     """
@@ -130,6 +129,7 @@ def task1_custom_module(x):
 def test_submit_task(k8s_submit_mock, custom_module, expected_load_module, a_task):
     job_id = "123"
     image = "my-image"
+    namespace = "default"
     s3_scratch_prefix = "s3://example-bucket/redun/"
 
     s3_client = boto3.client("s3", region_name="us-east-1")
@@ -152,6 +152,7 @@ def task1(x):
     code_file = package_code(s3_scratch_prefix)
     resp = submit_task(
         image,
+        namespace,
         s3_scratch_prefix,
         job,
         a_task,
@@ -185,6 +186,7 @@ def task1(x):
             a_task.name,
         ],
         image="my-image",
+        namespace="default",
         job_name="k8s-job-eval_hash",
         array_size=0
     )
@@ -199,6 +201,7 @@ def test_submit_task_deep_file(k8s_submit_mock):
     """
     job_id = "123"
     image = "my-image"
+    namespace = "default"
     s3_scratch_prefix = "s3://example-bucket/redun/"
 
     client = boto3.client("s3", region_name="us-east-1")
@@ -225,6 +228,7 @@ def task1(x):
     code_file = package_code(s3_scratch_prefix)
     resp = submit_task(
         image,
+        namespace,
         s3_scratch_prefix,
         job,
         module.task1,
@@ -261,6 +265,7 @@ def task1(x):
             "task1",
         ],
         image="my-image",
+        namespace="default",
         job_name="k8s-job-eval_hash",
         array_size=0
     )
@@ -301,6 +306,7 @@ def test_executor(
     assert k8s_submit_mock.call_args
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
+        "namespace": "default",
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash",
         "array_size": 0,
         "vcpus": 1,
@@ -332,6 +338,7 @@ def test_executor(
     # # # # # Ensure job options were passed correctly.
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
+        "namespace": "default",
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash2",
         "array_size": 0,
         "vcpus": 1,
