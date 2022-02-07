@@ -31,10 +31,10 @@ SUCCEEDED = 'SUCCEEDED'
 FAILED = 'FAILED'
 ARRAY_JOB_SUFFIX = "array"
 
-#CompletedIndexes holds the completed indexes when .spec.completionMode = "Indexed" in a text format. 
-#The indexes are represented as decimal integers separated by commas. The numbers are listed in increasing order.
-#Three or more consecutive numbers are compressed and represented by the first and last element of the series, separated by a hyphen. 
-#For example, if the completed indexes are 1, 3, 4, 5 and 7, they are represented as "1,3-5,7".
+# CompletedIndexes holds the completed indexes when .spec.completionMode = "Indexed" in a text format. 
+# The indexes are represented as decimal integers separated by commas. The numbers are listed in increasing order.
+# Three or more consecutive numbers are compressed and represented by the first and last element of the series, separated by a hyphen. 
+# For example, if the completed indexes are 1, 3, 4, 5 and 7, they are represented as "1,3-5,7".
 def parse_completed_indexes(completed_indexes, parallelism):
     if completed_indexes is None:
         return []
@@ -426,7 +426,7 @@ def format_log_stream_event(event: dict) -> str:
     timestamp = str(datetime.datetime.fromtimestamp(event["timestamp"] / 1000))
     return f"{timestamp}  {event['message']}"
 
-# DO NOT SUBMIT: can we get rid of this function?
+# TODO(dek): DO NOT SUBMIT: can we get rid of this function?
 def iter_k8s_job_logs(
     job_id: str,
     reverse: bool = False,
@@ -442,8 +442,6 @@ def iter_k8s_job_logs(
     )
 
 # DO NOT SUBMIT: can we get rid of this whole function?
-
-
 def iter_k8s_job_log_lines(
     job_id: str,
     reverse: bool = False,
@@ -594,7 +592,6 @@ class K8SExecutor(Executor):
         assert self.scheduler
 
         try:
-            print("_monitor")
             while self.is_running and (self.pending_k8s_jobs or self.arrayer.num_pending):
                 if self.scheduler.logger.level >= logging.DEBUG:
                     self.log(
@@ -621,7 +618,6 @@ class K8SExecutor(Executor):
             # need to catch all exceptions so we can properly report them to
             # the scheduler.
             self.log("_monitor got exception", level=logging.INFO)
-            print("BLAH BLAH BLAH", error)
             self.scheduler.reject_job(None, error)
 
         self.log("Shutting down executor...", level=logging.DEBUG)
@@ -634,8 +630,6 @@ class K8SExecutor(Executor):
         assert self.scheduler
         job_status: Optional[str] = None
 
-
-        print("job", job.metadata.name, "parallelism", job.spec.parallelism, "succeeded", job.status.succeeded, "failed", job.status.failed)
         if job.spec.parallelism == None or job.spec.parallelism == 1:
             if job.status.succeeded is not None and job.status.succeeded > 0:
                 job_status = SUCCEEDED
@@ -710,7 +704,6 @@ class K8SExecutor(Executor):
                         if terminated.exit_code != 0:                           
                             api_instance = k8s_utils.get_k8s_core_client()
                             log_response = api_instance.read_namespaced_pod_log(pod_name, namespace=pod_namespace)
-                            print("BLAH BLAH BLAH", "pod exitied with error")
                             self.scheduler.reject_job(
                                 redun_job[index], K8SError("K8S pod exited with error code") )
                         else:
@@ -719,7 +712,6 @@ class K8SExecutor(Executor):
                                 self.scheduler.done_job(redun_job[index], result)                            
                             else:
                                 # This can happen if job ended in an inconsistent state.
-                                print("BLAH BLAH BLAH", "pod exitied with inconsistent state")
                                 self.scheduler.reject_job(
                                     redun_job[index],
                                     FileNotFoundError(
@@ -935,6 +927,7 @@ class K8SExecutor(Executor):
             self.pending_k8s_jobs[array_job_name][i] = jobs[i]
         array_job_id = k8s_resp.metadata.uid
 
+        # TODO(dek): wire up retries to backoff limits?
         retries = None  # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
         self.log(
             "submit {array_size} redun job(s) as {job_type} {k8s_job_id}:\n"
@@ -952,7 +945,6 @@ class K8SExecutor(Executor):
                 retries=retries,
             )
         )
-
         return array_uuid
 
     def _submit_single_job(self, job: Job, args: Tuple, kwargs: dict) -> None:
@@ -991,6 +983,7 @@ class K8SExecutor(Executor):
 
         k8s_job_id = k8s_resp.metadata.uid
         job_name = k8s_resp.metadata.name
+        # TODO(dek): implement retries
         retries = None  # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
         self.log(
             "submit redun job {redun_job} as {job_type} {k8s_job_id}:\n"
