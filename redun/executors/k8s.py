@@ -64,9 +64,6 @@ def k8s_submit(
     vcpus: int = 1,
     gpus: int = 0,
     retries: int = 1,
-    role: Optional[str] = None,
-    privileged: bool = False,
-    autocreate_job: bool = True,
     timeout: Optional[int] = None,
     k8s_labels: Optional[Dict[str, str]] = None,
     propagate_labels: bool = True,
@@ -139,14 +136,10 @@ def get_k8s_job_options(job_options: dict) -> dict:
     Returns K8S-specific job options from general job options.
     """
     keys = [
+        "memory",
         "vcpus",
         "gpus",
-        "memory",
-        "role",
         "retries",
-        "privileged",
-        "job_def_name",
-        "autocreate_job",
         "timeout",
         "k8s_labels",
     ]
@@ -419,7 +412,9 @@ def iter_log_stream(
     namespace = api_response.items[0].metadata.namespace
     log_response = api_instance.read_namespaced_pod_log(name, namespace=namespace)
     lines = log_response.split("\n")
-
+    if api_response.items[0].status.container_statuses[0].state.terminated.exit_code != 0:
+        lines.append(f"Pod exited with {api_response.items[0].status.container_statuses[0].state.terminated.exit_code}")
+        lines.append(f"Exit reason: {api_response.items[0].status.container_statuses[0].state.terminated.reason}")
     if reverse:
         lines = reversed(lines)
         yield from lines
@@ -532,7 +527,6 @@ class K8SExecutor(Executor):
                 continue
             # Get all child pods of running array jobs for reuniting.
             for child_pod in self.get_array_child_pods(job.metadata.name).items:
-                print(child_pod.metadata.name, child_pod.metadata.annotations['batch.kubernetes.io/job-completion-index'])
                 running_arrays[job_name].append((child_pod.metadata.name, child_pod.metadata.uid, int(child_pod.metadata.annotations['batch.kubernetes.io/job-completion-index'])))
         # Match up running array jobs with consistent redun job naming scheme.
         for array_name, child_pod_indices in running_arrays.items():
@@ -689,7 +683,6 @@ class K8SExecutor(Executor):
                 except Exception as e:
                     logs.append("Failed to parse task logs for: " + job.metadata.name + " " + str(e))
                 error_traceback.logs = logs
-
                 self.scheduler.reject_job(
                     redun_job, error, error_traceback=error_traceback, job_tags=k8s_labels
                 )
@@ -713,7 +706,7 @@ class K8SExecutor(Executor):
                             api_instance = k8s_utils.get_k8s_core_client()
                             log_response = api_instance.read_namespaced_pod_log(pod_name, namespace=pod_namespace)
                             self.scheduler.reject_job(
-                                redun_job[index], K8SError("K8S pod exited with error code") )
+                                redun_job[index], K8SError("K8S pod exited with error code {terminated.exit_code} because {terminated.reason}") )
                         else:
                             result, exists = self._get_job_output(redun_job[index], check_valid=False)
                             if exists:
