@@ -525,7 +525,6 @@ class K8SExecutor(Executor):
         inflight_jobs = self.get_jobs()
         for job in inflight_jobs.items:
             job_name = job.metadata.name
-
             if not is_array_job_name(job_name):
                 job_hash = get_hash_from_job_name(job_name)
                 if job_hash:
@@ -533,13 +532,10 @@ class K8SExecutor(Executor):
                 continue
             # Get all child pods of running array jobs for reuniting.
             for child_pod in self.get_array_child_pods(job.metadata.name).items:
-                running_arrays[job_name] = [
-                (child_pod.metadata.name, int(child_pod.metadata.annotations['batch.kubernetes.io/job-completion-index']))
-               
-            ]
+                print(child_pod.metadata.name, child_pod.metadata.annotations['batch.kubernetes.io/job-completion-index'])
+                running_arrays[job_name].append((child_pod.metadata.name, child_pod.metadata.uid, int(child_pod.metadata.annotations['batch.kubernetes.io/job-completion-index'])))
         # Match up running array jobs with consistent redun job naming scheme.
-        for array_name, child_job_indices in running_arrays.items():
-
+        for array_name, child_pod_indices in running_arrays.items():
             # Get path to array file directory on S3 from array job name.
             parent_hash = get_hash_from_job_name(array_name)
             if not parent_hash:
@@ -557,9 +553,9 @@ class K8SExecutor(Executor):
             eval_hashes = cast(str, eval_file.read("r")).splitlines()
 
             # Now match up indices to eval hashes to populate pending jobs by name.
-            for job_id, job_index in child_job_indices:
-                job_hash = eval_hashes[job_index]
-                self.preexisting_k8s_jobs[job_hash] = job_id
+            for child_job_name, child_job_id, child_job_index in child_pod_indices:
+                job_hash = eval_hashes[child_job_index]
+                self.preexisting_k8s_jobs[job_hash] = (child_job_id, child_job_name, child_job_index, parent_hash)
  
     def _start(self) -> None:
         """
@@ -654,12 +650,10 @@ class K8SExecutor(Executor):
 
             # Determine redun Job and job_labels.
             redun_job = self.pending_k8s_jobs.pop(job.metadata.name)
-            print("redun_job=", redun_job)
             k8s_labels = []
             k8s_labels.append(("k8s_job", job.metadata.uid))
             if job_status == SUCCEEDED:
                 # Assume a recently completed job has valid results.
-                print("redun job:", redun_job)
                 result, exists = self._get_job_output(redun_job, check_valid=False)
                 if exists:
                     self.scheduler.done_job(redun_job, result, job_tags=k8s_labels)
@@ -836,26 +830,53 @@ class K8SExecutor(Executor):
         k8s_job_id: Optional[str] = None
         if use_cache and job.eval_hash in self.preexisting_k8s_jobs:
             k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
-            # Make sure k8s API still has a status on this job.
-            job_name = task_options['job_name_prefix'] + "-" + job.eval_hash
-            existing_jobs = k8s_describe_jobs([job_name], namespace=self.namespace)
-            existing_job = existing_jobs[0]
-            # Reunite with inflight k8s job, if present.
-            if existing_job:
-                k8s_job_id = existing_job.metadata.uid
-                self.log(
-                    "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
-                    "  s3_scratch_path = {job_dir}".format(
-                        redun_job=job.id,
-                        job_type=job_type,
-                        k8s_job_id=k8s_job_id,
-                        job_dir=job_dir,
+            # Handle both single and array jobs.
+            if type(k8s_job_id) != tuple:
+                # Single job case
+                # Make sure k8s API still has a status on this job.
+                job_name = task_options['job_name_prefix'] + "-" + job.eval_hash
+                existing_jobs = k8s_describe_jobs([job_name], namespace=self.namespace)
+                existing_job = existing_jobs[0] # should be index
+                # Reunite with inflight k8s job, if present.
+                if existing_job:
+                    k8s_job_id = existing_job.metadata.uid
+                    self.log(
+                        "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
+                        "  s3_scratch_path = {job_dir}".format(
+                            redun_job=job.id,
+                            job_type=job_type,
+                            k8s_job_id=k8s_job_id,
+                            job_dir=job_dir,
+                        )
                     )
-                )
-                assert k8s_job_id
-                self.pending_k8s_jobs[job_name] = job
+                    assert k8s_job_id
+                    self.pending_k8s_jobs[job_name] = job
+                else:
+                    k8s_job_id = None
             else:
-                k8s_job_id = None
+                # Array job case
+                child_job_id, child_job_name, child_job_index, parent_hash = k8s_job_id
+                job_name = f"{task_options['job_name_prefix']}-{parent_hash}-array"
+                existing_jobs = k8s_describe_jobs([job_name], namespace=self.namespace)
+                existing_job = existing_jobs[0]
+                # Reunite with inflight k8s job, if present.
+                if existing_job:
+                    k8s_job_id = existing_job.metadata.uid
+                    self.log(
+                        "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
+                        "  s3_scratch_path = {job_dir}".format(
+                            redun_job=job.id,
+                            job_type=job_type,
+                            k8s_job_id=k8s_job_id,
+                            job_dir=job_dir,
+                        )
+                    )
+                    assert k8s_job_id
+                    if job_name not in self.pending_k8s_jobs:
+                        self.pending_k8s_jobs[job_name] = {}
+                    self.pending_k8s_jobs[job_name][child_job_index] = job
+                else:
+                    k8s_job_id = None
 
         # Job arrayer will handle actual submission after bunching to an array
         # job, if necessary.
