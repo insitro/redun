@@ -7,8 +7,8 @@ REGISTRY=$(ACCOUNT).dkr.ecr.$(REGION).amazonaws.com
 setup:
 	mkdir -p redun
 	cp ../../../setup.py redun/setup.py
-	cp -r ../../../redun redun/redun
-	cp -r ../../../bin redun/bin
+	cp -r ../../../redun redun/
+	cp -r ../../../bin redun/
 
 
 login:
