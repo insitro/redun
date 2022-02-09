@@ -16,12 +16,12 @@ def create_container(name, image, command):
     resources = client.V1ResourceRequirements()
 
     resources.requests = {
-        "memory": "16M",
-        "cpu": 1
+        "memory": "1G",
+        "cpu": 0.25
     }
     resources.limits = {
-        "memory": "16M",
-        "cpu": 1
+        "memory": "1G",
+        "cpu": 0.25
     }
     return client.V1Container(
         name=name,
