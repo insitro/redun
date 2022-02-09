@@ -12,16 +12,14 @@ import uuid
 from collections import OrderedDict, defaultdict
 from itertools import islice
 from shlex import quote
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, cast
-from urllib.error import URLError
-from urllib.request import urlopen
+from typing import Any, Dict, Iterator, List, Optional, Tuple, cast
 
 import kubernetes
 
 from redun.executors import k8s_utils, s3_utils, aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.file import File
-from redun.job_array import AWS_ARRAY_VAR, JobArrayer
+from redun.job_array import JobArrayer
 from redun.scheduler import Job, Scheduler, Traceback
 from redun.scripting import ScriptError, get_task_command
 from redun.task import Task
@@ -34,6 +32,7 @@ ARRAY_JOB_SUFFIX = "array"
 
 
 def is_array_job_name(job_name: str) -> bool:
+    "Returns true if the job name looks like an array job"
     return job_name.endswith(f"-{ARRAY_JOB_SUFFIX}")
 
 
@@ -43,15 +42,14 @@ def k8s_submit(
     namespace: str,
     job_name: str = "k8s-job",
     array_size: int = 0,
-    # TODO(dek): configure container
     memory: int = 4,
     vcpus: int = 1,
     gpus: int = 0,
     retries: int = 1,
     timeout: Optional[int] = None,
     k8s_labels: Optional[Dict[str, str]] = None,
-    propagate_labels: bool = True,
-) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:
+    """Prepares and submits a k8s job to the API server"""
     requests = {
         "memory": f"{memory}G",
         "cpu": vcpus,
@@ -68,26 +66,20 @@ def k8s_submit(
         k8s_job.spec.completion_mode = 'Indexed'
     k8s_job.spec.backoff_limit = array_size*2
     k8s_job.spec.restart_policy = "OnFailure"
-    # if timeout:
-    #     batch_job_args["timeout"] = {"attemptDurationSeconds": timeout}
-    # if batch_tags:
-    #     batch_job_args["tags"] = batch_tags
+    # if timeout: batch_job_args["timeout"] = {"attemptDurationSeconds":
+    #     timeout} if batch_tags: batch_job_args["tags"] = batch_tags
     api_instance = k8s_utils.get_k8s_batch_client()
     api_response = k8s_utils.create_job(api_instance, k8s_job, namespace)
     return api_response
 
 
-# def is_ec2_instance() -> bool:
-#     """
-#     Returns True if this process is running on an EC2 instance.
+# def is_ec2_instance() -> bool: """ Returns True if this process is running on
+#     an EC2 instance.
 
-#     We use the presence of a link-local address as a sign we are on an EC2 instance.
-#     """
-#     try:
-#         resp = urlopen("http://169.254.169.254/latest/meta-data/", timeout=1)
-#         return resp.status == 200
-#     except URLError:
-#         return False
+#     We use the presence of a link-local address as a sign we are on an EC2
+#     instance. """ try: resp =
+#     urlopen("http://169.254.169.254/latest/meta-data/", timeout=1) return
+#         resp.status == 200 except URLError: return False
 
 
 def get_k8s_job_name(prefix: str, job_hash: str, array: bool = False) -> str:
@@ -107,15 +99,17 @@ def get_hash_from_job_name(job_name: str) -> Optional[str]:
     if job_name.endswith(array_suffix):
         job_name = job_name[: -len(array_suffix)]
 
-    # It's possible we found jobs that are unrelated to the this work based off the job_name_prefix
-    # matching when fetching in get_jobs. These jobs will not have hashes so we can ignore them.
-    # For a concrete example of this, see:
+    # It's possible we found jobs that are unrelated to the this work based off
+    # the job_name_prefix matching when fetching in get_jobs. These jobs will
+    # not have hashes so we can ignore them. For a concrete example of this,
+    # see:
     #
     #   https://insitro.atlassian.net/browse/DE-2632
     #
-    # where a headnode job is running but has no hash so we don't want to interact with that job
-    # here. If we don't find a match, consider this a case of the above where we matched unrelated
-    # jobs and return None to let callers know this is the case.
+    # where a headnode job is running but has no hash so we don't want to
+    # interact with that job here. If we don't find a match, consider this a
+    # case of the above where we matched unrelated jobs and return None to let
+    # callers know this is the case.
     match = re.match(".*-(?P<hash>[^-]+)", job_name)
     if match:
         return match["hash"]
@@ -130,9 +124,7 @@ def get_k8s_job_options(job_options: dict) -> dict:
     keys = [
         "memory",
         "vcpus",
-        #"gpus",
-        #"retries",
-        #"timeout",
+        #"gpus", "retries", "timeout",
         "k8s_labels",
     ]
     return {key: job_options[key] for key in keys if key in job_options}
@@ -187,8 +179,8 @@ def submit_task(
             s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR
         )
 
-        # Serialize arguments to input file.
-        # Array jobs set this up earlier, in `_submit_array_job`
+        # Serialize arguments to input file. Array jobs set this up earlier, in
+        # `_submit_array_job`
         input_file = File(input_path)
         with input_file.open("wb") as out:
             pickle_dump([args, kwargs], out)
@@ -277,20 +269,15 @@ def submit_command(
         "-o",
         "pipefail",
         """
-aws s3 cp {input_path} .task_command
-chmod +x .task_command
-(
-  ./.task_command \
-  2> >(tee .task_error >&2) | tee .task_output
+aws s3 cp {input_path} .task_command chmod +x .task_command (
+  ./.task_command \ 2> >(tee .task_error >&2) | tee .task_output
 ) && (
-    aws s3 cp .task_output {output_path}
-    aws s3 cp .task_error {error_path}
-    echo ok | aws s3 cp - {status_path}
+    aws s3 cp .task_output {output_path} aws s3 cp .task_error {error_path} echo
+    ok | aws s3 cp - {status_path}
 ) || (
-    [ -f .task_output ] && aws s3 cp .task_output {output_path}
-    [ -f .task_error ] && aws s3 cp .task_error {error_path}
-    echo fail | aws s3 cp - {status_path}
-    {exit_command}
+    [ -f .task_output ] && aws s3 cp .task_output {output_path} [ -f .task_error
+    ] && aws s3 cp .task_error {error_path} echo fail | aws s3 cp -
+    {status_path} {exit_command}
 )
 """.format(
             input_path=quote(input_path),
@@ -327,7 +314,8 @@ def parse_task_error(s3_scratch_prefix: str, job: Job) -> Tuple[Exception, "Trac
     error_file = File(error_path)
 
     if not job.task.script:
-        # Normal Tasks (non-script) store errors as Pickled exception, traceback tuples.
+        # Normal Tasks (non-script) store errors as Pickled exception, traceback
+        # tuples.
         if error_file.exists():
             error, error_traceback = pickle.loads(cast(bytes, error_file.read("rb")))
         else:
@@ -372,15 +360,13 @@ def k8s_describe_jobs(
     api_instance = k8s_utils.get_k8s_batch_client()
     responses = []
     for job_name in job_names:
-        try:
-            api_response = api_instance.read_namespaced_job(job_name, namespace=namespace)
-        except:
-            raise
+        api_response = api_instance.read_namespaced_job(job_name, namespace=namespace)
         responses.append(api_response)
     return responses
 
 
 def iter_k8s_job_status(job_ids, namespace):
+    """Wraps k8s_describe_jobs in a generator"""
     for job in k8s_describe_jobs(job_ids, namespace):
         yield job
 
@@ -395,8 +381,7 @@ def iter_log_stream(
     """
     job = k8s_describe_jobs([job_id], namespace)[0]
     api_instance = k8s_utils.get_k8s_core_client()
-    # DO NOT SUBMIT
-    # TODO(dek): make sure this works for array logs
+    # DO NOT SUBMIT TODO(dek): make sure this works for array logs
     label_selector = f"job-name={job.metadata.name}"
     api_response = api_instance.list_pod_for_all_namespaces(
         label_selector=label_selector)
@@ -412,8 +397,8 @@ def iter_log_stream(
         yield from lines
 
 
-# Currently unused
-# TODO(davidek): figure out if we need to format the logs correct (withi timestamps?)
+# Currently unused TODO(davidek): figure out if we need to format the logs
+# correct (withi timestamps?)
 def format_log_stream_event(event: dict) -> str:
     """
     Format a logStream event as a line.
@@ -431,7 +416,8 @@ def iter_k8s_job_logs(
     Iterate through the log events of an K8S job.
     """
 
-    # another pass-through implementation due to copying the aws_batch implementation.
+    # another pass-through implementation due to copying the aws_batch
+    # implementation.
     yield from iter_log_stream(
         job_id=job_id,
         namespace=namespace,
@@ -456,12 +442,23 @@ def iter_k8s_job_log_lines(
 
 
 class K8SError(Exception):
+    """K8S-specific exception raised when a k8s job fails."""
     pass
 
 
 @register_executor("k8s")
 class K8SExecutor(Executor):
-    def __init__(self, name: str, scheduler: Optional["Scheduler"] = None, config=None):
+    """Implementation of K8SExecutor.
+    This class adapts redun jobs to the k8s API.  It uses k8s jobs
+    https://kubernetes.io/docs/concepts/workloads/controllers/job/ to
+    encapsulate the submissions. For workflows with many tasks, it groups
+    multiple tasks into a single k8s job
+    (https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/).
+    to avoid overloading the k8s scheduler. The implementation is very similar
+    to AWSBatchExecutor, with some minor differences to adapt to the k8s API,
+    and it lacks a debug mode (use minikube or another k8s tool for debug)
+    """
+    def __init__(self, name: str, scheduler: Optional[Scheduler] = None, config=None):
         super().__init__(name, scheduler=scheduler)
         if config is None:
             raise ValueError("K8SExecutor requires config.")
@@ -481,10 +478,7 @@ class K8SExecutor(Executor):
         # Default task options.
         self.default_task_options = {
             "vcpus": config.getint("vcpus", 1),
-            "gpus": config.getint("gpus", 0),
             "memory": config.getint("memory", 4),
-            "retries": config.getint("retries", 1),
-            "role": config.get("role"),
             "job_name_prefix": config.get("job_name_prefix", k8s_utils.DEFAULT_JOB_PREFIX),
         }
         if config.get("k8s_labels"):
@@ -507,6 +501,7 @@ class K8SExecutor(Executor):
         )
 
     def gather_inflight_jobs(self) -> None:
+        """Collect existing k8s jobs and match them up to redun jobs"""
         running_arrays: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
         # Get all running jobs by name.
         inflight_jobs = self.get_jobs()
@@ -532,13 +527,15 @@ class K8SExecutor(Executor):
                 )
             )
             if not eval_file.exists():
-                # Eval file does not exist, so we cannot reunite with this array job.
+                # Eval file does not exist, so we cannot reunite with this array
+                # job.
                 continue
 
             # Get eval_hash for all jobs that were part of the array
             eval_hashes = cast(str, eval_file.read("r")).splitlines()
 
-            # Now match up indices to eval hashes to populate pending jobs by name.
+            # Now match up indices to eval hashes to populate pending jobs by
+            # name.
             for child_job_name, child_job_id, child_job_index in child_pod_indices:
                 job_hash = eval_hashes[child_job_index]
                 self.preexisting_k8s_jobs[job_hash] = (child_job_id, child_job_name, child_job_index, parent_hash)
@@ -563,27 +560,28 @@ class K8SExecutor(Executor):
         """
         Thread for monitoring running K8S jobs.
 
-        We use the following process for monitoring K8S jobs in order to
-        achieve timely updates and avoid excessive API calls which can cause
-        API throttling and slow downs.
+        We use the following process for monitoring K8S jobs in order to achieve
+        timely updates and avoid excessive API calls which can cause API
+        throttling and slow downs.
 
-        - We use the `describe_jobs()` API call on specific Batch job ids in order
-          to avoid processing status of unrelated jobs on the same K8S queue.
-        - We call `describe_jobs()` with 100 job ids at a time to reduce the number
-          of API calls. 100 job ids is the maximum supported amount by
+        - We use the `describe_jobs()` API call on specific Batch job ids in
+          order to avoid processing status of unrelated jobs on the same K8S
+          queue.
+        - We call `describe_jobs()` with 100 job ids at a time to reduce the
+          number of API calls. 100 job ids is the maximum supported amount by
           `describe_jobs()`.
         - We do only one describe_jobs() API call per monitor loop, and then
           sleep `self.interval` seconds.
-        - K8S runs jobs in approximately the order submitted. So if we
-          monitor job statuses in submission order, a run of PENDING statuses
+        - K8S runs jobs in approximately the order submitted. So if we monitor
+          job statuses in submission order, a run of PENDING statuses
           (`pending_truncate`) suggests the rest of the jobs will be PENDING.
-          Therefore, we can truncate our polling and restart at the beginning
-          of list of job ids.
+          Therefore, we can truncate our polling and restart at the beginning of
+          list of job ids.
 
-        By combining these techniques, we spend most of our time monitoring
-        only running jobs (there could be a very large number of pending jobs),
-        we stay under API rate limits, and we keep the compute in this
-        thread low so as to not interfere with new submissions.
+        By combining these techniques, we spend most of our time monitoring only
+        running jobs (there could be a very large number of pending jobs), we
+        stay under API rate limits, and we keep the compute in this thread low
+        so as to not interfere with new submissions.
         """
         assert self.scheduler
 
@@ -600,19 +598,21 @@ class K8SExecutor(Executor):
                         level=logging.DEBUG,
                     )
 
-                # Copy pending_k8s_jobs.keys() since it can change due to new submissions.
+                # Copy pending_k8s_jobs.keys() since it can change due to new
+                # submissions.
                 pending_jobs = list(self.pending_k8s_jobs.keys())
                 jobs = iter_k8s_job_status(pending_jobs, self.namespace)
-                # changing this (IE, removing iter_k8s_job_status) breaks inflight test
-                # jobs = k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
+                # changing this (IE, removing iter_k8s_job_status) breaks
+                # inflight test jobs =
+                # k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
                 for job in jobs:
                     self._process_job_status(job)
                 time.sleep(self.interval)
 
         except Exception as error:
-            # Since we run this is method at the top-level of a thread, we
-            # need to catch all exceptions so we can properly report them to
-            # the scheduler.
+            # Since we run this is method at the top-level of a thread, we need
+            # to catch all exceptions so we can properly report them to the
+            # scheduler.
             self.log("_monitor got exception", level=logging.INFO)
             self.scheduler.reject_job(None, error)
 
@@ -680,7 +680,7 @@ class K8SExecutor(Executor):
                 )
             api_instance = k8s_utils.get_k8s_batch_client()
             try:
-                response = k8s_utils.delete_job(api_instance, job.metadata.name, self.namespace)
+                _ = k8s_utils.delete_job(api_instance, job.metadata.name, self.namespace)
             except kubernetes.client.exceptions.ApiException as e:
                 self.log("Failed to delete k8s job {job.metadata.name}: {e}", level=logging.WARN)
         else:
@@ -701,7 +701,7 @@ class K8SExecutor(Executor):
                             continue
                         if terminated.exit_code != 0:                           
                             api_instance = k8s_utils.get_k8s_core_client()
-                            log_response = api_instance.read_namespaced_pod_log(pod_name, namespace=pod_namespace)
+                            _ = api_instance.read_namespaced_pod_log(pod_name, namespace=pod_namespace)
                             self.scheduler.reject_job(
                                 redun_job[index], K8SError("K8S pod exited with error code {terminated.exit_code} because {terminated.reason}") )
                         else:
@@ -709,20 +709,20 @@ class K8SExecutor(Executor):
                             if exists:
                                 self.scheduler.done_job(redun_job[index], result)                            
                             else:
-                                # This can happen if job ended in an inconsistent state.
+                                # This can happen if job ended in an
+                                # inconsistent state.
                                 self.scheduler.reject_job(
                                     redun_job[index],
                                     FileNotFoundError(
                                         aws_utils.get_job_scratch_file(
                                             self.s3_scratch_prefix, redun_job[index], s3_utils.S3_SCRATCH_OUTPUT
                                         )
-                                    ),
-                                )   
+                                    )
                         del self.pending_k8s_jobs[job.metadata.name][index]
                         if len(redun_job) == 0:
                             api_instance = k8s_utils.get_k8s_batch_client()
                             try:
-                                response = k8s_utils.delete_job(api_instance, job.metadata.name, self.namespace)
+                                _ = k8s_utils.delete_job(api_instance, job.metadata.name, self.namespace)
                             except kubernetes.client.exceptions.ApiException as e:
                                 self.log("Failed to delete k8s job {job.metadata.name}: {e}", level=logging.WARN)
                             del self.pending_k8s_jobs[job.metadata.name]
@@ -732,8 +732,8 @@ class K8SExecutor(Executor):
         """
         Determine the task options for a job.
 
-        Task options can be specified at the job-level have precedence over
-        the executor-level (within `redun.ini`):
+        Task options can be specified at the job-level have precedence over the
+        executor-level (within `redun.ini`):
         """
         assert job.task
 
@@ -801,14 +801,15 @@ class K8SExecutor(Executor):
         # If this is the first submission gather inflight jobs. We also check
         # is_running here as a way of determining whether this is the first
         # submission or not. If we are already running, then we know we have
-        # already had jobs submitted and done the inflight check so no reason
-        # to do that again here.
+        # already had jobs submitted and done the inflight check so no reason to
+        # do that again here.
         if not self.is_running:
             # Precompute existing inflight jobs for job reuniting.
             self.gather_inflight_jobs()
-        # Package code if necessary and we have not already done so. If code_package is False,
-        # then we can skip this step. Additionally, if we have already packaged and set code_file,
-        # then we do not need to repackage.
+        # Package code if necessary and we have not already done so. If
+        # code_package is False, then we can skip this step. Additionally, if we
+        # have already packaged and set code_file, then we do not need to
+        # repackage.
         if self.code_package is not False and self.code_file is None:
             code_package = self.code_package or {}
             assert isinstance(code_package, dict)
@@ -827,8 +828,8 @@ class K8SExecutor(Executor):
             k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
             # Handle both single and array jobs.
             if type(k8s_job_id) != tuple:
-                # Single job case
-                # Make sure k8s API still has a status on this job.
+                # Single job case Make sure k8s API still has a status on this
+                # job.
                 job_name = task_options['job_name_prefix'] + "-" + job.eval_hash
                 existing_jobs = k8s_describe_jobs([job_name], namespace=self.namespace)
                 existing_job = existing_jobs[0] # should be index
@@ -896,13 +897,14 @@ class K8SExecutor(Executor):
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
         namespace = task_options.pop("namespace", self.namespace)
-        # Generate a unique name for job with no '-' to simplify job name parsing.
+        # Generate a unique name for job with no '-' to simplify job name
+        # parsing.
         array_uuid = str(uuid.uuid4()).replace("-", "")
 
         job_type = "K8S job"
 
-        # Setup input, output and error path files.
-        # Input file is a pickled list of args, and kwargs, for each child job.
+        # Setup input, output and error path files. Input file is a pickled list
+        # of args, and kwargs, for each child job.
         input_file = aws_utils.get_array_scratch_file(
             self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_INPUT
         )
@@ -933,7 +935,8 @@ class K8SExecutor(Executor):
         with File(error_file).open("w") as efile:
             json.dump(error_paths, efile)
 
-        # Eval hash file is plaintext hashes of child jobs for matching for job reuniting.
+        # Eval hash file is plaintext hashes of child jobs for matching for job
+        # reuniting.
         eval_file = aws_utils.get_array_scratch_file(
             self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_HASHES
         )
@@ -1063,19 +1066,14 @@ class K8SExecutor(Executor):
         self, job_name: str
     ) -> List[Dict[str, Any]]:
         api_instance = k8s_utils.get_k8s_core_client()
-        # pods=$(kubectl get pods --selector=job-name=pi --output=jsonpath='{.items[*].metadata.name}')
         label_selector = f"job-name={job_name}"
         api_response = api_instance.list_pod_for_all_namespaces(watch=False, label_selector=label_selector)
         return api_response
 
-    # TODO(davidek): fix or remove
-    # def kill_jobs(
-    #     self, job_ids: Iterable[str], reason: str = "Terminated by user"
-    # ) -> Iterator[dict]:
-    #     """
-    #     Kill K8S Jobs.
-    #     """
-    #     batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
+    # TODO(davidek): fix or remove def kill_jobs( self, job_ids: Iterable[str],
+    # reason: str = "Terminated by user" ) -> Iterator[dict]: """ Kill K8S Jobs.
+    #     """ batch_client = aws_utils.get_aws_client("batch",
+    # aws_region=self.aws_region)
 
-    #     for job_id in job_ids:
-    #         yield batch_client.terminate_job(jobId=job_id, reason=reason)
+    #     for job_id in job_ids: yield batch_client.terminate_job(jobId=job_id,
+    #         reason=reason)

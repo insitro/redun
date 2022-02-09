@@ -310,9 +310,7 @@ def test_executor(
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash",
         "array_size": 0,
         "vcpus": 1,
-        "gpus": 0,
         "memory": 4,
-        "retries": 1,
         "k8s_labels": {
             'redun_execution_id': '',
             'redun_job_id': job.id,
@@ -341,9 +339,7 @@ def test_executor(
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash2",
         "array_size": 0,
         "vcpus": 1,
-        "gpus": 0,
         "memory": 8,
-        "retries": 1,
         "k8s_labels": {
             'redun_execution_id': '',
             'redun_job_id': job2.id,
