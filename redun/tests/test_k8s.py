@@ -312,7 +312,6 @@ def test_executor(
         "vcpus": 1,
         "gpus": 0,
         "memory": 4,
-        "role": None,
         "retries": 1,
         "k8s_labels": {
             'redun_execution_id': '',
@@ -344,7 +343,6 @@ def test_executor(
         "vcpus": 1,
         "gpus": 0,
         "memory": 8,
-        "role": None,
         "retries": 1,
         "k8s_labels": {
             'redun_execution_id': '',

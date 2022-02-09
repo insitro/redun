@@ -68,8 +68,15 @@ def k8s_submit(
     k8s_labels: Optional[Dict[str, str]] = None,
     propagate_labels: bool = True,
 ) -> Dict[str, Any]:
-    api_instance = k8s_utils.get_k8s_batch_client()
-    k8s_job = k8s_utils.create_job_object(job_name, image, command, k8s_labels)
+    requests = {
+        "memory": f"{memory}G",
+        "cpu": vcpus,
+    }
+    limits = requests
+    resources = k8s_utils.create_resources(requests, limits)
+
+    k8s_job = k8s_utils.create_job_object(job_name, image, command, resources, k8s_labels)
+
 
     if array_size > 1:
         k8s_job.spec.completions = array_size
@@ -81,6 +88,7 @@ def k8s_submit(
     #     batch_job_args["timeout"] = {"attemptDurationSeconds": timeout}
     # if batch_tags:
     #     batch_job_args["tags"] = batch_tags
+    api_instance = k8s_utils.get_k8s_batch_client()
     api_response = k8s_utils.create_job(api_instance, k8s_job, namespace)
     return api_response
 

@@ -12,28 +12,36 @@ def get_k8s_core_client():
     core_v1 = client.CoreV1Api()
     return core_v1
 
-def create_container(name, image, command):
+def create_resources(requests=None, limits=None):
     resources = client.V1ResourceRequirements()
 
-    resources.requests = {
-        "memory": "1G",
-        "cpu": 0.25
-    }
-    resources.limits = {
-        "memory": "1G",
-        "cpu": 0.25
-    }
+    if requests is None:
+        resources.requests = { }
+    else:
+        resources.requests = requests
+
+    if limits is None:
+        resources.limits = { }
+    else:
+        resources.limits = limits
+
+    return resources
+
+def create_container(name, image, command):
     return client.V1Container(
         name=name,
         image=image,
         command=command,
-        resources=resources
     )
 
-def create_job_object(name=DEFAULT_JOB_PREFIX, image="bash", command="false",
+def create_job_object(name=DEFAULT_JOB_PREFIX, image="bash", command="false", resources=None,
     labels=None, uid=None):
 
     container = create_container(name, image, command)
+    if resources == None:
+        container.resources = create_resources()
+    else:
+        container.resources = resources
     pod_spec = client.V1PodSpec(restart_policy="Never", containers=[container])
 
     if labels is None:
