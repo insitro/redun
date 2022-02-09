@@ -694,6 +694,11 @@ class K8SExecutor(Executor):
                 self.scheduler.reject_job(
                     redun_job, error, error_traceback=error_traceback, job_tags=k8s_labels
                 )
+            api_instance = k8s_utils.get_k8s_batch_client()
+            try:
+                response = k8s_utils.delete_job(api_instance, job.metadata.name, self.namespace)
+            except kubernetes.client.exceptions.ApiException as e:
+                self.log("Failed to delete k8s job {job.metadata.name}: {e}", level=logging.WARN)
         else:
             label_selector = f"job-name={job.metadata.name}"
             k8s_pods = self.get_array_child_pods(job.metadata.name)
@@ -731,6 +736,11 @@ class K8SExecutor(Executor):
                                 )   
                         del self.pending_k8s_jobs[job.metadata.name][index]
                         if len(redun_job) == 0:
+                            api_instance = k8s_utils.get_k8s_batch_client()
+                            try:
+                                response = k8s_utils.delete_job(api_instance, job.metadata.name, self.namespace)
+                            except kubernetes.client.exceptions.ApiException as e:
+                                self.log("Failed to delete k8s job {job.metadata.name}: {e}", level=logging.WARN)
                             del self.pending_k8s_jobs[job.metadata.name]
                     
             

@@ -68,3 +68,12 @@ def create_job(api_instance, job, namespace):
         body=job,
         namespace=namespace)
     return api_response
+
+
+def delete_job(api_instance, name, namespace):
+    body = client.V1DeleteOptions()
+    api_response = api_instance.delete_namespaced_job(
+        name=name,
+        namespace=namespace,
+        body=body)
+    return api_response
