@@ -22,7 +22,7 @@ from redun.executors import k8s_utils, s3_utils, aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.file import File
 from redun.job_array import AWS_ARRAY_VAR, JobArrayer
-from redun.scheduler import Job, Traceback
+from redun.scheduler import Job, Scheduler, Traceback
 from redun.scripting import ScriptError, get_task_command
 from redun.task import Task
 from redun.utils import get_import_paths, pickle_dump
@@ -161,8 +161,8 @@ def submit_task(
     job: Job,
     a_task: Task,
     args: Tuple = (),
-    kwargs: Dict[str, Any] = None,
-    job_options: dict = None,
+    kwargs: Optional[Dict[str, Any]] = None,
+    job_options: Optional[dict] = None,
     array_uuid: Optional[str] = None,
     array_size: int = 0,
     code_file: Optional[File] = None,
@@ -264,7 +264,7 @@ def submit_command(
     s3_scratch_prefix: str,
     job: Job,
     command: str,
-    job_options: dict = None,
+    job_options: Optional[dict] = None,
 ) -> kubernetes.client.V1Job:
     """
     Submit a shell command to K8S
