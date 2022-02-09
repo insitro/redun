@@ -31,22 +31,6 @@ SUCCEEDED = 'SUCCEEDED'
 FAILED = 'FAILED'
 ARRAY_JOB_SUFFIX = "array"
 
-# CompletedIndexes holds the completed indexes when .spec.completionMode = "Indexed" in a text format. 
-# The indexes are represented as decimal integers separated by commas. The numbers are listed in increasing order.
-# Three or more consecutive numbers are compressed and represented by the first and last element of the series, separated by a hyphen. 
-# For example, if the completed indexes are 1, 3, 4, 5 and 7, they are represented as "1,3-5,7".
-def parse_completed_indexes(completed_indexes, parallelism):
-    if completed_indexes is None:
-        return []
-    indexes = []
-    index_groups = completed_indexes.split(",")
-    for index_group in index_groups:
-        if "-" in index_group:
-            r1, r2 = index_group.split("-")
-            indexes.extend(range(int(r1),int(r2)+1))
-        else:
-            indexes.append(int(index_group))
-    return indexes
 
 
 def is_array_job_name(job_name: str) -> bool:
@@ -93,17 +77,17 @@ def k8s_submit(
     return api_response
 
 
-def is_ec2_instance() -> bool:
-    """
-    Returns True if this process is running on an EC2 instance.
+# def is_ec2_instance() -> bool:
+#     """
+#     Returns True if this process is running on an EC2 instance.
 
-    We use the presence of a link-local address as a sign we are on an EC2 instance.
-    """
-    try:
-        resp = urlopen("http://169.254.169.254/latest/meta-data/", timeout=1)
-        return resp.status == 200
-    except URLError:
-        return False
+#     We use the presence of a link-local address as a sign we are on an EC2 instance.
+#     """
+#     try:
+#         resp = urlopen("http://169.254.169.254/latest/meta-data/", timeout=1)
+#         return resp.status == 200
+#     except URLError:
+#         return False
 
 
 def get_k8s_job_name(prefix: str, job_hash: str, array: bool = False) -> str:
@@ -146,9 +130,9 @@ def get_k8s_job_options(job_options: dict) -> dict:
     keys = [
         "memory",
         "vcpus",
-        "gpus",
-        "retries",
-        "timeout",
+        #"gpus",
+        #"retries",
+        #"timeout",
         "k8s_labels",
     ]
     return {key: job_options[key] for key in keys if key in job_options}
