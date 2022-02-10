@@ -45,6 +45,7 @@ def k8s_submit(
     vcpus: int = 1,
     timeout: Optional[int] = None,
     k8s_labels: Optional[Dict[str, str]] = None,
+    retries: int = 1,
 ) -> Dict[str, Any]:
     """Prepares and submits a k8s job to the API server"""
     requests = {
@@ -55,19 +56,28 @@ def k8s_submit(
     resources = k8s_utils.create_resources(requests, limits)
 
     k8s_job = k8s_utils.create_job_object(
-        job_name, image, command, resources, k8s_labels
+        job_name,
+        image,
+        command,
+        resources,
+        timeout,
+        k8s_labels,
     )
 
     if array_size > 1:
         k8s_job.spec.completions = array_size
         k8s_job.spec.parallelism = array_size
         k8s_job.spec.completion_mode = "Indexed"
-    k8s_job.spec.backoff_limit = array_size * 2
+        k8s_job.spec.backoff_limit = retries * array_size
+    else:
+        k8s_job.spec.backoff_limit = retries
     k8s_job.spec.restart_policy = "OnFailure"
-    # if timeout: batch_job_args["timeout"] = {"attemptDurationSeconds":
-    #     timeout} if batch_tags: batch_job_args["tags"] = batch_tags
+    # if batch_tags:
+    #    batch_job_args["tags"] = batch_tags
     api_instance = k8s_utils.get_k8s_batch_client()
-    api_response = k8s_utils.create_job(api_instance, k8s_job, namespace)
+    api_response = k8s_utils.create_job(
+        api_instance, k8s_job, namespace=namespace
+    )
     return api_response
 
 
@@ -112,11 +122,7 @@ def get_k8s_job_options(job_options: dict) -> dict:
     """
     Returns K8S-specific job options from general job options.
     """
-    keys = [
-        "memory",
-        "vcpus",
-        "k8s_labels",
-    ]
+    keys = ["memory", "vcpus", "k8s_labels", "retries", "timeout"]
     return {key: job_options[key] for key in keys if key in job_options}
 
 
@@ -394,7 +400,6 @@ def iter_log_stream(
     """
     job = k8s_describe_jobs([job_id], namespace)[0]
     api_instance = k8s_utils.get_k8s_core_client()
-    # DO NOT SUBMIT TODO(dek): make sure this works for array logs
     label_selector = f"job-name={job.metadata.name}"
     api_response = api_instance.list_pod_for_all_namespaces(
         label_selector=label_selector
@@ -451,7 +456,7 @@ def iter_k8s_job_logs(
     )
 
 
-# DO NOT SUBMIT: can we get rid of this whole function?
+# TODO(dek): DO NOT SUBMIT: can we get rid of this whole function?
 def iter_k8s_job_log_lines(
     job_id: str,
     namespace,
@@ -474,6 +479,14 @@ class K8SError(Exception):
     pass
 
 
+# class AWSBatchJobTimeoutError(Exception):
+#     """
+#     Custom exception to raise when AWS Batch Jobs are killed due to timeout.
+#     """
+
+#     pass
+
+
 @register_executor("k8s")
 class K8SExecutor(Executor):
     """Implementation of K8SExecutor.
@@ -482,9 +495,23 @@ class K8SExecutor(Executor):
     encapsulate the submissions. For workflows with many tasks, it groups
     multiple tasks into a single k8s job
     (https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/).
-    to avoid overloading the k8s scheduler. The implementation is very similar
-    to AWSBatchExecutor, with some minor differences to adapt to the k8s API,
-    and it lacks a debug mode (use minikube or another k8s tool for debug)
+    to avoid overloading the k8s scheduler.
+    and it lacks a debug mode (use minikube or another k8s tool for debug).
+
+    Here are the details of the implementation:
+    - The implementation is very similar to AWSBatchExecutor, with some minor
+    differences to adapt to the k8s API.  The primary difference is that array
+    jobs are handled differently
+    - There is no debug mode; if you want to debug K8SExecutor-based workflows,
+    use minikube https://minikube.sigs.k8s.io/ to test your workflows locally.
+    Minikube is powerful enough to run many workflows on a single local machine.
+    - K8SExecutor submits redun tasks (shell scripts and code) as K8S Jobs which
+    execute the tasks in K8S Pods (containers).  K8S Jobs wrap pods with
+    additional functionality, such as retry and parallel processing.
+    - Like the AWSBatchExecutor, this implementation can batch up multiple tasks
+    into a single Job.  This is more efficient for the k8s scheduler, if you are
+    running more than about 100 tasks.
+
     """
 
     def __init__(
@@ -497,7 +524,6 @@ class K8SExecutor(Executor):
         # Required config.
         self.image = config["image"]
         self.namespace = config.get("namespace", "default")
-
         self.s3_scratch_prefix = config["s3_scratch"]
 
         # Optional config.
@@ -510,6 +536,7 @@ class K8SExecutor(Executor):
         self.default_task_options = {
             "vcpus": config.getint("vcpus", 1),
             "memory": config.getint("memory", 4),
+            "retries": config.getint("retries", 1),
             "job_name_prefix": config.get(
                 "job_name_prefix", k8s_utils.DEFAULT_JOB_PREFIX
             ),
@@ -686,7 +713,9 @@ class K8SExecutor(Executor):
         assert self.scheduler
         job_status: Optional[str] = None
 
+        # TODO(dek): detect timed-out jobs here.
         if job.spec.parallelism is None or job.spec.parallelism == 1:
+            # Should check status/reason to determine status.
             if job.status.succeeded is not None and job.status.succeeded > 0:
                 job_status = SUCCEEDED
             elif job.status.failed is not None and job.status.failed > 0:
@@ -731,6 +760,7 @@ class K8SExecutor(Executor):
                     status_reason = job.status.conditions[-1].message
                 except (KeyError, IndexError, TypeError):
                     status_reason = ""
+                # Detect deadline exceeded here and raise exception.
                 if status_reason:
                     logs.append(f"statusReason: {status_reason}\n")
 
@@ -753,18 +783,21 @@ class K8SExecutor(Executor):
                     job_tags=k8s_labels,
                 )
             api_instance = k8s_utils.get_k8s_batch_client()
-            try:
-                _ = k8s_utils.delete_job(
-                    api_instance, job.metadata.name, self.namespace
-                )
-            except kubernetes.client.exceptions.ApiException as e:
-                self.log(
-                    "Failed to delete k8s job {job.metadata.name}: {e}",
-                    level=logging.WARN,
-                )
+            # try:
+            #    _ = k8s_utils.delete_job(
+            #        api_instance, job.metadata.name, self.namespace
+            #    )
+            # except kubernetes.client.exceptions.ApiException as e:
+            #    self.log(
+            #        "Failed to delete k8s job {job.metadata.name}: {e}",
+            #        level=logging.WARN,
+            #    )
         else:
             label_selector = f"job-name={job.metadata.name}"
             k8s_pods = self.get_array_child_pods(job.metadata.name)
+
+            # TODO(dek): checkj for job.status.conditions[*].ype == Failed and reason
+            # for deadline exceeded, etc
             redun_job = self.pending_k8s_jobs[job.metadata.name]
             for item in k8s_pods.items:
                 pod_name = item.metadata.name
@@ -787,6 +820,7 @@ class K8SExecutor(Executor):
                             _ = api_instance.read_namespaced_pod_log(
                                 pod_name, namespace=pod_namespace
                             )
+                            # Detect deadline exceeded here and raise exception.
                             self.scheduler.reject_job(
                                 redun_job[index],
                                 K8SError(
@@ -1081,10 +1115,6 @@ class K8SExecutor(Executor):
             self.pending_k8s_jobs[array_job_name][i] = jobs[i]
         array_job_id = k8s_resp.metadata.uid
 
-        # TODO(dek): wire up retries to backoff limits?
-        retries = (
-            None  # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
-        )
         self.log(
             "submit {array_size} redun job(s) as {job_type} {k8s_job_id}:\n"
             "  array_job_id    = {array_job_id}\n"
@@ -1100,7 +1130,7 @@ class K8SExecutor(Executor):
                     self.s3_scratch_prefix, array_uuid, ""
                 ),
                 job_name=array_job_name,
-                retries=retries,
+                retries=task_options["retries"],
             )
         )
         return array_uuid
@@ -1144,10 +1174,6 @@ class K8SExecutor(Executor):
 
         k8s_job_id = k8s_resp.metadata.uid
         job_name = k8s_resp.metadata.name
-        # TODO(dek): implement retries
-        retries = (
-            None  # k8s_resp.get("ResponseMetadata", {}).get("RetryAttempts")
-        )
         self.log(
             "submit redun job {redun_job} as {job_type} {k8s_job_id}:\n"
             "  job_id          = {k8s_job_id}\n"
@@ -1159,7 +1185,7 @@ class K8SExecutor(Executor):
                 k8s_job_id=k8s_job_id,
                 job_dir=job_dir,
                 job_name=job_name,
-                retries=retries,
+                retries=task_options["retries"],
             )
         )
         self.pending_k8s_jobs[job_name] = job

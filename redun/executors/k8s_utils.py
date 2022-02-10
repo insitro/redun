@@ -46,9 +46,10 @@ def create_job_object(
     image="bash",
     command="false",
     resources=None,
+    timeout=None,
     labels=None,
     uid=None,
-    backoff_limit=1,
+    retries=1,
 ):
     """Creates a job object for redun job.
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
@@ -68,7 +69,12 @@ def create_job_object(
     )
 
     # Create the spec of job deployment
-    spec = client.V1JobSpec(template=template, backoff_limit=backoff_limit)
+    spec = client.V1JobSpec(
+        template=template,
+        backoff_limit=retries,
+    )
+    if timeout:
+        spec.active_deadline_seconds = timeout
 
     if labels is None:
         labels = {}
