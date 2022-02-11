@@ -26,13 +26,14 @@ from redun.executors.aws_utils import (
     REDUN_REQUIRED_VERSION,
     create_tar,
     package_code,
-    get_job_scratch_file
+    get_job_scratch_file,
 )
 from redun.file import Dir
 from redun.scheduler import Job, Scheduler, Traceback
 from redun.utils import pickle_dumps
 
 # skipped job_def tests here
+
 
 @pytest.mark.parametrize("array,suffix", [(False, ""), (True, "-array")])
 def test_get_hash_from_job_name(array, suffix) -> None:
@@ -84,6 +85,7 @@ def mock_executor(scheduler, code_package=False):
 
 # skipped batch tags tests here
 
+
 def test_executor_config(scheduler: Scheduler) -> None:
     """
     Executor should be able to parse its config.
@@ -110,10 +112,10 @@ def test_executor_config(scheduler: Scheduler) -> None:
 def task1(x: int):
     return x + 10
 
+
 @task(load_module="custom.module")
 def task1_custom_module(x):
     return x + 10
-
 
 
 @use_tempdir
@@ -126,7 +128,9 @@ def task1_custom_module(x):
         ("custom.module", "custom.module", task1_custom_module),
     ],
 )
-def test_submit_task(k8s_submit_mock, custom_module, expected_load_module, a_task):
+def test_submit_task(
+    k8s_submit_mock, custom_module, expected_load_module, a_task
+):
     job_id = "123"
     image = "my-image"
     namespace = "default"
@@ -188,7 +192,7 @@ def task1(x):
         image="my-image",
         namespace="default",
         job_name="k8s-job-eval_hash",
-        array_size=0
+        array_size=0,
     )
 
 
@@ -267,8 +271,9 @@ def task1(x):
         image="my-image",
         namespace="default",
         job_name="k8s-job-eval_hash",
-        array_size=0
+        array_size=0,
     )
+
 
 @mock_s3
 @patch("redun.executors.k8s.parse_task_logs")
@@ -292,7 +297,8 @@ def test_executor(
     executor.start()
 
     k8s_submit_mock.return_value = create_job_object(
-        name=DEFAULT_JOB_PREFIX + "-eval_hash", uid=k8s_job_id)
+        name=DEFAULT_JOB_PREFIX + "-eval_hash", uid=k8s_job_id
+    )
     # Submit redun job that will succeed.
     expr = task1(10)
     job = Job(expr)
@@ -309,18 +315,20 @@ def test_executor(
         "namespace": "default",
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash",
         "array_size": 0,
+        "retries": 1,
         "vcpus": 1,
         "memory": 4,
         "k8s_labels": {
-            'redun_execution_id': '',
-            'redun_job_id': job.id,
-            'redun_project': '',
-            'redun_task_name': 'task1'
-        }
+            "redun_execution_id": "",
+            "redun_job_id": job.id,
+            "redun_project": "",
+            "redun_task_name": "task1",
+        },
     }
 
     k8s_submit_mock.return_value = create_job_object(
-        name=DEFAULT_JOB_PREFIX + "-eval_hash2", uid=k8s_job2_id)
+        name=DEFAULT_JOB_PREFIX + "-eval_hash2", uid=k8s_job2_id
+    )
 
     # # Submit redun job that will fail.
     expr2 = task1.options(memory=8)("a")
@@ -338,15 +346,16 @@ def test_executor(
         "namespace": "default",
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash2",
         "array_size": 0,
+        "retries": 1,
         "vcpus": 1,
         "memory": 8,
         "k8s_labels": {
-            'redun_execution_id': '',
-            'redun_job_id': job2.id,
-            'redun_project': '',
-            'redun_task_name': 'task1'
-            }
-        }
+            "redun_execution_id": "",
+            "redun_job_id": job2.id,
+            "redun_project": "",
+            "redun_task_name": "task1",
+        },
+    }
 
     # # # Simulate k8s completing job.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
@@ -355,14 +364,20 @@ def test_executor(
     # Simulate k8s failing.
     error = ValueError("Boom")
     error_file = File("s3://example-bucket/redun/jobs/eval_hash2/error")
-    error_file.write(pickle_dumps((error, Traceback.from_error(error))), mode="wb")
+    error_file.write(
+        pickle_dumps((error, Traceback.from_error(error))), mode="wb"
+    )
 
-    fake_k8s_job = create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")
+    fake_k8s_job = create_job_object(
+        uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash"
+    )
     fake_k8s_job.status = client.V1JobStatus(succeeded=1)
-    fake_k8s_job2 = create_job_object(uid=k8s_job2_id, name=DEFAULT_JOB_PREFIX + "-eval_hash2")
+    fake_k8s_job2 = create_job_object(
+        uid=k8s_job2_id, name=DEFAULT_JOB_PREFIX + "-eval_hash2"
+    )
     fake_k8s_job2.status = client.V1JobStatus(failed=1)
     iter_k8s_job_status_mock.return_value = [fake_k8s_job, fake_k8s_job2]
-    
+
     scheduler.batch_wait([job.id, job2.id])
     executor.stop()
 
@@ -374,13 +389,13 @@ def test_executor(
     job.job_tags == [("k8s_job", "k8s-job-id"), ("aws_log_stream", "log1")]
     job.job_tags == [("k8s_job", "k8s-job2-id"), ("aws_log_stream", "log2")]
 
+
 # skip test_executor_docker here
 
 # skip test_executor_error_override here
 # skip test_executor_multi_start here
 
 # skipped docker interactive
-
 
 
 # skipped docker interactive
@@ -407,10 +422,17 @@ def test_executor_handles_unrelated_jobs() -> None:
     hash2 = "987654321"
 
     # Set up mocks to include a headnode job(no hash) and some redun jobs that it "spawned".
-    executor.get_jobs.return_value = client.V1JobList(items=[
-        create_job_object(uid='headnode', name=f"{prefix}_automation_headnode"),
-        create_job_object(uid='preprocess', name=f"{prefix}_preprocess-{hash1}"),
-        create_job_object(uid='decode', name=f"{prefix}_decode-{hash2}")])
+    executor.get_jobs.return_value = client.V1JobList(
+        items=[
+            create_job_object(
+                uid="headnode", name=f"{prefix}_automation_headnode"
+            ),
+            create_job_object(
+                uid="preprocess", name=f"{prefix}_preprocess-{hash1}"
+            ),
+            create_job_object(uid="decode", name=f"{prefix}_decode-{hash2}"),
+        ]
+    )
 
     executor.gather_inflight_jobs()
 
@@ -418,6 +440,7 @@ def test_executor_handles_unrelated_jobs() -> None:
         hash1: "preprocess",
         hash2: "decode",
     }
+
 
 @mock_s3
 @patch("redun.executors.aws_utils.package_code")
@@ -508,9 +531,11 @@ def test_executor_inflight_job(
     k8s_job_id = "333"
 
     # Setup k8s mocks.
-    
+
     iter_k8s_job_status_mock.return_value = iter([])
-    k8s_job = create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")
+    k8s_job = create_job_object(
+        uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash"
+    )
     k8s_describe_jobs_mock.return_value = [k8s_job]
 
     scheduler = mock_scheduler()
@@ -536,7 +561,7 @@ def test_executor_inflight_job(
 
     k8s_job.status = client.V1JobStatus(succeeded=1)
     iter_k8s_job_status_mock.return_value = [k8s_job]
-    #k8s_describe_jobs_mock.return_value = [k8s_job]
+    # k8s_describe_jobs_mock.return_value = [k8s_job]
     scheduler.batch_wait([job.id])
     # Simulate pre-existing job output.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
@@ -546,7 +571,6 @@ def test_executor_inflight_job(
     assert scheduler.job_results[job.id] == 20
 
     executor.stop()
-
 
 
 @task(limits={"cpu": 1}, random_option=5)
@@ -593,7 +617,9 @@ def test_job_staleness():
 
     sched = mock_scheduler()
     exec = mock_executor(sched)
-    arr = job_array.JobArrayer(exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5)
+    arr = job_array.JobArrayer(
+        exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5
+    )
 
     for i in range(10):
         arr.add_job(j1, args=(i), kwargs={})
@@ -610,7 +636,9 @@ def test_arrayer_thread():
 
     sched = mock_scheduler()
     exec = mock_executor(sched)
-    arr = job_array.JobArrayer(exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5)
+    arr = job_array.JobArrayer(
+        exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5
+    )
 
     arr.add_job(j1, args=(1), kwargs={})
     assert arr._monitor_thread.is_alive()
@@ -642,12 +670,12 @@ def test_jobs_are_arrayed(submit_task_mock, get_aws_user_mock):
     faj = create_job_object(uid="first-array-job")
     faj.spec.parallelism = 3
     faj.spec.completions = 3
-    faj.spec.completion_mode = 'Indexed'
+    faj.spec.completion_mode = "Indexed"
 
     saj = create_job_object(uid="second-array-job")
     saj.spec.parallelism = 7
     saj.spec.completions = 7
-    saj.spec.completion_mode = 'Indexed'
+    saj.spec.completion_mode = "Indexed"
 
     redun.executors.k8s.submit_task.side_effect = [
         faj,
@@ -669,7 +697,8 @@ def test_jobs_are_arrayed(submit_task_mock, get_aws_user_mock):
 
     # Two array jobs, of size 7 and 3, should have been submitted.
     pending_correct = {
-        f"first-array-job:{i}": test_jobs[i] for i in range(executor.arrayer.max_array_size)
+        f"first-array-job:{i}": test_jobs[i]
+        for i in range(executor.arrayer.max_array_size)
     }
     pending_correct.update(
         {
@@ -869,15 +898,25 @@ def other_task(x, y):
         job.eval_hash = f"hash_{i}"
         test_jobs.append(job)
 
-    pending_jobs = [job_array.PendingJob(test_jobs[i], (i,), {"y": 2 * i}) for i in range(3)]
+    pending_jobs = [
+        job_array.PendingJob(test_jobs[i], (i,), {"y": 2 * i}) for i in range(3)
+    ]
     array_uuid = executor.arrayer.submit_array_job(pending_jobs)
 
     # Now run 2 of those jobs and make sure they work ok
     client = RedunClient()
-    array_dir = os.path.join(executor.s3_scratch_prefix, "array_jobs", array_uuid)
-    input_path = os.path.join(array_dir, redun.executors.aws_utils.S3_SCRATCH_INPUT)
-    output_path = os.path.join(array_dir, redun.executors.aws_utils.S3_SCRATCH_OUTPUT)
-    error_path = os.path.join(array_dir, redun.executors.aws_utils.S3_SCRATCH_ERROR)
+    array_dir = os.path.join(
+        executor.s3_scratch_prefix, "array_jobs", array_uuid
+    )
+    input_path = os.path.join(
+        array_dir, redun.executors.aws_utils.S3_SCRATCH_INPUT
+    )
+    output_path = os.path.join(
+        array_dir, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
+    )
+    error_path = os.path.join(
+        array_dir, redun.executors.aws_utils.S3_SCRATCH_ERROR
+    )
     executor.stop()
 
     for i in range(3):
@@ -910,6 +949,3 @@ def other_task(x, y):
         )
 
         assert pickle.loads(cast(bytes, output_file.read("rb"))) == i - 2 * i
-
-if __name__ == '__main__':
-    test_jobs_are_arrayed()
