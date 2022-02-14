@@ -279,15 +279,20 @@ def submit_command(
         "-o",
         "pipefail",
         """
-aws s3 cp {input_path} .task_command chmod +x .task_command (
-  ./.task_command \ 2> >(tee .task_error >&2) | tee .task_output
+aws s3 cp {input_path} .task_command
+chmod +x .task_command
+(
+  ./.task_command \
+  2> >(tee .task_error >&2) | tee .task_output
 ) && (
-    aws s3 cp .task_output {output_path} aws s3 cp .task_error {error_path} echo
-    ok | aws s3 cp - {status_path}
+    aws s3 cp .task_output {output_path}
+    aws s3 cp .task_error {error_path}
+    echo ok | aws s3 cp - {status_path}
 ) || (
-    [ -f .task_output ] && aws s3 cp .task_output {output_path} [ -f .task_error
-    ] && aws s3 cp .task_error {error_path} echo fail | aws s3 cp -
-    {status_path} {exit_command}
+    [ -f .task_output ] && aws s3 cp .task_output {output_path}
+    [ -f .task_error ] && aws s3 cp .task_error {error_path}
+    echo fail | aws s3 cp - {status_path}
+    {exit_command}
 )
 """.format(
             input_path=quote(input_path),
@@ -357,7 +362,6 @@ def parse_task_logs(
     Iterates through most recent logs of an K8S Job.
     """
 
-    print("prase task logs")
     lines_iter = iter_k8s_job_log_lines(
         k8s_job_id,
         namespace,
@@ -402,7 +406,6 @@ def iter_log_stream(
     """
     Iterate through the events of a K8S log.
     """
-    print("iter_log_stream")
 
     job = k8s_describe_jobs([job_id], namespace)[0]
     api_instance = k8s_utils.get_k8s_core_client()
@@ -424,7 +427,8 @@ def iter_log_stream(
         exit_code = state.terminated.exit_code
         if exit_code != 0:
             lines.append(f"Pod exited with {exit_code}")
-            reason = state.reason
+            print("state", state)
+            reason = state.terminated.reason
             lines.append(f"Exit reason: {reason}")
     if reverse:
         lines = reversed(lines)
@@ -450,7 +454,6 @@ def iter_k8s_job_logs(
     """
     Iterate through the log events of an K8S job.
     """
-    print("iter_k8s_job_logs")
     # another pass-through implementation due to copying the aws_batch
     # implementation.
     yield from iter_log_stream(
@@ -469,7 +472,6 @@ def iter_k8s_job_log_lines(
     """
     Iterate through the log lines of an K8S job.
     """
-    print("iter_k8s_job_log_lines")
     log_lines = iter_k8s_job_logs(
         job_id,
         namespace,
@@ -772,11 +774,9 @@ class K8SExecutor(Executor):
                         job_tags=k8s_labels,
                     )
             elif job_status == FAILED:
-                print("Getting task error")
                 error, error_traceback = parse_task_error(
                     self.s3_scratch_prefix, redun_job
                 )
-                print("E$rror=", error)
                 logs = [f"*** Logs for K8S job {job.metadata.uid}:\n"]
 
                 try:
