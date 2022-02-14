@@ -70,7 +70,7 @@ def k8s_submit(
         k8s_job.spec.completion_mode = "Indexed"
         k8s_job.spec.backoff_limit = retries * array_size
     else:
-        k8s_job.spec.backoff_limit = retries
+        k8s_job.spec.backoff_limit = retries * 2
     k8s_job.spec.restart_policy = "OnFailure"
     # if batch_tags:
     #    batch_job_args["tags"] = batch_tags
@@ -356,12 +356,16 @@ def parse_task_logs(
     """
     Iterates through most recent logs of an K8S Job.
     """
+
+    print("prase task logs")
     lines_iter = iter_k8s_job_log_lines(
         k8s_job_id,
         namespace,
         reverse=True,
     )
-    lines = reversed(list(islice(lines_iter, 0, max_lines)))
+
+    i = islice(lines_iter, 0, max_lines)
+    lines = reversed(list(i))
 
     if next(lines_iter, None) is not None:
         yield "\n*** Earlier logs are truncated ***\n"
@@ -398,30 +402,30 @@ def iter_log_stream(
     """
     Iterate through the events of a K8S log.
     """
+    print("iter_log_stream")
+
     job = k8s_describe_jobs([job_id], namespace)[0]
     api_instance = k8s_utils.get_k8s_core_client()
     label_selector = f"job-name={job.metadata.name}"
     api_response = api_instance.list_pod_for_all_namespaces(
         label_selector=label_selector
     )
-    name = api_response.items[0].metadata.name
-    namespace = api_response.items[0].metadata.namespace
-    log_response = api_instance.read_namespaced_pod_log(
-        name, namespace=namespace
-    )
-    lines = log_response.split("\n")
-    if (
-        api_response.items[0]
-        .status.container_statuses[0]
-        .state.terminated.exit_code
-        != 0
-    ):
-        lines.append(
-            f"Pod exited with {api_response.items[0].status.container_statuses[0].state.terminated.exit_code}"
+    if len(api_response.items) == 0:
+        lines = [f"Cannot find pod for job {job.metadata.name}"]
+    else:
+        name = api_response.items[0].metadata.name
+        namespace = api_response.items[0].metadata.namespace
+        log_response = api_instance.read_namespaced_pod_log(
+            name, namespace=namespace
         )
-        lines.append(
-            f"Exit reason: {api_response.items[0].status.container_statuses[0].state.terminated.reason}"
-        )
+        lines = log_response.split("\n")
+
+        state = api_response.items[0].status.container_statuses[0].state
+        exit_code = state.terminated.exit_code
+        if exit_code != 0:
+            lines.append(f"Pod exited with {exit_code}")
+            reason = state.reason
+            lines.append(f"Exit reason: {reason}")
     if reverse:
         lines = reversed(lines)
         yield from lines
@@ -446,7 +450,7 @@ def iter_k8s_job_logs(
     """
     Iterate through the log events of an K8S job.
     """
-
+    print("iter_k8s_job_logs")
     # another pass-through implementation due to copying the aws_batch
     # implementation.
     yield from iter_log_stream(
@@ -465,6 +469,7 @@ def iter_k8s_job_log_lines(
     """
     Iterate through the log lines of an K8S job.
     """
+    print("iter_k8s_job_log_lines")
     log_lines = iter_k8s_job_logs(
         job_id,
         namespace,
@@ -479,12 +484,12 @@ class K8SError(Exception):
     pass
 
 
-# class AWSBatchJobTimeoutError(Exception):
-#     """
-#     Custom exception to raise when AWS Batch Jobs are killed due to timeout.
-#     """
+class K8STimeoutExceeded(Exception):
+    """
+    Custom exception to raise when K8S jobs are killed due to timeout.
+    """
 
-#     pass
+    pass
 
 
 @register_executor("k8s")
@@ -511,7 +516,8 @@ class K8SExecutor(Executor):
     - Like the AWSBatchExecutor, this implementation can batch up multiple tasks
     into a single Job.  This is more efficient for the k8s scheduler, if you are
     running more than about 100 tasks.
-
+    - There are a few situations where this implementation can fail to return
+    useful log messages from k8s jobs and pods.
     """
 
     def __init__(
@@ -716,10 +722,26 @@ class K8SExecutor(Executor):
         # TODO(dek): detect timed-out jobs here.
         if job.spec.parallelism is None or job.spec.parallelism == 1:
             # Should check status/reason to determine status.
+
             if job.status.succeeded is not None and job.status.succeeded > 0:
                 job_status = SUCCEEDED
             elif job.status.failed is not None and job.status.failed > 0:
                 job_status = FAILED
+            elif job.status.conditions is not None:
+                # Handle a special case where a job times out, but isn't counted
+                # as a 'failure' in job.status.failed.  In this case we want to
+                # reject the job early and skip reading logs from the pod
+                # because the pod was already cleaned up
+                conditions = job.status.conditions
+                if conditions[0].type == "Failed":
+                    job_status = FAILED
+                    redun_job = self.pending_k8s_jobs.pop(job.metadata.name)
+                    self.scheduler.reject_job(
+                        redun_job,
+                        K8STimeoutExceeded("Timeout exceeded"),
+                        job_tags=[],
+                    )
+                    return
             else:
                 return
 
@@ -750,10 +772,11 @@ class K8SExecutor(Executor):
                         job_tags=k8s_labels,
                     )
             elif job_status == FAILED:
+                print("Getting task error")
                 error, error_traceback = parse_task_error(
                     self.s3_scratch_prefix, redun_job
                 )
-
+                print("E$rror=", error)
                 logs = [f"*** Logs for K8S job {job.metadata.uid}:\n"]
 
                 try:
@@ -763,18 +786,18 @@ class K8SExecutor(Executor):
                 # Detect deadline exceeded here and raise exception.
                 if status_reason:
                     logs.append(f"statusReason: {status_reason}\n")
+                # try:
+                logs.extend(parse_task_logs(job.metadata.name, self.namespace))
+                # except Exception as e:
+                #    import pdb
 
-                try:
-                    logs.extend(
-                        parse_task_logs(job.metadata.name, self.namespace)
-                    )
-                except Exception as e:
-                    logs.append(
-                        "Failed to parse task logs for: "
-                        + job.metadata.name
-                        + " "
-                        + str(e)
-                    )
+                #    pdb.set_trace()
+                #    logs.append(
+                #        "Failed to parse task logs for: "
+                #        + job.metadata.name
+                #        + " "
+                #        + str(e)
+                #    )
                 error_traceback.logs = logs
                 self.scheduler.reject_job(
                     redun_job,
