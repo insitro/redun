@@ -427,7 +427,6 @@ def iter_log_stream(
         exit_code = state.terminated.exit_code
         if exit_code != 0:
             lines.append(f"Pod exited with {exit_code}")
-            print("state", state)
             reason = state.terminated.reason
             lines.append(f"Exit reason: {reason}")
     if reverse:
