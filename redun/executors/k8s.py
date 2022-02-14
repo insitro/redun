@@ -70,7 +70,7 @@ def k8s_submit(
         k8s_job.spec.completion_mode = "Indexed"
         k8s_job.spec.backoff_limit = retries * array_size
     else:
-        k8s_job.spec.backoff_limit = retries * 2
+        k8s_job.spec.backoff_limit = retries
     k8s_job.spec.restart_policy = "OnFailure"
     # if batch_tags:
     #    batch_job_args["tags"] = batch_tags
@@ -422,7 +422,6 @@ def iter_log_stream(
             name, namespace=namespace
         )
         lines = log_response.split("\n")
-
         state = api_response.items[0].status.container_statuses[0].state
         exit_code = state.terminated.exit_code
         if exit_code != 0:
@@ -785,18 +784,17 @@ class K8SExecutor(Executor):
                 # Detect deadline exceeded here and raise exception.
                 if status_reason:
                     logs.append(f"statusReason: {status_reason}\n")
-                # try:
-                logs.extend(parse_task_logs(job.metadata.name, self.namespace))
-                # except Exception as e:
-                #    import pdb
-
-                #    pdb.set_trace()
-                #    logs.append(
-                #        "Failed to parse task logs for: "
-                #        + job.metadata.name
-                #        + " "
-                #        + str(e)
-                #    )
+                try:
+                    logs.extend(
+                        parse_task_logs(job.metadata.name, self.namespace)
+                    )
+                except Exception as e:
+                    logs.append(
+                        "Failed to parse task logs for: "
+                        + job.metadata.name
+                        + " "
+                        + str(e)
+                    )
                 error_traceback.logs = logs
                 self.scheduler.reject_job(
                     redun_job,
