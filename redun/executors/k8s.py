@@ -781,17 +781,7 @@ class K8SExecutor(Executor):
                 except (KeyError, IndexError, TypeError):
                     status_reason = ""
 
-                # Sometimes jobs are marked failed but don't have any container
-                # status (for example, if the K8S job has a deadline exceeded
-                # due to a timeout).
-                if not hasattr(job.status, "container_statuses"):
-                    self.scheduler.reject_job(
-                        redun_job,
-                        K8SError(status_reason),
-                    )
-                    return
-
-                    # Job failed here, but without an exit code
+                # Job failed here, but without an exit code
                 # Detect deadline exceeded here and raise exception.
                 if status_reason:
                     logs.append(f"statusReason: {status_reason}\n")
