@@ -49,7 +49,13 @@ def get_aws_client(service: str, aws_region: str = DEFAULT_AWS_REGION) -> boto3.
     cache_key = (threading.get_ident(), service, aws_region)
     client = _boto_clients.get(cache_key)
     if not client:
-        client = _boto_clients[cache_key] = boto3.client(service, region_name=aws_region)
+        # Boto is not thread safe, so we create a client per thread using
+        # `threading.get_ident()` as part of our cache key.
+        # We need to create the client using a session to avoid all clients
+        # sharing the same global session.
+        # See: https://github.com/boto/boto3/issues/801#issuecomment-440942144
+        session = boto3.session.Session()
+        client = _boto_clients[cache_key] = session.client(service, region_name=aws_region)
 
     return client
 

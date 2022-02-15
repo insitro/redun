@@ -1,0 +1,34 @@
+name: sphinx-docs
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+      timeout-minutes: 10
+      runs-on: ubuntu-latest
+      steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Build sphinx docs
+        run: |
+          cd docs
+          pip install -r requirements.txt
+          make html
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v2
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Commit documentation changes
+        run: |
+          cp -r docs/build/html/* gh-pages/
+          cd gh-pages
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -am "Update documentation" && git push || true
+          # The above command will fail if no changes were present, so we ignore that.

@@ -1,12 +1,12 @@
 import os
 
 import boto3
-from moto import mock_s3
 
 from redun import task
 from redun.config import Config
 from redun.file import Dir
 from redun.scheduler import Scheduler
+from redun.tests.utils import mock_s3
 
 
 def test_value_store(tmpdir) -> None:

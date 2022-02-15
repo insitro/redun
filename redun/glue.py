@@ -131,3 +131,28 @@ def load_datacatalog_spark_dataset(
     options = {"hashfield": hashfield} if hashfield else {}
     dataset = context.create_dynamic_frame.from_catalog(database, table_name, options)
     return dataset.toDF()
+
+
+def sql_query(dataset: "DataFrame", query: str, dataset_alias: str = "dataset") -> "DataFrame":
+    """
+    Runs a SQL-style query on a Spark DataFrame.
+
+    Parameters
+    ----------
+    dataset : pyspark.sql.DataFrame
+        The dataset to query.
+
+    query : str
+        SQL query string.
+
+    dataset_alias : str
+        Name for dataset in SQL context. Defaults to "dataset".
+        The SQL query should reference the alias like `"SELECT * FROM {dataset_alias}"`
+    """
+
+    if dataset_alias not in query:
+        raise ValueError(f"Dataset alias '{dataset_alias}' not referenced in query: '{query}'")
+
+    dataset.createOrReplaceTempView(dataset_alias)
+    session = get_spark_session()
+    return session.sql(query)

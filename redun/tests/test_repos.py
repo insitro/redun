@@ -5,7 +5,6 @@ from unittest import mock
 
 import boto3
 import pytest
-from moto import mock_s3
 
 from redun import File
 from redun.cli import (
@@ -15,7 +14,7 @@ from redun.cli import (
     RedunClient,
     RedunClientError,
 )
-from redun.tests.utils import assert_match_lines, use_tempdir
+from redun.tests.utils import assert_match_lines, mock_s3, use_tempdir
 
 
 def make_config(config_path: str) -> None:

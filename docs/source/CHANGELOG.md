@@ -1,19 +1,53 @@
-*********
-Changelog
-*********
+# Changelog
 
-0.8.3
-=====
-:Date: November 10, 2021
+## 0.8.5
+January 11, 2022
+
+* `#66` - Treat functions as a valid redun Value
+* Merge pull request #65 from insitro/DE4020-shardeddataset-save
+* Remove superfluous type hint
+* `#70` - improve module not found error
+* `#76` - Link docs
+* `#77` - Use a separate boto session per thread
+* `#74` - Fix aws batch test warnings: DescribeJobs operation: The security token included in the request is invalid
+* `#75` - DE-4104 Proposed fix for the s3fs dep issues
+* `#54` - DE-3969 Evaluate default args in case they have expressions
+* `#73` - DE-4102 Add inhert_cache=True to Column to suppress sqlalchemy warning
+* Merge pull request #72 from insitro/typos_and_cleanups
+* Correct misspellings of executor
+* Remove superfluous parens
+* Merge pull request #71 from insitro/add_build_timeout
+* Add gh-actions build timeout
+* `#67` - Generate public documents
+* Add SQL query helper function for glue
+* Add from_data constructor for ShardedS3Dataset
+* `#13` - no need to use editable mode for redun install in examples
+* Merge pull request #62 from insitro/DE-3993-override-source
+* Clarifying comments on task.source during unpickling
+
+## 0.8.4
+December 02, 2021
+
+* Merge remote-tracking branch 'pub/main'
+* Merge pull request #58 from insitro/DE-3970-empty-string-vs-none-namespace
+* Merge pull request #45 from insitro/DE3937-glue-imports
+* `#11` - Fixes for several problems davidek saw
+* `#55` - DE-3967 Fix case where subpromise is resolved first for Promise.all()
+* `#46` - DE-3940 Variadic arguments should contribute to the eval_hash
+* `#48` - Show a better error for workflow script not found
+* `#43` - DE-3900 Handle missing logstream
+* `#5` - Fix typos discovered by codespell
+
+## 0.8.3
+November 10, 2021
 
 * `#32` - Fix version cli arg conflict
 * `#38` - Add python 3.10 to codebuild
 * `#36` - Clarify release triggering documentation
 * Merge pull request #33 from insitro/prevent-double-ci-runs - Prevent double github actions runs
 
-0.8.2
-=====
-:Date: November 10, 2021
+## 0.8.2
+November 10, 2021
 
 * `#23` - Add support for task wrappers
 * `#4` - GitHub Action to run tox on every pull request
@@ -26,15 +60,13 @@ Changelog
 * Add clarifying comments
 * Correctly format extra_py_files arg
 
-0.8.1
-=====
-:Date: October 24, 2021
+## 0.8.1
+October 24, 2021
 
 * `#11` - improve job and promise memory usage
 
-0.8.0
-=====
-:Date: October 13, 2021
+## 0.8.0
+October 13, 2021
 
 * `#7` - Try relaxing s3fs version range
 * `#6` - DE-3650 set Task.source when deserializing
@@ -57,33 +89,29 @@ Changelog
 * `#293` - add scripts for making a public version of the redun repo
 
 
-0.7.4
-=====
-:Date: September 30, 2021
+## 0.7.4
+September 30, 2021
 
 * `#294` - More redun examples
 * `#292` - Add git commit and origin_url tags to execution
 * `#291` - Add more debugging logs for executors [WIP]
 
 
-0.7.3
-=====
-:Date: September 21, 2021
+## 0.7.3
+September 21, 2021
 
 * `#286` - Revert "Update latest setuptools-conda with dependency version fix "
 * `#288` - Move AWS batch statuses to constants
 
-0.7.2
-=====
-:Date: September 20, 2021
+## 0.7.2
+September 20, 2021
 
 * `#286` - Update latest setuptools-conda with dependency version fix
 * `#285` - DE-3421 Add executor-based job tags
 * `#250` - DE-3433 Add `--rerun` option to `redun run`
 
-0.7.1
-=====
-:Date: September 16, 2021
+## 0.7.1
+September 16, 2021
 
 * `#282` - DE-3399 Add tag APIs for redun_server
 * `#272` - DE-2651 Add Spark executor
@@ -91,9 +119,8 @@ Changelog
 * `#278` - Update postgres example config
 * `#283` - Ignore self and cls variables for docstring test
 
-0.7.0
-=====
-:Date: September 09, 2021
+## 0.7.0
+September 09, 2021
 
 * `#209` - DE-1592 Tag system v2
 * `#253` - DE-2945 Use ProcessPoolExecutor through a separate executor
@@ -111,24 +138,21 @@ Changelog
 * `#268` - remove recursive query for job executions
 * `#267` - fix migration with a missing commit
 
-0.6.1
-=====
-:Date: August 04, 2021
+## 0.6.1
+August 04, 2021
 
 * `#265` - avoid Session as context use
 * `#264` - Abandon release if failures are encountered during install or build
 
-0.6.0
-=====
-:Date: August 02, 2021
+## 0.6.0
+August 02, 2021
 
 * `#261` - DE-3105 Add Job.execution_id migration
 * `#259` - DE-3091 Add indexes to commonly queries columns
 * `#258` - Small improvements to File such as file size and staging/copy defaults
 
-0.5.1
-=====
-:Date: July 16, 2021
+## 0.5.1
+July 16, 2021
 
 * `#256` - Quote the DB password when creating DB URIs
 * `#255` - Add support for Python 3.9
@@ -139,9 +163,8 @@ Changelog
 * `#249` - Update redun server to handle new task serialization format
 * `#248` - DE-2900 Show db too new message
 
-0.5.0
-=====
-:Date: June 28, 2021
+## 0.5.0
+June 28, 2021
 
 * `#246` - tee stdout and stderr
 * `#229` - Backfill lonely Tasks, and update Task/Value serialization
@@ -151,9 +174,8 @@ Changelog
 * `#238` - Remove rogue . in alembic version info
 * `#237` - use python3 in Makefile
 
-0.4.15
-======
-:Date: June 15, 2021
+## 0.4.15
+June 15, 2021
 
 * `#235` - fix: bump boto3 floor version for required botocore functionality
 * `#232` - [DE-2761] Make tee tolerant of write errors for script batch jobs
@@ -161,18 +183,16 @@ Changelog
 * `#234` - DE-2711 -- Fix optional cli args
 * `#228` - Every time a db.Task is recorded, also record it as a db.Value
 
-0.4.14
-======
-:Date: June 07, 2021
+## 0.4.14
+June 07, 2021
 
 * `#224` - DE-2713 Add batch_tags option
 * `#230` - Fix job status
 * `#222` - upstream useful changes from tags-flag
 * `#219` - DE-2660 Use a default root task for non-TaskExpressions
 
-0.4.13
-======
-:Date: May 18, 2021
+## 0.4.13
+May 18, 2021
 
 * `#220` - DE-2637 fix hashing of task_options_update
 * `#204` - DE-2619 Use O(1) queries to speedup record serialization
@@ -186,17 +206,15 @@ Changelog
 * `#210` - Cleanup logging of migrations
 * `#211` - DE-2599 Use wait_until in aws batch tests to fix flaky tests
 
-0.4.12
-======
-:Date: May 07, 2021
+## 0.4.12
+May 07, 2021
 
 * `#206` - Add method to clone RedunBackendDB with connection pool sharing
 * `#196` - DE-2325 Add database versioning commands
 * `#201` - Add quick script to generate release notes
 
-0.4.11
-======
-:Date: April 22th, 2021
+## 0.4.11
+April 22th, 2021
 
 * `#198` - Add support for configuration only task args
 * `#197` - [DE-2428] Fix typed list check
@@ -205,9 +223,8 @@ Changelog
 * `#186` - Dockerize redun server, update directory layout and utils, add specs for prod deployment
 * `#190` - DE-2464 Add postmortem debugging
 
-0.4.10
-======
-:Date: April 12th, 2021
+## 0.4.10
+April 12th, 2021
 
 * `#188` - Don't let docker change terminal to raw mode
 * `#187` - Tasks should allow novel kwargs
@@ -215,9 +232,8 @@ Changelog
 * `#185` - Support job timeouts on batch
 * `#182` - Lazy operators for redun Expressions
 
-0.4.9
-=====
-:Date: March 23rd, 2021
+## 0.4.9
+March 23rd, 2021
 
 * `#183` - add py.typed
 * `#177` - Support list args from cli
@@ -232,9 +248,8 @@ Changelog
 * `#172` - Match python 3.7 and 3.8 micro versions to match codebuild image
 
 
-0.4.8
-=====
-:Date: March 10th, 2021
+## 0.4.8
+March 10th, 2021
 
 * `#111` - Add concept of remote repos
 * `#169` - Remove invalid positional arg in get_or_create_job_definition call
@@ -244,9 +259,8 @@ Changelog
 * `#163` - Imports executors in the __init__
 * `#155` - Use config_dir with redun_server
 
-0.4.7
-=====
-:Date: February 24th, 2021
+## 0.4.7
+February 24th, 2021
 
 **WARNING:** This version contains a bug in the `get_or_create_job_defintion` call in `batch_submit`. Do not use this version.
 
@@ -265,15 +279,13 @@ Changelog
 * `#144` - Increase sqlalchemy requirement to 1.3.17
 * `#143` - Package on submit not start
 
-0.4.6
-=====
-:Date: February 3rd, 2021
+## 0.4.6
+February 3rd, 2021
 
 * `#141` - Only gather inflight jobs on batch on first submission
 
-0.4.5
-=====
-:Date: January 28th, 2021
+## 0.4.5
+January 28th, 2021
 
 * `#139` - Propagate batch script errors
 * `#137` - Override CannotInspectContainerError batch errors
@@ -281,9 +293,8 @@ Changelog
 * `#133` - Small fixes from demo talk
 * `#132` - Small improvements to File.copy_to and self-stagin
 
-0.4.4
-=====
-:Date: January 15th, 2021
+## 0.4.4
+January 15th, 2021
 
 * `#131` - Fix catch dataflow
 * `#134` - Add notebook example of redun scheduler evaluation
@@ -293,49 +304,42 @@ Changelog
 * `#127` - Add FAQ page to docs
 * `#126` - Require sorted imports
 
-0.4.3
-======
-:Date: January 5th, 2021
+## 0.4.3
+January 5th, 2021
 
 * `#122` - Stronger type checking for task calls
 * `#101` - Record CallNodes when an exception is raised
 * `#86` - Scheduler tasks
 
-0.4.2
-======
-:Date: January 4th, 2021
+## 0.4.2
+January 4th, 2021
 
 * `#121` - Array job reuniting fix
 
-0.4.1
-======
-:Date: December 23rd, 2020
+## 0.4.1
+December 23rd, 2020
 
 * `#119` - Bugfix to correctly restart job array monitor thread
 
-0.4.0
-======
-:Date: December 15th, 2020
+## 0.4.0
+December 15th, 2020
 
 * `#83` - Detect and submit job arrays to AWS batch
 * `#114` - Adds job definition option to run container in privileged mode
 
-0.3.12
-======
-:Date: December 10th, 2020
+## 0.3.12
+December 10th, 2020
 
 * `#76` - Improve querying of logs
 
-0.3.11
-======
-:Date: December 8th, 2020
+## 0.3.11
+December 8th, 2020
 
 * `#109` - Permalink update in README
 * `#108` - Automated release
 
-0.3.10
-======
-:Date: December 3rd, 2020
+## 0.3.10
+December 3rd, 2020
 
 * `#104` - use ECR for postgres image
 * `#95` - Hard fail on script errors
@@ -346,17 +350,15 @@ Changelog
 * `#103` - Fix script reactivity to inputs and outputs
 * `#106` - Small clean up of batch logs
 
-0.3.9
-=====
-:Date: November 25th, 2020
+## 0.3.9
+November 25th, 2020
 
 * `#96` - Default to interactive debugging
 * `#81` - Allow REDUN_CONFIG environment variable to specify config directory
 * `#92` - DE-1922 tolerate missing logs for failed jobs
 
-0.3.8
-=====
-:Date: November 18th, 2020
+## 0.3.8
+November 18th, 2020
 
 * `#89` - Respect no-cache for job reuniting.
 * `#88` - Assume batch output after completion is valid.
@@ -364,109 +366,93 @@ Changelog
 * `#85` - Add step to publish pypi package in publish script.
 * `#84` - Fix package name in dependencies notes in README.
 
-0.3.7
-=====
-:Date: November 12th, 2020
+## 0.3.7
+November 12th, 2020
 
 * `#80` - redun import paths should take precedence over system imports.
 * `#79` - fix default arg parsing and prefix args.
 
-0.3.6
-=====
-:Date: November 10th, 2020
+## 0.3.6
+November 10th, 2020
 
 * `#73` - Allow users to customize `setup_scheduler()`.
 
-0.3.5
-=====
-:Date: November 10, 2020
+## 0.3.5
+November 10, 2020
 
 * `#77` - Check version of redun cli in docker container.
 
-0.3.4
-=====
-:Date: October 29th, 2020
+## 0.3.4
+October 29th, 2020
 
 * `#72` - Use current working directory when importing a module.
 * `#64` - Some optimizations for AWS Batch large fanout.
 
-0.3.3
-=====
-:Date: October 28th, 2020
+## 0.3.3
+October 28th, 2020
 
 * `#71` - Don't fetch batch logs when debug=True
 
-0.3.2
-=====
-:Date: October 27th, 2020
+## 0.3.2
+October 27th, 2020
 
 * `#66` - Fix import_script to properly support module-style
 
-0.3.1
-=====
+## 0.3.1
 
 * Fix bug with using s3fs >= 0.5
 
-0.3
-=====
-:Date: October 20th, 2020
+## 0.3
+October 20th, 2020
 
 * Improve display of errors and logs for AWS Batch jobs.
 
-0.2.5
-=====
-:Date: October 14th, 2020
+## 0.2.5
+October 14th, 2020
 
 * `#57` - Improve redun traceback for failed jobs.
 * `#56` - Fix local shell error propagation.
 * `#54` - Add documentation on required dependencies.
 
-0.2.4
-=====
-:Date: October 6, 2020
+## 0.2.4
+October 6, 2020
 
-* Encourage defining task namespaces by raising a warning. The warning can be ignored using a [configuration option](config.html#ignore-warnings).
+* Encourage defining task namespaces by raising a warning. The warning can be ignored using a [configuration option](config.md#ignore-warnings).
 
 
-0.2.3
-=====
-:Date: September 25, 2020
+## 0.2.3
+September 25, 2020
 
 * Fixes FileNotFoundError occurring when using AWS Batch tasks, by avoiding the s3fs cache.
 
 
-0.2.2
-=====
-:Date: August 27, 2020
+## 0.2.2
+August 27, 2020
 
 * Require database credentials to be specified by environment variables
 
 
-0.2.1
-=====
+## 0.2.1
 
-:Date: August 9, 2020
+August 9, 2020
 
  * Fix duplicate upstream bug.
 
 
-0.2.0
-=====
+## 0.2.0
 
-:Date: August 7, 2020
+August 7, 2020
 
  * Add support for Python 3.8
 
 
-0.1.1
-=====
+## 0.1.1
 
-:Date: July 29, 2020
+July 29, 2020
 
  * Drop dependency on bcode as it has no conda package and the repo appears abandoned.
 
 
-0.1
-===
+## 0.1
 
  * Initial release.

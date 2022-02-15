@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'redun'
+html_title = 'redun'
 copyright = '2020, Matt Rasmussen'
 author = 'Matt Rasmussen'
 
@@ -28,10 +29,10 @@ author = 'Matt Rasmussen'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    'recommonmark',
+    'myst_parser',
 ]
+myst_heading_anchors = 4
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -44,30 +45,16 @@ exclude_patterns = []
 
 source_suffix = ['.rst', '.md']
 
-
-'''
-from recommonmark.transform import AutoStructify
-
-github_doc_root = 'https://github.com/rtfd/recommonmark/tree/master/doc/'
-def setup(app):
-    app.add_config_value('recommonmark_config', {
-            'url_resolver': lambda url: github_doc_root + url,
-            'auto_toc_tree_section': 'Contents',
-            }, True)
-    app.add_transform(AutoStructify)
-'''
-
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
 #html_theme = 'alabaster'
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'furo'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
-html_extra_path = ['redun-call-graph.svg']
+html_static_path = []
+html_extra_path = ['redun.svg', 'redun-call-graph.svg']

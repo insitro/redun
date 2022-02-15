@@ -53,7 +53,7 @@ from redun.hashing import hash_eval, hash_struct
 from redun.logging import logger as _logger
 from redun.promise import Promise
 from redun.tags import parse_tag_value
-from redun.task import Task, get_task_registry, scheduler_task, task
+from redun.task import Task, TaskRegistry, get_task_registry, scheduler_task, task
 from redun.utils import format_table, iter_nested_value, map_nested_value, trim_string
 from redun.value import TypeError as RedunTypeError
 from redun.value import Value, get_type_registry
@@ -168,7 +168,7 @@ def set_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> Tuple[Tuple, di
             # User already specified this arg in kwargs.
             continue
 
-        elif param.default != param.empty:
+        elif param.default is not param.empty:
             # Default should be used.
             kwargs2[param.name] = param.default
     return args, kwargs2
@@ -616,16 +616,19 @@ def root_task(expr: QuotedExpression[Result]) -> Result:
     return expr.eval()
 
 
-def needs_root_task(expr: Any) -> bool:
+def needs_root_task(task_registry: TaskRegistry, expr: Any) -> bool:
     """
     Returns True if expression `expr` needs to be wrapped in a root task.
     """
+    # A root expr must be a TaskExpression.
     if not isinstance(expr, TaskExpression) or isinstance(expr, SchedulerExpression):
         return True
 
-    return any(
-        isinstance(arg, TaskExpression) for arg in iter_nested_value((expr.args, expr.kwargs))
-    )
+    # All arguments must be concrete.
+    task = task_registry.get(expr.task_name)
+    assert task
+    args, kwargs = set_arg_defaults(task, expr.args, expr.kwargs)
+    return any(isinstance(arg, Expression) for arg in iter_nested_value((args, kwargs)))
 
 
 class Scheduler:
@@ -767,7 +770,7 @@ class Scheduler:
         """
         Run the scheduler to evaluate a Task or Expression.
         """
-        if needs_root_task(expr):
+        if needs_root_task(self.task_registry, expr):
             # Ensure we always have one root-level job encompassing the whole execution.
             expr = root_task(quote(expr))
 
@@ -996,8 +999,16 @@ class Scheduler:
             job = Job(expr, parent_job=parent_job, execution=self._current_execution)
             self._jobs.add(job)
 
+            # Evaluate task_name to specific task.
+            # TaskRegistry is like an environment.
+            job.task = self.task_registry.get(expr.task_name)
+            assert job.task
+
+            # Make default arguments explicit in case they need to be evaluated.
+            expr_args = set_arg_defaults(job.task, expr.args, expr.kwargs)
+
             # Evaluate args then execute job.
-            args_promise = self.evaluate((expr.args, expr.kwargs), parent_job=parent_job)
+            args_promise = self.evaluate(expr_args, parent_job=parent_job)
             promise = args_promise.then(lambda eval_args: self.exec_job(job, eval_args))
 
             # Record pending expression.
@@ -1100,10 +1111,6 @@ class Scheduler:
 
         # Ensure we are on main scheduler thread.
         assert self.thread_id == threading.get_ident()
-
-        # Evaluate task_name to specific task.
-        # TaskRegistry is like an environment.
-        job.task = self.task_registry.get(job.expr.task_name)
         assert job.task
 
         # Make sure the job can "fit" within the available resource limits.
@@ -1113,9 +1120,8 @@ class Scheduler:
             return
         self._consume_resources(job_limits)
 
-        # Make default arguments explicit so that we can hash them.
-        args, kwargs = eval_args
-        job.eval_args = set_arg_defaults(job.task, args, kwargs)
+        # Set eval_args on job.
+        job.eval_args = eval_args
 
         # Set job caching preference.
         if not self.use_cache:

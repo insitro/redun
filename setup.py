@@ -5,12 +5,17 @@ REQUIRE_POSTGRES = os.getenv("REQUIRE_POSTGRES") == "1"
 PSYCOPG2_VERSION = "psycopg2>=2.8"
 
 requirements = [
+    # By using the extra deps boto3 and awscli, we help the solver find
+    # a solution faster, since aiobotocore currently requires pinned dependencies of
+    # boto3 and awscli.
+    "aiobotocore[boto3,awscli]>=2.0.1",
     "aiohttp>=3.7.4",
     "alembic>=1.4",
-    "gcsfs>=2021.4.0",
-    "sqlalchemy>=1.3.17,<2",
-    "s3fs>=0.4.2",
     "boto3>=1.16.63",
+    "botocore>=1.22.8",
+    "gcsfs>=2021.4.0",
+    "s3fs>=2021.11.1",
+    "sqlalchemy>=1.3.17,<2",
     "python-dateutil>=2.8",
 ]
 

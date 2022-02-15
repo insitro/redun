@@ -2,7 +2,19 @@ from typing import Any, Dict, List
 
 from redun import task
 from redun.task import Task
-from redun.functools import compose, const, delay, eval_, flatten, flat_map, force, map_, starmap
+from redun.functools import (
+    apply_func,
+    as_task,
+    compose,
+    const,
+    delay,
+    eval_,
+    flatten,
+    flat_map,
+    force,
+    map_,
+    starmap,
+)
 
 redun_namespace = "redun.examples.functools"
 
@@ -58,6 +70,11 @@ def split_words(text: str) -> List[str]:
 
 
 @task()
+def range_(n: int) -> List[int]:
+    return list(range(n))
+
+
+@task()
 def main() -> dict:
     results = {}
 
@@ -96,6 +113,13 @@ def main() -> dict:
 
     # Sometimes you need to compute two things, but really only keep one result.
     results["const"] = const(printer("hello"), printer("bye"))
+
+    # We can convert a plain Python function to task to apply it to lazy values.
+    values3 = range_(10)
+    results["max"] = as_task(max)(values3)
+
+    # We can also apply a plain Python to lazy arguments using apply_func.
+    results["len"] = apply_func(len, values3)
 
     # We create an expression and delay its execution until later.
     delayed = delay(add(4, 5))

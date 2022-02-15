@@ -16,7 +16,7 @@ from redun.config import Config
 from redun.executors.aws_glue import AWSGlueExecutor, get_redun_lib_files, package_redun_lib
 from redun.executors.aws_utils import create_zip, get_aws_client
 from redun.scheduler import Job
-from redun.tests.utils import mock_scheduler, use_tempdir, wait_until
+from redun.tests.utils import mock_s3, mock_scheduler, use_tempdir, wait_until
 from redun.utils import pickle_dumps
 
 
@@ -70,7 +70,6 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
         )
 
     def get_job_run(self, **kwargs):
-        # breakpoint()
         return {
             "JobRun": {
                 # "JobRunState": "SUCCEEDED",
@@ -184,7 +183,7 @@ def task1(x: int):
     return x + 10
 
 
-@moto.mock_s3
+@mock_s3
 @mock_redun_glue
 def test_executor_config(scheduler):
     config = Config(
@@ -248,7 +247,7 @@ def test_redun_lib_files() -> None:
     assert "redun/__init__.py" in namelist
 
 
-@moto.mock_s3
+@mock_s3
 def test_package_redun_lib() -> None:
     """
     We should be able to package the redun lib to S3.
@@ -261,7 +260,7 @@ def test_package_redun_lib() -> None:
     assert re.match("s3://example-bucket/redun/glue/redun-[0-9a-f]{40}.zip", redun_file.path)
 
 
-@moto.mock_s3
+@mock_s3
 @mock_redun_glue
 @patch("redun.executors.aws_glue.glue_describe_jobs")
 @patch("redun.executors.aws_glue.submit_glue_job")
@@ -301,7 +300,7 @@ def test_executor_inflight_glue_job(submit_job_mock, describe_jobs_mock) -> None
     assert executor.running_glue_jobs["carrots"] == rjob
 
 
-@moto.mock_s3
+@mock_s3
 @mock_redun_glue
 def test_job_def_creation() -> None:
     """
@@ -333,7 +332,7 @@ def test_job_def_creation() -> None:
 
 
 @mock_redun_glue
-@moto.mock_s3
+@mock_s3
 @patch("redun.executors.aws_glue.glue_describe_jobs")
 def test_glue_submission_retry(describe_jobs_mock) -> None:
     scheduler = mock_scheduler()
@@ -394,11 +393,11 @@ def test_glue_submission_retry(describe_jobs_mock) -> None:
 
 
 @mock_redun_glue
-@moto.mock_s3
+@mock_s3
 @patch("redun.executors.aws_glue.submit_glue_job")
 def test_glue_submit_job(submit_job_mock) -> None:
     scheduler = mock_scheduler()
-    executor = mock_executor(scheduler)
+    executor = mock_executor(scheduler, code_package=True)
 
     job = Job(task1(10))
     job.id = "123"

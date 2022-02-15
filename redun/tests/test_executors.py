@@ -6,7 +6,7 @@ from redun.executors.local import LocalExecutor
 
 def test_default_executor(scheduler: Scheduler) -> None:
     """
-    Without executor specified, default exector should be setup.
+    Without executor specified, default executor should be setup.
     """
 
     @task()

@@ -1,3 +1,7 @@
+---
+tocpdeth: 3
+---
+
 # Design overview
 
 Here, we describe the high-level design features of redun.
@@ -1667,7 +1671,7 @@ redun can be thought of as implementing a asynchronous functional programming la
 
 Development of redun has been inspired by many projects. Here is a brief review of our understanding of how redun's ideas relate to similar concepts seen elsewhere.
 
-- Bioinformatic workflow languages: [WDL](https://github.com/openwdl/wdl), [Nextflow](https://www.nextflow.io/), [Snakemake](https://snakemake.readthedocs.io/en/stable/), [Reflow](https://github.com/grailbio/reflow)
+- Bioinformatic workflow languages: [WDL](https://github.com/openwdl/wdl), [CWL](https://www.commonwl.org/), [Nextflow](https://www.nextflow.io/), [Snakemake](https://snakemake.readthedocs.io/en/stable/), [Reflow](https://github.com/grailbio/reflow)
   - Workflow languages such as these give special treatment to file and code change reactivity, which is especially helpful in scientific workflows that typically go through quick interactive development. redun's `File` and task hashing were inspired by these languages.
   - Bioinformatic workflow languages are most commonly used to wrap unix programs that expect their input and output files to be local. Accordingly, these languages typically provide a specific syntax to help copy files from cloud storage to local disk and back, a process sometimes called staging or localization. This behavior inspired redun's `File(remote_path).stage(local_path)` syntax. The need to make frequent calls to unix programs inspired the `script()` task.
   - They also all define a Domain Specific Language (DSL) in order to enforce pure functions or provide dedicated syntax for task dependency. redun differs by relying on a host language, Python. Using Python makes it difficult to enforce some of the same constraints (e.g. function purity), but it does allow redun workflows to more easily integrate with the whole world of Python data science libraries (e.g. Pandas, NumPy, pytorch, rdkit, sqlalchemy, etc) without layers of wrapping (e.g. driver scripts, data serializing/deserializing, Docker images).
@@ -1682,6 +1686,7 @@ Development of redun has been inspired by many projects. Here is a brief review 
   - redun is like Lisp in that higher level constructs like `catch` and `cond` are defined using lower-level features like `@scheduler_task`. This allows users to extend the workflow language similar to extending Lisp using macros.
 - Build systems: [redo](https://redo.readthedocs.io/en/latest/), [Build systems a la Carte](https://dl.acm.org/doi/10.1145/3236774)
   - redo shows how the build steps ("tasks" in redun's terminology) can be arbitrary code that does not require static analysis of its dependencies (child task calls). Instead, when running a workflow for the first time you have to run everything anyways, so just run it. However, if one carefully records what was run (i.e. the data provenance Call Graph in redun) then you can consult the recording in future executions to decide what needs to be incrementally re-executed.
+  - Build systems as described in "Build systems a la Carte" correspond to pull-style workflow engines (i.e. request a final target/file to be built). A general enough push-style workflow engine (i.e. give input arguments to a workflow) can implement pull-style and thus many build systems. Using the author's terminology, redun can implement the suspending constructive trace-based build system. Using task option `check_valid="shallow"`, one can also implement the deep constructive trace rebuilding strategy. Because redun's tasks can return additional tasks, they are most similar to Monadic tasks.
 - Observability, distributed tracing: [Spans](https://opentelemetry.lightstep.com/spans/)
   - Span trees play a similar role to redun's Call Graph. Span attributes are equivalent to redun's tag system.
   - redun's Call Graphs should provide similar observability and debugging capabilities as span trees. One difference is that Call Graphs are intended to be retained long term in order to provide data provenance. In some ways, observability is like short-term data provenance.

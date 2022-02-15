@@ -1,6 +1,6 @@
 # redun guided examples
 
-If you are learning redun for the first time, you can explore the following example projects in the order listed below. They have been arranged to introduce redun's features and concepts in increasing order of complexity. For a deeper explanation of the features and theory see the [redun design docs](../docs/source/design.md).
+If you are learning redun for the first time, you can explore the following example projects in the order listed below. They have been arranged to introduce redun's features and concepts in increasing order of complexity. For a deeper explanation of the features and theory see the [redun design docs](https://insitro.github.io/redun/design.html).
 
 0. [INSTALL](../README.md#install): Install the redun library and command-line program using `pip` or `conda`.
 

@@ -13,4 +13,5 @@ WORKDIR /code
 # use `pip install redun`.
 COPY redun redun
 COPY requirements.txt .
+RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt

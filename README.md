@@ -1,4 +1,4 @@
-# redun
+<img src="docs/source/redun.svg" width="200"/>
 
 *yet another redundant workflow engine*
 
@@ -14,7 +14,7 @@ redun's key features are:
 - Past intermediate results are cached centrally and reused across workflows.
 - Past call graphs can be used as a data lineage record and can be queried for debugging and auditing.
 
-See the [docs](docs/source/design.md), [tutorial](examples/README.md), and [influences](docs/source/design.md#influences) for more.
+See the [original blog post](https://insitro.medium.com/when-data-science-goes-with-the-flow-insitro-introduces-redun-8b06b707a14b), [documenation](https://insitro.github.io/redun/design.html), [tutorial](examples/README.md), and [influences](https://insitro.github.io/redun/design.html#influences) for more.
 
 *About the name:* The name "redun" is self deprecating (there are [A LOT](https://github.com/pditommaso/awesome-pipeline) of workflow engines), but it is also a reference to its original inspiration, the [redo](https://apenwarr.ca/log/20101214) build system.
 
@@ -24,7 +24,7 @@ See the [docs](docs/source/design.md), [tutorial](examples/README.md), and [infl
 pip install redun
 ```
 
-See [developing](docs/source/developing.md) for more information on working with the code.
+See [developing](https://insitro.github.io/redun/developing.html) for more information on working with the code.
 
 ### Postgres backend
 
@@ -253,7 +253,7 @@ Produced by Job a8b21ec0
                <-- origin
 ```
 
-This output shows the original `link` task source code responsible for creating the program `prog`, as well as the full derivation, denoted "upstream dataflow". See the full example for a [deeper explanation](examples/02_compile#data-provenance-for-files) of this output. To understand more about the data structure that powers these kind of queries, see [call graphs](docs/source/design.md#call-graphs).
+This output shows the original `link` task source code responsible for creating the program `prog`, as well as the full derivation, denoted "upstream dataflow". See the full example for a [deeper explanation](examples/02_compile#data-provenance-for-files) of this output. To understand more about the data structure that powers these kind of queries, see [call graphs](https://insitro.github.io/redun/design.html#call-graphs).
 
 We can change one of the input files, such as `lib.c`, and rerun the workflow. Due to redun's automatic incremental compute, only the minimal tasks are rerun:
 
@@ -286,7 +286,7 @@ redun run make.py make
 
 Notice, two of the compile jobs are cached (`prog.c` and `prog2.c`), but compiling the library `lib.c` and the downstream link steps correctly rerun.
 
-Check out the [examples](examples/) for more example workflows and features of redun. Also, see the [design notes](docs/source/design.md) for more information on redun's design.
+Check out the [examples](examples/) for more example workflows and features of redun. Also, see the [design notes](https://insitro.github.io/redun/design.html) for more information on redun's design.
 
 ## Mixed compute backends
 
@@ -312,7 +312,7 @@ def a_spark_task(b):
     # ...
 ```
 
-See the [executor documentation](docs/source/executors.md) for more.
+See the [executor documentation](https://insitro.github.io/redun/executors.html) for more.
 
 ## What's the trick?
 
@@ -328,4 +328,4 @@ redun focuses on making multi-domain scientific pipelines easy to develop and de
 
 Lastly, redun does not provide its own compute cluster, but instead builds upon other systems that do, such as cloud provider services for batch Docker jobs or Spark jobs.
 
-For more details on how redun compares to other related ideas, see the [influences](docs/source/design.md#influences) section.
+For more details on how redun compares to other related ideas, see the [influences](https://insitro.github.io/redun/design.html#influences) section.
