@@ -719,7 +719,6 @@ class K8SExecutor(Executor):
         assert self.scheduler
         job_status: Optional[str] = None
 
-        # TODO(dek): detect timed-out jobs here.
         if job.spec.parallelism is None or job.spec.parallelism == 1:
             # Should check status/reason to determine status.
 
@@ -778,9 +777,21 @@ class K8SExecutor(Executor):
                 logs = [f"*** Logs for K8S job {job.metadata.uid}:\n"]
 
                 try:
-                    status_reason = job.status.conditions[-1].message
+                    status_reason = job.status.conditions[0].message
                 except (KeyError, IndexError, TypeError):
                     status_reason = ""
+
+                # Sometimes jobs are marked failed but don't have any container
+                # status (for example, if the K8S job has a deadline exceeded
+                # due to a timeout).
+                if not hasattr(job.status, "container_statuses"):
+                    self.scheduler.reject_job(
+                        redun_job,
+                        K8SError(status_reason),
+                    )
+                    return
+
+                    # Job failed here, but without an exit code
                 # Detect deadline exceeded here and raise exception.
                 if status_reason:
                     logs.append(f"statusReason: {status_reason}\n")
@@ -816,8 +827,8 @@ class K8SExecutor(Executor):
             label_selector = f"job-name={job.metadata.name}"
             k8s_pods = self.get_array_child_pods(job.metadata.name)
 
-            # TODO(dek): checkj for job.status.conditions[*].ype == Failed and reason
-            # for deadline exceeded, etc
+            # TODO(dek): check for job.status.conditions[*].ype == Failed and reason
+            # for deadline exceeded, etc.
             redun_job = self.pending_k8s_jobs[job.metadata.name]
             for item in k8s_pods.items:
                 pod_name = item.metadata.name
@@ -1240,11 +1251,3 @@ class K8SExecutor(Executor):
             watch=False, label_selector=label_selector
         )
         return api_response
-
-    # TODO(davidek): fix or remove def kill_jobs( self, job_ids: Iterable[str],
-    # reason: str = "Terminated by user" ) -> Iterator[dict]: """ Kill K8S Jobs.
-    #     """ batch_client = aws_utils.get_aws_client("batch",
-    # aws_region=self.aws_region)
-
-    #     for job_id in job_ids: yield batch_client.terminate_job(jobId=job_id,
-    #         reason=reason)
