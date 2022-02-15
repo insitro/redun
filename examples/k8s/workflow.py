@@ -5,36 +5,24 @@ from redun import File, script, task
 
 
 @task(executor="k8s")
-def waste_cpu():
+def waste_cpu(max_i=1000, max_j=1000):
     """Script that wastes cpu (to test container CPU limits)"""
-    for j in range(100):
-        for i in range(10000000):
+    for j in range(max_i):
+        for i in range(max_j):
             a = 5
             a += 1
 
 
 @task(script=True, executor="k8s")
-def script_false():
-    """Script that runs the false command"""
-    return "false"
-
-
-@task(script=True, executor="k8s")
-def script_true():
-    """Script that runs the true command"""
-    return "true"
+def script_command(command):
+    """Script that runs  command"""
+    return command
 
 
 @task(executor="k8s")
-def sysexit1():
-    """Task that calls sys.exit(1).  This aborts redun oneshot inside the container, causing the job to fail with no useful logging info."""
-    sys.exit(1)
-
-
-@task(executor="k8s")
-def sysexit0():
-    """Task that calls sys.exit(0).  This aborts redun oneshot inside the container, causing the job to fail with no useful logging info"""
-    sys.exit(0)
+def sysexit1(exit_code):
+    """Task that calls sys.exit(code).  This aborts redun oneshot inside the container, causing the job to fail with no useful logging info."""
+    sys.exit(code)
 
 
 @task(executor="k8s")
@@ -44,15 +32,15 @@ def task_raises_exception() -> list:
 
 
 @task(executor="k8s")
-def task_sleep():
-    """Task that sleeps for 60 seconds"""
-    time.sleep(60)
+def task_sleep(delay=60):
+    """Task that sleeps for delay seconds"""
+    time.sleep(delay)
 
 
 @task(script=True, executor="k8s")
-def script_sleep():
+def script_sleep(delay):
     """Script that sleeps for 60 seconds"""
-    return "sleep 60"
+    return f"sleep {delay}"
 
 
 @task(executor="k8s")
@@ -81,10 +69,10 @@ def main(n: int = 10):
     """Main entrypoint for all tasks and scripts"""
     return [
         "main",
-        waste_cpu(),
-        script_true(),
-        task_sleep(),
-        script_sleep(),
+        waste_cpu(1000, 1000),
+        script_command("true"),
+        task_sleep(60),
+        script_sleep(60),
         task_io(),
         script_inside_task(),
         # The remainder of tasks abort redun oneshot inside the container.
