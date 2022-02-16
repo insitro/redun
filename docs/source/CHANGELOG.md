@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.6
+February 16, 2022
+
+* `#103` - `make setup` should be runnable more than once in Docker examples
+* `#102` - Minor usability improvements to ShardedS3Dataset
+* `#93` - Implement subrun()
+* `#100` - Suggestion for shared database usage
+* `#97` - Add lint job to github actions. Upgrade black. Ignore F811.
+* `#92` - Streamline local executor exec methods
+* `#95` - Implement scheduler.get_job_status_report()
+* `#94` - Implement Config.get_config_dict()
+* `#96` - Advertize `max_value_size` and `value_store_path` when values are too large for db
+* `#90` - Better error mesg if task is missing in registry
+* `#91` - Fix import order and line spacing
+* Merge pull request #87 from insitro/DE-4210_db_aws_region_from_env
+* `#87` - Use AWS_REGION env variable for DB secret lookup
+
 ## 0.8.5
 January 11, 2022
 
