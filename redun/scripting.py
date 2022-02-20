@@ -1,10 +1,7 @@
 import os
-import shutil
 import subprocess
-import tempfile
-from tempfile import mkdtemp
 from textwrap import dedent
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Tuple, Union
 
 from redun.file import File, Staging
 from redun.task import Task, task
@@ -183,7 +180,7 @@ def _script(
     # Use cache=False to force rerunning script_task since it can't react
     # to invalidation of its output.
     return postprocess_script(
-        script_task.options(cache=False, **task_options)(command), outputs, temp_path=temp_path
+        script_task.options(cache=False, **task_options)(command), outputs
     )
 
 
