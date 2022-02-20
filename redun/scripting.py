@@ -155,13 +155,12 @@ def script_task(command: str) -> str:
     return command
 
 
-@task(name="script", namespace="redun", version="1", check_valid="shallow")
+@task(name="script", namespace="redun", version="2", check_valid="shallow")
 def _script(
     command: str,
     inputs: Any,
     outputs: Any,
     task_options: dict = {},
-    temp_path: Optional[str] = None,
 ) -> Any:
     """
     Internal task for executing a script.
@@ -188,8 +187,8 @@ def _script(
     )
 
 
-@task(name="postprocess_script", namespace="redun", version="1")
-def postprocess_script(result: Any, outputs: Any, temp_path: Optional[str] = None) -> Any:
+@task(name="postprocess_script", namespace="redun", version="2")
+def postprocess_script(result: Any, outputs: Any) -> Any:
     """
     Postprocess the results of a script task.
     """
@@ -204,9 +203,6 @@ def postprocess_script(result: Any, outputs: Any, temp_path: Optional[str] = Non
             return cls(value.remote.path)
         else:
             return value
-
-    if temp_path:
-        shutil.rmtree(temp_path)
 
     return map_nested_value(get_file, outputs)
 
@@ -223,12 +219,10 @@ def script(
     command_parts = []
 
     # Prepare tempdir if requested.
-    temp_path: Optional[str]
     if tempdir:
-        temp_path = mkdtemp(suffix=".tempdir")
-        command_parts.append('cd "{}"'.format(temp_path))
-    else:
-        temp_path = None
+        command_parts.append('REDUN_TEMPDIR=$(mktemp -d -t ci-XXXXXXXXXX)')
+        command_parts.append("""trap 'rm -rf -- "$REDUN_TEMPDIR"' EXIT""")
+        command_parts.append('cd $REDUN_TEMPDIR')
 
     # Stage inputs.
     command_parts.extend(input.render_stage() for input in iter_nested_value(inputs))
@@ -253,5 +247,5 @@ def script(
 
     input_args = map_nested_value(get_file, inputs)
     return _script(
-        full_command, input_args, outputs, task_options=task_options, temp_path=temp_path
+        full_command, input_args, outputs, task_options=task_options
     )
