@@ -1378,6 +1378,13 @@ class Scheduler:
         This function runs on the main scheduler thread. Use
         :method:`Scheduler.reject_job()` if calling from another thread.
         """
+
+        # Attach the traceback to the error so the redun traceback is always available on the error
+        # itself. In some cases (like AWS batch), the error will be constructed by unpickling a
+        # pickled Excetption(__traceback__ is not included when pickling). By attaching the
+        # traceback here, we make sure the traceback is available for downstream handlers.
+        error.redun_traceback = error_traceback
+
         if job:
             assert job.task
             assert job.args_hash
