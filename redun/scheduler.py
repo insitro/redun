@@ -263,6 +263,7 @@ class Job:
         self.parent_job: Optional[Job] = parent_job
         self.handle_forks: Dict[str, int] = defaultdict(int)
         self.job_tags: List[Tuple[str, Any]] = []
+        self.execution_tags: List[Tuple[str, Any]] = []
         self.value_tags: List[Tuple[str, List[Tuple[str, Any]]]] = []
         self._status: Optional[str] = None
 
@@ -382,6 +383,7 @@ class Job:
         self.result_promise = None
         self.result = None
         self.job_tags.clear()
+        self.execution_tags.clear()
         self.value_tags.clear()
 
         for child_job in self.child_jobs:
@@ -1317,6 +1319,7 @@ class Scheduler:
         Record tags acquired during Job.
         """
         assert job.task
+        assert job.execution
 
         # Record value tags.
         for value_hash, tags in job.value_tags:
@@ -1329,6 +1332,14 @@ class Scheduler:
         if job_tags:
             self.backend.record_tags(
                 entity_type=TagEntityType.Job, entity_id=job.id, tags=job_tags
+            )
+
+        # Record Execution tags.
+        if job.execution_tags:
+            self.backend.record_tags(
+                entity_type=TagEntityType.Execution,
+                entity_id=job.execution.id,
+                tags=job.execution_tags,
             )
 
         # Record Task tags.
@@ -1922,12 +1933,80 @@ def apply_tags(
     Apply tags to a value.
 
     Returns the original value.
+
+    .. code-block:: python
+
+        @task
+        def task1():
+            x = 10
+            # Apply tags on the value 10.
+            return apply_tags(x, [("env": "prod", "project": "acme")])
     """
 
     def then(args):
         value, tags = args
         value_hash = scheduler.backend.record_value(value)
         parent_job.value_tags.append((value_hash, tags))
+        return value
+
+    return scheduler.evaluate((value, tags), parent_job=parent_job).then(then)
+
+
+@scheduler_task(namespace="redun")
+def apply_job_tags(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    value: Any,
+    tags: List[Tuple[str, Any]],
+) -> Promise:
+    """
+    Apply tags to the current redun Job.
+
+    Returns the original value.
+
+    .. code-block:: python
+
+        @task
+        def task1():
+            x = 10
+            # Apply tags on the current job.
+            return apply_job_tags(x, [("env": "prod", "project": "acme")])
+    """
+
+    def then(args):
+        value, tags = args
+        parent_job.job_tags.extend(tags)
+        return value
+
+    return scheduler.evaluate((value, tags), parent_job=parent_job).then(then)
+
+
+@scheduler_task(namespace="redun")
+def apply_execution_tags(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    value: Any,
+    tags: List[Tuple[str, Any]],
+) -> Promise:
+    """
+    Apply tags to the current redun Execution.
+
+    Returns the original value.
+
+    .. code-block:: python
+
+        @task
+        def task1():
+            x = 10
+            # Apply tags on the current execution.
+            return apply_execution_tags(x, [("env": "prod", "project": "acme")])
+    """
+
+    def then(args):
+        value, tags = args
+        parent_job.execution_tags.extend(tags)
         return value
 
     return scheduler.evaluate((value, tags), parent_job=parent_job).then(then)
