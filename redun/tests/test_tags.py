@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 from sqlalchemy.orm import Session
 
-from redun import Scheduler, apply_execution_tags, apply_job_tags, apply_tags, task
+from redun import Scheduler, apply_tags, task
 from redun.backends.base import TagEntityType
 from redun.backends.db import Execution, Job, RedunBackendDb, Tag, Task, Value
 from redun.tags import (
@@ -164,50 +164,29 @@ def test_value_tags(scheduler: Scheduler, session: Session) -> None:
     assert {tag.key for tag in value.tags} == {"env", "project", "data"}
 
 
-def test_apply_job_tags(scheduler: Scheduler, session: Session) -> None:
+def test_apply_all_tags(scheduler: Scheduler, session: Session) -> None:
     """
-    We should be able to add tags to a Job.
+    We should be able to add tags to a Value, Job, and Execution.
     """
-    input_tags = {"env": "prod", "project": "acme", "data": [1, "a", True]}
 
     @task
     def task1():
         x = 10
-        return apply_job_tags(x, list(input_tags.items()))
+        return apply_tags(x, [("a", 1)], job_tags=[("b", 2)], execution_tags=[("c", 3)])
 
     scheduler.run(task1())
+
+    # Tags should be recorded on value.
+    job = session.query(Job).one()
+    value = job.call_node.value
+    assert {tag.key: tag.value for tag in value.tags} == {"a": 1}
 
     # Tags should be recorded on job.
-    job = session.query(Job).one()
-    tag_data = {tag.key: tag.value for tag in job.tags}
-    assert tag_data == {
-        "env": "prod",
-        "project": "acme",
-        "data": [1, "a", True],
-    }
-
-
-def test_apply_execution_tags(scheduler: Scheduler, session: Session) -> None:
-    """
-    We should be able to add tags to an Execution.
-    """
-    input_tags = {"env": "prod", "project": "acme", "data": [1, "a", True]}
-
-    @task
-    def task1():
-        x = 10
-        return apply_execution_tags(x, list(input_tags.items()))
-
-    scheduler.run(task1())
+    assert {tag.key: tag.value for tag in job.tags} == {"b": 2}
 
     # Tags should be recorded on execution.
     execution = session.query(Execution).one()
-    tag_data = {tag.key: tag.value for tag in execution.tags}
-    assert tag_data == {
-        "env": "prod",
-        "project": "acme",
-        "data": [1, "a", True],
-    }
+    assert {tag.key: tag.value for tag in execution.tags} == {"c": 3}
 
 
 def test_task_tags(scheduler: Scheduler, session: Session) -> None:

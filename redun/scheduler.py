@@ -1934,10 +1934,12 @@ def apply_tags(
     parent_job: Job,
     sexpr: SchedulerExpression,
     value: Any,
-    tags: List[Tuple[str, Any]],
+    tags: List[Tuple[str, Any]] = [],
+    job_tags: List[Tuple[str, Any]] = [],
+    execution_tags: List[Tuple[str, Any]] = [],
 ) -> Promise:
     """
-    Apply tags to a value.
+    Apply tags to a value, job, or execution.
 
     Returns the original value.
 
@@ -1948,75 +1950,32 @@ def apply_tags(
             x = 10
             # Apply tags on the value 10.
             return apply_tags(x, [("env": "prod", "project": "acme")])
-    """
-
-    def then(args):
-        value, tags = args
-        value_hash = scheduler.backend.record_value(value)
-        parent_job.value_tags.append((value_hash, tags))
-        return value
-
-    return scheduler.evaluate((value, tags), parent_job=parent_job).then(then)
-
-
-@scheduler_task(namespace="redun")
-def apply_job_tags(
-    scheduler: Scheduler,
-    parent_job: Job,
-    sexpr: SchedulerExpression,
-    value: Any,
-    tags: List[Tuple[str, Any]],
-) -> Promise:
-    """
-    Apply tags to the current redun Job.
-
-    Returns the original value.
-
-    .. code-block:: python
 
         @task
-        def task1():
+        def task2():
             x = 10
             # Apply tags on the current job.
-            return apply_job_tags(x, [("env": "prod", "project": "acme")])
-    """
-
-    def then(args):
-        value, tags = args
-        parent_job.job_tags.extend(tags)
-        return value
-
-    return scheduler.evaluate((value, tags), parent_job=parent_job).then(then)
-
-
-@scheduler_task(namespace="redun")
-def apply_execution_tags(
-    scheduler: Scheduler,
-    parent_job: Job,
-    sexpr: SchedulerExpression,
-    value: Any,
-    tags: List[Tuple[str, Any]],
-) -> Promise:
-    """
-    Apply tags to the current redun Execution.
-
-    Returns the original value.
-
-    .. code-block:: python
+            return apply_tags(x, job_tags=[("env": "prod", "project": "acme")])
 
         @task
-        def task1():
+        def task3():
             x = 10
             # Apply tags on the current execution.
-            return apply_execution_tags(x, [("env": "prod", "project": "acme")])
+            return apply_tags(x, execution_tags=[("env": "prod", "project": "acme")])
     """
 
     def then(args):
-        value, tags = args
-        parent_job.execution_tags.extend(tags)
+        value, tags, job_tags, execution_tags = args
+        if tags:
+            value_hash = scheduler.backend.record_value(value)
+            parent_job.value_tags.append((value_hash, tags))
+        parent_job.job_tags.extend(job_tags)
+        parent_job.execution_tags.extend(execution_tags)
         return value
 
-    return scheduler.evaluate((value, tags), parent_job=parent_job).then(then)
+    return scheduler.evaluate((value, tags, job_tags, execution_tags), parent_job=parent_job).then(
+        then
+    )
 
 
 @task(

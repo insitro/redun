@@ -6,8 +6,6 @@ from redun.handle import Handle  # noqa: F401
 from redun.namespace import get_current_namespace, namespace  # noqa: F401
 from redun.scheduler import (  # noqa: F401
     Scheduler,
-    apply_execution_tags,
-    apply_job_tags,
     apply_tags,
     catch,
     cond,
