@@ -2,6 +2,7 @@
 # This library contains standardized routines for interacting with k8s through its API
 # It uses the Official Python client library for kubernetes:
 # https://github.com/kubernetes-client/python
+import boto3
 from kubernetes import client, config
 
 DEFAULT_JOB_PREFIX = "redun-job"
@@ -41,6 +42,26 @@ def create_resources(requests=None, limits=None):
     return resources
 
 
+from redun.executors.aws_batch import is_ec2_instance
+
+
+def get_aws_env_vars():
+    # Add AWS credentials to environment for docker command.
+    env = {}  # dict(os.environ)
+    if not is_ec2_instance():
+        session = boto3.Session()
+        creds = session.get_credentials().get_frozen_credentials()
+        cred_map = {
+            "AWS_ACCESS_KEY_ID": creds.access_key,
+            "AWS_SECRET_ACCESS_KEY": creds.secret_key,
+            "AWS_SESSION_TOKEN": creds.token,
+        }
+        defined = {k: v for k, v in cred_map.items() if v}
+        env.update(defined)
+
+    return env
+
+
 def create_job_object(
     name=DEFAULT_JOB_PREFIX,
     image="bash",
@@ -55,18 +76,19 @@ def create_job_object(
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
     Also creates necessary sub-objects"""
 
-    container = client.V1Container(name=name, image=image, command=command)
+    env = [{"name": key, "value": value} for key, value in get_aws_env_vars().items()]
+    container = client.V1Container(name=name, image=image, command=command, env=env)
 
     if resources is None:
         container.resources = create_resources()
     else:
         container.resources = resources
-    pod_spec = client.V1PodSpec(restart_policy="Never", containers=[container])
+    pod_spec = client.V1PodSpec(
+        restart_policy="Never", image_pull_secrets=[{"name": "regcred"}], containers=[container]
+    )
 
     # Create and configurate a pod template spec section
-    template = client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(), spec=pod_spec
-    )
+    template = client.V1PodTemplateSpec(metadata=client.V1ObjectMeta(), spec=pod_spec)
 
     # Create the spec of job deployment
     spec = client.V1JobSpec(
@@ -91,16 +113,12 @@ def create_job_object(
 
 def create_job(api_instance, job, namespace):
     """Create an actual k8s job"""
-    api_response = api_instance.create_namespaced_job(
-        body=job, namespace=namespace
-    )
+    api_response = api_instance.create_namespaced_job(body=job, namespace=namespace)
     return api_response
 
 
 def delete_job(api_instance, name, namespace):
     """Delete an existing k8s job"""
     body = client.V1DeleteOptions()
-    api_response = api_instance.delete_namespaced_job(
-        name=name, namespace=namespace, body=body
-    )
+    api_response = api_instance.delete_namespaced_job(name=name, namespace=namespace, body=body)
     return api_response

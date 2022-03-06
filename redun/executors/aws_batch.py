@@ -1,8 +1,8 @@
-import pdb
 import datetime
 import json
 import logging
 import os
+import pdb
 import pickle
 import re
 import subprocess
@@ -53,7 +53,6 @@ BATCH_LOG_GROUP = "/aws/batch/job"
 ARRAY_JOB_SUFFIX = "array"
 DOCKER_INSPECT_ERROR = "CannotInspectContainerError: Could not transition to inspecting"
 BATCH_JOB_TIMEOUT_ERROR = "Job attempt duration exceeded timeout"
-
 
 
 def is_array_job_name(job_name: str) -> bool:
@@ -1183,9 +1182,7 @@ class AWSBatchExecutor(Executor):
         assert self.scheduler
 
         output_file = File(
-            aws_utils.get_job_scratch_file(
-                self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
-            )
+            aws_utils.get_job_scratch_file(self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT)
         )
         if output_file.exists():
             result = aws_utils.parse_task_result(self.s3_scratch_prefix, job)
@@ -1293,9 +1290,7 @@ class AWSBatchExecutor(Executor):
             self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_OUTPUT
         )
         output_paths = [
-            aws_utils.get_job_scratch_file(
-                self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
-            )
+            aws_utils.get_job_scratch_file(self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT)
             for job in jobs
         ]
         with File(output_file).open("w") as ofile:

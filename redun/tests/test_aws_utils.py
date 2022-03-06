@@ -1,4 +1,5 @@
 import os
+
 from redun import File
 from redun.config import Config
 from redun.executors.aws_utils import (
@@ -147,4 +148,3 @@ def test_parse_code_package_config():
         "includes": ["**/*.txt", "my file.txt", "*.py"],
         "excludes": [".venv/**"],
     }
-

@@ -1,9 +1,10 @@
-from unittest.mock import Mock, patch
-import boto3
 import os
 import pickle
-import pytest
 from typing import cast
+from unittest.mock import Mock, patch
+
+import boto3
+import pytest
 from kubernetes import client
 from moto import mock_s3
 
@@ -11,25 +12,25 @@ import redun.executors.k8s
 from redun import File, job_array, task
 from redun.cli import RedunClient, import_script
 from redun.config import Config
-from redun.tests.utils import mock_scheduler, use_tempdir, wait_until
-from redun.executors.k8s_utils import create_job_object, DEFAULT_JOB_PREFIX
-from redun.executors.k8s import (
-    K8SExecutor,
-    k8s_submit,
-    get_k8s_job_name,
-    get_hash_from_job_name,
-    iter_k8s_job_log_lines,
-    iter_k8s_job_logs,
-    submit_task,
-)
 from redun.executors.aws_utils import (
     REDUN_REQUIRED_VERSION,
     create_tar,
-    package_code,
     get_job_scratch_file,
+    package_code,
 )
+from redun.executors.k8s import (
+    K8SExecutor,
+    get_hash_from_job_name,
+    get_k8s_job_name,
+    iter_k8s_job_log_lines,
+    iter_k8s_job_logs,
+    k8s_submit,
+    submit_task,
+)
+from redun.executors.k8s_utils import DEFAULT_JOB_PREFIX, create_job_object
 from redun.file import Dir
 from redun.scheduler import Job, Scheduler, Traceback
+from redun.tests.utils import mock_scheduler, use_tempdir, wait_until
 from redun.utils import pickle_dumps
 
 # skipped job_def tests here
@@ -128,9 +129,7 @@ def task1_custom_module(x):
         ("custom.module", "custom.module", task1_custom_module),
     ],
 )
-def test_submit_task(
-    k8s_submit_mock, custom_module, expected_load_module, a_task
-):
+def test_submit_task(k8s_submit_mock, custom_module, expected_load_module, a_task):
     job_id = "123"
     image = "my-image"
     namespace = "default"
@@ -279,9 +278,7 @@ def task1(x):
 @patch("redun.executors.k8s.parse_task_logs")
 @patch("redun.executors.k8s.iter_k8s_job_status")
 @patch("redun.executors.k8s.k8s_submit")
-def test_executor(
-    k8s_submit_mock, iter_k8s_job_status_mock, parse_task_logs_mock
-) -> None:
+def test_executor(k8s_submit_mock, iter_k8s_job_status_mock, parse_task_logs_mock) -> None:
     """
     Ensure that we can submit job to K8SExecutor.
     """
@@ -364,17 +361,11 @@ def test_executor(
     # Simulate k8s failing.
     error = ValueError("Boom")
     error_file = File("s3://example-bucket/redun/jobs/eval_hash2/error")
-    error_file.write(
-        pickle_dumps((error, Traceback.from_error(error))), mode="wb"
-    )
+    error_file.write(pickle_dumps((error, Traceback.from_error(error))), mode="wb")
 
-    fake_k8s_job = create_job_object(
-        uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash"
-    )
+    fake_k8s_job = create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")
     fake_k8s_job.status = client.V1JobStatus(succeeded=1)
-    fake_k8s_job2 = create_job_object(
-        uid=k8s_job2_id, name=DEFAULT_JOB_PREFIX + "-eval_hash2"
-    )
+    fake_k8s_job2 = create_job_object(uid=k8s_job2_id, name=DEFAULT_JOB_PREFIX + "-eval_hash2")
     fake_k8s_job2.status = client.V1JobStatus(failed=1)
     iter_k8s_job_status_mock.return_value = [fake_k8s_job, fake_k8s_job2]
 
@@ -424,12 +415,8 @@ def test_executor_handles_unrelated_jobs() -> None:
     # Set up mocks to include a headnode job(no hash) and some redun jobs that it "spawned".
     executor.get_jobs.return_value = client.V1JobList(
         items=[
-            create_job_object(
-                uid="headnode", name=f"{prefix}_automation_headnode"
-            ),
-            create_job_object(
-                uid="preprocess", name=f"{prefix}_preprocess-{hash1}"
-            ),
+            create_job_object(uid="headnode", name=f"{prefix}_automation_headnode"),
+            create_job_object(uid="preprocess", name=f"{prefix}_preprocess-{hash1}"),
             create_job_object(uid="decode", name=f"{prefix}_decode-{hash2}"),
         ]
     )
@@ -533,9 +520,7 @@ def test_executor_inflight_job(
     # Setup k8s mocks.
 
     iter_k8s_job_status_mock.return_value = iter([])
-    k8s_job = create_job_object(
-        uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash"
-    )
+    k8s_job = create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")
     k8s_describe_jobs_mock.return_value = [k8s_job]
 
     scheduler = mock_scheduler()
@@ -617,9 +602,7 @@ def test_job_staleness():
 
     sched = mock_scheduler()
     exec = mock_executor(sched)
-    arr = job_array.JobArrayer(
-        exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5
-    )
+    arr = job_array.JobArrayer(exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5)
 
     for i in range(10):
         arr.add_job(j1, args=(i), kwargs={})
@@ -636,9 +619,7 @@ def test_arrayer_thread():
 
     sched = mock_scheduler()
     exec = mock_executor(sched)
-    arr = job_array.JobArrayer(
-        exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5
-    )
+    arr = job_array.JobArrayer(exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5)
 
     arr.add_job(j1, args=(1), kwargs={})
     assert arr._monitor_thread.is_alive()
@@ -697,8 +678,7 @@ def test_jobs_are_arrayed(submit_task_mock, get_aws_user_mock):
 
     # Two array jobs, of size 7 and 3, should have been submitted.
     pending_correct = {
-        f"first-array-job:{i}": test_jobs[i]
-        for i in range(executor.arrayer.max_array_size)
+        f"first-array-job:{i}": test_jobs[i] for i in range(executor.arrayer.max_array_size)
     }
     pending_correct.update(
         {
@@ -898,25 +878,15 @@ def other_task(x, y):
         job.eval_hash = f"hash_{i}"
         test_jobs.append(job)
 
-    pending_jobs = [
-        job_array.PendingJob(test_jobs[i], (i,), {"y": 2 * i}) for i in range(3)
-    ]
+    pending_jobs = [job_array.PendingJob(test_jobs[i], (i,), {"y": 2 * i}) for i in range(3)]
     array_uuid = executor.arrayer.submit_array_job(pending_jobs)
 
     # Now run 2 of those jobs and make sure they work ok
     client = RedunClient()
-    array_dir = os.path.join(
-        executor.s3_scratch_prefix, "array_jobs", array_uuid
-    )
-    input_path = os.path.join(
-        array_dir, redun.executors.aws_utils.S3_SCRATCH_INPUT
-    )
-    output_path = os.path.join(
-        array_dir, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
-    )
-    error_path = os.path.join(
-        array_dir, redun.executors.aws_utils.S3_SCRATCH_ERROR
-    )
+    array_dir = os.path.join(executor.s3_scratch_prefix, "array_jobs", array_uuid)
+    input_path = os.path.join(array_dir, redun.executors.aws_utils.S3_SCRATCH_INPUT)
+    output_path = os.path.join(array_dir, redun.executors.aws_utils.S3_SCRATCH_OUTPUT)
+    error_path = os.path.join(array_dir, redun.executors.aws_utils.S3_SCRATCH_ERROR)
     executor.stop()
 
     for i in range(3):

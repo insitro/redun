@@ -241,7 +241,6 @@ try:
         def __init__(cls, name, bases, dct, **kwargs):
             super().__init__(name, bases, dct, **kwargs)
 
-
 except ImportError:
     pass
 
