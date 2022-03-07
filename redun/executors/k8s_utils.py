@@ -7,7 +7,7 @@ from typing import Dict
 import boto3
 from kubernetes import client, config
 
-from redun.executors.aws_batch import is_ec2_instance
+from redun.executors.aws_utils import get_aws_env_vars
 
 DEFAULT_JOB_PREFIX = "redun-job"
 
@@ -44,25 +44,6 @@ def create_resources(requests=None, limits=None):
         resources.limits = limits
 
     return resources
-
-
-def get_aws_env_vars() -> Dict[str, str]:
-    """
-    Determines the current AWS credentials.
-    """
-    env = {}
-    if not is_ec2_instance():
-        session = boto3.Session()
-        creds = session.get_credentials().get_frozen_credentials()
-        cred_map = {
-            "AWS_ACCESS_KEY_ID": creds.access_key,
-            "AWS_SECRET_ACCESS_KEY": creds.secret_key,
-            "AWS_SESSION_TOKEN": creds.token,
-        }
-        defined = {k: v for k, v in cred_map.items() if v}
-        env.update(defined)
-
-    return env
 
 
 def create_job_object(

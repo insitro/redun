@@ -8,6 +8,7 @@ import tempfile
 import threading
 import zipfile
 from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Set, Tuple, Union
+from urllib.request import urlopen
 
 import boto3
 
@@ -58,6 +59,38 @@ def get_aws_client(service: str, aws_region: str = DEFAULT_AWS_REGION) -> boto3.
         client = _boto_clients[cache_key] = session.client(service, region_name=aws_region)
 
     return client
+
+
+def is_ec2_instance() -> bool:
+    """
+    Returns True if this process is running on an EC2 instance.
+
+    We use the presence of a link-local address as a sign we are on an EC2 instance.
+    """
+    try:
+        resp = urlopen("http://169.254.169.254/latest/meta-data/", timeout=1)
+        return resp.status == 200
+    except URLError:
+        return False
+
+
+def get_aws_env_vars() -> Dict[str, str]:
+    """
+    Determines the current AWS credentials.
+    """
+    env = {}
+    if not is_ec2_instance():
+        session = boto3.Session()
+        creds = session.get_credentials().get_frozen_credentials()
+        cred_map = {
+            "AWS_ACCESS_KEY_ID": creds.access_key,
+            "AWS_SECRET_ACCESS_KEY": creds.secret_key,
+            "AWS_SESSION_TOKEN": creds.token,
+        }
+        defined = {k: v for k, v in cred_map.items() if v}
+        env.update(defined)
+
+    return env
 
 
 def find_code_files(

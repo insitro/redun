@@ -212,19 +212,6 @@ def batch_submit(
     return batch_run
 
 
-def is_ec2_instance() -> bool:
-    """
-    Returns True if this process is running on an EC2 instance.
-
-    We use the presence of a link-local address as a sign we are on an EC2 instance.
-    """
-    try:
-        resp = urlopen("http://169.254.169.254/latest/meta-data/", timeout=1)
-        return resp.status == 200
-    except URLError:
-        return False
-
-
 def run_docker(
     command: List[str],
     image: str,
@@ -238,7 +225,7 @@ def run_docker(
     """
     # Add AWS credentials to environment for docker command.
     env = dict(os.environ)
-    if not is_ec2_instance():
+    if not aws_utils.is_ec2_instance():
         session = boto3.Session()
         creds = session.get_credentials().get_frozen_credentials()
         cred_map = {
