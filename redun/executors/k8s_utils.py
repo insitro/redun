@@ -2,8 +2,12 @@
 # This library contains standardized routines for interacting with k8s through its API
 # It uses the Official Python client library for kubernetes:
 # https://github.com/kubernetes-client/python
+from typing import Dict
+
 import boto3
 from kubernetes import client, config
+
+from redun.executors.aws_batch import is_ec2_instance
 
 DEFAULT_JOB_PREFIX = "redun-job"
 
@@ -42,12 +46,11 @@ def create_resources(requests=None, limits=None):
     return resources
 
 
-from redun.executors.aws_batch import is_ec2_instance
-
-
-def get_aws_env_vars():
-    # Add AWS credentials to environment for docker command.
-    env = {}  # dict(os.environ)
+def get_aws_env_vars() -> Dict[str, str]:
+    """
+    Determines the current AWS credentials.
+    """
+    env = {}
     if not is_ec2_instance():
         session = boto3.Session()
         creds = session.get_credentials().get_frozen_credentials()
