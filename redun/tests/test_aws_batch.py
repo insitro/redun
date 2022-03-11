@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+import time
 import uuid
 from typing import cast
 from unittest.mock import Mock, patch
@@ -443,7 +444,7 @@ def test_parse_task_error() -> None:
     assert isinstance(error_traceback, Traceback)
 
 
-@freeze_time("2020-01-01 00:00:00", tz_offset=-7)
+@freeze_time("2020-10-13 06:47:14", tz_offset=-7)
 @mock_logs
 @patch("redun.executors.aws_batch.aws_describe_jobs")
 def test_iter_batch_job_logs(aws_describe_jobs_mock) -> None:
@@ -461,6 +462,8 @@ def test_iter_batch_job_logs(aws_describe_jobs_mock) -> None:
         ]
     )
 
+    timestamp = int(time.time() * 1000)
+
     # Setup logs mocks.
     logs_client = boto3.client("logs", region_name="us-west-2")
     logs_client.create_log_group(logGroupName=BATCH_LOG_GROUP)
@@ -469,25 +472,25 @@ def test_iter_batch_job_logs(aws_describe_jobs_mock) -> None:
         logGroupName=BATCH_LOG_GROUP,
         logStreamName=stream_name,
         logEvents=[
-            {"timestamp": 1602596831000, "message": "A message 1."},
-            {"timestamp": 1602596832000, "message": "A message 2."},
+            {"timestamp": timestamp, "message": "A message 1."},
+            {"timestamp": timestamp + 1, "message": "A message 2."},
         ],
     )
     resp = logs_client.put_log_events(
         logGroupName=BATCH_LOG_GROUP,
         logStreamName=stream_name,
         logEvents=[
-            {"timestamp": 1602596833000, "message": "A message 3."},
-            {"timestamp": 1602596834000, "message": "A message 4."},
+            {"timestamp": timestamp + 2, "message": "A message 3."},
+            {"timestamp": timestamp + 3, "message": "A message 4."},
         ],
         sequenceToken=resp["nextSequenceToken"],
     )
 
     expected_events = [
-        {"message": "A message 1.", "timestamp": 1602596831000},
-        {"message": "A message 2.", "timestamp": 1602596832000},
-        {"message": "A message 3.", "timestamp": 1602596833000},
-        {"message": "A message 4.", "timestamp": 1602596834000},
+        {"message": "A message 1.", "timestamp": timestamp},
+        {"message": "A message 2.", "timestamp": timestamp + 1},
+        {"message": "A message 3.", "timestamp": timestamp + 2},
+        {"message": "A message 4.", "timestamp": timestamp + 3},
     ]
 
     # Fetch log events.
@@ -515,10 +518,10 @@ def test_iter_batch_job_logs(aws_describe_jobs_mock) -> None:
     # Fetch log lines.
     lines = list(iter_batch_job_log_lines(job_id))
     assert lines == [
-        "2020-10-13 06:47:11  A message 1.",
-        "2020-10-13 06:47:12  A message 2.",
-        "2020-10-13 06:47:13  A message 3.",
-        "2020-10-13 06:47:14  A message 4.",
+        "2020-10-12 23:47:14  A message 1.",
+        "2020-10-12 23:47:14.001000  A message 2.",
+        "2020-10-12 23:47:14.002000  A message 3.",
+        "2020-10-12 23:47:14.003000  A message 4.",
     ]
 
     # Fetch logs from unknown job.

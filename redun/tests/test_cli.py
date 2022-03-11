@@ -2,6 +2,7 @@ import io
 import json
 import os
 import pickle
+import time
 from socket import socket
 from typing import Any, List, cast
 from unittest.mock import Mock, patch
@@ -1078,13 +1079,14 @@ def task_error(x: int):
 @use_tempdir
 def test_aws_logs(aws_describe_jobs_mock1, aws_describe_jobs_mock2) -> None:
 
+    timestamp = int(time.time() * 1000)
     stream_name = "redun_aws_batch_example-redun-jd/default/6c939514f4054fdfb5ee65acc8aa4b07"
     job_descriptions = [
         {
             "jobId": "123",
             "container": {"logStreamName": stream_name},
-            "startedAt": 1602596831000,
-            "createdAt": 1602596831000,
+            "startedAt": timestamp,
+            "createdAt": timestamp,
         }
     ]
     aws_describe_jobs_mock1.return_value = iter(job_descriptions)
@@ -1098,16 +1100,16 @@ def test_aws_logs(aws_describe_jobs_mock1, aws_describe_jobs_mock2) -> None:
         logGroupName=BATCH_LOG_GROUP,
         logStreamName=stream_name,
         logEvents=[
-            {"timestamp": 1602596831000, "message": "A message 1."},
-            {"timestamp": 1602596832000, "message": "A message 2."},
+            {"timestamp": timestamp, "message": "A message 1."},
+            {"timestamp": timestamp + 1, "message": "A message 2."},
         ],
     )
     resp = logs_client.put_log_events(
         logGroupName=BATCH_LOG_GROUP,
         logStreamName=stream_name,
         logEvents=[
-            {"timestamp": 1602596833000, "message": "A message 3."},
-            {"timestamp": 1602596834000, "message": "A message 4."},
+            {"timestamp": timestamp + 2, "message": "A message 3."},
+            {"timestamp": timestamp + 3, "message": "A message 4."},
         ],
         sequenceToken=resp["nextSequenceToken"],
     )
@@ -1137,13 +1139,14 @@ s3_scratch = s3://bucket/scratch/
 
     client.stdout.seek(0)
 
-    assert client.stdout.readlines() == [
+    lines = client.stdout.readlines()
+    assert lines == [
         "# AWS Batch job 123\n",
-        "# AWS Log Stream redun_aws_batch_example-redun-jd/default/6c939514f4054fdfb5ee65acc8aa4b07\n",  # noqa: E501
-        "2020-10-13 06:47:11  A message 1.\n",
-        "2020-10-13 06:47:12  A message 2.\n",
-        "2020-10-13 06:47:13  A message 3.\n",
-        "2020-10-13 06:47:14  A message 4.\n",
+        "# AWS Log Stream redun_aws_batch_example-redun-jd/default/6c939514f4054fdfb5ee65acc8aa4b07\n",  # noqa:E501
+        "2019-12-31 17:00:00  A message 1.\n",
+        "2019-12-31 17:00:00.001000  A message 2.\n",
+        "2019-12-31 17:00:00.002000  A message 3.\n",
+        "2019-12-31 17:00:00.003000  A message 4.\n",
         "\n",
     ]
 

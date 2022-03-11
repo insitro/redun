@@ -2,7 +2,7 @@ black==21.12b0
 flake8
 freezegun
 isort==5.7.0
-moto==1.3.16
+moto==3.0.7
 mypy==0.790
 numpydoc==1.1.0
 pandas

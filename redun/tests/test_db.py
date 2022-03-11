@@ -1,9 +1,9 @@
 from collections import Counter
 from typing import Callable, Dict, List, Set, cast
 from unittest import mock
+from unittest.mock import patch
 
 import pytest
-from mock import patch
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
 

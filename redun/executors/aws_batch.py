@@ -161,7 +161,7 @@ def get_or_create_job_definition(
     }
     existing_job_def = get_job_definition(job_def_name, batch_client=batch_client)
     if existing_job_def:
-        existing_container_props = existing_job_def["containerProperties"]
+        existing_container_props = existing_job_def.get("containerProperties", {})
         if existing_container_props == container_props:
             return existing_job_def
 

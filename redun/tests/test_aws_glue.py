@@ -31,7 +31,6 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
     glue state depends on which thread you're calling from :(
     """
 
-    from moto.compat import OrderedDict
     from moto.core import BaseBackend, BaseModel
 
     def __init__(self):
