@@ -11,9 +11,20 @@ from redun.backends.db import Execution, RedunBackendDb
 from redun.config import Config
 from redun.expression import SchedulerExpression
 from redun.promise import Promise
-from redun.scheduler import DryRunResult, Frame, Job, Task, Traceback, catch, cond, scheduler_task
+from redun.scheduler import (
+    DryRunResult,
+    Frame,
+    Job,
+    Task,
+    Traceback,
+    catch,
+    catch_all,
+    cond,
+    scheduler_task,
+)
 from redun.task import PartialTask, SchedulerTask
 from redun.tests.utils import assert_match_lines, use_tempdir
+from redun.utils import map_nested_value
 from redun.value import Value, get_type_registry
 
 
@@ -1336,6 +1347,69 @@ def test_catch_deep_recover_react(scheduler: Scheduler) -> None:
 
     assert scheduler.run(catch(faulty(), ZeroDivisionError, recover)) == 2
     assert calls == ["faulty", "recover", "deep", "deep2"]
+
+
+def test_catch_all(scheduler: Scheduler) -> None:
+    """
+    Catch expression should handle exceptions.
+    """
+
+    @task
+    def throw(error: Exception) -> None:
+        raise error
+
+    @task
+    def good(x=10):
+        return x
+
+    @task
+    def bad(message="boom"):
+        raise ValueError(message)
+
+    @task
+    def recover(results):
+        return map_nested_value(
+            lambda result: (0 if isinstance(result, Exception) else result), results
+        )
+
+    # All subtasks succeed.
+    assert scheduler.run(catch_all([good(1), good(2), good(3)], ValueError, recover)) == [1, 2, 3]
+
+    # Failed tasks should be caught.
+    assert scheduler.run(catch_all([good(4), bad(), good(5)], ValueError, recover)) == [4, 0, 5]
+    assert scheduler.run(catch_all([good(6), bad(), bad(), good(7)], ValueError, recover)) == [
+        6,
+        0,
+        0,
+        7,
+    ]
+
+    # We should be able to catch multiple error classes.
+    assert scheduler.run(
+        catch_all(
+            [throw(KeyError()), throw(ValueError()), good()], (KeyError, ValueError), recover
+        )
+    ) == [0, 0, 10]
+
+    # Without a recovery, errors should reraise.
+    with pytest.raises(ValueError):
+        scheduler.run(catch_all([good(), bad(), good()]))
+
+    # Different error_class should pass through.
+    with pytest.raises(ValueError):
+        scheduler.run(catch_all([good(), bad(), good()], ZeroDivisionError, recover))
+
+    # Different error_class should pass through, even if others are caught.
+    with pytest.raises(ValueError):
+        scheduler.run(
+            catch_all([throw(KeyError()), throw(ValueError()), good()], KeyError, recover)
+        )
+
+    # Any kind of nested value should work.
+    assert scheduler.run(catch_all([good(8), [bad(), {"a": good(9)}]], ValueError, recover)) == [
+        8,
+        [0, {"a": 9}],
+    ]
 
 
 def test_config_args(scheduler: Scheduler) -> None:

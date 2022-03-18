@@ -53,7 +53,7 @@ from redun.expression import (
 from redun.handle import Handle
 from redun.hashing import hash_eval, hash_struct
 from redun.logging import logger as _logger
-from redun.promise import Promise
+from redun.promise import Promise, wait_promises
 from redun.tags import parse_tag_value
 from redun.task import Task, TaskRegistry, get_task_registry, scheduler_task, task
 from redun.utils import format_table, iter_nested_value, map_nested_value, trim_string
@@ -67,6 +67,8 @@ _local = threading.local()
 JOB_ACTION_WIDTH = 6  # Width of job action in logs.
 
 Result = TypeVar("Result")
+T = TypeVar("T")
+S = TypeVar("S")
 
 
 def settrace_patch(tracefunc: Any) -> None:
@@ -1926,6 +1928,111 @@ def catch(
             return scheduler.evaluate(cached_expr, parent_job=parent_job).catch(promise_catch)
 
     return scheduler.evaluate(expr, parent_job=parent_job).then(on_success, promise_catch)
+
+
+@scheduler_task(namespace="redun", version="1")
+def catch_all(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    exprs: T,
+    error_class: Union[None, Exception, Tuple[Exception, ...]] = None,
+    recover: Optional[Task[Callable[..., S]]] = None,
+) -> Promise[Union[T, S]]:
+    """
+    Catch all exceptions that occur in the nested value `exprs`.
+
+    This task works similar to `catch`, except it takes multiple
+    expressions within a nested value (e.g. a list, set, dict, etc).
+    Any exceptions raised by the expressions are caught and processed only after
+    all expressions succeed or fail. For example, this can be useful in large
+    fanouts where the user wants to avoid one small error stopping the whole
+    workflow immediately. Consider the following code:
+
+    .. code-block:: python
+
+        @task
+        def divider(denom):
+            return 1.0 / denom
+
+        @task
+        def recover(values):
+            nerrors = sum(1 for value in values if isinstance(value, Exception))
+            raise Exception(f"{nerrors} error(s) occurred.")
+
+        @task
+        def main():
+            result catch_all([divider(1), divider(0), divider(2)], ZeroDivisionError, recover)
+
+    Each of the expressions in the list `[divider(1), divider(0), divider(2)]`
+    will be allowed to finish before the exceptions are processed by `recover`. If
+    there are no exceptions, the evaluated list is returned. If there are any
+    exceptions, the list is passed to `recover`, where it will contain each
+    successful result or Exception. `recover` then has the opportunity to process
+    all errors together. In the example above, the total number of errors is
+    reraised.
+
+    Parameters
+    ----------
+    exprs:
+        A nested value (list, set, dict, tuple, NamedTuple) of expressions to evaluate.
+    error_class: Union[Exception, Tuple[Expression, ...]]
+        An Exception or Exceptions to catch.
+    recover: Task
+        A task to call if any errors occurs. It will be called with the nested
+        value containing both successful results and errors.
+    """
+
+    def postprocess(pending_terms):
+        # Gather all errors.
+        errors = [promise.error for promise in pending_terms if promise.is_rejected]
+
+        if errors:
+            if not recover:
+                # By default, just reraise the first error.
+                raise errors[0]
+            else:
+
+                def do_recover(error_class_recover):
+                    error_class, recover = error_class_recover
+                    if all(isinstance(error, error_class) for error in errors):
+                        return scheduler.evaluate(
+                            recover(map_nested_value(resolve_term, pending_expr)),
+                            parent_job=parent_job,
+                        )
+                    else:
+                        # By default, just reraise first non-matching error.
+                        raise next(error for error in errors if not isinstance(error, error_class))
+
+                # Evaluate error_class and recover in case they're Expressions.
+                return scheduler.evaluate((error_class, recover), parent_job=parent_job).then(
+                    do_recover
+                )
+        else:
+            # Return the evaluated nested value.
+            return map_nested_value(resolve_term, pending_expr)
+
+    def resolve_term(value):
+        # Replace a Promise with its return value or its error.
+        if isinstance(value, Promise):
+            if value.is_fulfilled:
+                return value.value
+            else:
+                return value.error
+        else:
+            # Regular values (non-Promises) pass through unchanged.
+            return value
+
+    pending_terms = []
+
+    def eval_term(value):
+        # Evaluate one term and track its promise in pending_terms.
+        promise = scheduler.evaluate(value, parent_job=parent_job)
+        pending_terms.append(promise)
+        return promise
+
+    pending_expr = map_nested_value(eval_term, exprs)
+    return wait_promises(pending_terms).then(postprocess)
 
 
 @scheduler_task(namespace="redun")
