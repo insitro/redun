@@ -1502,3 +1502,32 @@ def test_default_args_expression(scheduler: Scheduler) -> None:
         return x
 
     assert scheduler.run(main2()) == [3]
+
+
+def test_job_clear(scheduler: Scheduler) -> None:
+    """
+    Job clean up should occur correctly even when child jobs fail.
+
+    https://insitro.atlassian.net/browse/DE-4645
+    """
+
+    @task
+    def child(x: int) -> int:
+        if x == 2:
+            raise ValueError("raised by child")
+        return x
+
+    @task
+    def child2(x: int) -> int:
+        return x
+
+    @task
+    def parent(n: int) -> List[int]:
+        return [child2(child(i)) for i in range(n)]
+
+    @task
+    def main(n: int) -> List[int]:
+        return parent(n)
+
+    with pytest.raises(ValueError, match="raised by child"):
+        scheduler.run(main(10))

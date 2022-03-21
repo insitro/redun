@@ -387,9 +387,6 @@ class Job:
         self.job_tags.clear()
         self.execution_tags.clear()
         self.value_tags.clear()
-
-        for child_job in self.child_jobs:
-            child_job.parent_job = None
         self.child_jobs.clear()
 
 
