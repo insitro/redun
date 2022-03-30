@@ -49,6 +49,10 @@ class LocalExecutor(Executor):
         "processes": PROCESS_MODE,
     }
     START_METHODS = ["fork", "spawn", "forkserver"]
+    # start_method fork is not reliable on Mac OS X. So we use forkserver as
+    # a safe common default.
+    # https://bugs.python.org/issue33725
+    DEFAULT_START_METHOD = "forkserver"
 
     def __init__(
         self,
@@ -69,7 +73,7 @@ class LocalExecutor(Executor):
         self.mode = self._OLD2NEW_MODES.get(self.mode, self.mode)
         assert self.mode in self.MODES, f"Unknown mode: {self.mode}"
 
-        self.start_method = config.get("start_method", "fork")
+        self.start_method = config.get("start_method", self.DEFAULT_START_METHOD)
         assert (
             self.start_method in self.START_METHODS
         ), f"Unknown start_method: {self.start_method}"

@@ -2,6 +2,7 @@ import abc
 import glob
 import os
 import shutil
+import threading
 from shlex import quote
 from typing import (
     IO,
@@ -33,6 +34,10 @@ if TYPE_CHECKING:
     import pandas
     import pyspark
 
+# Thread-local storage is used for thread-specific s3 clients.
+_local = threading.local()
+
+# Global singletons for Filesystems.
 _proto2filesystem_class: Dict[str, Type["FileSystem"]] = {}
 
 
@@ -429,9 +434,33 @@ class S3FileSystem(FileSystem):
 
     name = "s3"
 
-    def __init__(self):
-        self.s3 = s3fs.S3FileSystem(anon=False)
-        self.s3_raw = boto3.client("s3")
+    @property
+    def s3(self) -> s3fs.S3FileSystem:
+        # Maintain a client per thread, since s3fs is not thread-safe.
+        # Double check pid since fork can clone thread-local storage.
+        pid = getattr(_local, "pid", None)
+        if pid != os.getpid():
+            _local.pid = os.getpid()
+            client = None
+        else:
+            client = getattr(_local, "s3", None)
+        if not client:
+            client = _local.s3 = s3fs.S3FileSystem(anon=False)
+        return client
+
+    @property
+    def s3_raw(self) -> Any:
+        # Maintain a client per thread, since boto is not thread-safe.
+        # Double check pid since fork can clone thread-local storage.
+        pid = getattr(_local, "pid", None)
+        if pid != os.getpid():
+            _local.pid = os.getpid()
+            client = None
+        else:
+            client = getattr(_local, "s3_raw", None)
+        if not client:
+            client = _local.s3_raw = boto3.client("s3")
+        return client
 
     def exists(self, path: str) -> bool:
         """
