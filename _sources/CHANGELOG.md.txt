@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.7
+
+March 11, 2022
+
+* `#115` - DE-4596 Handle case where containerProperties is missing
+* `#113` - simplify apply_tags task
+* `#111` - Include restored traceback when restoring from pickled data
+* `#112` - Add apply_job_tags and apply_execution_tags
+
 ## 0.8.6
 February 16, 2022
 
