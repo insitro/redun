@@ -161,7 +161,7 @@ def get_or_create_job_definition(
         "privileged": privileged,
     }
     if shared_memory is not None:
-        container_props['linuxParameters'] = {"sharedMemorySize": int(shared_memory * 1024)}
+        container_props["linuxParameters"] = {"sharedMemorySize": int(shared_memory * 1024)}
     existing_job_def = get_job_definition(job_def_name, batch_client=batch_client)
     if existing_job_def:
         existing_container_props = existing_job_def.get("containerProperties", {})
@@ -231,7 +231,7 @@ def batch_submit(
             role=role,
             aws_region=aws_region,
             privileged=privileged,
-            shared_memory=shared_memory
+            shared_memory=shared_memory,
         )
 
     # Container overrides for this job.
@@ -284,7 +284,7 @@ def run_docker(
     memory: int = 4,
     vcpus: int = 1,
     gpus: int = 0,
-    shared_memory: Optional[int] = None
+    shared_memory: Optional[int] = None,
 ) -> str:
     """
     volumes: a list of ('host', 'container') path pairs for volume mouting.
@@ -322,12 +322,12 @@ def run_docker(
     for host, container in volumes:
         common_args.extend(["-v", f"{host}:{container}"])
 
-    common_args.extend([f'--memory={memory}g', f'--cpus={vcpus}'])
+    common_args.extend([f"--memory={memory}g", f"--cpus={vcpus}"])
     if gpus:
         # We can't easily assign a single gpu so we just make all available if any GPUs are required
-        common_args.extend(['--gpus', 'all'])
+        common_args.extend(["--gpus", "all"])
     if shared_memory is not None:
-        common_args.append(f'--shm-size={shared_memory}g')
+        common_args.append(f"--shm-size={shared_memory}g")
 
     common_args.append(image)
     common_args.extend(command)
@@ -415,14 +415,7 @@ def get_docker_job_options(job_options: dict) -> dict:
     """
     Returns Docker-specific job options from general job options.
     """
-    keys = [
-        "vcpus",
-        "memory",
-        "gpus",
-        "shared_memory",
-        "volumes",
-        "interactive"
-    ]
+    keys = ["vcpus", "memory", "gpus", "shared_memory", "volumes", "interactive"]
     return {key: job_options[key] for key in keys if key in job_options}
 
 
