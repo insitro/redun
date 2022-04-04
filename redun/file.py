@@ -1,5 +1,6 @@
 import abc
 import glob
+import io
 import os
 import shutil
 import threading
@@ -68,8 +69,22 @@ def get_filesystem_class(
     return _proto2filesystem_class[proto]
 
 
-def open_file(url: str, mode: str = "r") -> IO:
-    return get_filesystem(url=url).open(url, mode=mode)
+def open_file(url: str, mode: str = "r", encoding: Optional[str] = None, **kwargs: Any) -> IO:
+    """
+    Open a file stream.
+
+    Parameters
+    ----------
+    url : str
+        Url or path of file to open.
+    mode : str
+        Stream mode for reading or writing ('r', 'w', 'b', 'a').
+    encoding : str
+        Text encoding (e.g. 'utf-8') to use when read or writing.
+    **kwargs
+        Additional arguments for the underlying file stream. They are Filesystem-specific.
+    """
+    return get_filesystem(url=url).open(url, mode=mode, encoding=encoding, **kwargs)
 
 
 def glob_file(pattern: str) -> List[str]:
@@ -97,9 +112,37 @@ class FileSystem(abc.ABC):
 
     name: str = "base"
 
-    def open(self, path: str, mode: str) -> IO:
+    def open(self, path: str, mode: str, encoding: Optional[str] = None, **kwargs: Any) -> IO:
         """
-        Open a file stream for path with mode ('r', 'w', 'b').
+        Open a file stream from the filesystem.
+
+        Parameters
+        ----------
+        path : str
+            Url or path of file to open.
+        mode : str
+            Stream mode for reading or writing ('r', 'w', 'b', 'a').
+        encoding : str
+            Text encoding (e.g. 'utf-8') to use when read or writing.
+        **kwargs
+            Additional arguments for the underlying file stream. They are Filesystem-specific.
+        """
+        if encoding:
+            if "b" in mode:
+                raise ValueError("Binary mode 'b' cannot be used with encoding.")
+            mode += "b"
+
+        stream = self._open(path, mode, **kwargs)
+
+        if encoding:
+            # Perform encoding/decoding, if specified.
+            stream = io.TextIOWrapper(stream, encoding)
+
+        return stream
+
+    def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
+        """
+        Private open method for subclasses to implement.
         """
         pass
 
@@ -193,7 +236,7 @@ class LocalFileSystem(FileSystem):
             os.makedirs(dirname)
         return dirname
 
-    def open(self, path: str, mode: str) -> IO:
+    def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
         """
         Open a file stream for path with mode ('r', 'w', 'b').
         """
@@ -201,7 +244,7 @@ class LocalFileSystem(FileSystem):
         if "w" in mode or "a" in mode:
             self._ensure_dir(path)
 
-        return open(path, mode)
+        return open(path, mode, **kwargs)
 
     def exists(self, path: str) -> bool:
         """
@@ -312,7 +355,7 @@ class FsspecFileSystem(FileSystem):
         self.fs.makedirs(dirname, exist_ok=True)
         return dirname
 
-    def open(self, path: str, mode: str) -> IO:
+    def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
         """
         Open a file stream for path with mode ('r', 'w', 'b').
         """
@@ -320,7 +363,7 @@ class FsspecFileSystem(FileSystem):
         if "w" in mode or "a" in mode:
             self._ensure_dir(path)
 
-        return self.fs.open(path, mode)
+        return self.fs.open(path, mode, **kwargs)
 
     def exists(self, path: str) -> bool:
         """
@@ -489,8 +532,8 @@ class S3FileSystem(FileSystem):
             # It it not an error to try to remove a non-existent File.
             pass
 
-    def open(self, path: str, mode: str) -> IO:
-        return self.s3.open(path, mode)
+    def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
+        return self.s3.open(path, mode, **kwargs)
 
     def mkdir(self, path: str) -> None:
         # s3fs mkdir only creates buckets, so we just touch this key
@@ -589,7 +632,20 @@ class File(Value):
     def remove(self) -> None:
         return self.filesystem.remove(self.path)
 
-    def open(self, mode: str = "r") -> IO:
+    def open(self, mode: str = "r", encoding: Optional[str] = None, **kwargs: Any) -> IO:
+        """
+        Open a file stream.
+
+        Parameters
+        ----------
+        mode : str
+            Stream mode for reading or writing ('r', 'w', 'b', 'a').
+        encoding : str
+            Text encoding (e.g. 'utf-8') to use when read or writing.
+        **kwargs
+            Additional arguments for the underlying file stream. They are Filesystem-specific.
+        """
+
         def close():
             original_close()
             self.update_hash()
@@ -598,7 +654,8 @@ class File(Value):
             # unnecessary hashing.
             self.stream.close = original_close
 
-        self.stream = self.filesystem.open(self.path, mode)
+        self.stream = self.filesystem.open(self.path, mode, encoding=encoding, **kwargs)
+
         original_close = self.stream.close
         self.stream.close = close  # type: ignore
 
@@ -607,8 +664,8 @@ class File(Value):
     def touch(self, time: Union[Tuple[int, int], Tuple[float, float], None] = None) -> None:
         self.filesystem.touch(self.path, time)
 
-    def read(self, mode: str = "r") -> Union[str, bytes]:
-        with self.open(mode=mode) as infile:
+    def read(self, mode: str = "r", encoding: Optional[str] = None) -> Union[str, bytes]:
+        with self.open(mode=mode, encoding=encoding) as infile:
             data = infile.read()
         return data
 
@@ -617,8 +674,10 @@ class File(Value):
             data = infile.readlines()
         return data
 
-    def write(self, data: Union[str, bytes], mode: str = "w") -> None:
-        with self.open(mode) as out:
+    def write(
+        self, data: Union[str, bytes], mode: str = "w", encoding: Optional[str] = None
+    ) -> None:
+        with self.open(mode=mode, encoding=encoding) as out:
             out.write(data)
 
     def copy_to(self, dest_file: "File", skip_if_exists: bool = False) -> "File":

@@ -78,19 +78,16 @@ def test_seq(scheduler: Scheduler) -> None:
         calls.append(name)
         return name
 
-    assert (
-        scheduler.run(
-            seq(
-                [
-                    subtask(1, 0.2),
-                    subtask(2, 0.1),
-                    subtask(3, 0.01),
-                    subtask(4, 0.01),
-                ]
-            )
+    assert scheduler.run(
+        seq(
+            [
+                subtask(1, 0.2),
+                subtask(2, 0.1),
+                subtask(3, 0.01),
+                subtask(4, 0.01),
+            ]
         )
-        == [1, 2, 3, 4]
-    )
+    ) == [1, 2, 3, 4]
     assert calls == [1, 2, 3, 4]
 
     assert scheduler.run(seq([])) == []
