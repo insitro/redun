@@ -289,7 +289,7 @@ def test_subrun_cached():
     @task(cache=False)
     def foo(x):
         task_calls.append("foo")
-        return x ** 2
+        return x**2
 
     @task()
     def local_main(x):
@@ -317,7 +317,7 @@ def test_subrun_root_task_cached():
     @task(cache=False)
     def foo(x):
         task_calls.append("foo")
-        return x ** 2
+        return x**2
 
     @task(cache=False)
     def local_main(x):
@@ -345,7 +345,7 @@ def test_subrun_root_task_disabled_cached():
     @task(cache=False)
     def foo(x):
         task_calls.append("foo")
-        return x ** 2
+        return x**2
 
     @task(cache=False)
     def local_main(x):
