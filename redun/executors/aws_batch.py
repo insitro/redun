@@ -324,7 +324,7 @@ def run_docker(
 
     common_args.extend([f"--memory={memory}g", f"--cpus={vcpus}"])
     if gpus:
-        # We can't easily assign a single gpu so we just make all available if any GPUs are required
+        # We can't easily assign a single gpu so we make all available if any GPUs are required.
         common_args.extend(["--gpus", "all"])
     if shared_memory is not None:
         common_args.append(f"--shm-size={shared_memory}g")
