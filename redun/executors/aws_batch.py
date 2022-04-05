@@ -129,6 +129,7 @@ def get_or_create_job_definition(
     command: List[str] = ["ls"],
     memory: int = 4,
     vcpus: int = 1,
+    shared_memory: Optional[int] = None,
     role: Optional[str] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
     privileged: bool = False,
@@ -159,6 +160,8 @@ def get_or_create_job_definition(
         "ulimits": [],
         "privileged": privileged,
     }
+    if shared_memory is not None:
+        container_props["linuxParameters"] = {"sharedMemorySize": int(shared_memory * 1024)}
     existing_job_def = get_job_definition(job_def_name, batch_client=batch_client)
     if existing_job_def:
         existing_container_props = existing_job_def.get("containerProperties", {})
@@ -199,6 +202,7 @@ def batch_submit(
     memory: int = 4,
     vcpus: int = 1,
     gpus: int = 0,
+    shared_memory: Optional[int] = None,
     retries: int = 1,
     role: Optional[str] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
@@ -222,7 +226,12 @@ def batch_submit(
     else:
         job_def_name = job_def_name or make_job_def_name(image, job_def_suffix)
         job_def = get_or_create_job_definition(
-            job_def_name, image, role=role, aws_region=aws_region, privileged=privileged
+            job_def_name,
+            image,
+            role=role,
+            aws_region=aws_region,
+            privileged=privileged,
+            shared_memory=shared_memory,
         )
 
     # Container overrides for this job.
@@ -272,6 +281,10 @@ def run_docker(
     volumes: Optional[Iterable[Tuple[str, str]]] = None,
     interactive: bool = True,
     cleanup: bool = False,
+    memory: int = 4,
+    vcpus: int = 1,
+    gpus: int = 0,
+    shared_memory: Optional[int] = None,
 ) -> str:
     """
     volumes: a list of ('host', 'container') path pairs for volume mouting.
@@ -308,6 +321,13 @@ def run_docker(
         volumes = []
     for host, container in volumes:
         common_args.extend(["-v", f"{host}:{container}"])
+
+    common_args.extend([f"--memory={memory}g", f"--cpus={vcpus}"])
+    if gpus:
+        # We can't easily assign a single gpu so we make all available if any GPUs are required.
+        common_args.extend(["--gpus", "all"])
+    if shared_memory is not None:
+        common_args.append(f"--shm-size={shared_memory}g")
 
     common_args.append(image)
     common_args.extend(command)
@@ -379,6 +399,7 @@ def get_batch_job_options(job_options: dict) -> dict:
         "vcpus",
         "gpus",
         "memory",
+        "shared_memory",
         "role",
         "retries",
         "privileged",
@@ -394,7 +415,7 @@ def get_docker_job_options(job_options: dict) -> dict:
     """
     Returns Docker-specific job options from general job options.
     """
-    keys = ["volumes", "interactive"]
+    keys = ["vcpus", "memory", "gpus", "shared_memory", "volumes", "interactive"]
     return {key: job_options[key] for key in keys if key in job_options}
 
 

@@ -746,6 +746,9 @@ def test_executor_docker(
     # Ensure job options were passed correctly.
     assert run_docker_mock.call_args[1] == {
         "image": "my-image",
+        "gpus": 0,
+        "memory": 4,
+        "vcpus": 1,
     }
 
     run_docker_mock.reset_mock()
@@ -764,6 +767,9 @@ def test_executor_docker(
     # Ensure job options were passed correctly.
     assert run_docker_mock.call_args[1] == {
         "image": "my-image",
+        "gpus": 0,
+        "memory": 4,
+        "vcpus": 1,
     }
 
     # Simulate output file created by job.
@@ -948,6 +954,9 @@ def test_interactive(run_docker_mock, iter_local_job_status_mock, get_aws_user_m
     assert run_docker_mock.call_args[1] == {
         "image": "my-image",
         "interactive": True,
+        "gpus": 0,
+        "memory": 4,
+        "vcpus": 1,
     }
 
     # Cleanly stop executor.
