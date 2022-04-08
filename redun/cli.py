@@ -914,9 +914,8 @@ def format_tags(tags: List[Tag], max_length: int = 50) -> str:
     if not tags:
         return ""
 
-    tags = sorted(tags, key=lambda tag: (tag.key, tag.value))
     tag_list = ", ".join(
-        format_tag_key_value(tag.key, tag.value, max_length=max_length) for tag in tags
+        sorted(format_tag_key_value(tag.key, tag.value, max_length=max_length) for tag in tags)
     )
     return f"({tag_list})"
 
