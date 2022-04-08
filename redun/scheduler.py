@@ -1149,8 +1149,13 @@ class Scheduler:
         # Check cache using eval_hash as key.
         job.eval_hash, job.args_hash = self.get_eval_hash(job.task, args, kwargs)
 
+        # HACK: This is a workaround introduced by DE-4761. See the ticket for
+        # notes on how script_task could be redesigned to remove the need for
+        # this special-casing.
+        is_script_task = job.task_name == "redun.script_task"
+
         call_hash: Optional[str]
-        if self.use_cache and job.get_option("cache", True):
+        if self.use_cache and job.get_option("cache", True) and not is_script_task:
             result, job.was_cached, call_hash = self.get_cache(
                 job,
                 job.eval_hash,
