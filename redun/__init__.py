@@ -1,5 +1,6 @@
 from redun.executors.aws_batch import AWSBatchExecutor  # noqa: F401
 from redun.executors.aws_glue import AWSGlueExecutor  # noqa: F401
+from redun.executors.k8s import K8SExecutor  # noqa: F401
 from redun.executors.local import LocalExecutor  # noqa: F401
 from redun.file import Dir, File, ShardedS3Dataset  # noqa: F401
 from redun.handle import Handle  # noqa: F401

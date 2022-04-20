@@ -2,7 +2,7 @@ import os
 from setuptools import setup, find_packages
 
 REQUIRE_POSTGRES = os.getenv("REQUIRE_POSTGRES") == "1"
-PSYCOPG2_VERSION = "psycopg2>=2.8"
+PSYCOPG2_VERSION = "psycopg2-binary>=2.8"
 
 requirements = [
     # By using the extra deps boto3 and awscli, we help the solver find
@@ -17,6 +17,7 @@ requirements = [
     "s3fs>=2021.11.1",
     "sqlalchemy>=1.3.17,<2",
     "python-dateutil>=2.8",
+    "kubernetes>=22.6",
 ]
 
 extras = {

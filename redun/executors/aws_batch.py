@@ -1,3 +1,4 @@
+import pdb
 import datetime
 import json
 import logging
@@ -19,7 +20,7 @@ from urllib.request import urlopen
 
 import boto3
 
-from redun.executors import aws_utils
+from redun.executors import aws_utils, s3_utils
 from redun.executors.base import Executor, register_executor
 from redun.file import File
 from redun.job_array import AWS_ARRAY_VAR, JobArrayer
@@ -53,46 +54,6 @@ ARRAY_JOB_SUFFIX = "array"
 DOCKER_INSPECT_ERROR = "CannotInspectContainerError: Could not transition to inspecting"
 BATCH_JOB_TIMEOUT_ERROR = "Job attempt duration exceeded timeout"
 
-
-def get_default_registry() -> str:
-    """
-    Returns the default ECR registry.
-    """
-    client = boto3.client("ecr")
-    resp = client.get_authorization_token()
-    registry = resp["authorizationData"][0]["proxyEndpoint"].strip("https://")
-    return registry
-
-
-def get_or_create_repo(repo_name: str) -> dict:
-    """
-    Get or create an ECR repository.
-    """
-    client = boto3.client("ecr")
-
-    resp = client.describe_repositories(repositoryNames=[repo_name])
-    if resp["repositories"]:
-        repo = resp["repositories"][0]
-    else:
-        repo = client.create_repository(repositoryName=repo_name)["repository"]
-    return repo
-
-
-def ecr_push(repo_name: str, registry: Optional[str] = None) -> None:
-
-    # Get default registry based on login.
-    if registry is None:
-        registry = get_default_registry()
-
-    get_or_create_repo(repo_name)
-
-    # docker uri
-    ecr_uri = "/".join([registry, repo_name])
-
-    subprocess.check_call(["docker", "build", "-t", ecr_uri, "."])
-
-    # push
-    subprocess.check_call(["docker", "push", ecr_uri])
 
 
 def is_array_job_name(job_name: str) -> bool:
@@ -442,23 +403,23 @@ def submit_task(
         # Want files that won't get clobbered when jobs actually run
         assert array_uuid
         input_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_INPUT
+            s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_INPUT
         )
         output_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_OUTPUT
+            s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_OUTPUT
         )
         error_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_ERROR
+            s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_ERROR
         )
     else:
         input_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, aws_utils.S3_SCRATCH_INPUT
+            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT
         )
         output_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
+            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
         )
         error_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, aws_utils.S3_SCRATCH_ERROR
+            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR
         )
 
         # Serialize arguments to input file.
@@ -548,13 +509,13 @@ def submit_command(
     """
     Submit a shell command to AWS Batch or Docker (debug=True).
     """
-    input_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, aws_utils.S3_SCRATCH_INPUT)
+    input_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT)
     output_path = aws_utils.get_job_scratch_file(
-        s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
+        s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
     )
-    error_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, aws_utils.S3_SCRATCH_ERROR)
+    error_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR)
     status_path = aws_utils.get_job_scratch_file(
-        s3_scratch_prefix, job, aws_utils.S3_SCRATCH_STATUS
+        s3_scratch_prefix, job, s3_utils.S3_SCRATCH_STATUS
     )
 
     # Serialize arguments to input file.
@@ -626,7 +587,7 @@ def parse_task_error(
     """
     assert job.task
 
-    error_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, aws_utils.S3_SCRATCH_ERROR)
+    error_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR)
     error_file = File(error_path)
 
     if not job.task.script:
@@ -849,12 +810,12 @@ def iter_local_job_status(s3_scratch_prefix: str, job_id2job: Dict[str, "Job"]) 
             # Job is done running.
             status_file = File(
                 aws_utils.get_job_scratch_file(
-                    s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_STATUS
+                    s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_STATUS
                 )
             )
             output_file = File(
                 aws_utils.get_job_scratch_file(
-                    s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_OUTPUT
+                    s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
                 )
             )
 
@@ -938,7 +899,6 @@ class AWSBatchExecutor(Executor):
         self._aws_user: Optional[str] = None
 
     def gather_inflight_jobs(self) -> None:
-
         running_arrays: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
 
         # Get all running jobs by name
@@ -970,7 +930,7 @@ class AWSBatchExecutor(Executor):
                 continue
             eval_file = File(
                 aws_utils.get_array_scratch_file(
-                    self.s3_scratch_prefix, parent_hash, aws_utils.S3_SCRATCH_HASHES
+                    self.s3_scratch_prefix, parent_hash, s3_utils.S3_SCRATCH_HASHES
                 )
             )
             if not eval_file.exists():
@@ -1102,7 +1062,7 @@ class AWSBatchExecutor(Executor):
                 # Script tasks will report their status in a status file.
                 status_file = File(
                     aws_utils.get_job_scratch_file(
-                        self.s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_STATUS
+                        self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_STATUS
                     )
                 )
                 if status_file.exists():
@@ -1111,7 +1071,7 @@ class AWSBatchExecutor(Executor):
                 # Non-script tasks only create an output file if it is successful.
                 output_file = File(
                     aws_utils.get_job_scratch_file(
-                        self.s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_OUTPUT
+                        self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
                     )
                 )
                 return output_file.exists(), container_reason
@@ -1159,7 +1119,7 @@ class AWSBatchExecutor(Executor):
                     redun_job,
                     FileNotFoundError(
                         aws_utils.get_job_scratch_file(
-                            self.s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_OUTPUT
+                            self.s3_scratch_prefix, redun_job, s3_utils.S3_SCRATCH_OUTPUT
                         )
                     ),
                     job_tags=job_tags,
@@ -1245,7 +1205,7 @@ class AWSBatchExecutor(Executor):
 
         output_file = File(
             aws_utils.get_job_scratch_file(
-                self.s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
+                self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
             )
         )
         if output_file.exists():
@@ -1344,18 +1304,18 @@ class AWSBatchExecutor(Executor):
         # Setup input, output and error path files.
         # Input file is a pickled list of args, and kwargs, for each child job.
         input_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_INPUT
+            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_INPUT
         )
         with File(input_file).open("wb") as out:
             pickle_dump([all_args, all_kwargs], out)
 
         # Output file is a plaintext list of output paths, for each child job.
         output_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_OUTPUT
+            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_OUTPUT
         )
         output_paths = [
             aws_utils.get_job_scratch_file(
-                self.s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
+                self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
             )
             for job in jobs
         ]
@@ -1364,10 +1324,10 @@ class AWSBatchExecutor(Executor):
 
         # Error file is a plaintext list of error paths, one for each child job.
         error_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_ERROR
+            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_ERROR
         )
         error_paths = [
-            aws_utils.get_job_scratch_file(self.s3_scratch_prefix, job, aws_utils.S3_SCRATCH_ERROR)
+            aws_utils.get_job_scratch_file(self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR)
             for job in jobs
         ]
         with File(error_file).open("w") as efile:
@@ -1375,7 +1335,7 @@ class AWSBatchExecutor(Executor):
 
         # Eval hash file is plaintext hashes of child jobs for matching for job reuniting.
         eval_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_HASHES
+            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_HASHES
         )
         with File(eval_file).open("w") as eval_f:
             eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
