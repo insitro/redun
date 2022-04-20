@@ -78,6 +78,19 @@ def test_task_args(scheduler: Scheduler) -> None:
 
     assert scheduler.run(workflow()) == "hello world"
 
+    @task()
+    def has_default(x="default"):
+        return x
+
+    assert scheduler.run(has_default()) == "default"
+
+    @task()
+    def kwonly_arg_default(*, x="default"):
+        return x
+
+    assert scheduler.run(kwonly_arg_default()) == "default"
+    assert scheduler.run(kwonly_arg_default(x="custom")) == "custom"
+
 
 def test_call_deep(scheduler: Scheduler) -> None:
     @task()

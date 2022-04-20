@@ -159,23 +159,9 @@ def set_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> Tuple[Tuple, di
     """
     Set default arguments from Task signature.
     """
-    # Start with given kwargs.
-    kwargs2 = dict(kwargs)
-
-    sig = task.signature
-    for i, param in enumerate(sig.parameters.values()):
-        if i < len(args):
-            # User already specified this arg in args.
-            continue
-
-        elif param.name in kwargs2:
-            # User already specified this arg in kwargs.
-            continue
-
-        elif param.default is not param.empty:
-            # Default should be used.
-            kwargs2[param.name] = param.default
-    return args, kwargs2
+    bound = task.signature.bind(*args, **kwargs)
+    bound.apply_defaults()
+    return bound.args, bound.kwargs
 
 
 def format_arg(arg_name: str, value: Any, max_length: int = 200) -> str:
