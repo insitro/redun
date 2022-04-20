@@ -27,6 +27,7 @@ from redun.executors.aws_batch import (
     get_batch_job_name,
     get_hash_from_job_name,
     get_job_definition,
+    get_or_create_job_definition,
     iter_batch_job_log_lines,
     iter_batch_job_logs,
     make_job_def_name,
@@ -91,14 +92,14 @@ def test_required_job_def_name(get_job_definition_mock, _) -> None:
     """
     # A job_def_name is required when autocreate is False.
     with pytest.raises(AssertionError):
-        batch_submit(["command"], "queue", "image", autocreate_job=False)
+        batch_submit({"command": ["ls"]}, "queue", "image", autocreate_job=False)
 
     # When the required job_def_name is supplied, an error should be raised if a matching
     # definition cannot be found.
     get_job_definition_mock.return_value = {}
     with pytest.raises(ValueError):
         batch_submit(
-            ["command"], "queue", "image", job_def_name="NONEXISTENT", autocreate_job=False
+            {"command": ["ls"]}, "queue", "image", job_def_name="NONEXISTENT", autocreate_job=False
         )
 
 
@@ -115,6 +116,309 @@ def test_get_hash_from_job_name(array, suffix) -> None:
 
     job_hash2 = get_hash_from_job_name(job_name)
     assert job_hash2 == job_hash
+
+
+@patch("redun.executors.aws_utils.get_aws_client")
+@patch("redun.executors.aws_batch.get_job_definition")
+def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mock) -> None:
+    """
+    Confirm that jobs are correctly fetched or created.
+    """
+
+    get_aws_client_mock.return_value.register_job_definition.return_value = {"jobId": "new-job"}
+
+    # 1. Jobs get created
+    get_job_definition_mock.return_value = {}
+    result = get_or_create_job_definition(
+        job_def_name="test-jd", image="an-image:latest", role="aRole"
+    )
+
+    assert result == {"jobId": "new-job"}
+    get_aws_client_mock.return_value.register_job_definition.assert_called_with(
+        jobDefinitionName="test-jd",
+        type="container",
+        containerProperties={
+            "command": ["ls"],
+            "image": "an-image:latest",
+            "vcpus": 1,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [],
+            "privileged": False,
+        },
+    )
+
+    # 2a. Identical jobs are not recreated
+    get_aws_client_mock.return_value.register_job_definition.reset_mock()
+    get_job_definition_mock.return_value = {
+        "jobDefinitionName": "test-jd2",
+        "type": "container",
+        "containerProperties": {
+            "command": ["ls"],
+            "image": "an-image:latest",
+            "vcpus": 1,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [],
+            "privileged": False,
+        },
+    }
+    get_or_create_job_definition(job_def_name="test-jd2", image="an-image:latest", role="aRole")
+    get_aws_client_mock.return_value.register_job_definition.assert_not_called()
+
+    # 2.b. resource differences are ignored on single node
+    get_aws_client_mock.return_value.register_job_definition.reset_mock()
+    get_or_create_job_definition(
+        job_def_name="test-jd2b",
+        image="an-image:latest",
+        role="aRole",
+        vcpus=2,
+        memory=8,
+    )
+    get_aws_client_mock.return_value.register_job_definition.assert_not_called()
+
+    # 3. Extra keys are ignored
+    get_aws_client_mock.return_value.register_job_definition.reset_mock()
+    get_job_definition_mock.return_value = {
+        "extraneous_key": "ignored",
+        "jobDefinitionName": "test-jd3",
+        "type": "container",
+        "containerProperties": {
+            "command": ["ls"],
+            "image": "an-image:latest",
+            "vcpus": 1,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [],
+            "privileged": False,
+        },
+    }
+    get_or_create_job_definition(job_def_name="test-jd3", image="an-image:latest", role="aRole")
+    get_aws_client_mock.return_value.register_job_definition.assert_not_called()
+
+    # 4. Important differences trigger recreation
+    # 4.a. job type
+    get_aws_client_mock.return_value.register_job_definition.reset_mock()
+    get_job_definition_mock.return_value = {
+        "jobDefinitionName": "test-jd4a",
+        "type": "other",
+        "containerProperties": {
+            "command": ["ls"],
+            "image": "an-image:latest",
+            "vcpus": 2,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [],
+            "privileged": False,
+        },
+    }
+    get_or_create_job_definition(job_def_name="test-jd4a", image="an-image:latest", role="aRole")
+    assert result == {"jobId": "new-job"}
+    get_aws_client_mock.return_value.register_job_definition.assert_called_with(
+        jobDefinitionName="test-jd4a",
+        type="container",
+        containerProperties={
+            "command": ["ls"],
+            "image": "an-image:latest",
+            "vcpus": 1,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [],
+            "privileged": False,
+        },
+    )
+
+    # 4.b. num_nodes
+    get_aws_client_mock.return_value.register_job_definition.reset_mock()
+    get_job_definition_mock.return_value = {
+        "jobDefinitionName": "test-jd4b",
+        "type": "container",
+        "containerProperties": {
+            "command": ["ls"],
+            "image": "an-image:latest",
+            "vcpus": 2,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [],
+            "privileged": False,
+        },
+    }
+    get_or_create_job_definition(
+        job_def_name="test-jd4b", image="an-image:latest", role="aRole", num_nodes=3
+    )
+    multinode_job = {
+        "jobDefinitionName": "test-jd4b",
+        "type": "multinode",
+        "nodeProperties": {
+            "mainNode": 0,
+            "numNodes": 3,
+            "nodeRangeProperties": [
+                {
+                    "container": {
+                        "command": ["ls"],
+                        "image": "an-image:latest",
+                        "vcpus": 1,
+                        "memory": 4,
+                        "jobRoleArn": "aRole",
+                        "environment": [],
+                        "mountPoints": [],
+                        "volumes": [],
+                        "resourceRequirements": [],
+                        "ulimits": [],
+                        "privileged": False,
+                    },
+                    "targetNodes": "0",
+                },
+                {
+                    "container": {
+                        "command": ["ls"],
+                        "image": "an-image:latest",
+                        "vcpus": 1,
+                        "memory": 4,
+                        "jobRoleArn": "aRole",
+                        "environment": [],
+                        "mountPoints": [],
+                        "volumes": [],
+                        "resourceRequirements": [],
+                        "ulimits": [],
+                        "privileged": False,
+                    },
+                    "targetNodes": "1:",
+                },
+            ],
+        },
+    }
+    get_aws_client_mock.return_value.register_job_definition.assert_called_with(**multinode_job)
+
+    # 4c. Multinode resource definitions do not trigger changes
+    get_aws_client_mock.return_value.register_job_definition.reset_mock()
+    get_job_definition_mock.return_value = multinode_job
+    get_or_create_job_definition(
+        job_def_name="test-jd4b",
+        image="an-image:latest",
+        role="aRole",
+        num_nodes=3,
+        vcpus=2,
+        memory=8,
+    )
+    get_aws_client_mock.return_value.register_job_definition.assert_not_called()
+
+
+@patch("redun.executors.aws_utils.get_aws_client")
+@patch("redun.executors.aws_batch.get_or_create_job_definition")
+def test_job_submit_resources(get_or_create_job_definition_mock, get_aws_client_mock) -> None:
+    """
+    Confirm that resource overrides are properly applied.
+    """
+
+    get_or_create_job_definition_mock.return_value = {"jobDefinitionArn": "test-jd-arn"}
+
+    # 1. Single node
+    batch_submit(
+        batch_job_args={"containerOverrides": {"command": ["test_command"]}, "user": "user-test"},
+        job_name="test",
+        queue="test_queue",
+        image="test_image",
+        vcpus=4,
+        memory=8,
+        gpus=2,
+    )
+
+    # Check that the resources are applied but the custom commands are specifically not touched.
+    get_aws_client_mock.return_value.submit_job.assert_called_with(
+        jobName="test",
+        jobQueue="test_queue",
+        jobDefinition="test-jd-arn",
+        retryStrategy={"attempts": 1},
+        containerOverrides={
+            "command": ["test_command"],
+            "vcpus": 4,
+            "memory": 8192,
+            "resourceRequirements": [{"type": "GPU", "value": "2"}],
+        },
+        propagateTags=True,
+        user="user-test",
+    )
+
+    # 2. multi-node
+    get_aws_client_mock.return_value.submit_job.reset_mock()
+    batch_submit(
+        batch_job_args={
+            "nodeOverrides": {
+                "nodePropertyOverrides": [
+                    {
+                        "targetNodes": "0",
+                        "containerOverrides": {"command": ["command_rank_0"]},
+                    },
+                    {
+                        "targetNodes": "1:",
+                        "containerOverrides": {"command": ["command_rank_1"]},
+                    },
+                ],
+            }
+        },
+        job_name="test",
+        queue="test_queue",
+        image="test_image",
+        vcpus=4,
+        memory=8,
+        gpus=2,
+    )
+
+    # Check that the resources are applied but the custom commands are specifically not touched.
+    get_aws_client_mock.return_value.submit_job.assert_called_with(
+        jobName="test",
+        jobQueue="test_queue",
+        jobDefinition="test-jd-arn",
+        retryStrategy={"attempts": 1},
+        nodeOverrides={
+            "nodePropertyOverrides": [
+                {
+                    "targetNodes": "0",
+                    "containerOverrides": {
+                        "command": ["command_rank_0"],
+                        "vcpus": 4,
+                        "memory": 8192,
+                        "resourceRequirements": [{"type": "GPU", "value": "2"}],
+                    },
+                },
+                {
+                    "targetNodes": "1:",
+                    "containerOverrides": {
+                        "command": ["command_rank_1"],
+                        "vcpus": 4,
+                        "memory": 8192,
+                        "resourceRequirements": [{"type": "GPU", "value": "2"}],
+                    },
+                },
+            ]
+        },
+        propagateTags=True,
+    )
 
 
 def test_batch_tags(scheduler: Scheduler) -> None:
@@ -278,28 +582,136 @@ def task1(x):
 
     # We should have submitted a job to AWS Batch.
     redun.executors.aws_batch.batch_submit.assert_called_with(
-        [
-            "redun",
-            "--check-version",
-            REDUN_REQUIRED_VERSION,
-            "oneshot",
-            expected_load_module,
-            "--code",
-            code_file.path,
-            "--input",
-            "s3://example-bucket/redun/jobs/eval_hash/input",
-            "--output",
-            "s3://example-bucket/redun/jobs/eval_hash/output",
-            "--error",
-            "s3://example-bucket/redun/jobs/eval_hash/error",
-            a_task.name,
-        ],
+        {
+            "containerOverrides": {
+                "command": [
+                    "redun",
+                    "--check-version",
+                    REDUN_REQUIRED_VERSION,
+                    "oneshot",
+                    expected_load_module,
+                    "--code",
+                    code_file.path,
+                    "--input",
+                    "s3://example-bucket/redun/jobs/eval_hash/input",
+                    "--error",
+                    "s3://example-bucket/redun/jobs/eval_hash/error",
+                    a_task.name,
+                    "--output",
+                    "s3://example-bucket/redun/jobs/eval_hash/output",
+                ]
+            }
+        },
         "queue",
         image="my-image",
         job_def_suffix="-redun-jd",
         job_name="batch-job-eval_hash",
         array_size=0,
         aws_region="us-west-2",
+    )
+
+
+@use_tempdir
+@mock_s3
+@patch("redun.executors.aws_batch.batch_submit")
+def test_submit_multinode_task(batch_submit_mock):
+    job_id = "123"
+    image = "my-image"
+    queue = "queue"
+    s3_scratch_prefix = "s3://example-bucket/redun/"
+
+    client = boto3.client("s3", region_name="us-east-1")
+    client.create_bucket(Bucket="example-bucket")
+
+    redun.executors.aws_batch.batch_submit.return_value = {"jobId": "batch-job-id"}
+
+    # Create example workflow script to be packaged.
+    File("workflow.py").write(
+        """
+@task()
+def task1(x):
+    return x + 10
+    """
+    )
+
+    job = Job(task1())
+    job.id = job_id
+    job.eval_hash = "eval_hash"
+    code_file = package_code(s3_scratch_prefix)
+    resp = submit_task(
+        image,
+        queue,
+        s3_scratch_prefix,
+        job,
+        task1,
+        args=[10],
+        kwargs={},
+        code_file=code_file,
+        job_options={"num_nodes": 4},
+    )
+
+    # We should get a AWS Batch job id back.
+    assert resp["jobId"] == "batch-job-id"
+
+    # Input files should be made.
+    assert File("s3://example-bucket/redun/jobs/eval_hash/input").exists()
+    [code_file] = list(Dir("s3://example-bucket/redun/code"))
+
+    # We should have submitted a job to AWS Batch.
+    redun.executors.aws_batch.batch_submit.assert_called_with(
+        {
+            "nodeOverrides": {
+                "nodePropertyOverrides": [
+                    {
+                        "targetNodes": "0",
+                        "containerOverrides": {
+                            "command": [
+                                "redun",
+                                "--check-version",
+                                REDUN_REQUIRED_VERSION,
+                                "oneshot",
+                                "redun.tests.test_aws_batch",
+                                "--code",
+                                code_file.path,
+                                "--input",
+                                "s3://example-bucket/redun/jobs/eval_hash/input",
+                                "--error",
+                                "s3://example-bucket/redun/jobs/eval_hash/error",
+                                task1.name,
+                                "--output",
+                                "s3://example-bucket/redun/jobs/eval_hash/output",
+                            ]
+                        },
+                    },
+                    {
+                        "targetNodes": "1:",
+                        "containerOverrides": {
+                            "command": [
+                                "redun",
+                                "--check-version",
+                                REDUN_REQUIRED_VERSION,
+                                "oneshot",
+                                "redun.tests.test_aws_batch",
+                                "--code",
+                                code_file.path,
+                                "--input",
+                                "s3://example-bucket/redun/jobs/eval_hash/input",
+                                "--error",
+                                "s3://example-bucket/redun/jobs/eval_hash/error",
+                                task1.name,
+                            ]
+                        },
+                    },
+                ],
+            }
+        },
+        "queue",
+        image="my-image",
+        job_def_suffix="-redun-jd",
+        job_name="batch-job-eval_hash",
+        array_size=0,
+        aws_region="us-west-2",
+        num_nodes=4,
     )
 
 
@@ -357,24 +769,28 @@ def task1(x):
 
     # We should have submitted a job to AWS Batch.
     redun.executors.aws_batch.batch_submit.assert_called_with(
-        [
-            "redun",
-            "--check-version",
-            REDUN_REQUIRED_VERSION,
-            "oneshot",
-            "workflow",
-            "--import-path",
-            "path/to",
-            "--code",
-            code_file.path,
-            "--input",
-            "s3://example-bucket/redun/jobs/eval_hash/input",
-            "--output",
-            "s3://example-bucket/redun/jobs/eval_hash/output",
-            "--error",
-            "s3://example-bucket/redun/jobs/eval_hash/error",
-            "task1",
-        ],
+        {
+            "containerOverrides": {
+                "command": [
+                    "redun",
+                    "--check-version",
+                    REDUN_REQUIRED_VERSION,
+                    "oneshot",
+                    "workflow",
+                    "--import-path",
+                    "path/to",
+                    "--code",
+                    code_file.path,
+                    "--input",
+                    "s3://example-bucket/redun/jobs/eval_hash/input",
+                    "--error",
+                    "s3://example-bucket/redun/jobs/eval_hash/error",
+                    "task1",
+                    "--output",
+                    "s3://example-bucket/redun/jobs/eval_hash/output",
+                ]
+            }
+        },
         "queue",
         image="my-image",
         job_def_suffix="-redun-jd",
@@ -606,103 +1022,177 @@ def test_executor(
     executor = mock_executor(scheduler)
     executor.start()
 
-    batch_submit_mock.return_value = {
-        "jobId": batch_job_id,
-    }
+    try:
+        batch_submit_mock.return_value = {
+            "jobId": batch_job_id,
+        }
 
-    # Submit redun job that will succeed.
-    expr = task1(10)
-    job = Job(expr)
-    job.task = task1
-    job.eval_hash = "eval_hash"
-    executor.submit(job, [10], {})
+        # Submit redun job that will succeed.
+        expr = task1(10)
+        job = Job(expr)
+        job.task = task1
+        job.eval_hash = "eval_hash"
+        executor.submit(job, [10], {})
 
-    # Let job get stale so job arrayer actually submits it.
-    wait_until(lambda: executor.arrayer.num_pending == 0)
+        # Let job get stale so job arrayer actually submits it.
+        wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # Ensure job options were passed correctly.
-    assert batch_submit_mock.call_args
-    assert batch_submit_mock.call_args[1] == {
-        "image": "my-image",
-        "job_name": "redun-job-eval_hash",
-        "job_def_suffix": "-redun-jd",
-        "array_size": 0,
-        "vcpus": 1,
-        "gpus": 0,
-        "memory": 4,
-        "role": None,
-        "retries": 1,
-        "aws_region": "us-west-2",
-        "batch_tags": {
-            "redun_aws_user": "alice",
-            "redun_execution_id": "",
-            "redun_job_id": job.id,
-            "redun_project": "",
-            "redun_task_name": "task1",
-        },
-    }
+        # Ensure job options were passed correctly.
+        assert batch_submit_mock.call_args
+        assert batch_submit_mock.call_args[1] == {
+            "image": "my-image",
+            "job_name": "redun-job-eval_hash",
+            "job_def_suffix": "-redun-jd",
+            "array_size": 0,
+            "vcpus": 1,
+            "gpus": 0,
+            "memory": 4,
+            "role": None,
+            "retries": 1,
+            "aws_region": "us-west-2",
+            "num_nodes": None,
+            "batch_tags": {
+                "redun_aws_user": "alice",
+                "redun_execution_id": "",
+                "redun_job_id": job.id,
+                "redun_project": "",
+                "redun_task_name": "task1",
+            },
+        }
 
-    batch_submit_mock.return_value = {
-        "jobId": batch_job2_id,
-    }
+        batch_submit_mock.return_value = {
+            "jobId": batch_job2_id,
+        }
 
-    # Submit redun job that will fail.
-    expr2 = task1.options(memory=8)("a")
-    job2 = Job(expr2)
-    job2.task = task1
-    job2.eval_hash = "eval_hash2"
-    executor.submit(job2, ["a"], {})
+        # Submit redun job that will fail.
+        expr2 = task1.options(memory=8)("a")
+        job2 = Job(expr2)
+        job2.task = task1
+        job2.eval_hash = "eval_hash2"
+        executor.submit(job2, ["a"], {})
 
-    # Let job get stale so job arrayer actually submits it.
-    wait_until(lambda: executor.arrayer.num_pending == 0)
+        # Let job get stale so job arrayer actually submits it.
+        wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # Ensure job options were passed correctly.
-    assert batch_submit_mock.call_args[1] == {
-        "image": "my-image",
-        "job_name": "redun-job-eval_hash2",
-        "job_def_suffix": "-redun-jd",
-        "array_size": 0,
-        "vcpus": 1,
-        "gpus": 0,
-        "memory": 8,
-        "role": None,
-        "retries": 1,
-        "aws_region": "us-west-2",
-        "batch_tags": {
-            "redun_aws_user": "alice",
-            "redun_execution_id": "",
-            "redun_job_id": job2.id,
-            "redun_project": "",
-            "redun_task_name": "task1",
-        },
-    }
+        # Ensure job options were passed correctly.
+        assert batch_submit_mock.call_args[1] == {
+            "image": "my-image",
+            "job_name": "redun-job-eval_hash2",
+            "job_def_suffix": "-redun-jd",
+            "array_size": 0,
+            "vcpus": 1,
+            "gpus": 0,
+            "memory": 8,
+            "role": None,
+            "retries": 1,
+            "aws_region": "us-west-2",
+            "num_nodes": None,
+            "batch_tags": {
+                "redun_aws_user": "alice",
+                "redun_execution_id": "",
+                "redun_job_id": job2.id,
+                "redun_project": "",
+                "redun_task_name": "task1",
+            },
+        }
 
-    # Simulate AWS Batch completing job.
-    output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
-    output_file.write(pickle_dumps(task1.func(10)), mode="wb")
+        # Simulate AWS Batch completing job.
+        output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
+        output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
-    # Simulate AWS Batch failing.
-    error = ValueError("Boom")
-    error_file = File("s3://example-bucket/redun/jobs/eval_hash2/error")
-    error_file.write(pickle_dumps((error, Traceback.from_error(error))), mode="wb")
+        # Simulate AWS Batch failing.
+        error = ValueError("Boom")
+        error_file = File("s3://example-bucket/redun/jobs/eval_hash2/error")
+        error_file.write(pickle_dumps((error, Traceback.from_error(error))), mode="wb")
 
-    iter_batch_job_status_mock.return_value = iter(
-        [
-            {"jobId": batch_job_id, "status": SUCCEEDED, "container": {"logStreamName": "log1"}},
-            {"jobId": batch_job2_id, "status": FAILED, "container": {"logStreamName": "log2"}},
-        ]
-    )
+        iter_batch_job_status_mock.return_value = iter(
+            [
+                {
+                    "jobId": batch_job_id,
+                    "status": SUCCEEDED,
+                    "container": {"logStreamName": "log1"},
+                },
+                {"jobId": batch_job2_id, "status": FAILED, "container": {"logStreamName": "log2"}},
+            ]
+        )
 
-    scheduler.batch_wait([job.id, job2.id])
-    executor.stop()
+        scheduler.batch_wait([job.id, job2.id])
+        executor.stop()
 
-    # Job results and errors should be sent back to scheduler.
-    assert scheduler.job_results[job.id] == 20
-    assert isinstance(scheduler.job_errors[job2.id], ValueError)
+        # Job results and errors should be sent back to scheduler.
+        assert scheduler.job_results[job.id] == 20
+        assert isinstance(scheduler.job_errors[job2.id], ValueError)
 
-    # Assert job tags.
-    job.job_tags == [("aws_batch_job", "batch-job-id"), ("aws_log_stream", "log1")]
-    job.job_tags == [("aws_batch_job", "batch-job2-id"), ("aws_log_stream", "log2")]
+        # Assert job tags.
+        job.job_tags == [("aws_batch_job", "batch-job-id"), ("aws_log_stream", "log1")]
+        job.job_tags == [("aws_batch_job", "batch-job2-id"), ("aws_log_stream", "log2")]
+    finally:
+        # Ensure executor threads stop before continuing.
+        executor.stop()
+
+
+@mock_s3
+@patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+@patch("redun.executors.aws_batch.parse_task_logs")
+@patch("redun.executors.aws_batch.iter_batch_job_status")
+@patch("redun.executors.aws_batch.batch_submit")
+def test_executor_multinode(
+    batch_submit_mock, iter_batch_job_status_mock, parse_task_logs_mock, get_aws_user_mock
+) -> None:
+    """
+    Ensure that we can submit job to AWSBatchExecutor.
+    """
+    batch_job_id = "batch-job-id"
+
+    # Setup AWS Batch mocks.
+    iter_batch_job_status_mock.return_value = iter([])
+    parse_task_logs_mock.return_value = []
+
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+    executor.start()
+
+    try:
+        batch_submit_mock.return_value = {
+            "jobId": batch_job_id,
+        }
+
+        # Submit redun job that will succeed.
+        expr = task1.options(num_nodes=4)(10)
+        job = Job(expr)
+        job.task = task1
+        job.eval_hash = "eval_hash"
+        executor.submit(job, [10], {})
+
+        # Let job get stale so job arrayer actually submits it.
+        wait_until(lambda: executor.arrayer.num_pending == 0)
+
+        # Ensure job options were passed correctly.
+        assert batch_submit_mock.call_args
+        assert batch_submit_mock.call_args[1] == {
+            "image": "my-image",
+            "job_name": "redun-job-eval_hash",
+            "job_def_suffix": "-redun-jd",
+            "array_size": 0,
+            "vcpus": 1,
+            "gpus": 0,
+            "memory": 4,
+            "role": None,
+            "retries": 1,
+            "aws_region": "us-west-2",
+            "num_nodes": 4,
+            "batch_tags": {
+                "redun_aws_user": "alice",
+                "redun_execution_id": "",
+                "redun_job_id": job.id,
+                "redun_project": "",
+                "redun_task_name": "task1",
+            },
+        }
+        job.job_tags == [("aws_batch_job", "batch-job-id#0"), ("aws_log_stream", "log1")]
+    finally:
+        # Ensure executor threads stop before continuing.
+        executor.stop()
 
 
 @mock_s3
@@ -731,63 +1221,67 @@ def test_executor_docker(
     executor = mock_executor(scheduler, debug=True)
     executor.start()
 
-    run_docker_mock.return_value = batch_job_id
+    try:
+        run_docker_mock.return_value = batch_job_id
 
-    # Submit redun job that will succeed.
-    expr = task1(10)
-    job = Job(expr)
-    job.task = task1
-    job.eval_hash = "eval_hash"
-    executor.submit(job, [10], {})
+        # Submit redun job that will succeed.
+        expr = task1(10)
+        job = Job(expr)
+        job.task = task1
+        job.eval_hash = "eval_hash"
+        executor.submit(job, [10], {})
 
-    # Let job get stale so job arrayer actually submits it.
-    wait_until(lambda: executor.arrayer.num_pending == 0)
+        # Let job get stale so job arrayer actually submits it.
+        wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # Ensure job options were passed correctly.
-    assert run_docker_mock.call_args[1] == {
-        "image": "my-image",
-    }
+        # Ensure job options were passed correctly.
+        assert run_docker_mock.call_args[1] == {
+            "image": "my-image",
+        }
 
-    run_docker_mock.reset_mock()
-    run_docker_mock.return_value = batch_job2_id
+        run_docker_mock.reset_mock()
+        run_docker_mock.return_value = batch_job2_id
 
-    # Hand create Job and submit.
-    expr2 = task1("a")
-    job2 = Job(expr2)
-    job2.task = task1
-    job2.eval_hash = "eval_hash2"
-    executor.submit(job2, ["a"], {})
+        # Hand create Job and submit.
+        expr2 = task1("a")
+        job2 = Job(expr2)
+        job2.task = task1
+        job2.eval_hash = "eval_hash2"
+        executor.submit(job2, ["a"], {})
 
-    # Let job get stale so job arrayer actually submits it.
-    wait_until(lambda: executor.arrayer.num_pending == 0)
+        # Let job get stale so job arrayer actually submits it.
+        wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # Ensure job options were passed correctly.
-    assert run_docker_mock.call_args[1] == {
-        "image": "my-image",
-    }
+        # Ensure job options were passed correctly.
+        assert run_docker_mock.call_args[1] == {
+            "image": "my-image",
+        }
 
-    # Simulate output file created by job.
-    output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
-    output_file.write(pickle_dumps(task1.func(10)), mode="wb")
+        # Simulate output file created by job.
+        output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
+        output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
-    # Simulate AWS Batch failing.
-    error = ValueError("Boom")
-    error_file = File("s3://example-bucket/redun/jobs/eval_hash2/error")
-    error_file.write(pickle_dumps((error, Traceback.from_error(error))), mode="wb")
+        # Simulate AWS Batch failing.
+        error = ValueError("Boom")
+        error_file = File("s3://example-bucket/redun/jobs/eval_hash2/error")
+        error_file.write(pickle_dumps((error, Traceback.from_error(error))), mode="wb")
 
-    iter_local_job_status_mock.return_value = iter(
-        [
-            {"jobId": batch_job_id, "status": SUCCEEDED, "logs": ""},
-            {"jobId": batch_job2_id, "status": FAILED, "logs": ""},
-        ]
-    )
+        iter_local_job_status_mock.return_value = iter(
+            [
+                {"jobId": batch_job_id, "status": SUCCEEDED, "logs": ""},
+                {"jobId": batch_job2_id, "status": FAILED, "logs": ""},
+            ]
+        )
 
-    scheduler.batch_wait([job.id, job2.id])
-    executor.stop()
+        scheduler.batch_wait([job.id, job2.id])
 
-    # Job results and errors should be sent back to scheduler.
-    assert scheduler.job_results[job.id] == 20
-    assert isinstance(scheduler.job_errors[job2.id], ValueError)
+        # Job results and errors should be sent back to scheduler.
+        assert scheduler.job_results[job.id] == 20
+        assert isinstance(scheduler.job_errors[job2.id], ValueError)
+
+    finally:
+        # Ensure executor threads stop before continuing.
+        executor.stop()
 
 
 @mock_s3

@@ -1,3 +1,4 @@
+import copy
 import datetime
 import json
 import logging
@@ -129,14 +130,19 @@ def get_or_create_job_definition(
     command: List[str] = ["ls"],
     memory: int = 4,
     vcpus: int = 1,
+    num_nodes: Optional[int] = None,
     role: Optional[str] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
     privileged: bool = False,
 ) -> dict:
     """
-    Returns a job definition with the specified requirements.
+    Returns a job definition with the specified requirements. Although the resource requirements
+    provided are used when creating a job, they are specifically excluded from creating new
+    job definitions.
 
     Either an existing active job definition is used or a new one is created.
+
+    num_nodes - if present, create a multi-node batch job.
     """
     batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
 
@@ -145,6 +151,8 @@ def get_or_create_job_definition(
         caller_id = aws_utils.get_aws_client("sts", aws_region=aws_region).get_caller_identity()
         account_num = caller_id["Account"]
         role = "arn:aws:iam::%d:role/ecsTaskExecutionRole" % int(account_num)
+
+    existing_job_def = get_job_definition(job_def_name, batch_client=batch_client)
 
     container_props = {
         "command": command,
@@ -159,16 +167,65 @@ def get_or_create_job_definition(
         "ulimits": [],
         "privileged": privileged,
     }
-    existing_job_def = get_job_definition(job_def_name, batch_client=batch_client)
+
+    if num_nodes is None:
+        # Single-node job type
+
+        job_details = {"type": "container", "containerProperties": container_props}
+
+    else:
+        # Multi-node job type
+        node_properties = {
+            "mainNode": 0,
+            "numNodes": num_nodes,
+            "nodeRangeProperties": [
+                # Create two identical node groups, so we can tell only the main node to provide
+                # outputs.
+                {
+                    "container": container_props,
+                    "targetNodes": "0",
+                },
+                {
+                    "container": container_props,
+                    "targetNodes": "1:",
+                },
+            ],
+        }
+
+        job_details = {"type": "multinode", "nodeProperties": node_properties}
+
+    # We override resource properties, so create sanitized versions of both job definitions to
+    # compare them
+    no_resource_container_properties = {
+        "vcpus": "any_vcpus",
+        "memory": "any_memory",
+        "resourceRequirements": ["any_requirements"],
+    }
+
+    def sanitize_job_def(job_def: Dict) -> Dict:
+        """Overwrite the resource properties with redactions."""
+        result = copy.deepcopy(job_def)
+        result["containerProperties"] = result.get("containerProperties", {}).update(
+            no_resource_container_properties
+        )
+        node_range = result.get("nodeProperties", {}).get("nodeRangeProperties", [{}, {}])
+        node_range[0].get("container", {}).update(no_resource_container_properties)
+        node_range[1].get("container", {}).update(no_resource_container_properties)
+        result["nodeRangeProperties"] = node_range
+        return result
+
     if existing_job_def:
-        existing_container_props = existing_job_def.get("containerProperties", {})
-        if existing_container_props == container_props:
+        # If there's an existing job with no interesting variations, we can use it.
+        sanitized_existing_job_def = sanitize_job_def(existing_job_def)
+        sanitized_job_details = sanitize_job_def(job_details)
+
+        if all(
+            [sanitized_existing_job_def.get(k, {}) == v for k, v in sanitized_job_details.items()]
+        ):
             return existing_job_def
 
-    # register job definition
-    job_def = batch_client.register_job_definition(
-        jobDefinitionName=job_def_name, type="container", containerProperties=container_props
-    )
+    job_def = batch_client.register_job_definition(jobDefinitionName=job_def_name, **job_details)
+
     return job_def
 
 
@@ -188,8 +245,46 @@ def make_job_def_name(image_name: str, job_def_suffix: str = "-jd") -> str:
     return job_def_name
 
 
-def batch_submit(
+def create_job_override_command(
     command: List[str],
+    command_output_suffix: Optional[List[str]] = None,
+    num_nodes: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Format the command into the form needed for the AWS Batch `submit_job` API.
+
+    command: A list of tokens comprising the command
+    command_output_suffix: Tokens to add to the end of the command to actually trigger output
+        to get written.
+    num_nodes: If `None`, this is a single-node job. If not `None`, a multi-node job.
+
+    Returns a dictionary to be passed to `submit_job` as kwargs."""
+    batch_job_args: Dict[str, Any] = {}
+
+    # Multi-node jobs use node overrides.
+    if command_output_suffix is None:
+        command_output_suffix = []
+
+    if num_nodes is None:
+        # Single-node jobs override the container.
+        batch_job_args["containerOverrides"] = {"command": command + command_output_suffix}
+    else:
+
+        # Make a shallow copy so we can suppress output on these nodes
+        node_overrides = [
+            {
+                "targetNodes": "0",
+                "containerOverrides": {"command": command + command_output_suffix},
+            },
+            {"targetNodes": "1:", "containerOverrides": {"command": command}},
+        ]
+
+        batch_job_args["nodeOverrides"] = {"nodePropertyOverrides": node_overrides}
+
+    return batch_job_args
+
+
+def batch_submit(
+    batch_job_args: dict,
     queue: str,
     image: str,
     job_def_name: Optional[str] = None,
@@ -199,6 +294,7 @@ def batch_submit(
     memory: int = 4,
     vcpus: int = 1,
     gpus: int = 0,
+    num_nodes: Optional[int] = None,
     retries: int = 1,
     role: Optional[str] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
@@ -208,7 +304,15 @@ def batch_submit(
     batch_tags: Optional[Dict[str, str]] = None,
     propagate_tags: bool = True,
 ) -> Dict[str, Any]:
+    """Actually perform job submission to AWS batch. Create or retrieve the job definition, then
+    use it to submit the job.
 
+    batch_job_args : dict
+        These are passed as kwargs to the `submit_job` API. Generally, it must configure the
+        commands to be run by setting node or container overrides. This function will modify
+        the provided dictionary, at a minimum applying overrides for the resource requirements
+        stated by other arguments to this function.
+    """
     batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
 
     # Get or create job definition. If autocreate_job is disabled, then we require a job_def_name
@@ -222,19 +326,36 @@ def batch_submit(
     else:
         job_def_name = job_def_name or make_job_def_name(image, job_def_suffix)
         job_def = get_or_create_job_definition(
-            job_def_name, image, role=role, aws_region=aws_region, privileged=privileged
+            job_def_name,
+            image,
+            role=role,
+            aws_region=aws_region,
+            privileged=privileged,
+            num_nodes=num_nodes,
         )
 
-    # Container overrides for this job.
-    container_overrides = {"vcpus": vcpus, "memory": int(memory * 1024), "command": command}
-    if gpus > 0:
-        container_overrides["resourceRequirements"] = [{"type": "GPU", "value": str(gpus)}]
+    def apply_resources(container_properties: Dict) -> None:
+        """Modify the provided dictionary of container properties to apply requested resources"""
 
-    batch_job_args: dict = {
-        "propagateTags": propagate_tags,
-    }
+        # Switch units, redun configs are in GB but AWS uses MB.
+        memory_mb = int(memory * 1024)
+
+        container_properties.update({"vcpus": vcpus, "memory": memory_mb})
+        if gpus > 0:
+            container_properties["resourceRequirements"] = [{"type": "GPU", "value": str(gpus)}]
+
+    if "containerOverrides" in batch_job_args:
+        apply_resources(batch_job_args["containerOverrides"])
+
+    if "nodeOverrides" in batch_job_args:
+        for node in batch_job_args["nodeOverrides"]["nodePropertyOverrides"]:
+            apply_resources(node["containerOverrides"])
+
+    batch_job_args["propagateTags"] = propagate_tags
     if array_size > 0:
         batch_job_args["arrayProperties"] = {"size": array_size}
+        if num_nodes is not None:
+            raise ValueError("Cannot combine array jobs and multi-node jobs.")
     if timeout:
         batch_job_args["timeout"] = {"attemptDurationSeconds": timeout}
     if batch_tags:
@@ -245,10 +366,14 @@ def batch_submit(
         jobName=job_name,
         jobQueue=queue,
         jobDefinition=job_def["jobDefinitionArn"],
-        containerOverrides=container_overrides,
         retryStrategy={"attempts": retries},
         **batch_job_args,
     )
+
+    # For multi-node jobs, the rank 0 job id is sufficient for monitoring.
+    if num_nodes is not None:
+        batch_run["jobId"] = f"{batch_run['jobId']}#0"
+
     return batch_run
 
 
@@ -386,6 +511,7 @@ def get_batch_job_options(job_options: dict) -> dict:
         "autocreate_job",
         "timeout",
         "batch_tags",
+        "num_nodes",
     ]
     return {key: job_options[key] for key in keys if key in job_options}
 
@@ -471,8 +597,12 @@ def submit_task(
         + code_arg
         + array_arg
         + cache_arg
-        + ["--input", input_path, "--output", output_path, "--error", error_path, a_task.fullname]
+        + ["--input", input_path, "--error", error_path, a_task.fullname]
     )
+    command_output_suffix = [
+        "--output",
+        output_path,
+    ]
 
     if not debug:
         if array_uuid:
@@ -486,15 +616,22 @@ def submit_task(
             job_options.get("job_name_prefix", "batch-job"), job_hash, array=bool(array_size)
         )
 
+        job_batch_options = get_batch_job_options(job_options)
+        job_batch_args = create_job_override_command(
+            command=command,
+            command_output_suffix=command_output_suffix,
+            num_nodes=job_batch_options.get("num_nodes", None),
+        )
+
         result = batch_submit(
-            command,
+            job_batch_args,
             queue,
             image=image,
             job_name=job_name,
             job_def_suffix="-redun-jd",
             aws_region=aws_region,
             array_size=array_size,
-            **get_batch_job_options(job_options),
+            **job_batch_options,
         )
     else:
         # Submit to local Docker.
@@ -509,7 +646,9 @@ def submit_task(
 
         # Otherwise, submit one non-array job
         if not array_size:
-            container_id = run_docker(command, image=image, **get_docker_job_options(job_options))
+            container_id = run_docker(
+                command + command_output_suffix, image=image, **get_docker_job_options(job_options)
+            )
             result = {"jobId": container_id, "redun_job_id": job.id}
     return result
 
@@ -579,15 +718,22 @@ chmod +x .task_command
             job_options.get("job_name_prefix", "batch-job"), job.eval_hash
         )
 
+        job_batch_options = get_batch_job_options(job_options)
+        job_batch_args = create_job_override_command(
+            command=shell_command,
+            command_output_suffix=None,
+            num_nodes=job_batch_options.get("num_nodes", None),
+        )
+
         # Submit to AWS Batch.
         return batch_submit(
-            shell_command,
+            job_batch_args,
             queue,
             image=image,
             job_name=job_name,
             job_def_suffix="-redun-jd",
             aws_region=aws_region,
-            **get_batch_job_options(job_options),
+            **job_batch_options,
         )
     else:
         # Submit to local Docker.
@@ -782,7 +928,7 @@ def iter_batch_job_logs(
     if not job:
         # Job is no longer present in AWS API. Return no logs.
         return
-    log_stream = job["container"].get("logStreamName")
+    log_stream = job.get("container", {}).get("logStreamName")
     if not log_stream:
         # No log stream is present. Return no logs.
         return
@@ -891,6 +1037,7 @@ class AWSBatchExecutor(Executor):
             "retries": config.getint("retries", 1),
             "role": config.get("role"),
             "job_name_prefix": config.get("job_name_prefix", "redun-job"),
+            "num_nodes": config.getint("num_nodes", None),
         }
         if config.get("batch_tags"):
             self.default_task_options["batch_tags"] = json.loads(config.get("batch_tags"))
