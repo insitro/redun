@@ -78,6 +78,8 @@ def test_task_args(scheduler: Scheduler) -> None:
 
     assert scheduler.run(workflow()) == "hello world"
 
+
+def test_default_args(scheduler):
     @task()
     def has_default(x="default"):
         return x
