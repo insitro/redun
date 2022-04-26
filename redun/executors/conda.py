@@ -86,8 +86,9 @@ class CondaExecutor(Executor):
         """
         result = job.get_option("conda", self.default_env)
         if result is None:
-            raise RuntimeError('No conda environment name or default value provided.')
+            raise RuntimeError("No conda environment name or default value provided.")
         return result
+
 
 def execute(
     job: Job,
