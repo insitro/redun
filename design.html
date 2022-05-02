@@ -5,11 +5,11 @@
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Tasks" href="tasks.html" /><link rel="prev" title="Install" href="index.html" />
 
-    <meta name="generator" content="sphinx-4.5.0, furo 2022.03.04"/>
+    <meta name="generator" content="sphinx-4.5.0, furo 2022.04.07"/>
         <title>Design overview - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=935aa2abcc5c1da4283d1dc201fb1f0add16d23a" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=25ceb02ed1c46dc30f2321ff83e92799f69dfdb9" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
 
@@ -36,10 +36,12 @@
   }
 </style></head>
   <body>
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
     
+
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
     <title>Contents</title>
@@ -390,16 +392,16 @@ Hello, World!
 </pre></div>
 </div>
 <p>For those who are familiar with <a class="reference external" href="https://en.wikipedia.org/wiki/Futures_and_promises">Promises</a> from other languages such as javascript, redun tasks perform the equivalent Promise manipulations:</p>
-<div class="highlight-js notranslate"><div class="highlight"><pre><span></span><span class="c1">// This call</span>
-<span class="nx">result2a</span> <span class="o">=</span> <span class="nx">step2a</span><span class="p">(</span><span class="nx">result1</span><span class="p">,</span> <span class="mf">10</span><span class="p">,</span> <span class="s1">'red'</span><span class="p">)</span>
-<span class="c1">// is equivalent to</span>
-<span class="nx">result2a</span> <span class="o">=</span> <span class="nx">result1</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">result1</span> <span class="p">=&gt;</span> <span class="nx">step2a</span><span class="p">(</span><span class="nx">result1</span><span class="p">,</span> <span class="mf">10</span><span class="p">,</span> <span class="s1">'red'</span><span class="p">))</span>
+<div class="highlight-js notranslate"><div class="highlight"><pre><span></span><span class="c1">// This call</span><span class="w"></span>
+<span class="nx">result2a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">step2a</span><span class="p">(</span><span class="nx">result1</span><span class="p">,</span><span class="w"> </span><span class="mf">10</span><span class="p">,</span><span class="w"> </span><span class="s1">'red'</span><span class="p">)</span><span class="w"></span>
+<span class="c1">// is equivalent to</span><span class="w"></span>
+<span class="nx">result2a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">result1</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">result1</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">step2a</span><span class="p">(</span><span class="nx">result1</span><span class="p">,</span><span class="w"> </span><span class="mf">10</span><span class="p">,</span><span class="w"> </span><span class="s1">'red'</span><span class="p">))</span><span class="w"></span>
 </pre></div>
 </div>
-<div class="highlight-js notranslate"><div class="highlight"><pre><span></span><span class="c1">// This call</span>
-<span class="nx">result3</span> <span class="o">=</span> <span class="nx">step3</span><span class="p">(</span><span class="nx">result2a</span><span class="p">,</span> <span class="nx">result2b</span><span class="p">)</span>
-<span class="c1">// is equivalent to</span>
-<span class="nx">result3</span> <span class="o">=</span> <span class="nb">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">([</span><span class="nx">result2a</span><span class="p">,</span> <span class="nx">result2b</span><span class="p">]).</span><span class="nx">then</span><span class="p">(([</span><span class="nx">result2a</span><span class="p">,</span> <span class="nx">result2b</span><span class="p">])</span> <span class="p">=&gt;</span> <span class="nx">step3</span><span class="p">(</span><span class="nx">result2a</span><span class="p">,</span> <span class="nx">result2b</span><span class="p">))</span>
+<div class="highlight-js notranslate"><div class="highlight"><pre><span></span><span class="c1">// This call</span><span class="w"></span>
+<span class="nx">result3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">step3</span><span class="p">(</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">)</span><span class="w"></span>
+<span class="c1">// is equivalent to</span><span class="w"></span>
+<span class="nx">result3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">([</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">]).</span><span class="nx">then</span><span class="p">(([</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">])</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">step3</span><span class="p">(</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">))</span><span class="w"></span>
 </pre></div>
 </div>
 <p>Our use of Expressions to build up Task dependency is also similar to <a class="reference external" href="https://docs.python.org/dev/library/concurrent.futures.html">Concurrent Futures in Python</a> and <a class="reference external" href="https://docs.dask.org/en/latest/delayed.html">Dask Delayed</a>.</p>
