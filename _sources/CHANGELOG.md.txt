@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.8
+April 20, 2022
+
+* `#129` - AWS Batch multi-node executor
+* `#130` - Update README.md because compositiblity is not a word.
+* `#128` - DE-4761 fix script reuniting in aws batch executor
+* `#127` - Keep 'redun log' stable tag sorting even for complex tag values
+* `#124` - DE-4689 File encoding v2
+* `#119` - DE-4636 Fix for S3FileSystem threading issues
+* `#120` - Fix job clear bug
+* `#80` - DE-4600 Working example of catch_all
+* `#116` - Bump version to 0.8.7
+
 ## 0.8.7
 
 March 11, 2022

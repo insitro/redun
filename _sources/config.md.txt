@@ -323,6 +323,10 @@ A bool (default: True) that specifies whether redun should add default tags to a
 - redun_project: the project of the workflow, which is typically the root task namespace.
 - redun_aws_user: the user as identified by sts.get_caller_identity.
 
+#### `num_nodes`
+
+If not none, use a multi-node job and set the number of workers. 
+
 #### AWS Glue executor
 
 The [AWS Glue executor](executors.md#aws-glue-executor) (`type = aws_glue`) executes tasks on the AWS Glue compute service.
