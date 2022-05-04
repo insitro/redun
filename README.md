@@ -2,21 +2,21 @@
 
 *yet another redundant workflow engine*
 
-**redun** aims to be a more expressive and efficient workflow framework, built on top of the popular Python programming language. It takes the somewhat contrarian view that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, compositiblity, recursion, high order functions, etc). redun's key insight is that workflows can be expressed as [lazy expressions](#whats-the-trick), that are then evaluated by a scheduler which performs automatic parallelization, caching, and data provenance logging.
+**redun** aims to be a more expressive and efficient workflow framework, built on top of the popular Python programming language. It takes the somewhat contrarian view that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, composability, recursion, high order functions, etc). redun's key insight is that workflows can be expressed as [lazy expressions](#whats-the-trick), which are then evaluated by a scheduler that performs automatic parallelization, caching, and data provenance logging.
 
 redun's key features are:
 
 - Workflows are defined by lazy expressions that when evaluated emit dynamic directed acyclic graphs (DAGs), enabling complex data flows.
 - Incremental computation that is reactive to both data changes as well as code changes.
 - Workflow tasks can be executed on a variety of compute backend (threads, processes, AWS batch jobs, Spark jobs, etc). 
-- Data changes are detected for in memory values as well as external data sources such as files and object stores using file hashing.
-- Code changes are detected by hashing individual Python functions and comparing against historical call graph recordings.
+- Data changes are detected for in-memory values as well as external data sources such as files and object stores using file hashing.
+- Code changes are detected by hashing individual Python functions and comparing them against historical call graph recordings.
 - Past intermediate results are cached centrally and reused across workflows.
 - Past call graphs can be used as a data lineage record and can be queried for debugging and auditing.
 
 See the [original blog post](https://insitro.medium.com/when-data-science-goes-with-the-flow-insitro-introduces-redun-8b06b707a14b), [documentation](https://insitro.github.io/redun/design.html), [tutorial](examples/README.md), and [influences](https://insitro.github.io/redun/design.html#influences) for more.
 
-*About the name:* The name "redun" is self deprecating (there are [A LOT](https://github.com/pditommaso/awesome-pipeline) of workflow engines), but it is also a reference to its original inspiration, the [redo](https://apenwarr.ca/log/20101214) build system.
+*About the name:* The name "redun" is self-deprecating (there are [A LOT](https://github.com/pditommaso/awesome-pipeline) of workflow engines), but it is also a reference to its original inspiration, the [redo](https://apenwarr.ca/log/20101214) build system.
 
 ## Install
 
@@ -253,7 +253,7 @@ Produced by Job a8b21ec0
                <-- origin
 ```
 
-This output shows the original `link` task source code responsible for creating the program `prog`, as well as the full derivation, denoted "upstream dataflow". See the full example for a [deeper explanation](examples/02_compile#data-provenance-for-files) of this output. To understand more about the data structure that powers these kind of queries, see [call graphs](https://insitro.github.io/redun/design.html#call-graphs).
+This output shows the original `link` task source code responsible for creating the program `prog`, as well as the full derivation, denoted "upstream dataflow". See the full example for a [deeper explanation](examples/02_compile#data-provenance-for-files) of this output. To understand more about the data structure that powers these kinds of queries, see [call graphs](https://insitro.github.io/redun/design.html#call-graphs).
 
 We can change one of the input files, such as `lib.c`, and rerun the workflow. Due to redun's automatic incremental compute, only the minimal tasks are rerun:
 
@@ -284,7 +284,7 @@ redun run make.py make
 [File(path=prog, hash=2f43c23c), File(path=prog2, hash=b4537ad7)]
 ```
 
-Notice, two of the compile jobs are cached (`prog.c` and `prog2.c`), but compiling the library `lib.c` and the downstream link steps correctly rerun.
+Notice, two of the compile jobs are cached (`prog.c` and `prog2.c`), but compiling the library `lib.c` and the downstream link steps are correctly rerun.
 
 Check out the [examples](examples/) for more example workflows and features of redun. Also, see the [design notes](https://insitro.github.io/redun/design.html) for more information on redun's design.
 
@@ -324,8 +324,8 @@ For a more in-depth walk-through, see the [scheduler tutorial](examples/03_sched
 
 ## Why not another workflow engine?
 
-redun focuses on making multi-domain scientific pipelines easy to develop and deploy. The automatic parallelism, caching, code and data reactivity, as well as data provenance features makes it a great fit for such work. However, redun does not attempt to solve all possible workflow problems, so it's perfectly reasonable to supplement it with other tools. For example, while redun provides a very expressive way to define [task parallelism](https://en.wikipedia.org/wiki/Task_parallelism), it does not attempt to perform the kind of fine-grain [data parallelism](https://en.wikipedia.org/wiki/Data_parallelism) more commonly provided by Spark or Dask. Fortunately, redun does not perform any "dirty tricks" (e.g. complex static analysis or call stack manipulation), and so we have found it possible to safely combine redun with other frameworks (e.g. pyspark, pytorch, Dask, etc) to achieve the benefits of each tool.
+redun focuses on making multi-domain scientific pipelines easy to develop and deploy. The automatic parallelism, caching, code, and data reactivity, as well as data provenance features, make it a great fit for such work. However, redun does not attempt to solve all possible workflow problems, so it's perfectly reasonable to supplement it with other tools. For example, while redun provides a very expressive way to define [task parallelism](https://en.wikipedia.org/wiki/Task_parallelism), it does not attempt to perform the kind of fine-grain [data parallelism](https://en.wikipedia.org/wiki/Data_parallelism) more commonly provided by Spark or Dask. Fortunately, redun does not perform any "dirty tricks" (e.g. complex static analysis or call stack manipulation), and so we have found it possible to safely combine redun with other frameworks (e.g. pyspark, pytorch, Dask, etc) to achieve the benefits of each tool.
 
-Lastly, redun does not provide its own compute cluster, but instead builds upon other systems that do, such as cloud provider services for batch Docker jobs or Spark jobs.
+Lastly, redun does not provide its own compute cluster but instead builds upon other systems that do, such as cloud provider services for batch Docker jobs or Spark jobs.
 
 For more details on how redun compares to other related ideas, see the [influences](https://insitro.github.io/redun/design.html#influences) section.

@@ -33,4 +33,4 @@ redun tasks are lazy functions, so when we call `add` it returns immediately wit
 
 ## Overly permissive type checking
 
-In general, the type checking rules defined above provide good type checking coverage, however there is one corner case that is not fully captured currently with redun. Since `Expression[T]` will be considered equivalent to `T`, it is possible to pass an `Expression[T]` to a plain python function (not decorated by `@task`) that only allows `T`. This will type check as allowed, but may fail at runtime.
+In general, the type checking rules defined above provide good type checking coverage, however, there is one corner case that is not fully captured currently with redun. Since `Expression[T]` will be considered equivalent to `T`, it is possible to pass an `Expression[T]` to a plain python function (not decorated by `@task`) that only allows `T`. This will type check as allowed but may fail at runtime.

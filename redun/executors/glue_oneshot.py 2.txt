@@ -1,0 +1,66 @@
+import pickle
+import sys
+
+from awsglue.utils import getResolvedOptions
+
+import redun
+from redun.cli import RedunClientError, check_version, import_script
+from redun.executors.aws_utils import extract_tar
+from redun.file import File as BaseFile
+from redun.glue import setup_glue_job
+from redun.scheduler import Traceback, get_task_registry
+from redun.utils import pickle_dump
+
+ARGS = [
+    "JOB_NAME",
+    "check-version",
+    "error",
+    "input",
+    "job-hash",
+    "output",
+    "script",
+    "task",
+]
+
+
+if __name__ == "__main__":
+
+    args = getResolvedOptions(sys.argv, ARGS)
+    job = setup_glue_job(args["JOB_NAME"], args)
+
+    # Check redun version is compatible
+    if not check_version(redun.__version__, args["check_version"]):
+        raise RedunClientError(
+            "redun version {version} does not meet requirement {required_version}".format(
+                version=redun.__version__, required_version=args["check_version"]
+            )
+        )
+
+    # Get main task
+    import_script(args["script"])
+    task = get_task_registry().get(args["task"])
+    if not task:
+        raise RedunClientError(f"no task {args['task']}")
+
+    # Input and output
+    output_path = args["output"]
+    input_file = BaseFile(args["input"])
+    with input_file.open("rb") as infile:
+        task_args, task_kwargs = pickle.load(infile)
+
+    # Run the job
+    try:
+        result = task.func(*task_args, **task_kwargs)
+
+        output_file = BaseFile(args["output"])
+        with output_file.open("wb") as out:
+            pickle_dump(result, out)
+
+    except Exception as error:
+        error_traceback = Traceback.from_error(error)
+        with BaseFile(args["error"]).open("wb") as out:
+            pickle_dump((error, error_traceback), out)
+
+        raise error
+
+    job.commit()
