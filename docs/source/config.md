@@ -125,7 +125,7 @@ This setting assumes the standard fields in an AWS RDS or Other Database secret,
 
 #### `db_uri`
 
-[URI](https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls) for the redun database. redun supports the `sqlite` and `postgresql` portocols. If the URI is relative, it will be interpreted as relevative to the configuration directory, `.redun/`.
+[URI](https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls) for the redun database. redun supports the `sqlite` and `postgresql` protocols. If the URI is relative, it will be interpreted as relative to the configuration directory, `.redun/`.
 
 For security reasons, username and password are not allowed in `db_uri`, since `redun.ini` files are often checked into source control. See below for alternative ways to define database credentials.
 
