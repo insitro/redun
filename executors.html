@@ -280,7 +280,7 @@
 <p>The <strong>AWS Glue executor</strong> executes tasks as jobs on <a class="reference external" href="https://aws.amazon.com/glue/">AWS Glue</a>, which runs <a class="reference external" href="https://spark.apache.org/">Apache Spark</a> jobs on a managed cluster. Spark jobs run on many CPUs and are especially useful for working with large tabular datasets such as those represented in Pandas DataFrames.</p>
 <p>Spark jobs are essentially a mini compute cluster, with a driver that maintains a SparkContext object, and a number of workers.
 Each worker can have one or more <strong>executors</strong>, which are the processes that run individual tasks in the Spark job. They typically
-run for the life of the application, and send results to the driver when complete. Executors may use multiple vCPU cores to get
+run for the life of the application and send results to the driver when complete. Executors may use multiple vCPU cores to get
 their work done, depending on the configuration.</p>
 <p>To use AWS Glue, at a minimum you must configure a temporary location in S3 where files used to communicate between the scheduler and jobs are stored. Scratch space, code packaging, and job reuniting are all done in a similar way to the AWS Batch executor.</p>
 <section id="loading-and-writing-datasets">
@@ -294,16 +294,16 @@ these datasets that can be tracked and recorded by redun.</p>
 </section>
 <section id="helper-functions">
 <h3>Helper functions<a class="headerlink" href="#helper-functions" title="Permalink to this headline">#</a></h3>
-<p>Spark jobs are written a bit differently than pure Python. You’ll want to load large datasets to Spark DataFrames with <code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset</span></code>, but frequently other operations will be require the use of the Spark context that is defined when the
+<p>Spark jobs are written a bit differently than pure Python. You’ll want to load large datasets to Spark DataFrames with <code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset</span></code>, but frequently other operations will require the use of the Spark context that is defined when the
 job is running.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">redun.glue</span></code> module provides helper functions that can be used in glue executor jobs, and can be imported in the
+<p>The <code class="docutils literal notranslate"><span class="pre">redun.glue</span></code> module provides helper functions that can be used in glue executor jobs and can be imported into the
 top level of your redun script, even when Spark isn’t yet defined. The <code class="docutils literal notranslate"><span class="pre">redun.glue.get_spark_context()</span></code> and
 <code class="docutils literal notranslate"><span class="pre">redun.glue.get_spark_session()</span></code> functions can be used in your tasks to retrieve the currently defined spark environment.</p>
 <section id="user-defined-functions">
 <h4>User-defined functions<a class="headerlink" href="#user-defined-functions" title="Permalink to this headline">#</a></h4>
 <p>You might want to define your own functions to operate on a dataset. Typically, you’d use the <code class="docutils literal notranslate"><span class="pre">pyspark.sql.functions.udf</span></code> decorator
 on a function to make it a UDF, but when redun evaluates the decorator it will error out as there is no spark context available
-to register the function to. The <code class="docutils literal notranslate"><span class="pre">redun.glue.udf</span></code> decorator handles this issue. See the redun examples for a real-world use
+to register the function to. The <code class="docutils literal notranslate"><span class="pre">redun.glue.udf</span></code> decorator handles this issue. See the redun examples for real-world use
 of UDFs and this decorator.</p>
 </section>
 </section>
@@ -319,7 +319,7 @@ However, other modules, especially those using C/C++ compiled extensions, are no
 <p>The following configuration options may be specified on a per-task basis in the decorator.</p>
 <section id="workers">
 <h4><code class="docutils literal notranslate"><span class="pre">workers</span></code><a class="headerlink" href="#workers" title="Permalink to this headline">#</a></h4>
-<p>An integer that specifies the number of workers available by default to Glue jobs. Each worker provides one or more “data processing units” (DPUs). AWS defines a  DPU as “a relative measure of processing power that consists of 4 vCPUs of compute capacity and 16GB of memory.” Depending on the worker type, there will can be one or more Spark executors per DPU, each with one or more spark cores. Jobs are billed by number of DPUs and time.</p>
+<p>An integer that specifies the number of workers available by default to Glue jobs. Each worker provides one or more “data processing units” (DPUs). AWS defines a  DPU as “a relative measure of processing power that consists of 4 vCPUs of compute capacity and 16GB of memory.” Depending on the worker type, there will be one or more Spark executors per DPU, each with one or more spark cores. Jobs are billed by number of DPUs and time.</p>
 </section>
 <section id="worker-type">
 <h4><code class="docutils literal notranslate"><span class="pre">worker_type</span></code><a class="headerlink" href="#worker-type" title="Permalink to this headline">#</a></h4>

@@ -23,7 +23,7 @@ def process_dataset(dataset: list, col: str, value: Any) -> list:
     return dataset2
 ```
 
-Tasks options can also be overridden at call-time using [`Task.options()`](redun/redun.md#redun.task.Task). For example, we could dynamically set the memory required for a AWS Batch task based on the dataset size.
+Tasks options can also be overridden at call-time using [`Task.options()`](redun/redun.md#redun.task.Task). For example, we could dynamically set the memory required for an AWS Batch task based on the dataset size.
 
 ```py
 @task()
@@ -82,7 +82,7 @@ The name of a python module that can be loaded to recreate this task. For exampl
 
 A string (default: `func.__name__`) naming the task. Task name must use only alphanumeric characters and underscore '_'.
 
-Every task in a workflow needs a unique name. By default this is automatically inferred from the function's name (e.g. `func.__name__`). However, the user may use the `name` task option to explicitly set a task's name. See [Task naming](design.md#task-naming) for more.
+Every task in a workflow needs a unique name. By default, this is automatically inferred from the function's name (e.g. `func.__name__`). However, the user may use the `name` task option to explicitly set a task's name. See [Task naming](design.md#task-naming) for more.
 
 ### `namespace`
 

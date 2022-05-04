@@ -318,7 +318,7 @@ If you set this, the <code class="docutils literal notranslate"><span class="pre
 </section>
 <section id="db-uri">
 <h4><code class="docutils literal notranslate"><span class="pre">db_uri</span></code><a class="headerlink" href="#db-uri" title="Permalink to this headline">#</a></h4>
-<p><a class="reference external" href="https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls">URI</a> for the redun database. redun supports the <code class="docutils literal notranslate"><span class="pre">sqlite</span></code> and <code class="docutils literal notranslate"><span class="pre">postgresql</span></code> portocols. If the URI is relative, it will be interpreted as relevative to the configuration directory, <code class="docutils literal notranslate"><span class="pre">.redun/</span></code>.</p>
+<p><a class="reference external" href="https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls">URI</a> for the redun database. redun supports the <code class="docutils literal notranslate"><span class="pre">sqlite</span></code> and <code class="docutils literal notranslate"><span class="pre">postgresql</span></code> protocols. If the URI is relative, it will be interpreted as relative to the configuration directory, <code class="docutils literal notranslate"><span class="pre">.redun/</span></code>.</p>
 <p>For security reasons, username and password are not allowed in <code class="docutils literal notranslate"><span class="pre">db_uri</span></code>, since <code class="docutils literal notranslate"><span class="pre">redun.ini</span></code> files are often checked into source control. See below for alternative ways to define database credentials.</p>
 </section>
 <section id="db-username-env">

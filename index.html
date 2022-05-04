@@ -207,15 +207,15 @@
           <img src="redun.svg" width="200"/>
 <p><em>yet another redundant workflow engine</em></p>
 <p><strong>redun</strong> aims to be a more expressive and efficient workflow framework, built on top of the popular Python programming language.
-It takes the somewhat contrarian view that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, compositiblity, recursion, high order functions, etc).
-redun’s key insight is that workflows can be expressed as <span class="xref myst">lazy expressions</span>, that are then evaluated by a scheduler which performs automatic parallelization, caching, and data provenance logging.</p>
+It takes the somewhat contrarian view that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, composability, recursion, high order functions, etc).
+redun’s key insight is that workflows can be expressed as <span class="xref myst">lazy expressions</span>, which are then evaluated by a scheduler that performs automatic parallelization, caching, and data provenance logging.</p>
 <p>redun’s key features are:</p>
 <ul class="simple">
 <li><p>Workflows are defined by lazy expressions that when evaluated emit dynamic directed acyclic graphs (DAGs), enabling complex data flows.</p></li>
 <li><p>Incremental computation that is reactive to both data changes as well as code changes.</p></li>
 <li><p>Workflow tasks can be executed on a variety of compute backend (threads, processes, AWS batch jobs, Spark jobs, etc).</p></li>
 <li><p>Data changes are detected for in memory values as well as external data sources such as files and object stores using file hashing.</p></li>
-<li><p>Code changes are detected by hashing individual Python functions and comparing against historical call graph recordings.</p></li>
+<li><p>Code changes are detected by hashing individual Python functions and comparing them against historical call graph recordings.</p></li>
 <li><p>Past intermediate results are cached centrally and reused across workflows.</p></li>
 <li><p>Past call graphs can be used as a data lineage record and can be queried for debugging and auditing.</p></li>
 </ul>

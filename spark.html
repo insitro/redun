@@ -266,7 +266,7 @@ importing it.</p>
 <section id="avoiding-import-errors">
 <h4>Avoiding import errors<a class="headerlink" href="#avoiding-import-errors" title="Permalink to this headline">#</a></h4>
 <p>In a file with multiple redun tasks, packages are often imported at the top-level that are needed by non-glue tasks.
-However when the glue task is launched, those top-level imports may cause the job to fail with ImportError.</p>
+However, when the glue task is launched, those top-level imports may cause the job to fail with ImportError.</p>
 <p>For example, the glue task here will fail due to being unable to import the package <code class="docutils literal notranslate"><span class="pre">foo</span></code>:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span>
 <span class="kn">import</span> <span class="nn">foo</span>
