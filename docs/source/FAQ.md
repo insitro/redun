@@ -5,12 +5,12 @@ A collection of gotchas, how-to's, and other common questions.
 ## How can I use an existing JobDefinition in AWS Batch Executor?
 New options and features are added to the JobDefintions in AWS Batch long before they make their way to boto3.
 Additionally, redun will not always be on the latest version of boto3.
-So, there can be a significant delay in the time an option is introduced for a JobDefinition in AWS Batch and the it becoming available to set in the version of boto3 used by redun(sharedMemory for example).
+So, there can be a significant delay in the time an option is introduced for a JobDefinition in AWS Batch, and it becoming available to set in the version of boto3 used by redun(sharedMemory for example).
 
 Given that potential delay, redun allows the user to create the JobDefinition themselves in AWS and then use that existing JobDefinition when running their tasks.
 To do this, set `autocreate_job=False` as a task option *and* specify a `job_def_name` in the task options.
 You *must* set the `job_def_name` to the name of the JobDefintion you manually created in AWS Batch.
-When both the above options are set on a task, redun will look for an existing JobDefintion by name only and will raise an error if not matches are found..
+When both the above options are set on a task, redun will look for an existing JobDefintion by name only and will raise an error if no matches are found.
 This is different from the default lookup which compares both the name and the container properties and will also create a definition if one does not exist. 
 
 
@@ -58,8 +58,8 @@ def add_footer(file_path: str) -> File
 ```
 
 In the above example, we still end up with the same output.
-However, if we rerun the task, it will not rerun as the ``file_path`` is unchanged so redun will find the past run in the cache and will no rerun.
+However, if we rerun the task, it will not rerun as the ``file_path`` is unchanged so redun will find the past run in the cache and will not rerun.
 
-In the case where your task is processing a file purely for reading (no writing), ``File`` is the ideal task argument type to use. By using ``File`` as a task argument type, the data provenance record the file hash and the workflow will properly react (rerun) due to changes in the input file.
+In the case where your task is processing a file purely for reading (no writing), ``File`` is the ideal task argument type to use. By using ``File`` as a task argument type, the data provenance record the file hash, and the workflow will properly react (rerun) due to changes in the input file.
 
 In summary, input ``File`` should be arguments, and output ``File`` should be return results.
