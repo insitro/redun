@@ -131,6 +131,7 @@ def get_or_create_job_definition(
     memory: int = 4,
     vcpus: int = 1,
     num_nodes: Optional[int] = None,
+    shared_memory: Optional[int] = None,
     role: Optional[str] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
     privileged: bool = False,
@@ -167,6 +168,8 @@ def get_or_create_job_definition(
         "ulimits": [],
         "privileged": privileged,
     }
+    if shared_memory is not None:
+        container_props["linuxParameters"] = {"sharedMemorySize": int(shared_memory * 1024)}
 
     if num_nodes is None:
         # Single-node job type
@@ -295,6 +298,7 @@ def batch_submit(
     vcpus: int = 1,
     gpus: int = 0,
     num_nodes: Optional[int] = None,
+    shared_memory: Optional[int] = None,
     retries: int = 1,
     role: Optional[str] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
@@ -332,6 +336,7 @@ def batch_submit(
             aws_region=aws_region,
             privileged=privileged,
             num_nodes=num_nodes,
+            shared_memory=shared_memory,
         )
 
     def apply_resources(container_properties: Dict) -> None:
@@ -397,6 +402,10 @@ def run_docker(
     volumes: Optional[Iterable[Tuple[str, str]]] = None,
     interactive: bool = True,
     cleanup: bool = False,
+    memory: int = 4,
+    vcpus: int = 1,
+    gpus: int = 0,
+    shared_memory: Optional[int] = None,
 ) -> str:
     """
     volumes: a list of ('host', 'container') path pairs for volume mouting.
@@ -433,6 +442,13 @@ def run_docker(
         volumes = []
     for host, container in volumes:
         common_args.extend(["-v", f"{host}:{container}"])
+
+    common_args.extend([f"--memory={memory}g", f"--cpus={vcpus}"])
+    if gpus:
+        # We can't easily assign a single gpu so we make all available if any GPUs are required.
+        common_args.extend(["--gpus", "all"])
+    if shared_memory is not None:
+        common_args.append(f"--shm-size={shared_memory}g")
 
     common_args.append(image)
     common_args.extend(command)
@@ -504,6 +520,7 @@ def get_batch_job_options(job_options: dict) -> dict:
         "vcpus",
         "gpus",
         "memory",
+        "shared_memory",
         "role",
         "retries",
         "privileged",
@@ -520,7 +537,7 @@ def get_docker_job_options(job_options: dict) -> dict:
     """
     Returns Docker-specific job options from general job options.
     """
-    keys = ["volumes", "interactive"]
+    keys = ["vcpus", "memory", "gpus", "shared_memory", "volumes", "interactive"]
     return {key: job_options[key] for key in keys if key in job_options}
 
 

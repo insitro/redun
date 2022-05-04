@@ -1237,6 +1237,9 @@ def test_executor_docker(
         # Ensure job options were passed correctly.
         assert run_docker_mock.call_args[1] == {
             "image": "my-image",
+            "gpus": 0,
+            "memory": 4,
+            "vcpus": 1,
         }
 
         run_docker_mock.reset_mock()
@@ -1255,6 +1258,9 @@ def test_executor_docker(
         # Ensure job options were passed correctly.
         assert run_docker_mock.call_args[1] == {
             "image": "my-image",
+            "gpus": 0,
+            "memory": 4,
+            "vcpus": 1,
         }
 
         # Simulate output file created by job.
@@ -1442,6 +1448,9 @@ def test_interactive(run_docker_mock, iter_local_job_status_mock, get_aws_user_m
     assert run_docker_mock.call_args[1] == {
         "image": "my-image",
         "interactive": True,
+        "gpus": 0,
+        "memory": 4,
+        "vcpus": 1,
     }
 
     # Cleanly stop executor.
@@ -1530,8 +1539,9 @@ def test_executor_inflight_array_job() -> None:
 
 @mock_s3
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+@patch("redun.executors.aws_batch.iter_local_job_status")
 @patch("redun.executors.aws_utils.package_code")
-def test_code_packaging(package_code_mock, get_aws_user_mock) -> None:
+def test_code_packaging(package_code_mock, iter_local_job_status_mock, get_aws_user_mock) -> None:
     """
     Ensure that code packaging only happens on first submission.
     """
@@ -1570,7 +1580,8 @@ def test_code_packaging(package_code_mock, get_aws_user_mock) -> None:
 
 @mock_s3
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
-def test_inflight_join_disabled_in_debug(get_aws_user_mock) -> None:
+@patch("redun.executors.aws_batch.iter_local_job_status")
+def test_inflight_join_disabled_in_debug(iter_local_job_status_mock, get_aws_user_mock) -> None:
     """
     Ensure that debug=True disables inflight job gathering as it is unnecessary.
     """
