@@ -71,9 +71,8 @@ from redun.executors.aws_batch import (
     AWSBatchExecutor,
     aws_describe_jobs,
     format_log_stream_event,
-    iter_log_stream,
 )
-from redun.executors.aws_utils import extract_tar
+from redun.executors.aws_utils import extract_tar, iter_log_stream
 from redun.file import File as BaseFile
 from redun.job_array import AWS_ARRAY_VAR
 from redun.logging import log_levels, logger

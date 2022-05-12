@@ -7,10 +7,8 @@ from unittest.mock import Mock, patch
 
 import boto3
 import moto
-import pytest
 from moto.glue.responses import GlueResponse
 
-import redun.executors.aws_glue as redun_glue
 from redun import File, task
 from redun.config import Config
 from redun.executors.aws_glue import AWSGlueExecutor, get_redun_lib_files, package_redun_lib
@@ -212,22 +210,6 @@ def test_executor_config(scheduler):
     assert executor.interval == 1.0
     assert executor.code_package["includes"] == ["*.txt"]
     assert executor.debug is False
-
-
-# This has a permissions error when running as pytest
-@pytest.mark.skip(reason="permissions")
-def test_error_logs() -> None:
-    """
-    Tests errors can be found in logs. Runs on an actual Glue output.
-    """
-    job_id = "jr_4eee8443c9e37797a96dc1c790843ecc6552ff34f648b6faff2f76ac07b9e4cc"
-    log_group = "/aws-glue/jobs/error"
-
-    output = list(redun_glue.get_error_logs(job_id, log_group))
-    assert output == [
-        '2021-06-30 14:18:34.523000  Exception in thread "main"',
-        "2021-06-30 14:18:34.523000  java.io.FileNotFoundException: File --task does not exist",
-    ]
 
 
 @use_tempdir

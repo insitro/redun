@@ -870,57 +870,6 @@ def iter_batch_job_status(
             break
 
 
-def iter_log_stream(
-    log_group_name: str,
-    log_stream: str,
-    limit: Optional[int] = None,
-    reverse: bool = False,
-    required: bool = True,
-    aws_region: str = aws_utils.DEFAULT_AWS_REGION,
-) -> Iterator[dict]:
-    """
-    Iterate through the events of logStream.
-    """
-    logs_client = aws_utils.get_aws_client("logs", aws_region=aws_region)
-    try:
-        response = logs_client.get_log_events(
-            logGroupName=log_group_name,
-            logStreamName=log_stream,
-            startFromHead=not reverse,
-            # boto API does not allow passing None, so we must fully exclude the parameter.
-            **{"limit": limit} if limit else {},
-        )
-    except logs_client.exceptions.ResourceNotFoundException as error:
-        if required:
-            # If logs are required, raise an error.
-            raise error
-        else:
-            return
-
-    while True:
-        events = response["events"]
-
-        # If no events, we are at the end of the stream.
-        if not events:
-            break
-
-        if reverse:
-            events = reversed(events)
-        yield from events
-
-        if not reverse:
-            next_token = response["nextForwardToken"]
-        else:
-            next_token = response["nextBackwardToken"]
-        response = logs_client.get_log_events(
-            logGroupName=log_group_name,
-            logStreamName=log_stream,
-            nextToken=next_token,
-            # boto API does not allow passing None, so we must fully exclude the parameter.
-            **{"limit": limit} if limit else {},
-        )
-
-
 def format_log_stream_event(event: dict) -> str:
     """
     Format a logStream event as a line.
@@ -950,7 +899,7 @@ def iter_batch_job_logs(
         # No log stream is present. Return no logs.
         return
 
-    yield from iter_log_stream(
+    yield from aws_utils.iter_log_stream(
         log_group_name=log_group_name,
         log_stream=log_stream,
         limit=limit,

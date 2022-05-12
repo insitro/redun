@@ -1,4 +1,3 @@
-import datetime
 import json
 import os
 import pickle
@@ -32,7 +31,14 @@ GLUE_JOB_STATUSES = aws_utils.JobStatus(
 )
 
 # These packages are needed for the redun lib to work on glue.
-DEFAULT_ADDITIONAL_PYTHON_MODULES = "alembic,mako,promise,sqlalchemy"
+# Versions should remain up to date with setup.py
+DEFAULT_ADDITIONAL_PYTHON_MODULES = [
+    "alembic>=1.4",
+    "mako",
+    "promise",
+    "s3fs>=2021.11.1",
+    "sqlalchemy>=1.3.17or<2",  # Don't use commas as AWS won't parse them.
+]
 
 
 def get_spark_history_dir(s3_scratch_prefix: str) -> str:
@@ -94,7 +100,7 @@ def get_or_create_glue_job_definition(
     temp_dir: str,
     extra_py_files: str,
     spark_history_dir: str,
-    additional_python_modules: str = DEFAULT_ADDITIONAL_PYTHON_MODULES,
+    additional_python_modules: List[str] = DEFAULT_ADDITIONAL_PYTHON_MODULES,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> str:
     """
@@ -107,8 +113,8 @@ def get_or_create_glue_job_definition(
         Description=f"Redun oneshot glue job {aws_utils.REDUN_REQUIRED_VERSION}",
         Role=role,
         ExecutionProperty={
-            "MaxConcurrentRuns": 1000,  # account-max value.
-        },
+            "MaxConcurrentRuns": 1000,
+        },  # account-max value.
         Command={
             "Name": "glueetl",
             "ScriptLocation": script_location,
@@ -118,10 +124,11 @@ def get_or_create_glue_job_definition(
             "--TempDir": temp_dir,
             "--enable-s3-parquet-optimized-committer": "true",
             "--extra-py-files": extra_py_files,
-            "--additional-python-modules": additional_python_modules,
+            "--additional-python-modules": ",".join(additional_python_modules),
             "--job-bookmark-option": "job-bookmark-disable",
             "--job-language": "python",
             "--enable-spark-ui": "true",
+            "--enable-job-insights": "true",
             "--spark-event-logs-path": spark_history_dir,
         },
         MaxRetries=0,
@@ -348,12 +355,14 @@ class AWSGlueExecutor(Executor):
 
         error: Optional[Exception] = None
         error_traceback: Optional[Traceback] = None
+        result: Optional[Any] = None
+        redun_job = self.running_glue_jobs.get(job["Id"])
+        assert redun_job
 
         if job["JobRunState"] in GLUE_JOB_STATUSES.success:
-            redun_job = self.running_glue_jobs.pop(job["Id"])
             result, exists = self._get_job_output(redun_job, check_valid=False)
             if exists:
-                self.scheduler.done_job(redun_job, result)
+                error = None
             else:
                 error = FileNotFoundError(
                     aws_utils.get_job_scratch_file(
@@ -363,39 +372,38 @@ class AWSGlueExecutor(Executor):
                 error_traceback = None
 
         elif job["JobRunState"] in GLUE_JOB_STATUSES.stopped:
-            redun_job = self.running_glue_jobs.pop(job["Id"])
             error = AWSGlueJobStoppedError("Job stopped by user.")
-            self.scheduler.reject_job(redun_job, error)
 
         elif job["JobRunState"] in GLUE_JOB_STATUSES.failure:
-            redun_job = self.running_glue_jobs.pop(job["Id"])
-            error, error_traceback = parse_task_error(self.s3_scratch_prefix, redun_job, job)
 
-            if not self.debug:
-                logs = ["*** CloudWatch logs for AWS Glue job {}:\n".format(job["Id"])]
-                logs.extend(
-                    get_error_logs(
-                        job_id=job["Id"],
-                        log_group_name=job["LogGroupName"] + "/error",
-                        aws_region=self.aws_region,
-                        max_results=100,
-                    )
+            # Errors may not be unpicklable out of the Glue environment, so use CloudWatch
+            # job insights to get a traceback.
+            if self.debug:
+                error, error_traceback = parse_task_error(self.s3_scratch_prefix, redun_job, job)
+            else:
+                error = AWSGlueError("Glue job failed: see log info.")
+                error_traceback = Traceback.from_error(error)
+
+                error_traceback.logs = get_job_insight_traceback(
+                    job_id=job["Id"],
+                    log_group_name=job["LogGroupName"],
+                    aws_region=self.aws_region,
+                    max_results=100,
                 )
-                if len(logs) > 100:
-                    logs.extend(["-----\n", "*** Logs truncated to last 100 errors ***\n"])
-
-                error_traceback.logs = logs
-
-            self.scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
 
         elif job["JobRunState"] in GLUE_JOB_STATUSES.timeout:
-            redun_job = self.running_glue_jobs.pop(job["Id"])
-
             error = AWSGlueJobTimeoutError(job.get("ErrorMessage", ""))
             error_traceback = Traceback.from_error(error)
 
+        # Job is still running
+        else:
+            return
+
+        self.running_glue_jobs.pop(job["Id"])
         if error:
             self.scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
+        else:
+            self.scheduler.done_job(redun_job, result)
 
     def _get_job_options(self, job: Job) -> dict:
         """
@@ -554,8 +562,8 @@ def submit_glue_job(
 
     # Comma separated string of Python modules to be installed with pip before job start.
     if job_options.get("additional_libs"):
-        glue_args["--additional-python-modules"] = (
-            DEFAULT_ADDITIONAL_PYTHON_MODULES + "," + ",".join(job_options["additional_libs"])
+        glue_args["--additional-python-modules"] = ",".join(
+            DEFAULT_ADDITIONAL_PYTHON_MODULES + job_options["additional_libs"]
         )
 
     # Extra python and data files are specified as comma separated strings.
@@ -636,36 +644,40 @@ def parse_task_error(
     return error, error_traceback
 
 
-def get_error_logs(
+def get_job_insight_traceback(
     job_id: str,
     log_group_name: str,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
     max_results=200,
-) -> Iterator[str]:
+) -> List[str]:
     """
-    Gets error lines from a log group.
+    Gets the traceback from AWS' Glue Job insights.
     """
-    logs_client = aws_utils.get_aws_client("logs", aws_region=aws_region)
-    paginator = logs_client.get_paginator("filter_log_events")
+    log_lines = aws_utils.iter_log_stream(
+        log_group_name=f"{log_group_name}/logs-v2",
+        log_stream=f"{job_id}-job-insights-rca-driver",
+        limit=max_results,
+        reverse=False,
+        required=False,
+        aws_region=aws_region,
+    )
 
-    try:
-        for response in paginator.paginate(
-            logGroupName=log_group_name,
-            logStreamNamePrefix=job_id,
-            filterPattern="?ERROR ?Error ?error ?Exception ?exception ?WARN",
-            PaginationConfig={"MaxItems": max_results},
-        ):
+    if not log_lines:
+        return ["No job insights found. See AWS Glue GUI online."]
 
-            events = response["events"]
-            while events:
-                event = events.pop(0)
-                timestamp = str(datetime.datetime.fromtimestamp(event["timestamp"] / 1000))
-                yield "{timestamp}  {message}".format(
-                    timestamp=timestamp, message=event["message"]
+    traceback = []
+    for line in log_lines:
+        message = line.get("message")
+        if message and "Failure Reason" in message:
+            # Message looks like "ERROR GlueException... [Glue Exception Analysis] {DICT we want}".
+            try:
+                traceback.extend(
+                    json.loads(message[message.index("{") :])["Failure Reason"].split("\n")
                 )
+            except Exception:
+                continue
 
-    except logs_client.exceptions.ResourceNotFoundException:
-        return None
+    return traceback
 
 
 class AWSGlueError(Exception):

@@ -6,7 +6,7 @@ import tarfile
 import tempfile
 import threading
 import zipfile
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, List, NamedTuple, Optional, Set, Tuple, Union
 
 import boto3
 
@@ -229,3 +229,54 @@ def parse_task_result(s3_scratch_prefix: str, job: Job) -> Any:
         result = [0, output_file.read(mode="rb")]  # TODO: Get real exitcode.
 
     return result
+
+
+def iter_log_stream(
+    log_group_name: str,
+    log_stream: str,
+    limit: Optional[int] = None,
+    reverse: bool = False,
+    required: bool = True,
+    aws_region: str = DEFAULT_AWS_REGION,
+) -> Iterator[dict]:
+    """
+    Iterate through the events of logStream.
+    """
+    logs_client = get_aws_client("logs", aws_region=aws_region)
+    try:
+        response = logs_client.get_log_events(
+            logGroupName=log_group_name,
+            logStreamName=log_stream,
+            startFromHead=not reverse,
+            # boto API does not allow passing None, so we must fully exclude the parameter.
+            **{"limit": limit} if limit else {},
+        )
+    except logs_client.exceptions.ResourceNotFoundException as error:
+        if required:
+            # If logs are required, raise an error.
+            raise error
+        else:
+            return
+
+    while True:
+        events = response["events"]
+
+        # If no events, we are at the end of the stream.
+        if not events:
+            break
+
+        if reverse:
+            events = reversed(events)
+        yield from events
+
+        if not reverse:
+            next_token = response["nextForwardToken"]
+        else:
+            next_token = response["nextBackwardToken"]
+        response = logs_client.get_log_events(
+            logGroupName=log_group_name,
+            logStreamName=log_stream,
+            nextToken=next_token,
+            # boto API does not allow passing None, so we must fully exclude the parameter.
+            **{"limit": limit} if limit else {},
+        )
