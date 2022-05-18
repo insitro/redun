@@ -18,24 +18,27 @@ class Executor:
         config=None,
     ):
         self.name = name
-        self.scheduler = scheduler
+        self._scheduler = scheduler
+
+    def set_scheduler(self, scheduler: "Scheduler") -> None:
+        self._scheduler = scheduler
 
     def log(self, *messages: Any, **kwargs) -> None:
         """
         Display log message through Scheduler.
         """
-        assert self.scheduler
-        self.scheduler.log(f"Executor[{self.name}]:", *messages, **kwargs)
+        assert self._scheduler
+        self._scheduler.log(f"Executor[{self.name}]:", *messages, **kwargs)
 
     def submit(self, job: "Job", args: Tuple, kwargs: dict) -> None:
-        assert self.scheduler
-        self.scheduler.reject_job(
+        assert self._scheduler
+        self._scheduler.reject_job(
             job, ExecutorError("Executor {} does not support submitting tasks.".format(type(self)))
         )
 
     def submit_script(self, job: "Job", args: Tuple, kwargs: dict) -> None:
-        assert self.scheduler
-        self.scheduler.reject_job(
+        assert self._scheduler
+        self._scheduler.reject_job(
             job,
             ExecutorError(
                 "Executor {} does not support submitting script tasks.".format(type(self))

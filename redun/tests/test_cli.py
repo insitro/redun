@@ -32,7 +32,7 @@ from redun.cli import (
     setup_scheduler,
 )
 from redun.executors.aws_batch import BATCH_LOG_GROUP
-from redun.executors.aws_utils import create_tar
+from redun.executors.code_packaging import create_tar
 from redun.job_array import AWS_ARRAY_VAR
 from redun.scheduler import Traceback
 from redun.tags import ANY_VALUE

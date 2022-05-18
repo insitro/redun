@@ -706,7 +706,7 @@ class Scheduler:
         Add executor to scheduler.
         """
         self.executors[executor.name] = executor
-        executor.scheduler = self
+        executor.set_scheduler(self)
 
     def load(self, migrate: Optional[bool] = None) -> None:
         self.backend.load(migrate=migrate)

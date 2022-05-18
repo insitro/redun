@@ -2,32 +2,45 @@ import copy
 import datetime
 import json
 import logging
-import os
-import pickle
 import re
 import subprocess
 import threading
 import time
 import uuid
 from collections import OrderedDict, defaultdict
+from configparser import SectionProxy
 from functools import lru_cache
 from itertools import islice
 from shlex import quote
-from tempfile import mkstemp
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, cast
-from urllib.error import URLError
-from urllib.request import urlopen
 
 import boto3
 
+from redun.config import create_config_section
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
+from redun.executors.code_packaging import package_code, parse_code_package_config
+from redun.executors.command import get_oneshot_command
+from redun.executors.docker import DockerExecutor
+from redun.executors.scratch import (
+    SCRATCH_ERROR,
+    SCRATCH_HASHES,
+    SCRATCH_INPUT,
+    SCRATCH_OUTPUT,
+    SCRATCH_STATUS,
+    ExceptionNotFoundError,
+    get_array_scratch_file,
+    get_job_scratch_dir,
+    get_job_scratch_file,
+)
+from redun.executors.scratch import parse_job_error as _parse_job_error
+from redun.executors.scratch import parse_job_result
 from redun.file import File
-from redun.job_array import AWS_ARRAY_VAR, JobArrayer
+from redun.job_array import JobArrayer
 from redun.scheduler import Job, Scheduler, Traceback
-from redun.scripting import ScriptError, get_task_command
+from redun.scripting import get_task_command
 from redun.task import Task
-from redun.utils import get_import_paths, pickle_dump
+from redun.utils import pickle_dump
 
 SUBMITTED = "SUBMITTED"
 PENDING = "PENDING"
@@ -53,6 +66,7 @@ BATCH_LOG_GROUP = "/aws/batch/job"
 ARRAY_JOB_SUFFIX = "array"
 DOCKER_INSPECT_ERROR = "CannotInspectContainerError: Could not transition to inspecting"
 BATCH_JOB_TIMEOUT_ERROR = "Job attempt duration exceeded timeout"
+DEBUG_SCRATCH = "scratch"
 
 
 def get_default_registry() -> str:
@@ -250,35 +264,30 @@ def make_job_def_name(image_name: str, job_def_suffix: str = "-jd") -> str:
 
 def create_job_override_command(
     command: List[str],
-    command_output_suffix: Optional[List[str]] = None,
+    command_worker: Optional[List[str]] = None,
     num_nodes: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Format the command into the form needed for the AWS Batch `submit_job` API.
 
     command: A list of tokens comprising the command
-    command_output_suffix: Tokens to add to the end of the command to actually trigger output
-        to get written.
+    command_worker: List of command tokens for worker nodes, if present.
     num_nodes: If `None`, this is a single-node job. If not `None`, a multi-node job.
 
     Returns a dictionary to be passed to `submit_job` as kwargs."""
     batch_job_args: Dict[str, Any] = {}
 
-    # Multi-node jobs use node overrides.
-    if command_output_suffix is None:
-        command_output_suffix = []
-
     if num_nodes is None:
         # Single-node jobs override the container.
-        batch_job_args["containerOverrides"] = {"command": command + command_output_suffix}
+        batch_job_args["containerOverrides"] = {"command": command}
     else:
 
         # Make a shallow copy so we can suppress output on these nodes
         node_overrides = [
             {
                 "targetNodes": "0",
-                "containerOverrides": {"command": command + command_output_suffix},
+                "containerOverrides": {"command": command},
             },
-            {"targetNodes": "1:", "containerOverrides": {"command": command}},
+            {"targetNodes": "1:", "containerOverrides": {"command": command_worker}},
         ]
 
         batch_job_args["nodeOverrides"] = {"nodePropertyOverrides": node_overrides}
@@ -382,103 +391,6 @@ def batch_submit(
     return batch_run
 
 
-def is_ec2_instance() -> bool:
-    """
-    Returns True if this process is running on an EC2 instance.
-
-    We use the presence of a link-local address as a sign we are on an EC2 instance.
-    """
-    try:
-        resp = urlopen("http://169.254.169.254/latest/meta-data/", timeout=1)
-        return resp.status == 200
-    except URLError:
-        return False
-
-
-def run_docker(
-    command: List[str],
-    image: str,
-    array_index: int = -1,
-    volumes: Optional[Iterable[Tuple[str, str]]] = None,
-    interactive: bool = True,
-    cleanup: bool = False,
-    memory: int = 4,
-    vcpus: int = 1,
-    gpus: int = 0,
-    shared_memory: Optional[int] = None,
-) -> str:
-    """
-    volumes: a list of ('host', 'container') path pairs for volume mouting.
-    """
-    # Add AWS credentials to environment for docker command.
-    env = dict(os.environ)
-    if not is_ec2_instance():
-        session = boto3.Session()
-        creds = session.get_credentials().get_frozen_credentials()
-        cred_map = {
-            "AWS_ACCESS_KEY_ID": creds.access_key,
-            "AWS_SECRET_ACCESS_KEY": creds.secret_key,
-            "AWS_SESSION_TOKEN": creds.token,
-        }
-        defined = {k: v for k, v in cred_map.items() if v}
-        env.update(defined)
-
-    common_args = []
-    if cleanup:
-        common_args.append("--rm")
-
-    # Environment args.
-    common_args.extend(
-        ["-e", "AWS_ACCESS_KEY_ID", "-e", "AWS_SECRET_ACCESS_KEY", "-e", "AWS_SESSION_TOKEN"]
-    )
-
-    # Add array index environment variable if running an array job
-    if array_index >= 0:
-        env.update({AWS_ARRAY_VAR: str(array_index)})
-        common_args.extend(["-e", AWS_ARRAY_VAR])
-
-    # Volume mounting args.
-    if not volumes:
-        volumes = []
-    for host, container in volumes:
-        common_args.extend(["-v", f"{host}:{container}"])
-
-    common_args.extend([f"--memory={memory}g", f"--cpus={vcpus}"])
-    if gpus:
-        # We can't easily assign a single gpu so we make all available if any GPUs are required.
-        common_args.extend(["--gpus", "all"])
-    if shared_memory is not None:
-        common_args.append(f"--shm-size={shared_memory}g")
-
-    common_args.append(image)
-    common_args.extend(command)
-
-    if interactive:
-        # Adding this flag is necessary to prevent docker from hijacking the terminal and modifying
-        # the tty settings. One of the modifications it makes when it hijacks the terminal is to
-        # change the behavior of line endings which means output(like from logging) will be
-        # malformed until the docker container exits and the hijacked connection is closed which
-        # resets the tty settings.
-        env["NORAW"] = "true"
-
-        # Run Docker interactively.
-        fd, cidfile = mkstemp()
-        os.close(fd)
-        os.remove(cidfile)
-
-        docker_command = ["docker", "run", "-it", "--cidfile", cidfile] + common_args
-        subprocess.check_call(docker_command, env=env)
-        with open(cidfile) as infile:
-            container_id = infile.read().strip()
-        os.remove(cidfile)
-    else:
-        # Run Docker in the background.
-        docker_command = ["docker", "run", "-d"] + common_args
-        container_id = subprocess.check_output(docker_command, env=env).strip().decode("utf8")
-
-    return container_id
-
-
 def get_batch_job_name(prefix: str, job_hash: str, array: bool = False) -> str:
     """
     Return a AWS Batch Job name by either job or job hash.
@@ -533,14 +445,6 @@ def get_batch_job_options(job_options: dict) -> dict:
     return {key: job_options[key] for key in keys if key in job_options}
 
 
-def get_docker_job_options(job_options: dict) -> dict:
-    """
-    Returns Docker-specific job options from general job options.
-    """
-    keys = ["vcpus", "memory", "gpus", "shared_memory", "volumes", "interactive"]
-    return {key: job_options[key] for key in keys if key in job_options}
-
-
 def submit_task(
     image: str,
     queue: str,
@@ -552,121 +456,62 @@ def submit_task(
     job_options: dict = {},
     array_uuid: Optional[str] = None,
     array_size: int = 0,
-    debug: bool = False,
     code_file: Optional[File] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> Dict[str, Any]:
     """
-    Submit a redun Task to AWS Batch or Docker (debug=True).
+    Submit a redun Task to AWS Batch.
     """
-    if array_size:
-        # Output_path will contain a pickled list of actual output paths, etc.
-        # Want files that won't get clobbered when jobs actually run
-        assert array_uuid
-        input_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_INPUT
-        )
-        output_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_OUTPUT
-        )
-        error_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_ERROR
-        )
-    else:
-        input_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, aws_utils.S3_SCRATCH_INPUT
-        )
-        output_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
-        )
-        error_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, aws_utils.S3_SCRATCH_ERROR
-        )
-
-        # Serialize arguments to input file.
-        # Array jobs set this up earlier, in `_submit_array_job`
-        input_file = File(input_path)
-        with input_file.open("wb") as out:
-            pickle_dump([args, kwargs], out)
-
-    # Determine additional python import paths.
-    import_args = []
-    base_path = os.getcwd()
-    for abs_path in get_import_paths():
-        # Use relative paths so that they work inside the docker container.
-        rel_path = os.path.relpath(abs_path, base_path)
-        import_args.append("--import-path")
-        import_args.append(rel_path)
-
-    # Build job command.
-    code_arg = ["--code", code_file.path] if code_file else []
-    array_arg = ["--array-job"] if array_size else []
-    cache_arg = [] if job_options.get("cache", True) else ["--no-cache"]
-    command = (
-        [
-            aws_utils.REDUN_PROG,
-            "--check-version",
-            aws_utils.REDUN_REQUIRED_VERSION,
-            "oneshot",
-            a_task.load_module,
-        ]
-        + import_args
-        + code_arg
-        + array_arg
-        + cache_arg
-        + ["--input", input_path, "--error", error_path, a_task.fullname]
+    command = get_oneshot_command(
+        s3_scratch_prefix,
+        job,
+        a_task,
+        args,
+        kwargs,
+        job_options=job_options,
+        code_file=code_file,
+        array_uuid=array_uuid,
     )
-    command_output_suffix = [
-        "--output",
-        output_path,
-    ]
+    command_worker = get_oneshot_command(
+        s3_scratch_prefix,
+        job,
+        a_task,
+        args,
+        kwargs,
+        job_options=job_options,
+        code_file=code_file,
+        array_uuid=array_uuid,
+        output_path="/dev/null",  # Let main command write to scratch file.
+    )
 
-    if not debug:
-        if array_uuid:
-            job_hash = array_uuid
-        else:
-            assert job.eval_hash
-            job_hash = job.eval_hash
-
-        # Submit to AWS Batch.
-        job_name = get_batch_job_name(
-            job_options.get("job_name_prefix", "batch-job"), job_hash, array=bool(array_size)
-        )
-
-        job_batch_options = get_batch_job_options(job_options)
-        job_batch_args = create_job_override_command(
-            command=command,
-            command_output_suffix=command_output_suffix,
-            num_nodes=job_batch_options.get("num_nodes", None),
-        )
-
-        result = batch_submit(
-            job_batch_args,
-            queue,
-            image=image,
-            job_name=job_name,
-            job_def_suffix="-redun-jd",
-            aws_region=aws_region,
-            array_size=array_size,
-            **job_batch_options,
-        )
+    if array_uuid:
+        job_hash = array_uuid
     else:
-        # Submit to local Docker.
-        # This loop only runs if array_size > 0
-        result = {"jobId": [], "redun_job_id": []}
-        for i in range(array_size):
-            container_id = run_docker(
-                command, image=image, array_index=i, **get_docker_job_options(job_options)
-            )
-            result["jobId"].append(container_id)
-            result["redun_job_id"].append(job.id)
+        assert job.eval_hash
+        job_hash = job.eval_hash
 
-        # Otherwise, submit one non-array job
-        if not array_size:
-            container_id = run_docker(
-                command + command_output_suffix, image=image, **get_docker_job_options(job_options)
-            )
-            result = {"jobId": container_id, "redun_job_id": job.id}
+    # Submit to AWS Batch.
+    job_name = get_batch_job_name(
+        job_options.get("job_name_prefix", "batch-job"), job_hash, array=bool(array_size)
+    )
+
+    job_batch_options = get_batch_job_options(job_options)
+    job_batch_args = create_job_override_command(
+        command=command,
+        command_worker=command_worker,
+        num_nodes=job_batch_options.get("num_nodes", None),
+    )
+
+    result = batch_submit(
+        job_batch_args,
+        queue,
+        image=image,
+        job_name=job_name,
+        job_def_suffix="-redun-jd",
+        aws_region=aws_region,
+        array_size=array_size,
+        **job_batch_options,
+    )
     return result
 
 
@@ -677,20 +522,15 @@ def submit_command(
     job: Job,
     command: str,
     job_options: dict = {},
-    debug: bool = False,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> dict:
     """
-    Submit a shell command to AWS Batch or Docker (debug=True).
+    Submit a shell command to AWS Batch.
     """
-    input_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, aws_utils.S3_SCRATCH_INPUT)
-    output_path = aws_utils.get_job_scratch_file(
-        s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
-    )
-    error_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, aws_utils.S3_SCRATCH_ERROR)
-    status_path = aws_utils.get_job_scratch_file(
-        s3_scratch_prefix, job, aws_utils.S3_SCRATCH_STATUS
-    )
+    input_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_INPUT)
+    output_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_OUTPUT)
+    error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
+    status_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_STATUS)
 
     # Serialize arguments to input file.
     input_file = File(input_path)
@@ -724,43 +564,33 @@ chmod +x .task_command
             output_path=quote(output_path),
             error_path=quote(error_path),
             status_path=quote(status_path),
-            exit_command="exit 1" if not debug else "",
+            exit_command="exit 1",
         ),
     ]
 
-    if not debug:
-        # Submit to AWS Batch.
-        assert job.eval_hash
-        job_name = get_batch_job_name(
-            job_options.get("job_name_prefix", "batch-job"), job.eval_hash
-        )
+    # Submit to AWS Batch.
+    assert job.eval_hash
+    job_name = get_batch_job_name(job_options.get("job_name_prefix", "batch-job"), job.eval_hash)
 
-        job_batch_options = get_batch_job_options(job_options)
-        job_batch_args = create_job_override_command(
-            command=shell_command,
-            command_output_suffix=None,
-            num_nodes=job_batch_options.get("num_nodes", None),
-        )
+    job_batch_options = get_batch_job_options(job_options)
+    job_batch_args = create_job_override_command(
+        command=shell_command,
+        num_nodes=job_batch_options.get("num_nodes", None),
+    )
 
-        # Submit to AWS Batch.
-        return batch_submit(
-            job_batch_args,
-            queue,
-            image=image,
-            job_name=job_name,
-            job_def_suffix="-redun-jd",
-            aws_region=aws_region,
-            **job_batch_options,
-        )
-    else:
-        # Submit to local Docker.
-        container_id = run_docker(
-            shell_command, image=image, **get_docker_job_options(job_options)
-        )
-        return {"jobId": container_id, "redun_job_id": job.id}
+    # Submit to AWS Batch.
+    return batch_submit(
+        job_batch_args,
+        queue,
+        image=image,
+        job_name=job_name,
+        job_def_suffix="-redun-jd",
+        aws_region=aws_region,
+        **job_batch_options,
+    )
 
 
-def parse_task_error(
+def parse_job_error(
     s3_scratch_prefix: str, job: Job, batch_job_metadata: Optional[dict] = None
 ) -> Tuple[Exception, "Traceback"]:
     """
@@ -768,41 +598,23 @@ def parse_task_error(
     """
     assert job.task
 
-    error_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, aws_utils.S3_SCRATCH_ERROR)
-    error_file = File(error_path)
+    error, error_traceback = _parse_job_error(s3_scratch_prefix, job)
 
-    if not job.task.script:
-        # Normal Tasks (non-script) store errors as Pickled exception, traceback tuples.
-        if error_file.exists():
-            error, error_traceback = pickle.loads(cast(bytes, error_file.read("rb")))
-        else:
-            if batch_job_metadata:
-                try:
-                    status_reason = batch_job_metadata["attempts"][-1]["statusReason"]
-                except (KeyError, IndexError):
-                    status_reason = ""
-            else:
-                status_reason = ""
-
+    # Handle AWS Batch-specific errors.
+    if isinstance(error, ExceptionNotFoundError) and batch_job_metadata:
+        try:
+            status_reason = batch_job_metadata["attempts"][-1]["statusReason"]
             if status_reason == BATCH_JOB_TIMEOUT_ERROR:
                 error = AWSBatchJobTimeoutError(BATCH_JOB_TIMEOUT_ERROR)
-            else:
-                error = AWSBatchError(
-                    "Exception and traceback could not be found for AWS Batch Job."
-                )
-            error_traceback = Traceback.from_error(error)
-    else:
-        # Script task.
-        if error_file.exists():
-            error = ScriptError(cast(bytes, error_file.read("rb")))
-        else:
-            error = AWSBatchError("stderr could not be found for AWS Batch Job.")
-        error_traceback = Traceback.from_error(error)
+                error_traceback = Traceback.from_error(error)
+
+        except (KeyError, IndexError):
+            pass
 
     return error, error_traceback
 
 
-def parse_task_logs(
+def parse_job_logs(
     batch_job_id: str,
     max_lines: int = 1000,
     required: bool = True,
@@ -929,41 +741,6 @@ def iter_batch_job_log_lines(
     return map(format_log_stream_event, events)
 
 
-def iter_local_job_status(s3_scratch_prefix: str, job_id2job: Dict[str, "Job"]) -> Iterator[dict]:
-    """
-    Returns local Docker jobs grouped by their status.
-    """
-    running_containers = subprocess.check_output(["docker", "ps", "--no-trunc"]).decode("utf8")
-
-    for job_id, redun_job in job_id2job.items():
-        if job_id not in running_containers:
-            # Job is done running.
-            status_file = File(
-                aws_utils.get_job_scratch_file(
-                    s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_STATUS
-                )
-            )
-            output_file = File(
-                aws_utils.get_job_scratch_file(
-                    s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_OUTPUT
-                )
-            )
-
-            # Get docker logs and remove container.
-            logs = subprocess.check_output(["docker", "logs", job_id]).decode("utf8")
-            logs += "Removing container...\n"
-            logs += subprocess.check_output(["docker", "rm", job_id]).decode("utf8")
-
-            # TODO: Simplify whether status file is always used or not.
-            if status_file.exists():
-                succeeded = status_file.read().strip() == "ok"
-            else:
-                succeeded = output_file.exists()
-
-            status = SUCCEEDED if succeeded else FAILED
-            yield {"jobId": job_id, "status": status, "logs": logs}
-
-
 class AWSBatchError(Exception):
     pass
 
@@ -976,12 +753,30 @@ class AWSBatchJobTimeoutError(Exception):
     pass
 
 
+def get_docker_executor_config(config: SectionProxy) -> SectionProxy:
+    """
+    Returns a config for DockerExecutor.
+    """
+    keys = ["image", "scratch", "job_monitor_interval", "vcpus", "gpus", "memory"]
+    return create_config_section({key: config[key] for key in keys if key in config})
+
+
 @register_executor("aws_batch")
 class AWSBatchExecutor(Executor):
-    def __init__(self, name: str, scheduler: Optional["Scheduler"] = None, config=None):
+    def __init__(
+        self,
+        name: str,
+        scheduler: Optional["Scheduler"] = None,
+        config: Optional[SectionProxy] = None,
+    ):
         super().__init__(name, scheduler=scheduler)
         if config is None:
             raise ValueError("AWSBatchExecutor requires config.")
+
+        # Use DockerExecutor for local debug mode.
+        docker_config = get_docker_executor_config(config)
+        docker_config["scratch"] = config.get("debug_scratch", fallback=DEBUG_SCRATCH)
+        self._docker_executor = DockerExecutor(name + "_debug", scheduler, config=docker_config)
 
         # Required config.
         self.image = config["image"]
@@ -991,43 +786,43 @@ class AWSBatchExecutor(Executor):
         # Optional config.
         self.aws_region = config.get("aws_region", aws_utils.get_default_region())
         self.role = config.get("role")
-        self.code_package = aws_utils.parse_code_package_config(config)
+        self.code_package = parse_code_package_config(config)
         self.code_file: Optional[File] = None
         self.debug = config.getboolean("debug", fallback=False)
 
         # Default task options.
-        self.default_task_options = {
-            "vcpus": config.getint("vcpus", 1),
-            "gpus": config.getint("gpus", 0),
-            "memory": config.getint("memory", 4),
-            "retries": config.getint("retries", 1),
+        self.default_task_options: Dict[str, Any] = {
+            "vcpus": config.getint("vcpus", fallback=1),
+            "gpus": config.getint("gpus", fallback=0),
+            "memory": config.getint("memory", fallback=4),
+            "retries": config.getint("retries", fallback=1),
             "role": config.get("role"),
-            "job_name_prefix": config.get("job_name_prefix", "redun-job"),
-            "num_nodes": config.getint("num_nodes", None),
+            "job_name_prefix": config.get("job_name_prefix", fallback="redun-job"),
+            "num_nodes": config.getint("num_nodes", fallback=None),
         }
         if config.get("batch_tags"):
             self.default_task_options["batch_tags"] = json.loads(config.get("batch_tags"))
-        self.use_default_batch_tags = config.getboolean("default_batch_tags", True)
+        self.use_default_batch_tags = config.getboolean("default_batch_tags", fallback=True)
 
         self.is_running = False
         # We use an OrderedDict in order to retain submission order.
         self.pending_batch_jobs: Dict[str, "Job"] = OrderedDict()
         self.preexisting_batch_jobs: Dict[str, str] = {}  # Job hash -> Job ID
-
-        if not self.debug:
-            self.interval = config.getfloat("job_monitor_interval", 5.0)
-        else:
-            self.interval = config.getfloat("job_monitor_interval", 0.2)
+        self.interval = config.getfloat("job_monitor_interval", fallback=5.0)
 
         self._thread: Optional[threading.Thread] = None
         self.arrayer = JobArrayer(
             executor=self,
             submit_interval=self.interval,
-            stale_time=config.getfloat("job_stale_time", 3.0),
-            min_array_size=config.getint("min_array_size", 5),
-            max_array_size=config.getint("max_array_size", 1000),
+            stale_time=config.getfloat("job_stale_time", fallback=3.0),
+            min_array_size=config.getint("min_array_size", fallback=5),
+            max_array_size=config.getint("max_array_size", fallback=1000),
         )
         self._aws_user: Optional[str] = None
+
+    def set_scheduler(self, scheduler: Scheduler) -> None:
+        super().set_scheduler(scheduler)
+        self._docker_executor.set_scheduler(scheduler)
 
     def gather_inflight_jobs(self) -> None:
 
@@ -1061,9 +856,7 @@ class AWSBatchExecutor(Executor):
             if not parent_hash:
                 continue
             eval_file = File(
-                aws_utils.get_array_scratch_file(
-                    self.s3_scratch_prefix, parent_hash, aws_utils.S3_SCRATCH_HASHES
-                )
+                get_array_scratch_file(self.s3_scratch_prefix, parent_hash, SCRATCH_HASHES)
             )
             if not eval_file.exists():
                 # Eval file does not exist, so we cannot reunite with this array job.
@@ -1092,6 +885,7 @@ class AWSBatchExecutor(Executor):
         """
         Stop Executor and monitoring thread.
         """
+        self._docker_executor.stop()
         self.arrayer.stop()
         self.is_running = False
 
@@ -1129,13 +923,13 @@ class AWSBatchExecutor(Executor):
         we stay under API rate limits, and we keep the compute in this
         thread low so as to not interfere with new submissions.
         """
-        assert self.scheduler
+        assert self._scheduler
         chunk_size = 100
         pending_truncate = 10
 
         try:
             while self.is_running and (self.pending_batch_jobs or self.arrayer.num_pending):
-                if self.scheduler.logger.level >= logging.DEBUG:
+                if self._scheduler.logger.level >= logging.DEBUG:
                     self.log(
                         f"Preparing {self.arrayer.num_pending} job(s) for Job Arrays.",
                         level=logging.DEBUG,
@@ -1145,33 +939,24 @@ class AWSBatchExecutor(Executor):
                         + " ".join(sorted(self.pending_batch_jobs.keys())),
                         level=logging.DEBUG,
                     )
-                if not self.debug:
-                    # Copy pending_batch_jobs.keys() since it can change due to new submissions.
-                    jobs = iter_batch_job_status(
-                        list(self.pending_batch_jobs.keys()),
-                        pending_truncate=pending_truncate,
-                        aws_region=self.aws_region,
-                    )
-                    for i, job in enumerate(jobs):
-                        self._process_job_status(job)
-                        if i % chunk_size == 0:
-                            # Sleep after every chunk to avoid excessive API calls.
-                            time.sleep(self.interval)
-
-                else:
-                    # Copy pending_batch_jobs since it can change due to new submissions.
-                    jobs = iter_local_job_status(
-                        self.s3_scratch_prefix, dict(self.pending_batch_jobs)
-                    )
-                    for job in jobs:
-                        self._process_job_status(job)
+                # Copy pending_batch_jobs.keys() since it can change due to new submissions.
+                jobs = iter_batch_job_status(
+                    list(self.pending_batch_jobs.keys()),
+                    pending_truncate=pending_truncate,
+                    aws_region=self.aws_region,
+                )
+                for i, job in enumerate(jobs):
+                    self._process_job_status(job)
+                    if i % chunk_size == 0:
+                        # Sleep after every chunk to avoid excessive API calls.
+                        time.sleep(self.interval)
                 time.sleep(self.interval)
 
         except Exception as error:
             # Since we run this is method at the top-level of a thread, we
             # need to catch all exceptions so we can properly report them to
             # the scheduler.
-            self.scheduler.reject_job(None, error)
+            self._scheduler.reject_job(None, error)
 
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
@@ -1193,18 +978,14 @@ class AWSBatchExecutor(Executor):
             if redun_job.task.script:
                 # Script tasks will report their status in a status file.
                 status_file = File(
-                    aws_utils.get_job_scratch_file(
-                        self.s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_STATUS
-                    )
+                    get_job_scratch_file(self.s3_scratch_prefix, redun_job, SCRATCH_STATUS)
                 )
                 if status_file.exists():
                     return status_file.read().strip() == "ok", container_reason
             else:
                 # Non-script tasks only create an output file if it is successful.
                 output_file = File(
-                    aws_utils.get_job_scratch_file(
-                        self.s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_OUTPUT
-                    )
+                    get_job_scratch_file(self.s3_scratch_prefix, redun_job, SCRATCH_OUTPUT)
                 )
                 return output_file.exists(), container_reason
 
@@ -1214,7 +995,7 @@ class AWSBatchExecutor(Executor):
         """
         Process AWS Batch job statuses.
         """
-        assert self.scheduler
+        assert self._scheduler
         job_status: Optional[str] = None
 
         # Determine job status.
@@ -1225,7 +1006,9 @@ class AWSBatchExecutor(Executor):
             can_override, container_reason = self._can_override_failed(job)
             if can_override:
                 job_status = SUCCEEDED
-                self.scheduler.log("NOTE: Overriding AWS Batch error: {}".format(container_reason))
+                self._scheduler.log(
+                    "NOTE: Overriding AWS Batch error: {}".format(container_reason)
+                )
             else:
                 job_status = FAILED
         else:
@@ -1234,51 +1017,43 @@ class AWSBatchExecutor(Executor):
         # Determine redun Job and job_tags.
         redun_job = self.pending_batch_jobs.pop(job["jobId"])
         job_tags = []
-        if not self.debug:
-            job_tags.append(("aws_batch_job", job["jobId"]))
-            log_stream = job.get("container", {}).get("logStreamName")
-            if log_stream:
-                job_tags.append(("aws_log_stream", log_stream))
+        job_tags.append(("aws_batch_job", job["jobId"]))
+        log_stream = job.get("container", {}).get("logStreamName")
+        if log_stream:
+            job_tags.append(("aws_log_stream", log_stream))
 
         if job_status == SUCCEEDED:
             # Assume a recently completed job has valid results.
-            result, exists = self._get_job_output(redun_job, check_valid=False)
+            result, exists = parse_job_result(self.s3_scratch_prefix, redun_job)
             if exists:
-                self.scheduler.done_job(redun_job, result, job_tags=job_tags)
+                self._scheduler.done_job(redun_job, result, job_tags=job_tags)
             else:
                 # This can happen if job ended in an inconsistent state.
-                self.scheduler.reject_job(
+                self._scheduler.reject_job(
                     redun_job,
                     FileNotFoundError(
-                        aws_utils.get_job_scratch_file(
-                            self.s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_OUTPUT
-                        )
+                        get_job_scratch_file(self.s3_scratch_prefix, redun_job, SCRATCH_OUTPUT)
                     ),
                     job_tags=job_tags,
                 )
         elif job_status == FAILED:
-            error, error_traceback = parse_task_error(
+            error, error_traceback = parse_job_error(
                 self.s3_scratch_prefix, redun_job, batch_job_metadata=job
             )
-            if not self.debug:
-                logs = [f"*** CloudWatch logs for AWS Batch job {job['jobId']}:\n"]
-                if container_reason:
-                    logs.append(f"container.reason: {container_reason}\n")
+            logs = [f"*** CloudWatch logs for AWS Batch job {job['jobId']}:\n"]
+            if container_reason:
+                logs.append(f"container.reason: {container_reason}\n")
 
-                try:
-                    status_reason = job["attempts"][-1]["statusReason"]
-                except (KeyError, IndexError):
-                    status_reason = ""
-                if status_reason:
-                    logs.append(f"statusReason: {status_reason}\n")
+            try:
+                status_reason = job["attempts"][-1]["statusReason"]
+            except (KeyError, IndexError):
+                status_reason = ""
+            if status_reason:
+                logs.append(f"statusReason: {status_reason}\n")
 
-                logs.extend(
-                    parse_task_logs(job["jobId"], required=False, aws_region=self.aws_region)
-                )
-                error_traceback.logs = logs
-            else:
-                error_traceback.logs = [line + "\n" for line in job["logs"].split("\n")]
-            self.scheduler.reject_job(
+            logs.extend(parse_job_logs(job["jobId"], required=False, aws_region=self.aws_region))
+            error_traceback.logs = logs
+            self._scheduler.reject_job(
                 redun_job, error, error_traceback=error_traceback, job_tags=job_tags
             )
 
@@ -1317,7 +1092,7 @@ class AWSBatchExecutor(Executor):
             default_tags = {}
 
         # Merge batch_tags if needed.
-        batch_tags = {
+        batch_tags: dict = {
             **self.default_task_options.get("batch_tags", {}),
             **default_tags,
             **job_options.get("batch_tags", {}),
@@ -1327,31 +1102,13 @@ class AWSBatchExecutor(Executor):
 
         return task_options
 
-    def _get_job_output(self, job: Job, check_valid: bool = True) -> Tuple[Any, bool]:
-        """
-        Return job output if it exists.
-
-        Returns a tuple of (result, exists).
-        """
-        assert self.scheduler
-
-        output_file = File(
-            aws_utils.get_job_scratch_file(
-                self.s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
-            )
-        )
-        if output_file.exists():
-            result = aws_utils.parse_task_result(self.s3_scratch_prefix, job)
-            if not check_valid or self.scheduler.is_valid_value(result):
-                return result, True
-        return None, False
-
     def _submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
         """
         Submit Job to executor.
         """
-        assert self.scheduler
+        assert self._scheduler
         assert job.task
+        assert not self.debug
 
         # If we are not in debug mode and this is the first submission gather inflight jobs. In
         # debug mode, we are running on docker locally so there is no need to hit the Batch API to
@@ -1359,7 +1116,7 @@ class AWSBatchExecutor(Executor):
         # of determining whether this is the first submission or not. If we are already running,
         # then we know we have already had jobs submitted and done the inflight check so no
         # reason to do that again here.
-        if not self.debug and not self.is_running:
+        if not self.is_running:
             # Precompute existing inflight jobs for job reuniting.
             self.gather_inflight_jobs()
 
@@ -1369,10 +1126,10 @@ class AWSBatchExecutor(Executor):
         if self.code_package is not False and self.code_file is None:
             code_package = self.code_package or {}
             assert isinstance(code_package, dict)
-            self.code_file = aws_utils.package_code(self.s3_scratch_prefix, code_package)
+            self.code_file = package_code(self.s3_scratch_prefix, code_package)
 
-        job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
-        job_type = "AWS Batch job" if not self.debug else "Docker container"
+        job_dir = get_job_scratch_dir(self.s3_scratch_prefix, job)
+        job_type = "AWS Batch job"
 
         # Determine job options.
         task_options = self._get_job_options(job)
@@ -1431,44 +1188,32 @@ class AWSBatchExecutor(Executor):
         # Generate a unique name for job with no '-' to simplify job name parsing.
         array_uuid = str(uuid.uuid4()).replace("-", "")
 
-        job_type = "AWS Batch job" if not self.debug else "Docker container"
+        job_type = "AWS Batch job"
 
         # Setup input, output and error path files.
         # Input file is a pickled list of args, and kwargs, for each child job.
-        input_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_INPUT
-        )
+        input_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_INPUT)
         with File(input_file).open("wb") as out:
             pickle_dump([all_args, all_kwargs], out)
 
         # Output file is a plaintext list of output paths, for each child job.
-        output_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_OUTPUT
-        )
+        output_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_OUTPUT)
         output_paths = [
-            aws_utils.get_job_scratch_file(
-                self.s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
-            )
-            for job in jobs
+            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_OUTPUT) for job in jobs
         ]
         with File(output_file).open("w") as ofile:
             json.dump(output_paths, ofile)
 
         # Error file is a plaintext list of error paths, one for each child job.
-        error_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_ERROR
-        )
+        error_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_ERROR)
         error_paths = [
-            aws_utils.get_job_scratch_file(self.s3_scratch_prefix, job, aws_utils.S3_SCRATCH_ERROR)
-            for job in jobs
+            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_ERROR) for job in jobs
         ]
         with File(error_file).open("w") as efile:
             json.dump(error_paths, efile)
 
         # Eval hash file is plaintext hashes of child jobs for matching for job reuniting.
-        eval_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, aws_utils.S3_SCRATCH_HASHES
-        )
+        eval_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_HASHES)
         with File(eval_file).open("w") as eval_f:
             eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
 
@@ -1479,23 +1224,16 @@ class AWSBatchExecutor(Executor):
             job,
             job.task,
             job_options=task_options,
-            debug=self.debug,
             code_file=self.code_file,
             aws_region=self.aws_region,
             array_uuid=array_uuid,
             array_size=array_size,
         )
 
-        if self.debug:
-            # Debug mode just starts N docker containers
-            array_job_id = "None"
-            for i in range(array_size):
-                self.pending_batch_jobs[batch_resp["jobId"][i]] = jobs[i]
-        else:
-            # Add entire array to array jobs, and all jobs in array to pending jobs.
-            array_job_id = batch_resp["jobId"]
-            for i in range(array_size):
-                self.pending_batch_jobs[f"{array_job_id}:{i}"] = jobs[i]
+        # Add entire array to array jobs, and all jobs in array to pending jobs.
+        array_job_id = batch_resp["jobId"]
+        for i in range(array_size):
+            self.pending_batch_jobs[f"{array_job_id}:{i}"] = jobs[i]
 
         self.log(
             "submit {array_size} redun job(s) as {job_type} {batch_job}:\n"
@@ -1503,16 +1241,14 @@ class AWSBatchExecutor(Executor):
             "  array_job_name  = {job_name}\n"
             "  array_size      = {array_size}\n"
             "  s3_scratch_path = {job_dir}\n"
-            "  retry_attempts  = {retries}\n"
-            "  debug           = {debug}".format(
+            "  retry_attempts  = {retries}\n".format(
                 array_job_id=array_job_id,
                 array_size=array_size,
                 job_type=job_type,
                 batch_job=array_job_id,
-                job_dir=aws_utils.get_array_scratch_file(self.s3_scratch_prefix, array_uuid, ""),
+                job_dir=get_array_scratch_file(self.s3_scratch_prefix, array_uuid, ""),
                 job_name=batch_resp.get("jobName"),
                 retries=batch_resp.get("ResponseMetadata", {}).get("RetryAttempts"),
-                debug=self.debug,
             )
         )
 
@@ -1528,8 +1264,8 @@ class AWSBatchExecutor(Executor):
         image = task_options.pop("image", self.image)
         queue = task_options.pop("queue", self.queue)
 
-        job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
-        job_type = "AWS Batch job" if not self.debug else "Docker container"
+        job_dir = get_job_scratch_dir(self.s3_scratch_prefix, job)
+        job_type = "AWS Batch job"
 
         # Submit a new Batch job.
         if not job.task.script:
@@ -1542,7 +1278,6 @@ class AWSBatchExecutor(Executor):
                 args=args,
                 kwargs=kwargs,
                 job_options=task_options,
-                debug=self.debug,
                 code_file=self.code_file,
                 aws_region=self.aws_region,
             )
@@ -1555,7 +1290,6 @@ class AWSBatchExecutor(Executor):
                 job,
                 command,
                 job_options=task_options,
-                debug=self.debug,
             )
 
         self.log(
@@ -1563,9 +1297,7 @@ class AWSBatchExecutor(Executor):
             "  job_id          = {batch_job}\n"
             "  job_name        = {job_name}\n"
             "  s3_scratch_path = {job_dir}\n"
-            "  retry_attempts  = {retries}\n"
-            "  debug           = {debug}".format(
-                debug=self.debug,
+            "  retry_attempts  = {retries}\n".format(
                 redun_job=job.id,
                 job_type=job_type,
                 batch_job=batch_resp["jobId"],
@@ -1577,17 +1309,29 @@ class AWSBatchExecutor(Executor):
         batch_job_id = batch_resp["jobId"]
         self.pending_batch_jobs[batch_job_id] = job
 
+    def _is_debug_job(self, job: Job) -> bool:
+        """
+        Returns True if job should be sent to debugging DockerExecutor.
+        """
+        return self.debug or job.get_option("debug", False)
+
     def submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
         """
         Submit Job to executor.
         """
-        return self._submit(job, args, kwargs)
+        if self._is_debug_job(job):
+            return self._docker_executor.submit(job, args, kwargs)
+        else:
+            return self._submit(job, args, kwargs)
 
     def submit_script(self, job: Job, args: Tuple, kwargs: dict) -> None:
         """
         Submit Job for script task to executor.
         """
-        return self._submit(job, args, kwargs)
+        if self._is_debug_job(job):
+            return self._docker_executor.submit_script(job, args, kwargs)
+        else:
+            return self._submit(job, args, kwargs)
 
     def get_jobs(self, statuses: Optional[List[str]] = None) -> Iterator[dict]:
         """

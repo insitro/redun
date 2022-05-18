@@ -1,5 +1,6 @@
 from redun.executors.aws_batch import AWSBatchExecutor
 from redun.executors.aws_glue import AWSGlueExecutor
+from redun.executors.docker import DockerExecutor
 from redun.executors.local import LocalExecutor
 from redun.file import Dir, File, ShardedS3Dataset
 from redun.handle import Handle

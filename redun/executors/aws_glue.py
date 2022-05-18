@@ -1,6 +1,5 @@
 import json
 import os
-import pickle
 import tempfile
 import threading
 import time
@@ -9,6 +8,18 @@ from typing import Any, Deque, Dict, Iterator, List, Optional, Tuple, Union, cas
 
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
+from redun.executors.code_packaging import create_zip, package_code, parse_code_package_config
+from redun.executors.command import REDUN_PROG, REDUN_REQUIRED_VERSION
+from redun.executors.scratch import (
+    SCRATCH_ERROR,
+    SCRATCH_INPUT,
+    SCRATCH_OUTPUT,
+    ExceptionNotFoundError,
+    get_job_scratch_dir,
+    get_job_scratch_file,
+)
+from redun.executors.scratch import parse_job_error as _parse_job_error
+from redun.executors.scratch import parse_job_result
 from redun.file import File
 from redun.hashing import hash_stream, hash_text
 from redun.scheduler import Job, Scheduler, Traceback
@@ -84,7 +95,7 @@ def package_redun_lib(s3_scratch_prefix: str) -> File:
         base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         temp_path = os.path.join(tmpdir, "redun.zip")
         lib_files = get_redun_lib_files()
-        temp_file = aws_utils.create_zip(temp_path, base_path, lib_files)
+        temp_file = create_zip(temp_path, base_path, lib_files)
 
         with temp_file.open("rb") as infile:
             lib_hash = hash_stream(infile)
@@ -110,7 +121,7 @@ def get_or_create_glue_job_definition(
 
     # Define job definition.
     glue_job_def = dict(
-        Description=f"Redun oneshot glue job {aws_utils.REDUN_REQUIRED_VERSION}",
+        Description=f"Redun oneshot glue job {REDUN_REQUIRED_VERSION}",
         Role=role,
         ExecutionProperty={
             "MaxConcurrentRuns": 1000,
@@ -176,12 +187,12 @@ class AWSGlueExecutor(Executor):
         # Optional config
         self.aws_region = config.get("aws_region", aws_utils.get_default_region())
         self.role = config.get("role") or get_default_glue_service_role(aws_region=self.aws_region)
-        self.code_package = aws_utils.parse_code_package_config(config)
+        self.code_package = parse_code_package_config(config)
         self.code_file: Optional[File] = None
         self.debug = config.getboolean("debug", fallback=False)
         self.interval = config.getfloat("job_monitor_interval", 10.0)
         self.retry_interval = config.getfloat("job_retry_interval", 60.0)
-        self.glue_job_prefix = config.get("glue_job_prefix", aws_utils.REDUN_PROG.upper())
+        self.glue_job_prefix = config.get("glue_job_prefix", REDUN_PROG.upper())
         self.glue_job_name: Optional[str] = None
         self.spark_history_dir = config.get(
             "spark_history_dir", get_spark_history_dir(self.s3_scratch_prefix)
@@ -272,7 +283,7 @@ class AWSGlueExecutor(Executor):
 
     def _monitor(self) -> None:
         """Thread for monitoring running AWS Glue jobs."""
-        assert self.scheduler
+        assert self._scheduler
         assert self.glue_job_name
 
         try:
@@ -290,7 +301,7 @@ class AWSGlueExecutor(Executor):
                 time.sleep(self.interval)
 
         except Exception as error:
-            self.scheduler.reject_job(None, error)
+            self._scheduler.reject_job(None, error)
 
         self.stop()
 
@@ -305,7 +316,7 @@ class AWSGlueExecutor(Executor):
         successfully submitted in the meantime. Once submission fails for 5 jobs in
         a row, we wait `self.retry_interval` seconds before submitting another job.
         """
-        assert self.scheduler
+        assert self._scheduler
         try:
             while self.is_running and self.pending_glue_jobs:
                 fail_counter = 0
@@ -323,7 +334,7 @@ class AWSGlueExecutor(Executor):
                 time.sleep(self.retry_interval)
 
         except Exception as error:
-            self.scheduler.reject_job(None, error)
+            self._scheduler.reject_job(None, error)
 
         # Thread can exit when there are no more pending jobs. That's okay,
         # as new job submissions will restart it.
@@ -331,27 +342,8 @@ class AWSGlueExecutor(Executor):
     def stop(self) -> None:
         self.is_running = False
 
-    def _get_job_output(self, job: Job, check_valid: bool = True) -> Tuple[Any, bool]:
-        """
-        Return job output if it exists.
-
-        Returns a tuple of (result, exists).
-        """
-        assert self.scheduler
-
-        output_file = File(
-            aws_utils.get_job_scratch_file(
-                self.s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
-            )
-        )
-        if output_file.exists():
-            result = aws_utils.parse_task_result(self.s3_scratch_prefix, job)
-            if not check_valid or self.scheduler.is_valid_value(result):
-                return result, True
-        return None, False
-
     def _process_job_status(self, job: dict) -> None:
-        assert self.scheduler
+        assert self._scheduler
 
         error: Optional[Exception] = None
         error_traceback: Optional[Traceback] = None
@@ -360,14 +352,12 @@ class AWSGlueExecutor(Executor):
         assert redun_job
 
         if job["JobRunState"] in GLUE_JOB_STATUSES.success:
-            result, exists = self._get_job_output(redun_job, check_valid=False)
+            result, exists = parse_job_result(self.s3_scratch_prefix, redun_job)
             if exists:
                 error = None
             else:
                 error = FileNotFoundError(
-                    aws_utils.get_job_scratch_file(
-                        self.s3_scratch_prefix, redun_job, aws_utils.S3_SCRATCH_OUTPUT
-                    )
+                    get_job_scratch_file(self.s3_scratch_prefix, redun_job, SCRATCH_OUTPUT)
                 )
                 error_traceback = None
 
@@ -375,11 +365,10 @@ class AWSGlueExecutor(Executor):
             error = AWSGlueJobStoppedError("Job stopped by user.")
 
         elif job["JobRunState"] in GLUE_JOB_STATUSES.failure:
-
             # Errors may not be unpicklable out of the Glue environment, so use CloudWatch
             # job insights to get a traceback.
             if self.debug:
-                error, error_traceback = parse_task_error(self.s3_scratch_prefix, redun_job, job)
+                error, error_traceback = parse_job_error(self.s3_scratch_prefix, redun_job, job)
             else:
                 error = AWSGlueError("Glue job failed: see log info.")
                 error_traceback = Traceback.from_error(error)
@@ -401,9 +390,9 @@ class AWSGlueExecutor(Executor):
 
         self.running_glue_jobs.pop(job["Id"])
         if error:
-            self.scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
+            self._scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
         else:
-            self.scheduler.done_job(redun_job, result)
+            self._scheduler.done_job(redun_job, result)
 
     def _get_job_options(self, job: Job) -> dict:
         """
@@ -419,7 +408,7 @@ class AWSGlueExecutor(Executor):
         """
         Submit job to executor.
         """
-        assert self.scheduler
+        assert self._scheduler
         assert job.task
 
         # Check glue job definition exists. Otherwise, create it.
@@ -438,9 +427,7 @@ class AWSGlueExecutor(Executor):
         if self.code_package is not False and self.code_file is None:
             code_package = self.code_package or {}
             assert isinstance(code_package, dict)
-            self.code_file = aws_utils.package_code(
-                self.s3_scratch_prefix, code_package, use_zip=True
-            )
+            self.code_file = package_code(self.s3_scratch_prefix, code_package, use_zip=True)
 
         # Determine job options
         task_options = self._get_job_options(job)
@@ -473,9 +460,7 @@ class AWSGlueExecutor(Executor):
 
         if glue_job_id is None:
             # Set up files and data for run.
-            input_path = aws_utils.get_job_scratch_file(
-                self.s3_scratch_prefix, job, aws_utils.S3_SCRATCH_INPUT
-            )
+            input_path = get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_INPUT)
             input_file = File(input_path)
             with input_file.open("wb") as out:
                 pickle_dump([args, kwargs], out)
@@ -522,7 +507,7 @@ class AWSGlueExecutor(Executor):
                 glue_job=glue_resp["JobRunId"],
                 job_name=self.glue_job_name,
                 job_type="AWS Glue job",
-                job_dir=aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job),
+                job_dir=get_job_scratch_dir(self.s3_scratch_prefix, job),
                 retries=glue_resp["ResponseMetadata"]["RetryAttempts"],
             )
         )
@@ -542,16 +527,14 @@ def submit_glue_job(
     """
     Submits a redun task to AWS glue.
     """
-    input_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, aws_utils.S3_SCRATCH_INPUT)
-    output_path = aws_utils.get_job_scratch_file(
-        s3_scratch_prefix, job, aws_utils.S3_SCRATCH_OUTPUT
-    )
-    error_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, aws_utils.S3_SCRATCH_ERROR)
+    input_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_INPUT)
+    output_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_OUTPUT)
+    error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
 
     # Assemble job arguments
     assert job.eval_hash
     glue_args = {
-        "--check-version": aws_utils.REDUN_REQUIRED_VERSION,
+        "--check-version": REDUN_REQUIRED_VERSION,
         "--input": input_path,
         "--output": output_path,
         "--script": a_task.load_module,
@@ -572,7 +555,7 @@ def submit_glue_job(
     # Extra py files will be in an importable location at job start.
     # They can be either importable zip files, or .py source files.
     # Redun and the code to run are provided as importable zip files.
-    scratch_dir = aws_utils.get_job_scratch_dir(s3_scratch_prefix, job)
+    scratch_dir = get_job_scratch_dir(s3_scratch_prefix, job)
 
     glue_args["--extra-py-files"] = ",".join([redun_zip_location, code_file.path]) + ","
     if job_options.get("extra_py_files"):
@@ -616,26 +599,19 @@ def glue_describe_jobs(
         yield response.get("JobRun")
 
 
-def parse_task_error(
-    s3_scratch_prefix: str, job: Job, glue_job: dict
-) -> Tuple[Exception, Traceback]:
+def parse_job_error(
+    s3_scratch_prefix: str, job: Job, glue_job_metadata: Optional[dict] = None
+) -> Tuple[Exception, "Traceback"]:
     """
-    Parse glue task error from S3 path
+    Parse job error from s3 scratch path.
     """
     assert job.task
 
-    error_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, aws_utils.S3_SCRATCH_ERROR)
-    error_file = File(error_path)
+    error, error_traceback = _parse_job_error(s3_scratch_prefix, job)
 
-    if error_file.exists():
-        try:
-            error, error_traceback = pickle.loads(cast(bytes, error_file.read("rb")))
-        except Exception as parse_error:
-            error = AWSGlueError(f"Error could not be parsed. See logs. {parse_error}")
-            error_traceback = Traceback.from_error(error)
-
-    else:
-        message = glue_job.get(
+    # Handle AWS Batch-specific errors.
+    if isinstance(error, ExceptionNotFoundError) and glue_job_metadata:
+        message = glue_job_metadata.get(
             "ErrorMessage", "Exception and traceback could not be found for AWS Glue Job"
         )
         error = AWSGlueError(message)
