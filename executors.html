@@ -282,6 +282,10 @@
 <p>Multi-node jobs are currently incompatible with array jobs, because this appears not to be supported by AWS.</p>
 </section>
 </section>
+<section id="docker-executor">
+<h2>Docker executor<a class="headerlink" href="#docker-executor" title="Permalink to this headline">#</a></h2>
+<p>The Docker executor (<code class="docutils literal notranslate"><span class="pre">type=docker</span></code>) runs each redun job inside a local Docker container. This executor is used by AWS Batch Executor when using debug mode.</p>
+</section>
 <section id="aws-glue-spark-executor">
 <h2>AWS Glue Spark executor<a class="headerlink" href="#aws-glue-spark-executor" title="Permalink to this headline">#</a></h2>
 <p>The <strong>AWS Glue executor</strong> executes tasks as jobs on <a class="reference external" href="https://aws.amazon.com/glue/">AWS Glue</a>, which runs <a class="reference external" href="https://spark.apache.org/">Apache Spark</a> jobs on a managed cluster. Spark jobs run on many CPUs and are especially useful for working with large tabular datasets such as those represented in Pandas DataFrames.</p>
@@ -422,20 +426,12 @@ as expensive as the others.</p></li>
 <li><a class="reference internal" href="#multi-node">Multi-node</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#docker-executor">Docker executor</a></li>
 <li><a class="reference internal" href="#aws-glue-spark-executor">AWS Glue Spark executor</a><ul>
 <li><a class="reference internal" href="#loading-and-writing-datasets">Loading and writing datasets</a></li>
-<li><a class="reference internal" href="#helper-functions">Helper functions</a><ul>
-<li><a class="reference internal" href="#user-defined-functions">User-defined functions</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#helper-functions">Helper functions</a></li>
 <li><a class="reference internal" href="#available-python-modules">Available Python modules</a></li>
-<li><a class="reference internal" href="#task-options">Task options</a><ul>
-<li><a class="reference internal" href="#workers"><code class="docutils literal notranslate"><span class="pre">workers</span></code></a></li>
-<li><a class="reference internal" href="#worker-type"><code class="docutils literal notranslate"><span class="pre">worker_type</span></code></a></li>
-<li><a class="reference internal" href="#additional-libs"><code class="docutils literal notranslate"><span class="pre">additional_libs</span></code></a></li>
-<li><a class="reference internal" href="#extra-files"><code class="docutils literal notranslate"><span class="pre">extra_files</span></code></a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#task-options">Task options</a></li>
 </ul>
 </li>
 </ul>

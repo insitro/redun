@@ -1,5 +1,5 @@
 ---
-tocpdeth: 3
+tocdepth: 3
 ---
 
 # Executors
@@ -97,6 +97,10 @@ If the executor is configured to use multiple nodes, by setting `num_nodes`, the
 Warning: For python tasks, the executor will instruct only the main node to write its outputs to storage and non-main node outputs are discarded. For script tasks, the various nodes must somehow arrange that the output is only written once, but the infrastructure does not help. 
 
 Multi-node jobs are currently incompatible with array jobs, because this appears not to be supported by AWS.
+
+## Docker executor
+
+The Docker executor (`type=docker`) runs each redun job inside a local Docker container. This executor is used by AWS Batch Executor when using debug mode.
 
 ## AWS Glue Spark executor
 

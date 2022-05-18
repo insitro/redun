@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.9
+May 17, 2022
+
+* `#131` - [DE-4809] Use AWS job run insights to get better tracebacks for glue jobs
+* Merge remote-tracking branch 'origin/main'
+* `#138` - resolve conflicts with public and private main
+* `#33` - Fixed typos and minor grammatical stuff like missing commas, etc. in the documentation and README.md 
+* `#32` - Update README.md
+* `#136` - Ignore flake8 F401 errors in `__init__.py` files
+
 ## 0.8.8
 April 20, 2022
 
