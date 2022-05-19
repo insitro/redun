@@ -2,9 +2,6 @@
 # This library contains standardized routines for interacting with k8s through its API
 # It uses the Official Python client library for kubernetes:
 # https://github.com/kubernetes-client/python
-from typing import Dict
-
-import boto3
 from kubernetes import client, config
 
 from redun.executors.aws_utils import get_aws_env_vars
@@ -30,7 +27,8 @@ def get_k8s_core_client():
 
 def create_resources(requests=None, limits=None):
     """Creates resource limits for k8s pods
-    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ResourceRequirements.md"""
+    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ResourceRequirements.md
+    """
     resources = client.V1ResourceRequirements()
 
     if requests is None:

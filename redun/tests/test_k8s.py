@@ -12,22 +12,11 @@ import redun.executors.k8s
 from redun import File, job_array, task
 from redun.cli import RedunClient, import_script
 from redun.config import Config
-from redun.executors.aws_utils import (
-    REDUN_REQUIRED_VERSION,
-    create_tar,
-    get_job_scratch_file,
-    package_code,
-)
-from redun.executors.k8s import (
-    K8SExecutor,
-    get_hash_from_job_name,
-    get_k8s_job_name,
-    iter_k8s_job_log_lines,
-    iter_k8s_job_logs,
-    k8s_submit,
-    submit_task,
-)
+from redun.executors.code_packaging import create_tar, package_code
+from redun.executors.command import REDUN_REQUIRED_VERSION
+from redun.executors.k8s import K8SExecutor, get_hash_from_job_name, get_k8s_job_name, submit_task
 from redun.executors.k8s_utils import DEFAULT_JOB_PREFIX, create_job_object
+from redun.executors.scratch import get_job_scratch_file
 from redun.file import Dir
 from redun.scheduler import Job, Scheduler, Traceback
 from redun.tests.utils import mock_scheduler, use_tempdir, wait_until

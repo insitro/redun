@@ -15,8 +15,21 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, cast
 
 import kubernetes
 
-from redun.executors import aws_utils, k8s_utils, s3_utils
+from redun.executors import k8s_utils
 from redun.executors.base import Executor, register_executor
+from redun.executors.code_packaging import package_code, parse_code_package_config
+from redun.executors.command import REDUN_PROG, REDUN_REQUIRED_VERSION
+from redun.executors.scratch import (
+    SCRATCH_ERROR,
+    SCRATCH_HASHES,
+    SCRATCH_INPUT,
+    SCRATCH_OUTPUT,
+    SCRATCH_STATUS,
+    get_array_scratch_file,
+    get_job_scratch_dir,
+    get_job_scratch_file,
+    parse_job_result
+)
 from redun.file import File
 from redun.job_array import JobArrayer
 from redun.scheduler import Job, Scheduler, Traceback
@@ -150,24 +163,24 @@ def submit_task(
         # Output_path will contain a pickled list of actual output paths, etc.
         # Want files that won't get clobbered when jobs actually run
         assert array_uuid
-        input_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_INPUT
+        input_path = get_array_scratch_file(
+            s3_scratch_prefix, array_uuid, SCRATCH_INPUT
         )
-        output_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_OUTPUT
+        output_path = get_array_scratch_file(
+            s3_scratch_prefix, array_uuid, SCRATCH_OUTPUT
         )
-        error_path = aws_utils.get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_ERROR
+        error_path = get_array_scratch_file(
+            s3_scratch_prefix, array_uuid, SCRATCH_ERROR
         )
     else:
-        input_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT
+        input_path = get_job_scratch_file(
+            s3_scratch_prefix, job, SCRATCH_INPUT
         )
-        output_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
+        output_path = get_job_scratch_file(
+            s3_scratch_prefix, job, SCRATCH_OUTPUT
         )
-        error_path = aws_utils.get_job_scratch_file(
-            s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR
+        error_path = get_job_scratch_file(
+            s3_scratch_prefix, job, SCRATCH_ERROR
         )
 
         # Serialize arguments to input file. Array jobs set this up earlier, in
@@ -191,9 +204,9 @@ def submit_task(
     cache_arg = [] if job_options.get("cache", True) else ["--no-cache"]
     command = (
         [
-            aws_utils.REDUN_PROG,
+            REDUN_PROG,
             "--check-version",
-            aws_utils.REDUN_REQUIRED_VERSION,
+            REDUN_REQUIRED_VERSION,
             "oneshot",
             a_task.load_module,
         ]
@@ -249,13 +262,13 @@ def submit_command(
     # to avoid dangerous default dict
     if job_options is None:
         job_options = {}
-    input_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, s3_utils.S3_SCRATCH_INPUT)
-    output_path = aws_utils.get_job_scratch_file(
-        s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT
+    input_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_INPUT)
+    output_path = get_job_scratch_file(
+        s3_scratch_prefix, job, SCRATCH_OUTPUT
     )
-    error_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR)
-    status_path = aws_utils.get_job_scratch_file(
-        s3_scratch_prefix, job, s3_utils.S3_SCRATCH_STATUS
+    error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
+    status_path = get_job_scratch_file(
+        s3_scratch_prefix, job, SCRATCH_STATUS
     )
 
     # Serialize arguments to input file.
@@ -314,7 +327,7 @@ def parse_task_error(s3_scratch_prefix: str, job: Job) -> Tuple[Exception, "Trac
     """
     assert job.task
 
-    error_path = aws_utils.get_job_scratch_file(s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR)
+    error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
     error_file = File(error_path)
 
     if not job.task.script:
@@ -405,8 +418,8 @@ def iter_log_stream(
             lines.append(f"Exit {state.exit_code} ({state.reason}): {state.message}")
 
     if reverse:
-        lines = reversed(lines)
-        yield from lines
+        lines = list(reversed(lines))
+    yield from lines
 
 
 # Currently unused TODO(davidek): figure out if we need to format the logs
@@ -508,7 +521,7 @@ class K8SExecutor(Executor):
 
         # Optional config.
         self.role = config.get("role")
-        self.code_package = aws_utils.parse_code_package_config(config)
+        self.code_package = parse_code_package_config(config)
 
         self.code_file: Optional[File] = None
 
@@ -525,7 +538,7 @@ class K8SExecutor(Executor):
 
         self.is_running = False
         # We use an OrderedDict in order to retain submission order.
-        self.pending_k8s_jobs: Dict[str, "Job"] = OrderedDict()
+        self.pending_k8s_jobs: Dict[str, Any] = OrderedDict()
         self.preexisting_k8s_jobs: Dict[str, str] = {}  # Job hash -> Job ID
 
         self.interval = config.getfloat("job_monitor_interval", 5.0)
@@ -570,10 +583,10 @@ class K8SExecutor(Executor):
             if not parent_hash:
                 continue
             eval_file = File(
-                aws_utils.get_array_scratch_file(
+                get_array_scratch_file(
                     self.s3_scratch_prefix,
                     parent_hash,
-                    s3_utils.S3_SCRATCH_HASHES,
+                    SCRATCH_HASHES,
                 )
             )
             if not eval_file.exists():
@@ -642,11 +655,11 @@ class K8SExecutor(Executor):
         stay under API rate limits, and we keep the compute in this thread low
         so as to not interfere with new submissions.
         """
-        assert self.scheduler
+        assert self._scheduler
 
         try:
             while self.is_running and (self.pending_k8s_jobs or self.arrayer.num_pending):
-                if self.scheduler.logger.level >= logging.DEBUG:
+                if self._scheduler.logger.level >= logging.DEBUG:
                     self.log(
                         f"Preparing {self.arrayer.num_pending} job(s) for Job Arrays.",
                         level=logging.DEBUG,
@@ -673,7 +686,7 @@ class K8SExecutor(Executor):
             # to catch all exceptions so we can properly report them to the
             # scheduler.
             self.log("_monitor got exception", level=logging.INFO)
-            self.scheduler.reject_job(None, error)
+            self._scheduler.reject_job(None, error)
 
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
@@ -682,7 +695,7 @@ class K8SExecutor(Executor):
         """
         Process K8S job statuses.
         """
-        assert self.scheduler
+        assert self._scheduler
         job_status: Optional[str] = None
 
         if job.spec.parallelism is None or job.spec.parallelism == 1:
@@ -701,7 +714,7 @@ class K8SExecutor(Executor):
                 if conditions[0].type == "Failed":
                     job_status = FAILED
                     redun_job = self.pending_k8s_jobs.pop(job.metadata.name)
-                    self.scheduler.reject_job(
+                    self._scheduler.reject_job(
                         redun_job,
                         K8STimeoutExceeded("Timeout exceeded"),
                         job_tags=[],
@@ -718,16 +731,16 @@ class K8SExecutor(Executor):
                 # Assume a recently completed job has valid results.
                 result, exists = self._get_job_output(redun_job, check_valid=False)
                 if exists:
-                    self.scheduler.done_job(redun_job, result, job_tags=k8s_labels)
+                    self._scheduler.done_job(redun_job, result, job_tags=k8s_labels)
                 else:
                     # This can happen if job ended in an inconsistent state.
-                    self.scheduler.reject_job(
+                    self._scheduler.reject_job(
                         redun_job,
                         FileNotFoundError(
-                            aws_utils.get_job_scratch_file(
+                            get_job_scratch_file(
                                 self.s3_scratch_prefix,
                                 redun_job,
-                                s3_utils.S3_SCRATCH_OUTPUT,
+                                SCRATCH_OUTPUT,
                             )
                         ),
                         job_tags=k8s_labels,
@@ -753,7 +766,7 @@ class K8SExecutor(Executor):
                     )
 
                 error_traceback.logs = logs
-                self.scheduler.reject_job(
+                self._scheduler.reject_job(
                     redun_job,
                     error,
                     error_traceback=error_traceback,
@@ -764,11 +777,11 @@ class K8SExecutor(Executor):
                 _ = k8s_utils.delete_job(api_instance, job.metadata.name, self.namespace)
             except kubernetes.client.exceptions.ApiException as e:
                 self.log(
-                    "Failed to delete k8s job {job.metadata.name}: {e}",
+                    f"Failed to delete k8s job {job.metadata.name}: {e}",
                     level=logging.WARN,
                 )
         else:
-            label_selector = f"job-name={job.metadata.name}"
+            # label_selector = f"job-name={job.metadata.name}"
             k8s_pods = self.get_array_child_pods(job.metadata.name)
 
             # TODO(dek): check for job.status.conditions[*].ype == Failed and reason
@@ -793,10 +806,11 @@ class K8SExecutor(Executor):
                             )
                             # breakpoint()
                             # Detect deadline exceeded here and raise exception.
-                            self.scheduler.reject_job(
+                            self._scheduler.reject_job(
                                 redun_job[index],
                                 K8SError(
-                                    f"K8S pod exited with error code {terminated.exit_code} because {terminated.reason}"
+                                    f"K8S pod exited with error code {terminated.exit_code} "
+                                    f"because {terminated.reason}"
                                 ),
                             )
                         else:
@@ -804,17 +818,17 @@ class K8SExecutor(Executor):
                                 redun_job[index], check_valid=False
                             )
                             if exists:
-                                self.scheduler.done_job(redun_job[index], result)
+                                self._scheduler.done_job(redun_job[index], result)
                             else:
                                 # This can happen if job ended in an
                                 # inconsistent state.
-                                self.scheduler.reject_job(
+                                self._scheduler.reject_job(
                                     redun_job[index],
                                     FileNotFoundError(
-                                        aws_utils.get_job_scratch_file(
+                                        get_job_scratch_file(
                                             self.s3_scratch_prefix,
                                             redun_job[index],
-                                            s3_utils.S3_SCRATCH_OUTPUT,
+                                            SCRATCH_OUTPUT,
                                         )
                                     ),
                                 )
@@ -829,7 +843,7 @@ class K8SExecutor(Executor):
                                 )
                             except kubernetes.client.exceptions.ApiException as e:
                                 self.log(
-                                    "Failed to delete k8s job {job.metadata.name}: {e}",
+                                    f"Failed to delete k8s job {job.metadata.name}: {e}",
                                     level=logging.WARN,
                                 )
                             del self.pending_k8s_jobs[job.metadata.name]
@@ -884,14 +898,14 @@ class K8SExecutor(Executor):
 
         Returns a tuple of (result, exists).
         """
-        assert self.scheduler
+        assert self._scheduler
 
         output_file = File(
-            aws_utils.get_job_scratch_file(self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT)
+            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_OUTPUT)
         )
         if output_file.exists():
-            result = aws_utils.parse_task_result(self.s3_scratch_prefix, job)
-            if not check_valid or self.scheduler.is_valid_value(result):
+            result = parse_job_result(self.s3_scratch_prefix, job)
+            if not check_valid or self._scheduler.is_valid_value(result):
                 return result, True
         return None, False
 
@@ -899,7 +913,7 @@ class K8SExecutor(Executor):
         """
         Submit Job to executor.
         """
-        assert self.scheduler
+        assert self._scheduler
         assert job.task
 
         # If this is the first submission gather inflight jobs. We also check
@@ -917,9 +931,9 @@ class K8SExecutor(Executor):
         if self.code_package is not False and self.code_file is None:
             code_package = self.code_package or {}
             assert isinstance(code_package, dict)
-            self.code_file = aws_utils.package_code(self.s3_scratch_prefix, code_package)
+            self.code_file = package_code(self.s3_scratch_prefix, code_package)
 
-        job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
+        job_dir = get_job_scratch_dir(self.s3_scratch_prefix, job)
         job_type = "K8S job"
 
         # Determine job options.
@@ -1014,29 +1028,29 @@ class K8SExecutor(Executor):
 
         # Setup input, output and error path files. Input file is a pickled list
         # of args, and kwargs, for each child job.
-        input_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_INPUT
+        input_file = get_array_scratch_file(
+            self.s3_scratch_prefix, array_uuid, SCRATCH_INPUT
         )
         with File(input_file).open("wb") as out:
             pickle_dump([all_args, all_kwargs], out)
 
         # Output file is a plaintext list of output paths, for each child job.
-        output_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_OUTPUT
+        output_file = get_array_scratch_file(
+            self.s3_scratch_prefix, array_uuid, SCRATCH_OUTPUT
         )
         output_paths = [
-            aws_utils.get_job_scratch_file(self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_OUTPUT)
+            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_OUTPUT)
             for job in jobs
         ]
         with File(output_file).open("w") as ofile:
             json.dump(output_paths, ofile)
 
         # Error file is a plaintext list of error paths, one for each child job.
-        error_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_ERROR
+        error_file = get_array_scratch_file(
+            self.s3_scratch_prefix, array_uuid, SCRATCH_ERROR
         )
         error_paths = [
-            aws_utils.get_job_scratch_file(self.s3_scratch_prefix, job, s3_utils.S3_SCRATCH_ERROR)
+            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_ERROR)
             for job in jobs
         ]
         with File(error_file).open("w") as efile:
@@ -1044,8 +1058,8 @@ class K8SExecutor(Executor):
 
         # Eval hash file is plaintext hashes of child jobs for matching for job
         # reuniting.
-        eval_file = aws_utils.get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, s3_utils.S3_SCRATCH_HASHES
+        eval_file = get_array_scratch_file(
+            self.s3_scratch_prefix, array_uuid, SCRATCH_HASHES
         )
         with File(eval_file).open("w") as eval_f:
             eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
@@ -1080,7 +1094,7 @@ class K8SExecutor(Executor):
                 job_type=job_type,
                 array_size=array_size,
                 k8s_job_id=array_job_id,
-                job_dir=aws_utils.get_array_scratch_file(self.s3_scratch_prefix, array_uuid, ""),
+                job_dir=get_array_scratch_file(self.s3_scratch_prefix, array_uuid, ""),
                 job_name=array_job_name,
                 retries=task_options["retries"],
             )
@@ -1097,7 +1111,7 @@ class K8SExecutor(Executor):
         image = task_options.pop("image", self.image)
         namespace = task_options.pop("namespace", self.namespace)
 
-        job_dir = aws_utils.get_job_scratch_dir(self.s3_scratch_prefix, job)
+        job_dir = get_job_scratch_dir(self.s3_scratch_prefix, job)
         job_type = "K8S job"
 
         # Submit a new Batch job.
