@@ -294,7 +294,7 @@ def test_handle_tasks(scheduler: Scheduler) -> None:
     assert handles["init_db"].__handle__.hash != handles["update_db"].__handle__.hash
 
     # Change the update_db task.
-    @task(version="v2")  # type: ignore # noqa: F811
+    @task(version="v2")  # type: ignore[no-redef]
     def update_db(conn: DbHandle):
         task_calls.append("update_db2")
         handles["update_db2"] = conn
@@ -325,7 +325,7 @@ def test_handle_tasks(scheduler: Scheduler) -> None:
     assert handles["update_db"].__handle__.hash == handles["update_db2"].__handle__.hash
 
     # Revert the update_db task.
-    @task(version="v1")  # type: ignore # noqa: F811
+    @task(version="v1")  # type: ignore[no-redef]
     def update_db(conn: DbHandle):
         task_calls.append("update_db")
         handles["update_db"] = conn
@@ -571,7 +571,7 @@ def test_handle_implicit_fork(scheduler: Scheduler) -> None:
 
     # Without explicit forks our heuristic (call order) for Handle
     # reconciliation isn't good enough. Let's just confirm that.
-    @task(version="2")  # type: ignore # noqa: F811
+    @task(version="2")  # type: ignore[no-redef]
     def task2(conn, arg):
         task_calls.append(arg)
         return conn

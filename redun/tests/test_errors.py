@@ -155,7 +155,7 @@ def test_exception_call_graph(scheduler: Scheduler, session: Session) -> None:
 
     # Exceptions should not be cached. Let's fix the bug without bump version.
 
-    @task(version="1")  # type: ignore # noqa: F811
+    @task(version="1")  # type: ignore[no-redef]
     def faulty():
         return 20
 

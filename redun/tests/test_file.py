@@ -45,6 +45,37 @@ def test_file_api() -> None:
 
 
 @use_tempdir
+def test_encoding() -> None:
+    """
+    File read/write/open should support encodings.
+    """
+    text = "hello \u1F600"
+
+    # Read and write utf-8.
+    file = File("hello.txt")
+    file.write(text, encoding="utf-8")
+    assert file.read(encoding="utf-8") == text
+    assert file.read("rb") == b"hello \xe1\xbd\xa00"
+
+    # Read and write utf-16.
+    file2 = File("hello.txt")
+    file2.write(text, encoding="utf-16")
+    assert file2.read(encoding="utf-16") == text
+    assert file2.read("rb") == b"\xff\xfeh\x00e\x00l\x00l\x00o\x00 \x00`\x1f0\x00"
+
+    # Ensure File context can use encoding.
+    with file.open(mode="w", encoding="utf-8") as out:
+        out.write(text)
+
+    with file.open(mode="r", encoding="utf-8") as infile:
+        assert infile.read() == text
+
+    # Binary mode cannot be used with encoding.
+    with pytest.raises(ValueError, match="encoding"):
+        file.open(mode="rb", encoding="utf-8")
+
+
+@use_tempdir
 def test_dir_api() -> None:
 
     dir = Dir("hi")
@@ -466,12 +497,16 @@ def test_sharded_dataset() -> None:
     decoy = File("s3://example-bucket/data/not_a_csv.txt")
     decoy.write("i am not valid input")
 
-    dataset = ShardedS3Dataset(path="s3://example-bucket/data", format="csv", recurse=False)
+    dataset = ShardedS3Dataset(path="s3://example-bucket/data", format="csv", recurse=True)
     dataset2 = ShardedS3Dataset(path="s3://example-bucket/data", format="csv", recurse=True)
 
     # Check the correct files are pulled in.
-    assert sorted(dataset._filenames) == sorted([file1.path, file2.path])
-    assert sorted(dataset2._filenames) == sorted([file1.path, file2.path, file3.path])
+    assert sorted(dataset.filenames) == sorted([file1.path, file2.path, file3.path])
+    assert sorted(dataset2.filenames) == sorted([file1.path, file2.path, file3.path])
+
+    # Update the recurse value and ensure the list of files is updated.
+    dataset.recurse = False
+    assert sorted(dataset.filenames) == sorted([file1.path, file2.path])
 
     # Check hashing changes when list of files changes.
     assert dataset.hash == "3394197d206ea0ef46795131b98f86c52ab9a508"
@@ -480,6 +515,16 @@ def test_sharded_dataset() -> None:
     file3.remove()
     assert dataset.is_valid()
     assert not dataset2.is_valid()
+
+    # Changing the path should update the list of files.
+    dataset2.path = "s3://example-bucket/nonexistent"
+    assert dataset2.filenames == []
+
+    # Changing the format should as well.
+    dataset2.path = "s3://example-bucket/data"
+    assert len(dataset2.filenames)
+    dataset2.format = "parquet"
+    assert dataset2.filenames == []
 
     # Load should not work without glue context.
     with pytest.raises(ValueError):

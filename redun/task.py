@@ -630,7 +630,8 @@ def task(
         considered as part of cache invalidation. This list may be reordered without impacting
         the computation. Each list item must be hashable by `redun.value.TypeRegistry.get_hash`.
     source : Optional[str]
-        If provided, task.source will be set to this string.
+        If provided, task.source will be set to this string. It is the caller's responsibility
+        to ensure that `source` matches the provided `func` for proper hashing.
     **task_options_base
         Additional options for configuring a task or specifying behaviors of tasks. Since
         these are provided at task construction time (this is typically at Python module-load

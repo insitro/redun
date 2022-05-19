@@ -1,8 +1,10 @@
 import datetime
+import importlib
 import inspect
 import linecache
 import logging
 import os
+import pprint
 import queue
 import shlex
 import sys
@@ -51,7 +53,7 @@ from redun.expression import (
 from redun.handle import Handle
 from redun.hashing import hash_eval, hash_struct
 from redun.logging import logger as _logger
-from redun.promise import Promise
+from redun.promise import Promise, wait_promises
 from redun.tags import parse_tag_value
 from redun.task import Task, TaskRegistry, get_task_registry, scheduler_task, task
 from redun.utils import format_table, iter_nested_value, map_nested_value, trim_string
@@ -65,6 +67,8 @@ _local = threading.local()
 JOB_ACTION_WIDTH = 6  # Width of job action in logs.
 
 Result = TypeVar("Result")
+T = TypeVar("T")
+S = TypeVar("S")
 
 
 def settrace_patch(tracefunc: Any) -> None:
@@ -261,6 +265,7 @@ class Job:
         self.parent_job: Optional[Job] = parent_job
         self.handle_forks: Dict[str, int] = defaultdict(int)
         self.job_tags: List[Tuple[str, Any]] = []
+        self.execution_tags: List[Tuple[str, Any]] = []
         self.value_tags: List[Tuple[str, List[Tuple[str, Any]]]] = []
         self._status: Optional[str] = None
 
@@ -380,10 +385,8 @@ class Job:
         self.result_promise = None
         self.result = None
         self.job_tags.clear()
+        self.execution_tags.clear()
         self.value_tags.clear()
-
-        for child_job in self.child_jobs:
-            child_job.parent_job = None
         self.child_jobs.clear()
 
 
@@ -703,7 +706,7 @@ class Scheduler:
         Add executor to scheduler.
         """
         self.executors[executor.name] = executor
-        executor.scheduler = self
+        executor.set_scheduler(self)
 
     def load(self, migrate: Optional[bool] = None) -> None:
         self.backend.load(migrate=migrate)
@@ -864,10 +867,7 @@ class Scheduler:
         # Print final job statuses.
         self.log_job_statuses()
 
-    def log_job_statuses(self) -> None:
-        """
-        Display Job statuses.
-        """
+    def get_job_status_report(self) -> List[str]:
         # Gather job status information.
         status_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
         for job in self._jobs:
@@ -895,14 +895,21 @@ class Scheduler:
             ]
         )
 
-        # Display job status table.
-        self.log()
         now = datetime.datetime.now()
-        self.log("| JOB STATUS {}".format(now.strftime("%Y/%m/%d %H:%M:%S")))
+        report_lines: List[str] = []
+        report_lines.append("| JOB STATUS {}".format(now.strftime("%Y/%m/%d %H:%M:%S")))
 
-        lines = format_table(table, "lrrrrrr", min_width=7)
-        for line in lines:
-            self.log("| " + line)
+        for line in format_table(table, "lrrrrrr", min_width=7):
+            report_lines.append("| " + line)
+        return report_lines
+
+    def log_job_statuses(self) -> None:
+        """
+        Display Job statuses.
+        """
+        self.log()
+        for report_line in self.get_job_status_report():
+            self.log(report_line)
         self.log()
 
     def evaluate(self, expr: AnyExpression, parent_job: Optional[Job] = None) -> Promise:
@@ -1002,7 +1009,13 @@ class Scheduler:
             # Evaluate task_name to specific task.
             # TaskRegistry is like an environment.
             job.task = self.task_registry.get(expr.task_name)
-            assert job.task
+            if not job.task:
+                raise AssertionError(
+                    f"Task not found in registry: {expr.task_name}.  This can occur if the "
+                    "script that defines a user task wasn't loaded or, in the case of redun "
+                    "tasks, if an executor is loading a different version of redun that fails to "
+                    "define the task"
+                )
 
             # Make default arguments explicit in case they need to be evaluated.
             expr_args = set_arg_defaults(job.task, expr.args, expr.kwargs)
@@ -1136,8 +1149,13 @@ class Scheduler:
         # Check cache using eval_hash as key.
         job.eval_hash, job.args_hash = self.get_eval_hash(job.task, args, kwargs)
 
+        # HACK: This is a workaround introduced by DE-4761. See the ticket for
+        # notes on how script_task could be redesigned to remove the need for
+        # this special-casing.
+        is_script_task = job.task_name == "redun.script_task"
+
         call_hash: Optional[str]
-        if self.use_cache and job.get_option("cache", True):
+        if self.use_cache and job.get_option("cache", True) and not is_script_task:
             result, job.was_cached, call_hash = self.get_cache(
                 job,
                 job.eval_hash,
@@ -1305,6 +1323,7 @@ class Scheduler:
         Record tags acquired during Job.
         """
         assert job.task
+        assert job.execution
 
         # Record value tags.
         for value_hash, tags in job.value_tags:
@@ -1317,6 +1336,14 @@ class Scheduler:
         if job_tags:
             self.backend.record_tags(
                 entity_type=TagEntityType.Job, entity_id=job.id, tags=job_tags
+            )
+
+        # Record Execution tags.
+        if job.execution_tags:
+            self.backend.record_tags(
+                entity_type=TagEntityType.Execution,
+                entity_id=job.execution.id,
+                tags=job.execution_tags,
             )
 
         # Record Task tags.
@@ -1355,6 +1382,13 @@ class Scheduler:
         This function runs on the main scheduler thread. Use
         :method:`Scheduler.reject_job()` if calling from another thread.
         """
+
+        # Attach the traceback to the error so the redun traceback is always available on the error
+        # itself. In some cases (like AWS batch), the error will be constructed by unpickling a
+        # pickled Excetption(__traceback__ is not included when pickling). By attaching the
+        # traceback here, we make sure the traceback is available for downstream handlers.
+        error.redun_traceback = error_traceback
+
         if job:
             assert job.task
             assert job.args_hash
@@ -1898,24 +1932,349 @@ def catch(
     return scheduler.evaluate(expr, parent_job=parent_job).then(on_success, promise_catch)
 
 
+@scheduler_task(namespace="redun", version="1")
+def catch_all(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    exprs: T,
+    error_class: Union[None, Exception, Tuple[Exception, ...]] = None,
+    recover: Optional[Task[Callable[..., S]]] = None,
+) -> Promise[Union[T, S]]:
+    """
+    Catch all exceptions that occur in the nested value `exprs`.
+
+    This task works similar to `catch`, except it takes multiple
+    expressions within a nested value (e.g. a list, set, dict, etc).
+    Any exceptions raised by the expressions are caught and processed only after
+    all expressions succeed or fail. For example, this can be useful in large
+    fanouts where the user wants to avoid one small error stopping the whole
+    workflow immediately. Consider the following code:
+
+    .. code-block:: python
+
+        @task
+        def divider(denom):
+            return 1.0 / denom
+
+        @task
+        def recover(values):
+            nerrors = sum(1 for value in values if isinstance(value, Exception))
+            raise Exception(f"{nerrors} error(s) occurred.")
+
+        @task
+        def main():
+            result catch_all([divider(1), divider(0), divider(2)], ZeroDivisionError, recover)
+
+    Each of the expressions in the list `[divider(1), divider(0), divider(2)]`
+    will be allowed to finish before the exceptions are processed by `recover`. If
+    there are no exceptions, the evaluated list is returned. If there are any
+    exceptions, the list is passed to `recover`, where it will contain each
+    successful result or Exception. `recover` then has the opportunity to process
+    all errors together. In the example above, the total number of errors is
+    reraised.
+
+    Parameters
+    ----------
+    exprs:
+        A nested value (list, set, dict, tuple, NamedTuple) of expressions to evaluate.
+    error_class: Union[Exception, Tuple[Expression, ...]]
+        An Exception or Exceptions to catch.
+    recover: Task
+        A task to call if any errors occurs. It will be called with the nested
+        value containing both successful results and errors.
+    """
+
+    def postprocess(pending_terms):
+        # Gather all errors.
+        errors = [promise.error for promise in pending_terms if promise.is_rejected]
+
+        if errors:
+            if not recover:
+                # By default, just reraise the first error.
+                raise errors[0]
+            else:
+
+                def do_recover(error_class_recover):
+                    error_class, recover = error_class_recover
+                    if all(isinstance(error, error_class) for error in errors):
+                        return scheduler.evaluate(
+                            recover(map_nested_value(resolve_term, pending_expr)),
+                            parent_job=parent_job,
+                        )
+                    else:
+                        # By default, just reraise first non-matching error.
+                        raise next(error for error in errors if not isinstance(error, error_class))
+
+                # Evaluate error_class and recover in case they're Expressions.
+                return scheduler.evaluate((error_class, recover), parent_job=parent_job).then(
+                    do_recover
+                )
+        else:
+            # Return the evaluated nested value.
+            return map_nested_value(resolve_term, pending_expr)
+
+    def resolve_term(value):
+        # Replace a Promise with its return value or its error.
+        if isinstance(value, Promise):
+            if value.is_fulfilled:
+                return value.value
+            else:
+                return value.error
+        else:
+            # Regular values (non-Promises) pass through unchanged.
+            return value
+
+    pending_terms = []
+
+    def eval_term(value):
+        # Evaluate one term and track its promise in pending_terms.
+        promise = scheduler.evaluate(value, parent_job=parent_job)
+        pending_terms.append(promise)
+        return promise
+
+    pending_expr = map_nested_value(eval_term, exprs)
+    return wait_promises(pending_terms).then(postprocess)
+
+
 @scheduler_task(namespace="redun")
 def apply_tags(
     scheduler: Scheduler,
     parent_job: Job,
     sexpr: SchedulerExpression,
     value: Any,
-    tags: List[Tuple[str, Any]],
+    tags: List[Tuple[str, Any]] = [],
+    job_tags: List[Tuple[str, Any]] = [],
+    execution_tags: List[Tuple[str, Any]] = [],
 ) -> Promise:
     """
-    Apply tags to a value.
+    Apply tags to a value, job, or execution.
 
     Returns the original value.
+
+    .. code-block:: python
+
+        @task
+        def task1():
+            x = 10
+            # Apply tags on the value 10.
+            return apply_tags(x, [("env": "prod", "project": "acme")])
+
+        @task
+        def task2():
+            x = 10
+            # Apply tags on the current job.
+            return apply_tags(x, job_tags=[("env": "prod", "project": "acme")])
+
+        @task
+        def task3():
+            x = 10
+            # Apply tags on the current execution.
+            return apply_tags(x, execution_tags=[("env": "prod", "project": "acme")])
     """
 
     def then(args):
-        value, tags = args
-        value_hash = scheduler.backend.record_value(value)
-        parent_job.value_tags.append((value_hash, tags))
+        value, tags, job_tags, execution_tags = args
+        if tags:
+            value_hash = scheduler.backend.record_value(value)
+            parent_job.value_tags.append((value_hash, tags))
+        parent_job.job_tags.extend(job_tags)
+        parent_job.execution_tags.extend(execution_tags)
         return value
 
-    return scheduler.evaluate((value, tags), parent_job=parent_job).then(then)
+    return scheduler.evaluate((value, tags, job_tags, execution_tags), parent_job=parent_job).then(
+        then
+    )
+
+
+@task(
+    namespace="redun",
+    name="subrun_root_task",
+    version="1",
+    config_args=["config", "load_modules", "run_config"],
+)
+def _subrun_root_task(
+    expr: Any,
+    config: Dict[str, Dict],
+    load_modules: List[str],
+    run_config: Dict[str, Any],
+) -> Any:
+    """
+    Launches a sub-scheduler and runs the provided expression by first "unwrapping" it.
+    The evaluated result is returned within a dict alongside other sub-scheduler-related
+    state to the caller.
+
+    Parameters
+    ----------
+    expr: TaskExpression
+        TaskExpression to be run by sub-scheduler.
+    config
+        A two-level python dict to configure the sub-scheduler.  (Will be used to initialize a
+        :class:`Config` object via the `config_dict` kwarg.)
+    load_modules
+        List of modules that must be imported before starting the sub-scheduler. Before
+        launching the sub-scheduler, the modules that define the user tasks must be imported.
+    run_config
+        Sub-scheduler run() kwargs. These are typically the local-scheduler run() kwargs that
+        should also apply to the sub-scheduler such as `dryrun` and `cache` settings.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Returns a dict result from running the sub-scheduler on `expr`.  The dict contains extra
+        information pertaining to the sub-scheduler as follows:
+        {
+          'result': sub-scheduler evaluation of `expr`
+          'status': sub-scheduler final job status poll (list of str)
+          'config': sub-scheduler config dict (useful for confirming exactly what config
+            settings were used).
+        }
+    """
+    from redun.functools import force
+
+    sub_scheduler = Scheduler(config=Config(config_dict=config))
+    sub_scheduler.load()
+
+    # Import user modules.  The user is responsible for ensuring that the Executor that runs this
+    # task has access to all these modules' code.  Additionally, any other user modules imported
+    # by these modules must also be accessible.
+    if load_modules:
+        for module in load_modules:
+            importlib.import_module(module)
+
+    result = sub_scheduler.run(force(expr), **run_config)
+    return {
+        "result": result,
+        "status": sub_scheduler.get_job_status_report(),
+        "config": sub_scheduler.config.get_config_dict(),
+        "run_config": {
+            "dryrun": sub_scheduler.dryrun,
+            "cache": sub_scheduler.use_cache,
+        },
+    }
+
+
+@scheduler_task(namespace="redun", version="1")
+def subrun(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    expr: Any,
+    executor: str,
+    config: Optional[Dict[str, Any]] = None,
+    **task_options: dict,
+) -> Promise:
+    """
+    Evaluate an expression `expr` in a sub-scheduler.
+
+    subrun() is a scheduler_task that evaluates a `_subrun_root_task`, which in turn launches the
+    sub-scheduler.
+
+    `expr` is the TaskExpression that the sub-scheduler will evaluate.
+
+    `executor` and optional `task_options` are used to configure the special redun task (
+    _subrun_root_task) that starts the sub-scheduler. For example, you can configure the task
+    with a batch executor to run the sub-scheduler on AWS Batch.
+
+    `config`: To ease configuration management of the sub-scheduler, you can pass a `config`
+    dict which contains configuration that would otherwise require a redun.ini file in the
+    sub-scheduler environment.
+        WARNING: Do not include database credentials in this config as they will be
+    logged as clear text in the redun call graph.  You should instead specify a database secret
+    (see `db_aws_secret_name`).
+        If you do not pass a config, the local scheduler's config will be forwarded to the
+    sub-scheduler (replacing the local `config_dir` with "."). In practice, the sub-scheduler's
+    `config_dir` should be less important as you probably want to log both local and sub-scheduler
+    call graphs to a common database.
+        You can also obtain a copy of the local scheduler's config and customize it as needed.
+    Instantiate the scheduler directly instead of calling `redun run`.  Then access its
+    connfig via `scheduler.py::get_scheduler_config_dict()`.
+
+    Note on code packaging: The user is responsible for ensuring that the chosen Executor for
+    invoking the sub-scheduler copies over all user-task scripts.  E.g. the local scheduler may
+    be launched on local tasks defined in workflow1.py but subrun(executor="batch) is invoked on
+    taskX defined in workflow2.py.  In this case, the user must ensure workflow2.py is copied to
+    the batch node by placing it within the same directory tree as workflow1.py.
+
+    Parameters
+    ----------
+    expr
+        Expression to be run by sub-scheduler.
+    executor
+        Executor name for the special redun task that launches the sub-scheduler
+        (_subrun_root_task). E.g. `batch` to launch the sub-scheduler in AWS Batch. Note
+        that this is a config key in the  *local* scheduler's config.
+    config
+        Optional sub-scheduler config dict. Must be a two-level dict that can be used to
+        initialize a :class:`Config` object [see :method:`Config.get_config_dict()`.  If None or
+        empty, the local Scheduler's config will be passed to the sub-scheduler and any values
+        with local config_dir will be replaced with ".".  Do not include database credentials as
+        they will be logged as clear text in the call graph.
+    task_options
+        Task options for _subrun_root_task.  E.g. when running the sub-scheduler via Batch
+        executor, you can pass ECS configuration (e.g. `memory`, `vcpus`, `batch_tags`).
+
+    Returns
+    -------
+    Dict[str, Any]
+        Returns a dict result of evaluating the _subrun_root_task
+    """
+    from redun.functools import delay
+
+    # If a config wasn't provided, forward the parent scheduler's backend config to the
+    # sub-scheduler, replacing the local config_dir with "."
+    if not config:
+        config = scheduler.config.get_config_dict(replace_config_dir=".")
+
+    # Collect a list of all modules that define user task.  This list will include the initial
+    # task(s) to be subrun() as these are registered in the local task registry during subrun()
+    # argument formulation.
+    registry = get_task_registry()
+    load_modules = set()
+    for _task in registry:
+        module_name = _task.load_module
+        if module_name.startswith("redun.") and not module_name.startswith("redun.tests."):
+            continue
+        load_modules.add(module_name)
+
+    subrun_root_task_expr = _subrun_root_task.options(executor=executor, **task_options)(
+        expr=delay(expr),
+        config=config,
+        load_modules=sorted(load_modules),
+        run_config={
+            "dryrun": scheduler.dryrun,
+            "cache": scheduler.use_cache,
+        },
+    )
+
+    def log_banner(msg):
+        scheduler.log("-" * 79)
+        scheduler.log(msg)
+        scheduler.log("-" * 79)
+
+    def then(subrun_result):
+        # Echo subs-scheduler report.
+        scheduler.log()
+        log_banner(
+            f"BEGIN: Sub-scheduler report (executor='{executor}'), {trim_string(repr(expr))}"
+        )
+
+        scheduler.log("Sub-scheduler config:")
+        scheduler.log(pprint.pformat(subrun_result["config"]))
+
+        scheduler.log()
+        scheduler.log("Sub-scheduler run_config:")
+        scheduler.log(pprint.pformat(subrun_result["run_config"]))
+
+        scheduler.log()
+        scheduler.log("Sub-scheduler final job status:")
+        for report_line in subrun_result["status"]:
+            scheduler.log(report_line)
+
+        log_banner("END: Sub-scheduler report")
+        scheduler.log()
+
+        # Return the user's result.
+        return subrun_result["result"]
+
+    return scheduler.evaluate(subrun_root_task_expr, parent_job=parent_job).then(then)

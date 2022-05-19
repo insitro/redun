@@ -55,7 +55,7 @@ lint-python: venv
 
 .PHONY: mypy
 mypy: venv
-	$(WITH_VENV) mypy $(PACKAGE_NAME)
+	$(WITH_VENV) mypy --show-error-codes $(PACKAGE_NAME)
 
 
 # Migrate example database to latest version.

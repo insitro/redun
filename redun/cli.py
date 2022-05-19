@@ -71,9 +71,9 @@ from redun.executors.aws_batch import (
     AWSBatchExecutor,
     aws_describe_jobs,
     format_log_stream_event,
-    iter_log_stream,
 )
-from redun.executors.aws_utils import extract_tar
+from redun.executors.aws_utils import iter_log_stream
+from redun.executors.code_packaging import extract_tar
 from redun.executors.k8s import K8SExecutor
 from redun.file import File as BaseFile
 from redun.job_array import AWS_ARRAY_VAR, K8S_ARRAY_VAR
@@ -380,7 +380,7 @@ def postprocess_config(config: Config, config_dir: str) -> Config:
     Postprocess config.
     """
     # Add default repository if not specified in config.
-    default_repo = {"config_dir": config_dir}
+    default_repo = create_config_section({"config_dir": config_dir})
     if config.get("repos"):
         config["repos"][DEFAULT_REPO_NAME] = default_repo
     else:
@@ -915,9 +915,8 @@ def format_tags(tags: List[Tag], max_length: int = 50) -> str:
     if not tags:
         return ""
 
-    tags = sorted(tags, key=lambda tag: (tag.key, tag.value))
     tag_list = ", ".join(
-        format_tag_key_value(tag.key, tag.value, max_length=max_length) for tag in tags
+        sorted(format_tag_key_value(tag.key, tag.value, max_length=max_length) for tag in tags)
     )
     return f"({tag_list})"
 

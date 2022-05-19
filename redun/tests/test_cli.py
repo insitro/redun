@@ -2,6 +2,7 @@ import io
 import json
 import os
 import pickle
+import time
 from socket import socket
 from typing import Any, List, cast
 from unittest.mock import Mock, patch
@@ -31,7 +32,7 @@ from redun.cli import (
     setup_scheduler,
 )
 from redun.executors.aws_batch import BATCH_LOG_GROUP
-from redun.executors.aws_utils import create_tar
+from redun.executors.code_packaging import create_tar
 from redun.job_array import AWS_ARRAY_VAR
 from redun.scheduler import Traceback
 from redun.tags import ANY_VALUE
@@ -1078,13 +1079,14 @@ def task_error(x: int):
 @use_tempdir
 def test_aws_logs(aws_describe_jobs_mock1, aws_describe_jobs_mock2) -> None:
 
+    timestamp = int(time.time() * 1000)
     stream_name = "redun_aws_batch_example-redun-jd/default/6c939514f4054fdfb5ee65acc8aa4b07"
     job_descriptions = [
         {
             "jobId": "123",
             "container": {"logStreamName": stream_name},
-            "startedAt": 1602596831000,
-            "createdAt": 1602596831000,
+            "startedAt": timestamp,
+            "createdAt": timestamp,
         }
     ]
     aws_describe_jobs_mock1.return_value = iter(job_descriptions)
@@ -1098,16 +1100,16 @@ def test_aws_logs(aws_describe_jobs_mock1, aws_describe_jobs_mock2) -> None:
         logGroupName=BATCH_LOG_GROUP,
         logStreamName=stream_name,
         logEvents=[
-            {"timestamp": 1602596831000, "message": "A message 1."},
-            {"timestamp": 1602596832000, "message": "A message 2."},
+            {"timestamp": timestamp, "message": "A message 1."},
+            {"timestamp": timestamp + 1, "message": "A message 2."},
         ],
     )
     resp = logs_client.put_log_events(
         logGroupName=BATCH_LOG_GROUP,
         logStreamName=stream_name,
         logEvents=[
-            {"timestamp": 1602596833000, "message": "A message 3."},
-            {"timestamp": 1602596834000, "message": "A message 4."},
+            {"timestamp": timestamp + 2, "message": "A message 3."},
+            {"timestamp": timestamp + 3, "message": "A message 4."},
         ],
         sequenceToken=resp["nextSequenceToken"],
     )
@@ -1137,13 +1139,14 @@ s3_scratch = s3://bucket/scratch/
 
     client.stdout.seek(0)
 
-    assert client.stdout.readlines() == [
+    lines = client.stdout.readlines()
+    assert lines == [
         "# AWS Batch job 123\n",
-        "# AWS Log Stream redun_aws_batch_example-redun-jd/default/6c939514f4054fdfb5ee65acc8aa4b07\n",  # noqa: E501
-        "2020-10-13 06:47:11  A message 1.\n",
-        "2020-10-13 06:47:12  A message 2.\n",
-        "2020-10-13 06:47:13  A message 3.\n",
-        "2020-10-13 06:47:14  A message 4.\n",
+        "# AWS Log Stream redun_aws_batch_example-redun-jd/default/6c939514f4054fdfb5ee65acc8aa4b07\n",  # noqa:E501
+        "2019-12-31 17:00:00  A message 1.\n",
+        "2019-12-31 17:00:00.001000  A message 2.\n",
+        "2019-12-31 17:00:00.002000  A message 3.\n",
+        "2019-12-31 17:00:00.003000  A message 4.\n",
         "\n",
     ]
 
@@ -1649,6 +1652,56 @@ def main(x: int) -> int:
     output = run_command(client, ["redun", "tag", "update", execution.id, "env=prod2"])
     output = run_command(client, ["redun", "tag", "list", "env=prod2"])
     assert "Exec " in output
+
+
+@use_tempdir
+def test_cli_log_tags_order() -> None:
+    """
+    redun log entries should have tags sorted in a stable way, even if their values are not
+    comparable directly.
+    """
+    file = File("workflow.py")
+    file.write(
+        """
+from redun import task
+from redun.scheduler import apply_tags
+
+redun_namespace = 'test'
+
+@task()
+def example1():
+    return apply_tags(
+        42,
+        execution_tags=[("key", {"b": 1}), ("key", {"a": 2})]
+    )
+
+@task()
+def example2():
+    return apply_tags(
+        42,
+        execution_tags=[("key", {"c": 2}), ("key", {"c": 1})]
+    )
+
+"""
+    )
+
+    # Run example workflow.
+    client = RedunClient()
+    client.execute(["redun", "run", "workflow.py", "example1"])
+    client.execute(["redun", "run", "workflow.py", "example2"])
+
+    lines = run_command(client, ["redun", "log"]).split("\n")
+
+    assert_match_lines(
+        [
+            r"Recent executions:",
+            r"",
+            r"Exec.*key={\"c\": 1}, key={\"c\": 2}.*",
+            r"Exec.*key={\"a\": 2}, key={\"b\": 1}.*",
+            r"",
+        ],
+        lines,
+    )
 
 
 @use_tempdir

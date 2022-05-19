@@ -173,18 +173,16 @@ def _script(
     outside the usual redun detection mechanisms (task arguments
     and return values).
 
-    To achieve the correct reactivity, `script_task()` is called with
-    `cached=False`, in order to force it to always execute when called.
+    To achieve the correct reactivity, `script_task()` is special-cased in the Scheduler
+    to not use caching, in order to force it to always execute when called.
     Additionally, `_script()` is configured with `check_valid="shallow"` to
     skip execution of its child tasks, `script_task()` and `postprocess_script()`,
     if its previous outputs are still valid (i.e. not altered or deleted).
     """
     # Note: inputs are an argument just for reactivity sake.
     # They have already been incorporated into the command.
-    # Use cache=False to force rerunning script_task since it can't react
-    # to invalidation of its output.
     return postprocess_script(
-        script_task.options(cache=False, **task_options)(command), outputs, temp_path=temp_path
+        script_task.options(**task_options)(command), outputs, temp_path=temp_path
     )
 
 

@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from redun.promise import Promise
+from redun.promise import Promise, wait_promises
 
 
 def test_resolve() -> None:
@@ -327,3 +327,33 @@ def test_all_reject_first() -> None:
     promises.then(None, mock)
 
     mock.assert_called_with(error)
+
+
+def test_wait_promises() -> None:
+    """
+    wait_promises() should wait for all subpromises regardless of success or failure.
+    """
+
+    def good():
+        return Promise(lambda resolve, reject: resolve(10))
+
+    def bad():
+        return Promise(lambda resolve, reject: reject(ValueError("boom")))
+
+    top = wait_promises([good(), good(), good()])
+    promises = top.value
+    assert [promise.value for promise in promises] == [10, 10, 10]
+
+    top = wait_promises([good(), bad(), good()])
+    promises = top.value
+    assert promises[0].value == 10
+    assert isinstance(promises[1].error, ValueError)
+    assert promises[2].value == 10
+
+    a: Promise[int] = Promise()
+    top = wait_promises([good(), bad(), a])
+    a.do_resolve(20)
+    promises = top.value
+    assert promises[0].value == 10
+    assert isinstance(promises[1].error, ValueError)
+    assert promises[2].value == 20

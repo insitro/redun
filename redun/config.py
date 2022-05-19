@@ -1,5 +1,5 @@
 from configparser import ConfigParser, SectionProxy
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Dict, Iterable, Optional, Union
 
 from redun.file import File
 
@@ -58,6 +58,53 @@ class Config:
 
     def keys(self) -> Iterable[str]:
         return self._sections.keys()
+
+    def items(self):
+        return self._sections.items()
+
+    def get_config_dict(self, replace_config_dir=None) -> Dict[str, Dict]:
+        """Return a python dict that can be used to reconstruct the Config object
+
+        config2 = Config(config_dict=config1.get_config_dict()) should result in identical
+        Configs config1 and config2.
+
+        Note: The structure of the returned Dict is essentially a two-level dict corresponding to
+        INI file structure. Top-level key is a dot-separated section name.  Top-level value is a
+        single-level dict containing key/values for a single section.
+
+        Parameters
+        ----------
+        replace_config_dir
+            if not None, replaces any variables containing the machine-local config_dir (as
+            obtained by `redun.cli.get_config_dir()` with `replace_config_dir`.
+            Typical values that are replaced are `backend::config_dir`, `db_uri`,
+            `repos.default::config_dir`.
+
+        Returns
+        -------
+        A copy of this object's config in two-level format, optionally with values containing
+        the local config directory replaced.
+        """
+        from redun.cli import get_config_dir
+
+        result = {}
+        local_config_dir = get_config_dir()
+
+        def substitute_config_dir(s):
+            # Replace string values containing local config_dir with the provided one
+            if replace_config_dir is not None and isinstance(s, str):
+                return s.replace(local_config_dir, replace_config_dir)
+            return s
+
+        def convert_to_dict(path, obj):
+            if isinstance(obj, SectionProxy):
+                result[path] = {k: substitute_config_dir(v) for k, v in obj.items()}
+                return
+            for key in obj.keys():
+                convert_to_dict(f"{path}.{key}" if path else key, obj[key])
+
+        convert_to_dict("", self)
+        return result
 
 
 Section = Union[dict, SectionProxy, Config]

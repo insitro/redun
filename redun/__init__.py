@@ -1,5 +1,6 @@
 from redun.executors.aws_batch import AWSBatchExecutor  # noqa: F401
 from redun.executors.aws_glue import AWSGlueExecutor  # noqa: F401
+from redun.executors.docker import DockerExecutor  # noqa: F401
 from redun.executors.k8s import K8SExecutor  # noqa: F401
 from redun.executors.local import LocalExecutor  # noqa: F401
 from redun.file import Dir, File, ShardedS3Dataset  # noqa: F401
@@ -15,7 +16,7 @@ from redun.scheduler import (  # noqa: F401
     set_current_scheduler,
     throw,
 )
-from redun.scripting import script  # noqa: F401
-from redun.task import PartialTask, Task, get_task_registry, task  # noqa: F401
+from redun.scripting import script
+from redun.task import PartialTask, Task, get_task_registry, task
 
-__version__ = "0.8.5"
+__version__ = "0.8.9"

@@ -68,7 +68,7 @@ def use_rdkit():
 
 #### Avoiding import errors
 In a file with multiple redun tasks, packages are often imported at the top-level that are needed by non-glue tasks.
-However when the glue task is launched, those top-level imports may cause the job to fail with ImportError.
+However, when the glue task is launched, those top-level imports may cause the job to fail with ImportError.
 
 For example, the glue task here will fail due to being unable to import the package `foo`:
 

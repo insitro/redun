@@ -7,8 +7,8 @@ hide-toc: true
 *yet another redundant workflow engine*
 
 **redun** aims to be a more expressive and efficient workflow framework, built on top of the popular Python programming language.
-It takes the somewhat contrarian view that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, compositiblity, recursion, high order functions, etc).
-redun's key insight is that workflows can be expressed as [lazy expressions](#whats-the-trick), that are then evaluated by a scheduler which performs automatic parallelization, caching, and data provenance logging.
+It takes the somewhat contrarian view that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, composability, recursion, high order functions, etc).
+redun's key insight is that workflows can be expressed as [lazy expressions](#whats-the-trick), which are then evaluated by a scheduler that performs automatic parallelization, caching, and data provenance logging.
 
 redun's key features are:
 
@@ -16,7 +16,7 @@ redun's key features are:
 - Incremental computation that is reactive to both data changes as well as code changes.
 - Workflow tasks can be executed on a variety of compute backend (threads, processes, AWS batch jobs, Spark jobs, etc). 
 - Data changes are detected for in memory values as well as external data sources such as files and object stores using file hashing.
-- Code changes are detected by hashing individual Python functions and comparing against historical call graph recordings.
+- Code changes are detected by hashing individual Python functions and comparing them against historical call graph recordings.
 - Past intermediate results are cached centrally and reused across workflows.
 - Past call graphs can be used as a data lineage record and can be queried for debugging and auditing.
 
@@ -71,5 +71,4 @@ CHANGELOG
 
 GitHub repository <https://github.com/insitro/redun>
 ```
-
 

@@ -11,9 +11,20 @@ from redun.backends.db import Execution, RedunBackendDb
 from redun.config import Config
 from redun.expression import SchedulerExpression
 from redun.promise import Promise
-from redun.scheduler import DryRunResult, Frame, Job, Task, Traceback, catch, cond, scheduler_task
+from redun.scheduler import (
+    DryRunResult,
+    Frame,
+    Job,
+    Task,
+    Traceback,
+    catch,
+    catch_all,
+    cond,
+    scheduler_task,
+)
 from redun.task import PartialTask, SchedulerTask
 from redun.tests.utils import assert_match_lines, use_tempdir
+from redun.utils import map_nested_value
 from redun.value import Value, get_type_registry
 
 
@@ -150,7 +161,7 @@ def test_scheduler_incremental(scheduler: Scheduler) -> None:
 
     # Simulate a code change to run_gatk task.
 
-    @task()  # type: ignore # noqa: F811
+    @task()  # type: ignore[no-redef]
     def run_gatk(align):
         task_calls.append("run_gatk")
         calls = "calls2({})".format(align)
@@ -164,7 +175,7 @@ def test_scheduler_incremental(scheduler: Scheduler) -> None:
 
     # A reverted code change should be fully memoized too.
 
-    @task()  # type: ignore # noqa: F811
+    @task()  # type: ignore[no-redef]
     def run_gatk(align):
         task_calls.append("run_gatk")
         calls = "calls({})".format(align)
@@ -436,7 +447,7 @@ def test_higher_order(scheduler: Scheduler) -> None:
     assert task_calls == []
 
     # Changing a child of adder(), changes adder(). Caching should detect this.
-    @task()  # type: ignore # noqa: F811
+    @task()  # type: ignore[no-redef]
     def get_offset():
         task_calls.append("get_offset")
         return 20
@@ -521,7 +532,7 @@ def test_higher_order2(scheduler: Scheduler) -> None:
     assert task_calls == []
 
     # Change definition of task that was cached.
-    @task()  # type: ignore # noqa: F811
+    @task()  # type: ignore[no-redef]
     def adder(a, b):
         task_calls.append("adder")
         return a + b
@@ -533,7 +544,7 @@ def test_higher_order2(scheduler: Scheduler) -> None:
     assert task_calls == ["chooser", "adder"]
 
     # Changing a child of multiplier, changes multiplier. Caching should detect this.
-    @task()  # type: ignore # noqa: F811
+    @task()  # type: ignore[no-redef]
     def get_offset():
         task_calls.append("get_offset")
         return 20
@@ -682,8 +693,10 @@ def test_log_job_status(scheduler: Scheduler) -> None:
         logs.extend(messages)
 
     with patch.object(scheduler, "log", wraps=log):
+        report = scheduler.get_job_status_report()
         scheduler.log_job_statuses()
 
+    assert report == logs
     assert logs[1:] == [
         "| TASK    PENDING RUNNING  FAILED  CACHED    DONE   TOTAL",
         "| ",
@@ -1227,7 +1240,7 @@ def test_catch_task_react(scheduler: Scheduler) -> None:
     assert calls == ["safe"]
 
     # Updating safe task should force re-execution.
-    @task()  # type: ignore # noqa: F811
+    @task()  # type: ignore[no-redef]
     def safe():
         calls.append("safe2")
         return 2 / 1
@@ -1243,7 +1256,7 @@ def test_catch_task_react(scheduler: Scheduler) -> None:
     assert calls == ["faulty", "recover"]
 
     # Updating recover task should force re-execution.
-    @task()  # type: ignore # noqa: F811
+    @task()  # type: ignore[no-redef]
     def recover(error):
         calls.append("recover2")
         return 2.0
@@ -1285,7 +1298,7 @@ def test_catch_deep_task_react(scheduler: Scheduler) -> None:
     assert calls == ["safe", "deep"]
 
     # Updating deep task should force re-execution.
-    @task()  # type: ignore # noqa: F811
+    @task()  # type: ignore[no-redef]
     def deep(denom):
         calls.append("deep2")
         return 2 / denom
@@ -1327,13 +1340,76 @@ def test_catch_deep_recover_react(scheduler: Scheduler) -> None:
     assert calls == ["faulty", "recover", "deep"]
 
     # Updating deep task should force re-execution.
-    @task()  # type: ignore # noqa: F811
+    @task()  # type: ignore[no-redef]
     def deep():
         calls.append("deep2")
         return 2
 
     assert scheduler.run(catch(faulty(), ZeroDivisionError, recover)) == 2
     assert calls == ["faulty", "recover", "deep", "deep2"]
+
+
+def test_catch_all(scheduler: Scheduler) -> None:
+    """
+    Catch expression should handle exceptions.
+    """
+
+    @task
+    def throw(error: Exception) -> None:
+        raise error
+
+    @task
+    def good(x=10):
+        return x
+
+    @task
+    def bad(message="boom"):
+        raise ValueError(message)
+
+    @task
+    def recover(results):
+        return map_nested_value(
+            lambda result: (0 if isinstance(result, Exception) else result), results
+        )
+
+    # All subtasks succeed.
+    assert scheduler.run(catch_all([good(1), good(2), good(3)], ValueError, recover)) == [1, 2, 3]
+
+    # Failed tasks should be caught.
+    assert scheduler.run(catch_all([good(4), bad(), good(5)], ValueError, recover)) == [4, 0, 5]
+    assert scheduler.run(catch_all([good(6), bad(), bad(), good(7)], ValueError, recover)) == [
+        6,
+        0,
+        0,
+        7,
+    ]
+
+    # We should be able to catch multiple error classes.
+    assert scheduler.run(
+        catch_all(
+            [throw(KeyError()), throw(ValueError()), good()], (KeyError, ValueError), recover
+        )
+    ) == [0, 0, 10]
+
+    # Without a recovery, errors should reraise.
+    with pytest.raises(ValueError):
+        scheduler.run(catch_all([good(), bad(), good()]))
+
+    # Different error_class should pass through.
+    with pytest.raises(ValueError):
+        scheduler.run(catch_all([good(), bad(), good()], ZeroDivisionError, recover))
+
+    # Different error_class should pass through, even if others are caught.
+    with pytest.raises(ValueError):
+        scheduler.run(
+            catch_all([throw(KeyError()), throw(ValueError()), good()], KeyError, recover)
+        )
+
+    # Any kind of nested value should work.
+    assert scheduler.run(catch_all([good(8), [bad(), {"a": good(9)}]], ValueError, recover)) == [
+        8,
+        [0, {"a": 9}],
+    ]
 
 
 def test_config_args(scheduler: Scheduler) -> None:
@@ -1426,3 +1502,32 @@ def test_default_args_expression(scheduler: Scheduler) -> None:
         return x
 
     assert scheduler.run(main2()) == [3]
+
+
+def test_job_clear(scheduler: Scheduler) -> None:
+    """
+    Job clean up should occur correctly even when child jobs fail.
+
+    https://insitro.atlassian.net/browse/DE-4645
+    """
+
+    @task
+    def child(x: int) -> int:
+        if x == 2:
+            raise ValueError("raised by child")
+        return x
+
+    @task
+    def child2(x: int) -> int:
+        return x
+
+    @task
+    def parent(n: int) -> List[int]:
+        return [child2(child(i)) for i in range(n)]
+
+    @task
+    def main(n: int) -> List[int]:
+        return parent(n)
+
+    with pytest.raises(ValueError, match="raised by child"):
+        scheduler.run(main(10))

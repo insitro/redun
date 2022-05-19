@@ -1,7 +1,9 @@
 import abc
 import glob
+import io
 import os
 import shutil
+import threading
 from shlex import quote
 from typing import (
     IO,
@@ -33,6 +35,10 @@ if TYPE_CHECKING:
     import pandas
     import pyspark
 
+# Thread-local storage is used for thread-specific s3 clients.
+_local = threading.local()
+
+# Global singletons for Filesystems.
 _proto2filesystem_class: Dict[str, Type["FileSystem"]] = {}
 
 
@@ -63,8 +69,22 @@ def get_filesystem_class(
     return _proto2filesystem_class[proto]
 
 
-def open_file(url: str, mode: str = "r") -> IO:
-    return get_filesystem(url=url).open(url, mode=mode)
+def open_file(url: str, mode: str = "r", encoding: Optional[str] = None, **kwargs: Any) -> IO:
+    """
+    Open a file stream.
+
+    Parameters
+    ----------
+    url : str
+        Url or path of file to open.
+    mode : str
+        Stream mode for reading or writing ('r', 'w', 'b', 'a').
+    encoding : str
+        Text encoding (e.g. 'utf-8') to use when read or writing.
+    **kwargs
+        Additional arguments for the underlying file stream. They are Filesystem-specific.
+    """
+    return get_filesystem(url=url).open(url, mode=mode, encoding=encoding, **kwargs)
 
 
 def glob_file(pattern: str) -> List[str]:
@@ -92,9 +112,37 @@ class FileSystem(abc.ABC):
 
     name: str = "base"
 
-    def open(self, path: str, mode: str) -> IO:
+    def open(self, path: str, mode: str, encoding: Optional[str] = None, **kwargs: Any) -> IO:
         """
-        Open a file stream for path with mode ('r', 'w', 'b').
+        Open a file stream from the filesystem.
+
+        Parameters
+        ----------
+        path : str
+            Url or path of file to open.
+        mode : str
+            Stream mode for reading or writing ('r', 'w', 'b', 'a').
+        encoding : str
+            Text encoding (e.g. 'utf-8') to use when read or writing.
+        **kwargs
+            Additional arguments for the underlying file stream. They are Filesystem-specific.
+        """
+        if encoding:
+            if "b" in mode:
+                raise ValueError("Binary mode 'b' cannot be used with encoding.")
+            mode += "b"
+
+        stream = self._open(path, mode, **kwargs)
+
+        if encoding:
+            # Perform encoding/decoding, if specified.
+            stream = io.TextIOWrapper(stream, encoding)
+
+        return stream
+
+    def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
+        """
+        Private open method for subclasses to implement.
         """
         pass
 
@@ -188,7 +236,7 @@ class LocalFileSystem(FileSystem):
             os.makedirs(dirname)
         return dirname
 
-    def open(self, path: str, mode: str) -> IO:
+    def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
         """
         Open a file stream for path with mode ('r', 'w', 'b').
         """
@@ -196,7 +244,7 @@ class LocalFileSystem(FileSystem):
         if "w" in mode or "a" in mode:
             self._ensure_dir(path)
 
-        return open(path, mode)
+        return open(path, mode, **kwargs)
 
     def exists(self, path: str) -> bool:
         """
@@ -307,7 +355,7 @@ class FsspecFileSystem(FileSystem):
         self.fs.makedirs(dirname, exist_ok=True)
         return dirname
 
-    def open(self, path: str, mode: str) -> IO:
+    def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
         """
         Open a file stream for path with mode ('r', 'w', 'b').
         """
@@ -315,7 +363,7 @@ class FsspecFileSystem(FileSystem):
         if "w" in mode or "a" in mode:
             self._ensure_dir(path)
 
-        return self.fs.open(path, mode)
+        return self.fs.open(path, mode, **kwargs)
 
     def exists(self, path: str) -> bool:
         """
@@ -429,9 +477,33 @@ class S3FileSystem(FileSystem):
 
     name = "s3"
 
-    def __init__(self):
-        self.s3 = s3fs.S3FileSystem(anon=False)
-        self.s3_raw = boto3.client("s3")
+    @property
+    def s3(self) -> s3fs.S3FileSystem:
+        # Maintain a client per thread, since s3fs is not thread-safe.
+        # Double check pid since fork can clone thread-local storage.
+        pid = getattr(_local, "pid", None)
+        if pid != os.getpid():
+            _local.pid = os.getpid()
+            client = None
+        else:
+            client = getattr(_local, "s3", None)
+        if not client:
+            client = _local.s3 = s3fs.S3FileSystem(anon=False)
+        return client
+
+    @property
+    def s3_raw(self) -> Any:
+        # Maintain a client per thread, since boto is not thread-safe.
+        # Double check pid since fork can clone thread-local storage.
+        pid = getattr(_local, "pid", None)
+        if pid != os.getpid():
+            _local.pid = os.getpid()
+            client = None
+        else:
+            client = getattr(_local, "s3_raw", None)
+        if not client:
+            client = _local.s3_raw = boto3.client("s3")
+        return client
 
     def exists(self, path: str) -> bool:
         """
@@ -460,8 +532,8 @@ class S3FileSystem(FileSystem):
             # It it not an error to try to remove a non-existent File.
             pass
 
-    def open(self, path: str, mode: str) -> IO:
-        return self.s3.open(path, mode)
+    def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
+        return self.s3.open(path, mode, **kwargs)
 
     def mkdir(self, path: str) -> None:
         # s3fs mkdir only creates buckets, so we just touch this key
@@ -560,7 +632,20 @@ class File(Value):
     def remove(self) -> None:
         return self.filesystem.remove(self.path)
 
-    def open(self, mode: str = "r") -> IO:
+    def open(self, mode: str = "r", encoding: Optional[str] = None, **kwargs: Any) -> IO:
+        """
+        Open a file stream.
+
+        Parameters
+        ----------
+        mode : str
+            Stream mode for reading or writing ('r', 'w', 'b', 'a').
+        encoding : str
+            Text encoding (e.g. 'utf-8') to use when read or writing.
+        **kwargs
+            Additional arguments for the underlying file stream. They are Filesystem-specific.
+        """
+
         def close():
             original_close()
             self.update_hash()
@@ -569,7 +654,8 @@ class File(Value):
             # unnecessary hashing.
             self.stream.close = original_close
 
-        self.stream = self.filesystem.open(self.path, mode)
+        self.stream = self.filesystem.open(self.path, mode, encoding=encoding, **kwargs)
+
         original_close = self.stream.close
         self.stream.close = close  # type: ignore
 
@@ -578,8 +664,8 @@ class File(Value):
     def touch(self, time: Union[Tuple[int, int], Tuple[float, float], None] = None) -> None:
         self.filesystem.touch(self.path, time)
 
-    def read(self, mode: str = "r") -> Union[str, bytes]:
-        with self.open(mode=mode) as infile:
+    def read(self, mode: str = "r", encoding: Optional[str] = None) -> Union[str, bytes]:
+        with self.open(mode=mode, encoding=encoding) as infile:
             data = infile.read()
         return data
 
@@ -588,8 +674,10 @@ class File(Value):
             data = infile.readlines()
         return data
 
-    def write(self, data: Union[str, bytes], mode: str = "w") -> None:
-        with self.open(mode) as out:
+    def write(
+        self, data: Union[str, bytes], mode: str = "w", encoding: Optional[str] = None
+    ) -> None:
+        with self.open(mode=mode, encoding=encoding) as out:
             out.write(data)
 
     def copy_to(self, dest_file: "File", skip_if_exists: bool = False) -> "File":
@@ -770,15 +858,15 @@ class ShardedS3Dataset(Value):
 
     type_name = "redun.ShardedS3Dataset"
 
-    def __init__(self, path: str, format: str = "parquet", recurse: bool = False):
+    def __init__(self, path: str, format: str = "parquet", recurse: bool = True):
         path = path.rstrip("/")
-        self.path = path
-        self.recurse = recurse
+        self._path = path
+        self._recurse = recurse
         self._hash: Optional[str] = None
 
         if format not in ["avro", "csv", "ion", "grokLog", "json", "orc", "parquet", "xml"]:
             raise ValueError(f"Invalid format {format}")
-        self.format = format
+        self._format = format
 
         self.filesystem: FileSystem = get_filesystem(url=self.path)
         self._filenames: List[str] = self._gather_files()
@@ -786,9 +874,9 @@ class ShardedS3Dataset(Value):
     def _gather_files(self) -> List[str]:
 
         # If recursing, look in subdirectories too.
-        files = glob_file(f"{self.path}/*.{self.format}")
+        files = glob_file(f"{self._path}/*.{self._format}")
         if self.recurse:
-            files.extend(glob_file(f"{self.path}/**/*.{self.format}"))
+            files.extend(glob_file(f"{self._path}/**/*.{self._format}"))
 
         # Work around differences between fsspec's interpretation of ** on S3 vs.local
         # by removing any duplicate file names from the list.
@@ -802,12 +890,48 @@ class ShardedS3Dataset(Value):
         return self
 
     @property
+    def format(self) -> str:
+        return self._format
+
+    @format.setter
+    def format(self, value):
+        self._format = format
+        self._calc_hash()
+
+    @property
+    def recurse(self) -> bool:
+        return self._recurse
+
+    @recurse.setter
+    def recurse(self, value):
+        self._recurse = value
+        self._calc_hash()
+
+    @property
+    def filenames(self) -> List[str]:
+        return self._filenames
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+    @path.setter
+    def path(self, value):
+        self._path = value
+        self._calc_hash()
+
+    @property
     def hash(self) -> str:
         if not self._hash:
             self._hash = self._calc_hash()
         return self._hash
 
     def _calc_hash(self) -> str:
+        """
+        Recalculates the hash of the dataset. We re-gather all the files at
+        this time as new files may have been created in the meantime, such as
+        writing output from a Spark/Glue job.
+        """
         self._filenames = self._gather_files()
         return hash_struct(["ShardedS3Dataset"] + sorted(self._filenames))
 
@@ -832,17 +956,17 @@ class ShardedS3Dataset(Value):
 
     def __getstate__(self) -> dict:
         return {
-            "path": self.path,
-            "format": self.format,
-            "recurse": self.recurse,
+            "path": self._path,
+            "format": self._format,
+            "recurse": self._recurse,
             "hash": self._hash,
             "files": self._filenames,
         }
 
     def __setstate__(self, state: dict) -> None:
-        self.path = state["path"]
-        self.format = state["format"]
-        self.recurse = state["recurse"]
+        self._path = state["path"]
+        self._format = state["format"]
+        self._recurse = state["recurse"]
         self._filenames = state["files"]
         self._hash = state["hash"]
 

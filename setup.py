@@ -18,11 +18,11 @@ requirements = [
     "sqlalchemy>=1.3.17,<2",
     "python-dateutil>=2.8",
     "kubernetes>=22.6",
+    # If updating this list, check executors/aws_glue.py stays up to date with
+    # packages needed to run in the glue environment.
 ]
 
-extras = {
-    "glue": ["pandas", "pyarrow"],
-}
+extras = {"glue": ["pandas", "pyarrow", "pyspark"]}
 
 if REQUIRE_POSTGRES:
     requirements.append(PSYCOPG2_VERSION)

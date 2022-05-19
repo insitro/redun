@@ -1,4 +1,3 @@
-import importlib
 import sys
 import typing
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
@@ -6,7 +5,7 @@ from multiprocessing import get_context, get_start_method, set_start_method
 from typing import Any, Callable, Optional, Tuple
 
 from redun.config import create_config_section
-from redun.executors.base import Executor, register_executor
+from redun.executors.base import Executor, load_task_module, register_executor
 from redun.scripting import exec_script, get_task_command
 from redun.task import get_task_registry
 
@@ -19,29 +18,23 @@ THREAD_MODE = "thread"
 PROCESS_MODE = "process"
 
 
-def exec_task(mode: str, module_name: str, task_name: str, args: Tuple, kwargs: dict) -> Any:
+def exec_task(mode: str, module_name: str, task_fullname: str, args: Tuple, kwargs: dict) -> Any:
     """
     Execute a task in the new process.
     """
-    if mode == PROCESS_MODE:
-        module = importlib.import_module(module_name)
-        task = getattr(module, task_name)
-    else:
-        task = get_task_registry().get(task_name)
+    load_task_module(module_name, task_fullname)
+    task = get_task_registry().get(task_fullname)
     return task.func(*args, **kwargs)
 
 
 def exec_script_task(
-    mode: str, module_name: str, task_name: str, args: Tuple, kwargs: dict
+    mode: str, module_name: str, task_fullname: str, args: Tuple, kwargs: dict
 ) -> bytes:
     """
     Execute a script task from the task registry.
     """
-    if mode == PROCESS_MODE:
-        module = importlib.import_module(module_name)
-        task = getattr(module, task_name)
-    else:
-        task = get_task_registry().get(task_name)
+    load_task_module(module_name, task_fullname)
+    task = get_task_registry().get(task_fullname)
     command = get_task_command(task, args, kwargs)
     return exec_script(command)
 
@@ -56,6 +49,10 @@ class LocalExecutor(Executor):
         "processes": PROCESS_MODE,
     }
     START_METHODS = ["fork", "spawn", "forkserver"]
+    # start_method fork is not reliable on Mac OS X. So we use forkserver as
+    # a safe common default.
+    # https://bugs.python.org/issue33725
+    DEFAULT_START_METHOD = "forkserver"
 
     def __init__(
         self,
@@ -76,7 +73,7 @@ class LocalExecutor(Executor):
         self.mode = self._OLD2NEW_MODES.get(self.mode, self.mode)
         assert self.mode in self.MODES, f"Unknown mode: {self.mode}"
 
-        self.start_method = config.get("start_method", "fork")
+        self.start_method = config.get("start_method", self.DEFAULT_START_METHOD)
         assert (
             self.start_method in self.START_METHODS
         ), f"Unknown start_method: {self.start_method}"
@@ -123,6 +120,8 @@ class LocalExecutor(Executor):
 
     def _submit(self, exec_func: Callable, job: "Job", args: Tuple, kwargs: dict) -> None:
         mode = job.get_option("mode", self.mode)
+        if mode not in (THREAD_MODE, PROCESS_MODE):
+            raise ValueError(f"Unknown mode: {mode}")
 
         # Ensure pool are started.
         self._start(mode)
@@ -140,26 +139,16 @@ class LocalExecutor(Executor):
 
         # Run job in a new thread or process.
         assert job.task
-        if mode == THREAD_MODE:
-            module_name = ""
-            task_name = job.task.fullname
-        elif mode == PROCESS_MODE:
-            module_name = job.task.func.__module__
-            task_name = job.task.func.__name__
-        else:
-            raise ValueError(f"Unknown mode: {mode}")
 
         def on_done(future):
             try:
-                self.scheduler.done_job(job, future.result())
+                self._scheduler.done_job(job, future.result())
             except Exception as error:
-                self.scheduler.reject_job(job, error)
+                self._scheduler.reject_job(job, error)
 
-        # Run job in a new thread.
-        assert job.task
-        executor.submit(exec_func, mode, module_name, task_name, args, kwargs).add_done_callback(
-            on_done
-        )
+        executor.submit(
+            exec_func, mode, job.task.load_module, job.task.fullname, args, kwargs
+        ).add_done_callback(on_done)
 
     def submit(self, job: "Job", args: Tuple, kwargs: dict) -> None:
         assert job.task

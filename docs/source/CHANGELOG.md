@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.8.9
+May 17, 2022
+
+* `#131` - [DE-4809] Use AWS job run insights to get better tracebacks for glue jobs
+* Merge remote-tracking branch 'origin/main'
+* `#138` - resolve conflicts with public and private main
+* `#33` - Fixed typos and minor grammatical stuff like missing commas, etc. in the documentation and README.md 
+* `#32` - Update README.md
+* `#136` - Ignore flake8 F401 errors in `__init__.py` files
+
+## 0.8.8
+April 20, 2022
+
+* `#129` - AWS Batch multi-node executor
+* `#130` - Update README.md because compositiblity is not a word.
+* `#128` - DE-4761 fix script reuniting in aws batch executor
+* `#127` - Keep 'redun log' stable tag sorting even for complex tag values
+* `#124` - DE-4689 File encoding v2
+* `#119` - DE-4636 Fix for S3FileSystem threading issues
+* `#120` - Fix job clear bug
+* `#80` - DE-4600 Working example of catch_all
+* `#116` - Bump version to 0.8.7
+
+## 0.8.7
+
+March 11, 2022
+
+* `#115` - DE-4596 Handle case where containerProperties is missing
+* `#113` - simplify apply_tags task
+* `#111` - Include restored traceback when restoring from pickled data
+* `#112` - Add apply_job_tags and apply_execution_tags
+
+## 0.8.6
+February 16, 2022
+
+* `#103` - `make setup` should be runnable more than once in Docker examples
+* `#102` - Minor usability improvements to ShardedS3Dataset
+* `#93` - Implement subrun()
+* `#100` - Suggestion for shared database usage
+* `#97` - Add lint job to github actions. Upgrade black. Ignore F811.
+* `#92` - Streamline local executor exec methods
+* `#95` - Implement scheduler.get_job_status_report()
+* `#94` - Implement Config.get_config_dict()
+* `#96` - Advertize `max_value_size` and `value_store_path` when values are too large for db
+* `#90` - Better error mesg if task is missing in registry
+* `#91` - Fix import order and line spacing
+* Merge pull request #87 from insitro/DE-4210_db_aws_region_from_env
+* `#87` - Use AWS_REGION env variable for DB secret lookup
+
 ## 0.8.5
 January 11, 2022
 

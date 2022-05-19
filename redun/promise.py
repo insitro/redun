@@ -1,4 +1,4 @@
-from typing import Callable, Generic, List, Optional, Sequence, TypeVar, cast
+from typing import Any, Callable, Generic, List, Optional, Sequence, TypeVar, cast
 
 S = TypeVar("S")
 T = TypeVar("T")
@@ -186,3 +186,26 @@ class Promise(Generic[T]):
             promise.do_resolve(cast(List[T], results))
 
         return promise
+
+
+def wait_promises(subpromises: List[Promise[T]]) -> Promise[List[Promise[T]]]:
+    """
+    Wait for all promises to finish (either fulfill or reject).
+    """
+    promise: Promise[List[Promise[T]]] = Promise()
+    num_done = 0
+
+    def done(result_or_error: Any) -> None:
+        nonlocal num_done
+        num_done += 1
+        if num_done == len(subpromises):
+            promise.do_resolve(subpromises)
+
+    for subpromise in subpromises:
+        subpromise.then(done, done)
+
+    if len(subpromises) == 0:
+        # Special case for when we are given no subpromises.
+        promise.do_resolve([])
+
+    return promise

@@ -1,9 +1,9 @@
 from collections import Counter
 from typing import Callable, Dict, List, Set, cast
 from unittest import mock
+from unittest.mock import patch
 
 import pytest
-from mock import patch
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
 
@@ -853,7 +853,7 @@ def test_simple_expression_upstreams(scheduler: Scheduler, session: Session) -> 
     assert scheduler.run(main(1)) == 11
 
     # Redefine the task.
-    @task()  # type: ignore # noqa: F811
+    @task()  # type: ignore[no-redef]
     def get_data() -> dict:
         return {"key": -10}
 

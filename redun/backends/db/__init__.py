@@ -1443,7 +1443,7 @@ class RedunBackendDb(RedunBackend):
 
         self.session.commit()
 
-    def record_value(self, value: Any, data=None) -> str:
+    def record_value(self, value: Any, data: Optional[bytes] = None) -> str:
         """
         Return a Value into the datastore.
         """
@@ -1456,7 +1456,9 @@ class RedunBackendDb(RedunBackend):
         if len(data) > self._max_value_size:
             raise RedunDatabaseError(
                 f"Value {trim_string(repr(value))} is too large (> {self._max_value_size}) "
-                f"to store in the redun database."
+                f"to store in the redun database. If you need to store larger values, "
+                f"increase the `max_value_size` setting and consider using a value store "
+                f"(`value_store_path`)."
             )
 
         value_hash = value_interface.get_hash(data=data)
@@ -2347,9 +2349,10 @@ class RedunBackendDb(RedunBackend):
             * dbname
 
         """
-        from redun.executors.aws_utils import get_aws_client
+        from redun.executors.aws_utils import DEFAULT_AWS_REGION, get_aws_client
 
-        client = get_aws_client("secretsmanager")
+        aws_region = os.environ.get("AWS_REGION", DEFAULT_AWS_REGION)
+        client = get_aws_client("secretsmanager", aws_region)
 
         get_secret_value_response = client.get_secret_value(SecretId=secret_name)
         secret = get_secret_value_response["SecretString"]
