@@ -741,10 +741,6 @@ def iter_batch_job_log_lines(
     return map(format_log_stream_event, events)
 
 
-class AWSBatchError(Exception):
-    pass
-
-
 class AWSBatchJobTimeoutError(Exception):
     """
     Custom exception to raise when AWS Batch Jobs are killed due to timeout.
@@ -763,6 +759,10 @@ def get_docker_executor_config(config: SectionProxy) -> SectionProxy:
 
 @register_executor("aws_batch")
 class AWSBatchExecutor(Executor):
+    """
+    A redun Executor for running jobs on AWS Batch.
+    """
+
     def __init__(
         self,
         name: str,
