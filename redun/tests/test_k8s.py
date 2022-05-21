@@ -562,12 +562,12 @@ def test_executor_inflight_job(
 
 
 @task(limits={"cpu": 1}, random_option=5)
-def array_task(x: int) -> int:
+def array_task(x):
     return x + 10
 
 
 @task()
-def other_task(x: int, y: int) -> int:
+def other_task(x, y):
     return x - y
 
 
@@ -608,7 +608,7 @@ def test_job_staleness() -> None:
     arr = job_array.JobArrayer(exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5)
 
     for i in range(10):
-        arr.add_job(j1, args=(i), kwargs={})
+        arr.add_job(j1, args=(i,), kwargs={})
 
     assert arr.get_stale_descrs() == []
     wait_until(lambda: arr.get_stale_descrs() == [d])
@@ -624,7 +624,7 @@ def test_arrayer_thread() -> None:
     exec = mock_executor(sched)
     arr = job_array.JobArrayer(exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5)
 
-    arr.add_job(j1, args=(1), kwargs={})
+    arr.add_job(j1, args=(1,), kwargs={})
     assert arr._monitor_thread.is_alive()
 
     # Stop the monitoring thread.
@@ -632,7 +632,7 @@ def test_arrayer_thread() -> None:
     assert not arr._monitor_thread.is_alive()
 
     # Submitting an additional job should restart the thread.
-    arr.add_job(j1, args=(2), kwargs={})
+    arr.add_job(j1, args=(2,), kwargs={})
     assert arr._monitor_thread.is_alive()
 
     arr.stop()
@@ -670,7 +670,7 @@ def test_jobs_are_arrayed(
     saj.spec.completions = 7
     saj.spec.completion_mode = "Indexed"
 
-    redun.executors.k8s.submit_task.side_effect = [
+    redun.executors.k8s.submit_task.side_effect = [  # type: ignore
         faj,
         saj,
         create_job_object(uid="single-job"),
@@ -740,7 +740,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
     scheduler = mock_scheduler()
 
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
-    executor.get_jobs = Mock()
+    executor.get_jobs = Mock()  # type: ignore
     executor.get_jobs.return_value = client.V1JobList(items=[])
 
     # Submit one test job.
@@ -748,11 +748,11 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
     job.id = "carrots"
     job.task = other_task
     job.eval_hash = "why do i always say carrots in test cases idk"
-    executor.submit(job, [5, 3], {})
+    executor.submit(job, (5, 3), {})
 
     # Job should be submitted immediately.
     assert submit_single_mock.call_args
-    assert submit_single_mock.call_args[0] == (job, [5, 3], {})
+    assert submit_single_mock.call_args[0] == (job, (5, 3), {})
 
     # Monitor thread should not run.
     assert not executor.arrayer._monitor_thread.is_alive()
@@ -880,7 +880,7 @@ def other_task(x, y):
     jo.spec.parallelism = 10
     jo.spec.completions = 10
     jo.spec.completion_mode = "Indexed"
-    redun.executors.k8s.k8s_submit.return_value = jo
+    k8s_submit_mock.return_value = jo
 
     test_jobs = []
     for i in range(3):

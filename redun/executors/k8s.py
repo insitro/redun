@@ -1,7 +1,6 @@
 import datetime
 import json
 import logging
-import os
 import pickle
 import re
 import threading
@@ -18,7 +17,7 @@ import kubernetes
 from redun.executors import k8s_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
-from redun.executors.command import REDUN_PROG, REDUN_REQUIRED_VERSION
+from redun.executors.command import get_oneshot_command
 from redun.executors.scratch import (
     SCRATCH_ERROR,
     SCRATCH_HASHES,
@@ -35,7 +34,7 @@ from redun.job_array import JobArrayer
 from redun.scheduler import Job, Scheduler, Traceback
 from redun.scripting import ScriptError, get_task_command
 from redun.task import Task
-from redun.utils import get_import_paths, pickle_dump
+from redun.utils import pickle_dump
 
 SUCCEEDED = "SUCCEEDED"
 FAILED = "FAILED"
@@ -141,77 +140,26 @@ def submit_task(
     job: Job,
     a_task: Task,
     args: Tuple = (),
-    kwargs: Optional[Dict[str, Any]] = None,
-    job_options: Optional[dict] = None,
+    kwargs: Dict[str, Any] = {},
+    job_options: dict = {},
     array_uuid: Optional[str] = None,
     array_size: int = 0,
     code_file: Optional[File] = None,
 ) -> kubernetes.client.V1Job:
     """
-    Submit a redun Task to K8S
+    Submit a redun Task to K8S.
     """
-    # To avoid dangerous default {}
-    if kwargs is None:
-        kwargs = {}
-    if job_options is None:
-        job_options = {}
-    input_path = None
-    output_path = None
-    error_path = None
-
-    if array_size:
-        # Output_path will contain a pickled list of actual output paths, etc.
-        # Want files that won't get clobbered when jobs actually run
-        assert array_uuid
-        input_path = get_array_scratch_file(s3_scratch_prefix, array_uuid, SCRATCH_INPUT)
-        output_path = get_array_scratch_file(s3_scratch_prefix, array_uuid, SCRATCH_OUTPUT)
-        error_path = get_array_scratch_file(s3_scratch_prefix, array_uuid, SCRATCH_ERROR)
-    else:
-        input_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_INPUT)
-        output_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_OUTPUT)
-        error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
-
-        # Serialize arguments to input file. Array jobs set this up earlier, in
-        # `_submit_array_job`
-        input_file = File(input_path)
-        with input_file.open("wb") as out:
-            pickle_dump([args, kwargs], out)
-
-    # Determine additional python import paths.
-    import_args = []
-    base_path = os.getcwd()
-    for abs_path in get_import_paths():
-        # Use relative paths so that they work inside the docker container.
-        rel_path = os.path.relpath(abs_path, base_path)
-        import_args.append("--import-path")
-        import_args.append(rel_path)
-
-    # Build job command.
-    code_arg = ["--code", code_file.path] if code_file else []
-    array_arg = ["--array-job"] if array_size else []
-    cache_arg = [] if job_options.get("cache", True) else ["--no-cache"]
-    command = (
-        [
-            REDUN_PROG,
-            "--check-version",
-            REDUN_REQUIRED_VERSION,
-            "oneshot",
-            a_task.load_module,
-        ]
-        + import_args
-        + code_arg
-        + array_arg
-        + cache_arg
-        + [
-            "--input",
-            input_path,
-            "--output",
-            output_path,
-            "--error",
-            error_path,
-            a_task.fullname,
-        ]
+    command = get_oneshot_command(
+        s3_scratch_prefix,
+        job,
+        a_task,
+        args,
+        kwargs,
+        job_options=job_options,
+        code_file=code_file,
+        array_uuid=array_uuid,
     )
+
     if array_uuid:
         job_hash = array_uuid
     else:
@@ -713,7 +661,7 @@ class K8SExecutor(Executor):
             k8s_labels.append(("k8s_job", job.metadata.uid))
             if job_status == SUCCEEDED:
                 # Assume a recently completed job has valid results.
-                result, exists = self._get_job_output(redun_job, check_valid=False)
+                result, exists = parse_job_result(self.s3_scratch_prefix, redun_job)
                 if exists:
                     self._scheduler.done_job(redun_job, result, job_tags=k8s_labels)
                 else:
@@ -798,8 +746,8 @@ class K8SExecutor(Executor):
                                 ),
                             )
                         else:
-                            result, exists = self._get_job_output(
-                                redun_job[index], check_valid=False
+                            result, exists = parse_job_result(
+                                self.s3_scratch_prefix, redun_job[index]
                             )
                             if exists:
                                 self._scheduler.done_job(redun_job[index], result)
@@ -875,17 +823,6 @@ class K8SExecutor(Executor):
             task_options["k8s_labels"] = k8s_labels
 
         return task_options
-
-    def _get_job_output(self, job: Job, check_valid: bool = True) -> Tuple[Any, bool]:
-        """
-        Return job output if it exists.
-
-        Returns a tuple of (result, exists).
-        """
-        assert self._scheduler
-        assert check_valid is False
-
-        return parse_job_result(self.s3_scratch_prefix, job)
 
     def _submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
         """
