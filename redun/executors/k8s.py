@@ -28,7 +28,7 @@ from redun.executors.scratch import (
     get_array_scratch_file,
     get_job_scratch_dir,
     get_job_scratch_file,
-    parse_job_result
+    parse_job_result,
 )
 from redun.file import File
 from redun.job_array import JobArrayer
@@ -163,25 +163,13 @@ def submit_task(
         # Output_path will contain a pickled list of actual output paths, etc.
         # Want files that won't get clobbered when jobs actually run
         assert array_uuid
-        input_path = get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, SCRATCH_INPUT
-        )
-        output_path = get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, SCRATCH_OUTPUT
-        )
-        error_path = get_array_scratch_file(
-            s3_scratch_prefix, array_uuid, SCRATCH_ERROR
-        )
+        input_path = get_array_scratch_file(s3_scratch_prefix, array_uuid, SCRATCH_INPUT)
+        output_path = get_array_scratch_file(s3_scratch_prefix, array_uuid, SCRATCH_OUTPUT)
+        error_path = get_array_scratch_file(s3_scratch_prefix, array_uuid, SCRATCH_ERROR)
     else:
-        input_path = get_job_scratch_file(
-            s3_scratch_prefix, job, SCRATCH_INPUT
-        )
-        output_path = get_job_scratch_file(
-            s3_scratch_prefix, job, SCRATCH_OUTPUT
-        )
-        error_path = get_job_scratch_file(
-            s3_scratch_prefix, job, SCRATCH_ERROR
-        )
+        input_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_INPUT)
+        output_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_OUTPUT)
+        error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
 
         # Serialize arguments to input file. Array jobs set this up earlier, in
         # `_submit_array_job`
@@ -263,13 +251,9 @@ def submit_command(
     if job_options is None:
         job_options = {}
     input_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_INPUT)
-    output_path = get_job_scratch_file(
-        s3_scratch_prefix, job, SCRATCH_OUTPUT
-    )
+    output_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_OUTPUT)
     error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
-    status_path = get_job_scratch_file(
-        s3_scratch_prefix, job, SCRATCH_STATUS
-    )
+    status_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_STATUS)
 
     # Serialize arguments to input file.
     input_file = File(input_path)
@@ -539,7 +523,7 @@ class K8SExecutor(Executor):
         self.is_running = False
         # We use an OrderedDict in order to retain submission order.
         self.pending_k8s_jobs: Dict[str, Any] = OrderedDict()
-        self.preexisting_k8s_jobs: Dict[str, str] = {}  # Job hash -> Job ID
+        self.preexisting_k8s_jobs: Dict[str, Any] = {}  # Job hash -> Job ID
 
         self.interval = config.getfloat("job_monitor_interval", 5.0)
 
@@ -553,7 +537,7 @@ class K8SExecutor(Executor):
 
     def gather_inflight_jobs(self) -> None:
         """Collect existing k8s jobs and match them up to redun jobs"""
-        running_arrays: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
+        running_arrays: Dict[str, List[Tuple[str, str, int]]] = defaultdict(list)
         # Get all running jobs by name.
         inflight_jobs = self.get_jobs()
         for job in inflight_jobs.items:
@@ -899,15 +883,9 @@ class K8SExecutor(Executor):
         Returns a tuple of (result, exists).
         """
         assert self._scheduler
+        assert check_valid is False
 
-        output_file = File(
-            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_OUTPUT)
-        )
-        if output_file.exists():
-            result = parse_job_result(self.s3_scratch_prefix, job)
-            if not check_valid or self._scheduler.is_valid_value(result):
-                return result, True
-        return None, False
+        return parse_job_result(self.s3_scratch_prefix, job)
 
     def _submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
         """
@@ -967,7 +945,7 @@ class K8SExecutor(Executor):
                     self.pending_k8s_jobs[job_name] = job
                 else:
                     k8s_job_id = None
-            else:
+            elif isinstance(k8s_job_id, tuple):
                 # Array job case
                 (
                     child_job_id,
@@ -996,6 +974,8 @@ class K8SExecutor(Executor):
                     self.pending_k8s_jobs[job_name][child_job_index] = job
                 else:
                     k8s_job_id = None
+            else:
+                raise AssertionError(f"Unknown k8s_job_id type: {type(k8s_job_id)}")
 
         # Job arrayer will handle actual submission after bunching to an array
         # job, if necessary.
@@ -1028,39 +1008,29 @@ class K8SExecutor(Executor):
 
         # Setup input, output and error path files. Input file is a pickled list
         # of args, and kwargs, for each child job.
-        input_file = get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, SCRATCH_INPUT
-        )
+        input_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_INPUT)
         with File(input_file).open("wb") as out:
             pickle_dump([all_args, all_kwargs], out)
 
         # Output file is a plaintext list of output paths, for each child job.
-        output_file = get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, SCRATCH_OUTPUT
-        )
+        output_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_OUTPUT)
         output_paths = [
-            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_OUTPUT)
-            for job in jobs
+            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_OUTPUT) for job in jobs
         ]
         with File(output_file).open("w") as ofile:
             json.dump(output_paths, ofile)
 
         # Error file is a plaintext list of error paths, one for each child job.
-        error_file = get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, SCRATCH_ERROR
-        )
+        error_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_ERROR)
         error_paths = [
-            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_ERROR)
-            for job in jobs
+            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_ERROR) for job in jobs
         ]
         with File(error_file).open("w") as efile:
             json.dump(error_paths, efile)
 
         # Eval hash file is plaintext hashes of child jobs for matching for job
         # reuniting.
-        eval_file = get_array_scratch_file(
-            self.s3_scratch_prefix, array_uuid, SCRATCH_HASHES
-        )
+        eval_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_HASHES)
         with File(eval_file).open("w") as eval_f:
             eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
 
@@ -1168,7 +1138,7 @@ class K8SExecutor(Executor):
         """
         return self._submit(job, args, kwargs)
 
-    def get_jobs(self) -> Iterator[dict]:
+    def get_jobs(self) -> Any:
         """
         Returns K8S Job statuses from the AWS API.
         """
@@ -1178,7 +1148,7 @@ class K8SExecutor(Executor):
         api_response = api_instance.list_job_for_all_namespaces(watch=False)
         return api_response
 
-    def get_array_child_pods(self, job_name: str) -> List[Dict[str, Any]]:
+    def get_array_child_pods(self, job_name: str) -> Any:
         """Get all the pods for a job array"""
         api_instance = k8s_utils.get_k8s_core_client()
         label_selector = f"job-name={job_name}"

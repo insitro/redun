@@ -80,7 +80,7 @@ class JobArrayer:
 
     def __init__(
         self,
-        executor: "AWSBatchExecutor",
+        executor: Any,
         submit_interval: float,
         stale_time: float,
         min_array_size: int,
