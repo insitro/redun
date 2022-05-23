@@ -176,6 +176,10 @@ def get_default_glue_service_role(
 
 @register_executor("aws_glue")
 class AWSGlueExecutor(Executor):
+    """
+    A redun Executor for running jobs on AWS Glue.
+    """
+
     def __init__(self, name: str, scheduler: Optional[Scheduler] = None, config=None):
         super().__init__(name, scheduler=scheduler)
         if config is None:

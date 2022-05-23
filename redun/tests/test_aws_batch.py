@@ -614,6 +614,91 @@ def task1(x):
 @use_tempdir
 @mock_s3
 @patch("redun.executors.aws_batch.batch_submit")
+@pytest.mark.parametrize(
+    "custom_module, expected_load_module, a_task",
+    [
+        (None, "redun.tests.test_aws_batch", task1),
+        ("custom.module", "custom.module", task1_custom_module),
+    ],
+)
+def test_submit_task_array(batch_submit_mock, custom_module, expected_load_module, a_task):
+    """
+    oneshot should use --array-job when submitting an array job.
+    """
+    job_id = "123"
+    image = "my-image"
+    queue = "queue"
+    s3_scratch_prefix = "s3://example-bucket/redun/"
+
+    client = boto3.client("s3", region_name="us-east-1")
+    client.create_bucket(Bucket="example-bucket")
+
+    redun.executors.aws_batch.batch_submit.return_value = {"jobId": "batch-job-id"}
+
+    # Create example workflow script to be packaged.
+    File("workflow.py").write(
+        f"""
+@task(load_module={custom_module})
+def task1(x):
+    return x + 10
+    """
+    )
+
+    job = Job(a_task())
+    job.id = job_id
+    job.eval_hash = "eval_hash"
+    code_file = File("s3://example-bucket/redun/code/123.tar.gz")
+    resp = submit_task(
+        image,
+        queue,
+        s3_scratch_prefix,
+        job,
+        a_task,
+        args=[10],
+        kwargs={},
+        code_file=code_file,
+        array_uuid="123456",
+        array_size=10,
+    )
+
+    # We should get a AWS Batch job id back.
+    assert resp["jobId"] == "batch-job-id"
+
+    # We should have submitted a job to AWS Batch.
+    redun.executors.aws_batch.batch_submit.assert_called_with(
+        {
+            "containerOverrides": {
+                "command": [
+                    "redun",
+                    "--check-version",
+                    REDUN_REQUIRED_VERSION,
+                    "oneshot",
+                    expected_load_module,
+                    "--code",
+                    code_file.path,
+                    "--array-job",
+                    "--input",
+                    "s3://example-bucket/redun/array_jobs/123456/input",
+                    "--output",
+                    "s3://example-bucket/redun/array_jobs/123456/output",
+                    "--error",
+                    "s3://example-bucket/redun/array_jobs/123456/error",
+                    a_task.name,
+                ]
+            }
+        },
+        "queue",
+        image="my-image",
+        job_def_suffix="-redun-jd",
+        job_name="batch-job-123456-array",
+        array_size=10,
+        aws_region="us-west-2",
+    )
+
+
+@use_tempdir
+@mock_s3
+@patch("redun.executors.aws_batch.batch_submit")
 def test_submit_multinode_task(batch_submit_mock):
     job_id = "123"
     image = "my-image"

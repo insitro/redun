@@ -37,14 +37,35 @@ def run_docker(
     image: str,
     volumes: Iterable[Tuple[str, str]] = [],
     interactive: bool = True,
-    cleanup: bool = False,
+    cleanup: bool = True,
     memory: int = 4,
     vcpus: int = 1,
     gpus: int = 0,
     shared_memory: Optional[int] = None,
 ) -> str:
     """
-    volumes: a list of ('host', 'container') path pairs for volume mouting.
+    Run a Docker container locally.
+
+    Parameters
+    ----------
+    command : List[str]
+        A shell command to run within the docker container (e.g. ["ls" "-la"]).
+    image : str
+        A Docker image.
+    volumes : Iterable[Tuple[str, srt]]
+        A list of ('host', 'container') path pairs for volume mounting.
+    interactive : bool
+        If True, the Docker container is run in interactive mode.
+    cleanup : bool
+        If True, remove the container after execution.
+    memory : int
+        Number of GB of memory to reserve for the container.
+    vcpus : int
+        Number of CPUs to reserve for the container.
+    gpus : int
+        Number of GPUs to reserve for the container.
+    shared_memory : Optional[int]
+        Number of GB of shared memory to reserve for the container.
     """
     # Add AWS credentials to environment for docker command.
     env = dict(os.environ)
@@ -229,6 +250,10 @@ def iter_job_status(scratch_prefix: str, job_id2job: Dict[str, "Job"]) -> Iterat
 
 @register_executor("docker")
 class DockerExecutor(Executor):
+    """
+    A redun Executor for running jobs on local Docker containers.
+    """
+
     def __init__(
         self,
         name: str,

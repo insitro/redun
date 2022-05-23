@@ -41,6 +41,9 @@ def exec_script_task(
 
 @register_executor("local")
 class LocalExecutor(Executor):
+    """
+    A redun Executor for running jobs locally using a thread or process pool.
+    """
 
     # Available local executor modes.
     MODES = [THREAD_MODE, PROCESS_MODE]
