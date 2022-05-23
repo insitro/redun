@@ -17,6 +17,7 @@ from aiobotocore.response import StreamingBody
 from botocore.awsrequest import AWSResponse
 from moto import mock_s3 as _mock_s3
 from moto.core.models import MockRawResponse
+from urllib3.response import HTTPHeaderDict
 
 from redun import Scheduler
 
@@ -35,13 +36,16 @@ class AsyncMockedRawResponse(MockRawResponse):
 
     def __init__(self, response):
         self._response = response
+        self._content = b""
 
     async def read(self, *args, **kwargs):
         # Provide an async version of the read method.
-        return self._response.read(*args, **kwargs)
+        return self._sync_read(*args, **kwargs)
 
     def _sync_read(self, *args, **kwargs):
-        return self._response.read(*args, **kwargs)
+        data = self._response.read(*args, **kwargs)
+        self._content += data
+        return data
 
     def stream(self, **kwargs):
         # We override stream in order to call the original synchronous read.
@@ -50,8 +54,12 @@ class AsyncMockedRawResponse(MockRawResponse):
             yield contents
             contents = self._sync_read()
 
+    @property
+    def content(self):
+        return self
 
-class MonkeyPatchedAWSResponse(AWSResponse):
+
+class PatchedAWSResponse(AWSResponse):
     """
     Subclasses AWSRespnse in order to provide an async read and raw headers.
 
@@ -74,6 +82,46 @@ class MonkeyPatchedAWSResponse(AWSResponse):
     async def read(self):
         return self.text
 
+    @property
+    async def content(self):
+        return self.raw._content
+
+
+def convert_to_response_dict_patch(http_response, operation_model):
+    """
+    Patched version of botocore.endpoint.convert_to_repsonse
+    """
+    response_dict = {
+        # botocore converts keys to str, so make sure that they are in
+        # the expected case. See detailed discussion here:
+        # https://github.com/aio-libs/aiobotocore/pull/116
+        # aiohttp's CIMultiDict camel cases the headers :(
+        "headers": HTTPHeaderDict(
+            {k.decode("utf-8").lower(): v.decode("utf-8") for k, v in http_response.raw_headers}
+        ),
+        "status_code": http_response.status_code,
+        "context": {
+            "operation_name": operation_model.name,
+        },
+    }
+    if response_dict["status_code"] >= 300:
+        response_dict["body"] = http_response.raw._sync_read()
+    elif operation_model.has_event_stream_output:
+        response_dict["body"] = http_response.raw
+    elif operation_model.has_streaming_output:
+        length = response_dict["headers"].get("content-length")
+        response_dict["body"] = StreamingBody(http_response.raw, length)
+    else:
+        response_dict["body"] = http_response.raw._sync_read()
+    return response_dict
+
+
+async def async_convert_to_response_dict_patch(http_response, operation_model):
+    """
+    Patched version of aiobotocore.endpoint.convert_to_repsonse
+    """
+    return convert_to_response_dict_patch(http_response, operation_model)
+
 
 def patch_aws(func: Callable) -> Callable:
     """
@@ -85,8 +133,12 @@ def patch_aws(func: Callable) -> Callable:
     @wraps(func)
     def wrapped(*args, **kwargs):
         # Apply patches.
-        with patch("botocore.awsrequest.AWSResponse", MonkeyPatchedAWSResponse), patch(
-            "moto.core.models.AWSResponse", MonkeyPatchedAWSResponse
+        with patch("botocore.awsrequest.AWSResponse", PatchedAWSResponse), patch(
+            "moto.core.models.AWSResponse", PatchedAWSResponse
+        ), patch(
+            "botocore.endpoint.convert_to_response_dict", convert_to_response_dict_patch
+        ), patch(
+            "aiobotocore.endpoint.convert_to_response_dict", async_convert_to_response_dict_patch
         ):
             return func(*args, **kwargs)
 

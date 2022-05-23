@@ -51,6 +51,7 @@ def get_oneshot_command(
             error_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR)
 
         # Serialize arguments to input file.
+        # Array jobs set this up themselves.
         input_file = File(input_path)
         with input_file.open("wb") as out:
             pickle_dump([args, kwargs], out)
@@ -66,6 +67,7 @@ def get_oneshot_command(
 
     # Build job command.
     code_arg = ["--code", code_file.path] if code_file else []
+    array_arg = ["--array-job"] if array_uuid else []
     cache_arg = [] if job_options.get("cache", True) else ["--no-cache"]
     command = (
         [
@@ -77,6 +79,7 @@ def get_oneshot_command(
         ]
         + import_args
         + code_arg
+        + array_arg
         + cache_arg
         + [
             "--input",
