@@ -10,7 +10,7 @@ import uuid
 from collections import OrderedDict, defaultdict
 from itertools import islice
 from shlex import quote
-from typing import Any, Dict, Iterator, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterator, List, Optional, Tuple, cast, Type, TypeVar
 
 import kubernetes
 
@@ -36,6 +36,7 @@ from redun.scripting import ScriptError, get_task_command
 from redun.task import Task
 from redun.utils import pickle_dump
 
+T = TypeVar("T")
 SUCCEEDED = "SUCCEEDED"
 FAILED = "FAILED"
 ARRAY_JOB_SUFFIX = "array"
@@ -307,6 +308,7 @@ def k8s_describe_jobs(
     Returns K8S Job descriptions from the AWS API.
     """
     api_instance = k8s_utils.get_k8s_batch_client()
+    core_instance = k8s_utils.get_k8s_core_client()
     responses = []
     for job_name in job_names:
         api_response = api_instance.read_namespaced_job(job_name, namespace=namespace)
@@ -397,6 +399,13 @@ def iter_k8s_job_log_lines(
         reverse=reverse,
     )
     return log_lines
+
+
+def get_metadata_annotation(annotations: Any, key: str, type: Type, default: T) -> T:
+    if annotations is None:
+        return default
+    else:
+        return type(annotations.get(key, default))
 
 
 class K8SError(Exception):
@@ -501,10 +510,8 @@ class K8SExecutor(Executor):
                     (
                         child_pod.metadata.name,
                         child_pod.metadata.uid,
-                        int(
-                            child_pod.metadata.annotations[
-                                "batch.kubernetes.io/job-completion-index"
-                            ]
+                        get_metadata_annotation(
+                            child_pod.metadata.annotations, "batch.kubernetes.io/job-completion-index", int, 0
                         ),
                     )
                 )
@@ -657,6 +664,10 @@ class K8SExecutor(Executor):
 
             # Determine redun Job and job_labels.
             redun_job = self.pending_k8s_jobs.pop(job.metadata.name)
+            if isinstance(redun_job, dict):
+                redun_job = redun_job[0]
+                assert isinstance(redun_job, Job)
+
             k8s_labels = []
             k8s_labels.append(("k8s_job", job.metadata.uid))
             if job_status == SUCCEEDED:
@@ -722,7 +733,9 @@ class K8SExecutor(Executor):
             for item in k8s_pods.items:
                 pod_name = item.metadata.name
                 pod_namespace = item.metadata.namespace
-                index = int(item.metadata.annotations["batch.kubernetes.io/job-completion-index"])
+                index = get_metadata_annotation(
+                    item.metadata.annotations, "batch.kubernetes.io/job-completion-index", int, 0
+                )
                 if index in redun_job:
                     container_statuses = item.status.container_statuses
                     if container_statuses is None:
@@ -736,7 +749,6 @@ class K8SExecutor(Executor):
                             _ = api_instance.read_namespaced_pod_log(
                                 pod_name, namespace=pod_namespace
                             )
-                            # breakpoint()
                             # Detect deadline exceeded here and raise exception.
                             self._scheduler.reject_job(
                                 redun_job[index],
