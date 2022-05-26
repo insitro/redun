@@ -1,12 +1,20 @@
 # Changelog
 
+## 0.8.10
+May 26, 2022
+
+* `#146` - Update moto to 3.1.10
+* `#145` - DE-5109 Fix missing `--array-job` argument for `redun oneshot`
+* `#144` - Add more docs to docker executor functions/classes
+* `#137` - DE-4915 Breakout DockerExecutor and consolidate scratch and code packaging
+
 ## 0.8.9
 May 17, 2022
 
 * `#131` - [DE-4809] Use AWS job run insights to get better tracebacks for glue jobs
 * Merge remote-tracking branch 'origin/main'
 * `#138` - resolve conflicts with public and private main
-* `#33` - Fixed typos and minor grammatical stuff like missing commas, etc. in the documentation and README.md 
+* `#33` - Fixed typos and minor grammatical stuff like missing commas, etc. in the documentation and README.md
 * `#32` - Update README.md
 * `#136` - Ignore flake8 F401 errors in `__init__.py` files
 
