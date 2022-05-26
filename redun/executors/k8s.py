@@ -1,7 +1,6 @@
 import datetime
 import json
 import logging
-import pickle
 import re
 import threading
 import time
@@ -26,12 +25,13 @@ from redun.executors.scratch import (
     get_array_scratch_file,
     get_job_scratch_dir,
     get_job_scratch_file,
+    parse_job_error,
     parse_job_result,
 )
 from redun.file import File
 from redun.job_array import JobArrayer
-from redun.scheduler import Job, Scheduler, Traceback
-from redun.scripting import ScriptError, get_task_command
+from redun.scheduler import Job, Scheduler
+from redun.scripting import get_task_command
 from redun.task import Task
 from redun.utils import pickle_dump
 
@@ -251,34 +251,6 @@ chmod +x .task_command
         job_name=job_name,
         **get_k8s_job_options(job_options),
     )
-
-
-def parse_task_error(s3_scratch_prefix: str, job: Job) -> Tuple[Exception, "Traceback"]:
-    """
-    Parse task error from s3 scratch path.
-    """
-    assert job.task
-
-    error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
-    error_file = File(error_path)
-
-    if not job.task.script:
-        # Normal Tasks (non-script) store errors as Pickled exception, traceback
-        # tuples.
-        if error_file.exists():
-            error, error_traceback = pickle.loads(cast(bytes, error_file.read("rb")))
-        else:
-            error = K8SError("Exception and traceback could not be found for K8S Job.")
-            error_traceback = Traceback.from_error(error)
-    else:
-        # Script task.
-        if error_file.exists():
-            error = ScriptError(cast(bytes, error_file.read("rb")))
-        else:
-            error = K8SError("stderr could not be found for K8S Job.")
-        error_traceback = Traceback.from_error(error)
-
-    return error, error_traceback
 
 
 def parse_task_logs(k8s_job_id: str, namespace, max_lines: int = 1000) -> Iterator[str]:
@@ -695,7 +667,7 @@ class K8SExecutor(Executor):
                         job_tags=k8s_labels,
                     )
             elif job_status == FAILED:
-                error, error_traceback = parse_task_error(self.s3_scratch_prefix, redun_job)
+                error, error_traceback = parse_job_error(self.s3_scratch_prefix, redun_job)
                 logs = [f"*** Logs for K8S job {job.metadata.uid}:\n"]
 
                 try:
@@ -752,6 +724,7 @@ class K8SExecutor(Executor):
                         if terminated is None:
                             continue
                         if terminated.exit_code != 0:
+                            # TODO: (rasmus) Don't we need to parse error and logs here too?
                             api_instance = k8s_utils.get_k8s_core_client()
                             _ = api_instance.read_namespaced_pod_log(
                                 pod_name, namespace=pod_namespace
