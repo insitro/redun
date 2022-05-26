@@ -270,11 +270,11 @@ def task1(x):
 @mock_s3
 @patch("redun.executors.k8s.k8s_utils.delete_job")
 @patch("redun.executors.k8s.parse_task_logs")
-@patch("redun.executors.k8s.iter_k8s_job_status")
+@patch("redun.executors.k8s.k8s_describe_jobs")
 @patch("redun.executors.k8s.k8s_submit")
 def test_executor(
     k8s_submit_mock: Mock,
-    iter_k8s_job_status_mock: Mock,
+    k8s_describe_jobs_mock: Mock,
     parse_task_logs_mock: Mock,
     delete_job_mock: Mock,
 ) -> None:
@@ -285,7 +285,7 @@ def test_executor(
     k8s_job2_id = "k8s-job2-id"
 
     # Setup K8S mocks.
-    iter_k8s_job_status_mock.return_value = iter([])
+    k8s_describe_jobs_mock.return_value = iter([])
     parse_task_logs_mock.return_value = []
 
     scheduler = mock_scheduler()
@@ -366,7 +366,7 @@ def test_executor(
     fake_k8s_job.status = client.V1JobStatus(succeeded=1)
     fake_k8s_job2 = create_job_object(uid=k8s_job2_id, name=DEFAULT_JOB_PREFIX + "-eval_hash2")
     fake_k8s_job2.status = client.V1JobStatus(failed=1)
-    iter_k8s_job_status_mock.return_value = [fake_k8s_job, fake_k8s_job2]
+    k8s_describe_jobs_mock.return_value = [fake_k8s_job, fake_k8s_job2]
 
     scheduler.batch_wait([job.id, job2.id])
     executor.stop()
@@ -505,14 +505,12 @@ def test_inflight_join_only_on_first_submission(k8s_describe_jobs_mock: Mock) ->
 
 @mock_s3
 @patch("redun.executors.k8s.k8s_describe_jobs")
-@patch("redun.executors.k8s.iter_k8s_job_status")
 @patch("redun.executors.k8s_utils.delete_job")
 @patch("redun.executors.k8s.k8s_submit")
 @pytest.mark.skip(reason="not working")
 def test_executor_inflight_job(
     k8s_submit_mock: Mock,
     delete_job_mock: Mock,
-    iter_k8s_job_status_mock: Mock,
     k8s_describe_jobs_mock: Mock,
 ) -> None:
     """
@@ -522,7 +520,7 @@ def test_executor_inflight_job(
 
     # Setup k8s mocks.
 
-    iter_k8s_job_status_mock.return_value = iter([])
+    k8s_describe_jobs_mock.return_value = iter([])
     k8s_job = create_job_object(uid=k8s_job_id, name=DEFAULT_JOB_PREFIX + "-eval_hash")
     k8s_describe_jobs_mock.return_value = [k8s_job]
 
@@ -548,7 +546,7 @@ def test_executor_inflight_job(
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
     k8s_job.status = client.V1JobStatus(succeeded=1)
-    iter_k8s_job_status_mock.return_value = [k8s_job]
+    k8s_describe_jobs_mock.return_value = [k8s_job]
     # k8s_describe_jobs_mock.return_value = [k8s_job]
     scheduler.batch_wait([job.id])
     # Simulate pre-existing job output.
@@ -641,12 +639,12 @@ def test_arrayer_thread() -> None:
 @mock_s3
 @patch("redun.executors.k8s_utils.delete_job")
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
-@patch("redun.executors.k8s.iter_k8s_job_status")
+@patch("redun.executors.k8s.k8s_describe_jobs")
 @patch("redun.executors.k8s.submit_task")
 @pytest.mark.skip(reason="not working")
 def test_jobs_are_arrayed(
     submit_task_mock: Mock,
-    iter_k8s_job_status_mock: Mock,
+    k8s_describe_jobs_mock: Mock,
     get_aws_user_mock: Mock,
     delete_job_mock: Mock,
 ) -> None:
@@ -659,7 +657,7 @@ def test_jobs_are_arrayed(
     executor.arrayer.min_array_size = 3
     executor.arrayer.max_array_size = 7
 
-    iter_k8s_job_status_mock.return_value = iter([])
+    k8s_describe_jobs_mock.return_value = iter([])
     faj = create_job_object(uid="first-array-job")
     faj.spec.parallelism = 3
     faj.spec.completions = 3

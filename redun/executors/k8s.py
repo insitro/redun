@@ -5,12 +5,11 @@ import pickle
 import re
 import threading
 import time
-import typing
 import uuid
 from collections import OrderedDict, defaultdict
 from itertools import islice
 from shlex import quote
-from typing import Any, Dict, Iterator, List, Optional, Tuple, cast, Type, TypeVar
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, TypeVar, cast
 
 import kubernetes
 
@@ -301,25 +300,14 @@ def parse_task_logs(k8s_job_id: str, namespace, max_lines: int = 1000) -> Iterat
     yield from lines
 
 
-def k8s_describe_jobs(
-    job_names: List[str], namespace: str
-) -> typing.List[kubernetes.client.V1Job]:
+def k8s_describe_jobs(job_names: List[str], namespace: str) -> List[kubernetes.client.V1Job]:
     """
     Returns K8S Job descriptions from the AWS API.
     """
     api_instance = k8s_utils.get_k8s_batch_client()
-    core_instance = k8s_utils.get_k8s_core_client()
-    responses = []
-    for job_name in job_names:
-        api_response = api_instance.read_namespaced_job(job_name, namespace=namespace)
-        responses.append(api_response)
-    return responses
-
-
-def iter_k8s_job_status(job_ids, namespace):
-    """Wraps k8s_describe_jobs in a generator"""
-    for job in k8s_describe_jobs(job_ids, namespace):
-        yield job
+    return [
+        api_instance.read_namespaced_job(job_name, namespace=namespace) for job_name in job_names
+    ]
 
 
 def iter_log_stream(
@@ -348,7 +336,7 @@ def iter_log_stream(
 
         # Use latest container status.
         state = pod.status.container_statuses[-1].state.terminated
-        if state.exit_code != 0:
+        if state and state.exit_code != 0:
             lines.append(f"Exit {state.exit_code} ({state.reason}): {state.message}")
 
     if reverse:
@@ -511,7 +499,10 @@ class K8SExecutor(Executor):
                         child_pod.metadata.name,
                         child_pod.metadata.uid,
                         get_metadata_annotation(
-                            child_pod.metadata.annotations, "batch.kubernetes.io/job-completion-index", int, 0
+                            child_pod.metadata.annotations,
+                            "batch.kubernetes.io/job-completion-index",
+                            int,
+                            0,
                         ),
                     )
                 )
@@ -570,29 +561,6 @@ class K8SExecutor(Executor):
     def _monitor(self) -> None:
         """
         Thread for monitoring running K8S jobs.
-
-        We use the following process for monitoring K8S jobs in order to achieve
-        timely updates and avoid excessive API calls which can cause API
-        throttling and slow downs.
-
-        - We use the `describe_jobs()` API call on specific Batch job ids in
-          order to avoid processing status of unrelated jobs on the same K8S
-          queue.
-        - We call `describe_jobs()` with 100 job ids at a time to reduce the
-          number of API calls. 100 job ids is the maximum supported amount by
-          `describe_jobs()`.
-        - We do only one describe_jobs() API call per monitor loop, and then
-          sleep `self.interval` seconds.
-        - K8S runs jobs in approximately the order submitted. So if we monitor
-          job statuses in submission order, a run of PENDING statuses
-          (`pending_truncate`) suggests the rest of the jobs will be PENDING.
-          Therefore, we can truncate our polling and restart at the beginning of
-          list of job ids.
-
-        By combining these techniques, we spend most of our time monitoring only
-        running jobs (there could be a very large number of pending jobs), we
-        stay under API rate limits, and we keep the compute in this thread low
-        so as to not interfere with new submissions.
         """
         assert self._scheduler
 
@@ -612,7 +580,7 @@ class K8SExecutor(Executor):
                 # Copy pending_k8s_jobs.keys() since it can change due to new
                 # submissions.
                 pending_jobs = list(self.pending_k8s_jobs.keys())
-                jobs = iter_k8s_job_status(pending_jobs, self.namespace)
+                jobs = k8s_describe_jobs(pending_jobs, self.namespace)
                 # changing this (IE, removing iter_k8s_job_status) breaks
                 # inflight test jobs =
                 # k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
@@ -630,17 +598,55 @@ class K8SExecutor(Executor):
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
 
+    def _process_pod_status(self, job: kubernetes.client.V1Job) -> Optional[str]:
+        """
+        Determine if there was a failure at the pod-level.
+
+        Returns an error message if there is a failure, None otherwise.
+        """
+        # Get pods for the job.
+        api_instance = k8s_utils.get_k8s_core_client()
+        label_selector = f"job-name={job.metadata.name}"
+        pods = api_instance.list_pod_for_all_namespaces(watch=False, label_selector=label_selector)
+
+        def get_container_state(container_state):
+            for state, details in container_state.to_dict().items():
+                if details:
+                    return {"state": state, **details}
+
+        # Get container states for all pods.
+        container_states = [
+            get_container_state(container_status.state)
+            for pod in pods.items
+            if pod.status.container_statuses
+            for container_status in pod.status.container_statuses
+        ]
+
+        # Detect-specific pod-level errors that aren't caught at the job-level.
+        ERROR_STATES = {"ErrImagePull", "FailedScheduling"}
+        for state in container_states:
+            if state.get("reason") in ERROR_STATES:
+                return f"{state['reason']}: {state['message']}"
+
+        return None
+
     def _process_job_status(self, job: kubernetes.client.V1Job) -> None:
         """
         Process K8S job statuses.
         """
         assert self._scheduler
         job_status: Optional[str] = None
+        status_reason: Optional[str] = None
 
         if job.spec.parallelism is None or job.spec.parallelism == 1:
             # Should check status/reason to determine status.
 
-            if job.status.succeeded is not None and job.status.succeeded > 0:
+            pod_status = self._process_pod_status(job)
+            if pod_status:
+                job_status = FAILED
+                status_reason = pod_status
+
+            elif job.status.succeeded is not None and job.status.succeeded > 0:
                 job_status = SUCCEEDED
             elif job.status.failed is not None and job.status.failed > 0:
                 job_status = FAILED
@@ -693,7 +699,8 @@ class K8SExecutor(Executor):
                 logs = [f"*** Logs for K8S job {job.metadata.uid}:\n"]
 
                 try:
-                    status_reason = job.status.conditions[0].message
+                    if not status_reason:
+                        status_reason = job.status.conditions[0].message
                 except (KeyError, IndexError, TypeError):
                     status_reason = ""
 

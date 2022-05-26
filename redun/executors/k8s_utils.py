@@ -76,6 +76,7 @@ def create_job_object(
     spec = client.V1JobSpec(
         template=template,
         backoff_limit=retries,
+        ttl_seconds_after_finished=100,
     )
     if timeout:
         spec.active_deadline_seconds = timeout
