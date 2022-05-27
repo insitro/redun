@@ -6,7 +6,7 @@ import time
 import uuid
 from collections import OrderedDict, defaultdict
 from shlex import quote
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, TypeVar, cast
+from typing import Any, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
 
 import kubernetes
 from kubernetes.client import V1Job, V1Pod
@@ -257,6 +257,7 @@ def k8s_describe_jobs(job_names: List[str], namespace: str) -> List[kubernetes.c
     """
     Returns K8S Job descriptions from the AWS API.
     """
+    breakpoint()
     api_instance = k8s_utils.get_k8s_batch_client()
     jobs = []
     for job_name in job_names:
@@ -331,11 +332,23 @@ def parse_pod_logs(pod: kubernetes.client.V1Pod, max_lines: int = 1000) -> Itera
     yield from lines
 
 
-def get_metadata_annotation(annotations: Any, key: str, type: Type, default: T) -> T:
-    if annotations is None:
-        return default
-    else:
-        return type(annotations.get(key, default))
+def get_k8s_job_pods(core_api, job_name: str) -> Iterator[V1Pod]:
+    """
+    Iterates the pods for a k8s job.
+    """
+    token: Optional[str] = None
+    while True:
+        pods = core_api.list_pod_for_all_namespaces(
+            watch=False,
+            label_selector=f"job-name={job_name}",
+            _continue=token,
+        )
+        if pods.items:
+            yield from pods.items
+        if pods.metadata._continue:
+            token = pods.metadata._continue
+        else:
+            break
 
 
 class K8SError(Exception):
@@ -425,6 +438,8 @@ class K8SExecutor(Executor):
     def gather_inflight_jobs(self) -> None:
         """Collect existing k8s jobs and match them up to redun jobs"""
         running_arrays: Dict[str, List[Tuple[str, str, int]]] = defaultdict(list)
+        core_api = k8s_utils.get_k8s_core_client()
+
         # Get all running jobs by name.
         inflight_jobs = self.get_jobs()
         for job in inflight_jobs.items:
@@ -435,16 +450,15 @@ class K8SExecutor(Executor):
                     self.preexisting_k8s_jobs[job_hash] = job.metadata.uid
                 continue
             # Get all child pods of running array jobs for reuniting.
-            for child_pod in self.get_array_child_pods(job.metadata.name).items:
+            for child_pod in get_k8s_job_pods(core_api, job.metadata.name):
                 running_arrays[job_name].append(
                     (
                         child_pod.metadata.name,
                         child_pod.metadata.uid,
-                        get_metadata_annotation(
-                            child_pod.metadata.annotations,
-                            "batch.kubernetes.io/job-completion-index",
-                            int,
-                            0,
+                        int(
+                            child_pod.metadata.annotations[
+                                "batch.kubernetes.io/job-completion-index"
+                            ]
                         ),
                     )
                 )
@@ -669,15 +683,14 @@ class K8SExecutor(Executor):
 
         if job.spec.parallelism is None or job.spec.parallelism == 1:
             # Check status of single k8s job.
-            pods = core_api.list_pod_for_all_namespaces(
-                watch=False, label_selector=f"job-name={job.metadata.name}"
-            )
-            if not pods.items:
+            pods = list(get_k8s_job_pods(core_api, job.metadata.name))
+
+            if not pods:
                 # No pods yet, do nothing.
                 return
 
             # Use most recent pod. TODO: double check sorting.
-            pod = pods.items[0]
+            pod = pods[0]
 
             job_status, status_reason = self._process_single_k8s_job_status(job)
             if not job_status:
@@ -706,10 +719,10 @@ class K8SExecutor(Executor):
                     level=logging.WARN,
                 )
         else:
-            k8s_pods = self.get_array_child_pods(job.metadata.name)
+            k8s_pods = get_k8s_job_pods(core_api, job.metadata.name)
             redun_jobs = self.pending_k8s_jobs[job.metadata.name]
 
-            for pod in k8s_pods.items:
+            for pod in k8s_pods:
                 job_status, status_reason = self._process_pod_status(pod)
                 if not job_status:
                     # Job is still running.
@@ -1045,11 +1058,14 @@ class K8SExecutor(Executor):
         api_response = api_instance.list_job_for_all_namespaces(watch=False)
         return api_response
 
+    '''
     def get_array_child_pods(self, job_name: str) -> Any:
         """Get all the pods for a job array"""
+
         api_instance = k8s_utils.get_k8s_core_client()
         label_selector = f"job-name={job_name}"
         api_response = api_instance.list_pod_for_all_namespaces(
             watch=False, label_selector=label_selector
         )
         return api_response
+    '''

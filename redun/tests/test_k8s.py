@@ -271,9 +271,11 @@ def task1(x):
 @patch("redun.executors.k8s.k8s_utils.delete_job")
 @patch("redun.executors.k8s.parse_job_logs")
 @patch("redun.executors.k8s.k8s_describe_jobs")
+@patch("redun.executors.k8s.get_k8s_job_pods")
 @patch("redun.executors.k8s.k8s_submit")
 def test_executor(
     k8s_submit_mock: Mock,
+    get_k8s_job_pods_mock: Mock,
     k8s_describe_jobs_mock: Mock,
     parse_job_logs_mock: Mock,
     delete_job_mock: Mock,
@@ -287,6 +289,7 @@ def test_executor(
     # Setup K8S mocks.
     k8s_describe_jobs_mock.return_value = iter([])
     parse_job_logs_mock.return_value = []
+    get_k8s_job_pods_mock.return_value = iter([])
 
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
@@ -302,9 +305,10 @@ def test_executor(
     job.eval_hash = "eval_hash"
     executor.submit(job, (10,), {})
 
-    # # Let job get stale so job arrayer actually submits it.
+    # Wait until job arrayer actually submits it.
     wait_until(lambda: executor.arrayer.num_pending == 0)
-    # # # # # Ensure job options were passed correctly.
+
+    # Ensure job options were passed correctly.
     assert k8s_submit_mock.call_args
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
@@ -322,21 +326,22 @@ def test_executor(
         },
     }
 
+    # Setup new mock return values.
     k8s_submit_mock.return_value = create_job_object(
         name=DEFAULT_JOB_PREFIX + "-eval_hash2", uid=k8s_job2_id
     )
 
-    # # Submit redun job that will fail.
+    # Submit redun job that will fail.
     expr2 = task1.options(memory=8)(11)
     job2 = Job(expr2)
     job2.task = task1
     job2.eval_hash = "eval_hash2"
     executor.submit(job2, (11,), {})
 
-    # # # # # Let job get stale so job arrayer actually submits it.
+    # Let job get stale so job arrayer actually submits it.
     wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # # # # # Ensure job options were passed correctly.
+    # Ensure job options were passed correctly.
     assert k8s_submit_mock.call_args[1] == {
         "image": "my-image",
         "namespace": "default",
@@ -353,7 +358,7 @@ def test_executor(
         },
     }
 
-    # # # Simulate k8s completing job.
+    # Simulate k8s completing job.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
 
@@ -368,14 +373,29 @@ def test_executor(
     fake_k8s_job2.status = client.V1JobStatus(failed=1)
     k8s_describe_jobs_mock.return_value = [fake_k8s_job, fake_k8s_job2]
 
+    pod = client.V1Pod(
+        metadata=client.V1ObjectMeta(
+            name="name",
+            namespace="default",
+        ),
+        status=client.V1ContainerStatus(
+            image=client.V1ContainerImage(),
+            image_id="image_id",
+            name="name",
+            ready=True,
+            restart_count=1,
+        ),
+    )
+    get_k8s_job_pods_mock.return_value = [pod]
+
     scheduler.batch_wait([job.id, job2.id])
     executor.stop()
 
-    # # # # # Job results and errors should be sent back to scheduler.
+    # Job results and errors should be sent back to scheduler.
     assert scheduler.job_results[job.id] == 20
     assert isinstance(scheduler.job_errors[job2.id], ValueError)
 
-    # # Assert job tags.
+    # Assert job tags.
     job.job_tags == [("k8s_job", "k8s-job-id"), ("aws_log_stream", "log1")]
     job.job_tags == [("k8s_job", "k8s-job2-id"), ("aws_log_stream", "log2")]
 
