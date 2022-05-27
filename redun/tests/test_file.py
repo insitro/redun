@@ -480,6 +480,71 @@ def test_staging_file_value() -> None:
 
 
 @mock_s3
+@use_tempdir
+def test_sharded_dataset_from_file() -> None:
+    # Create a S3 bucket with a few files.
+    s3_client = boto3.client("s3", region_name="us-east-1")
+    s3_client.create_bucket(Bucket="example-bucket")
+
+    # Raise an error if files don't exist
+    with pytest.raises(FileNotFoundError):
+        _ = ShardedS3Dataset.from_files(
+            [
+                File("s3://example-bucket/bar/baz.csv"),
+                File("s3://example-bucket/x/y.csv"),
+                File("s3://example-bucket/bar/baz/baz2.csv"),
+            ]
+        )
+
+    file1 = File("s3://example-bucket/data/more_data/shard1.csv")
+    file2 = File("s3://example-bucket/data/other_data/shard2.csv")
+    file3 = File("s3://example-bucket/data/shard3.csv")
+    file4 = File("s3://example-bucket/data/some.parquet")
+    file1.write("word1, word2\nhello, world")
+    file2.write("word1, word2\ncarrots, potatoes")
+    file3.write("word1, word2\nfoo, bar")
+    file4.write("well it looks like a parquet file")
+
+    # Test a single file
+    x = ShardedS3Dataset.from_files([file1], allow_additional_files=True)
+    assert x.path == "s3://example-bucket/data/more_data"
+    assert x.format == "csv"
+
+    # Test incompatible file formats.
+    with pytest.raises(ValueError):
+        _ = ShardedS3Dataset.from_files([file1, file2, file3, file4])
+
+    # Test files not on S3
+    local_file = File("./potato.csv")
+    local_file.write("i like potato")
+    with pytest.raises(ValueError):
+        _ = ShardedS3Dataset.from_files([local_file])
+
+    # Test empty file list
+    with pytest.raises(ValueError):
+        _ = ShardedS3Dataset.from_files([])
+
+    file4.remove()
+
+    # Making a dataset that would contain additional files (in this case file3)
+    # should raise an error.
+    with pytest.raises(ValueError):
+        _ = ShardedS3Dataset.from_files([file1, file2])
+
+    x = ShardedS3Dataset.from_files([file1, file2], allow_additional_files=True)
+    assert len(x.filenames) == 3
+    assert file3.path in x.filenames
+    assert x.format == "csv"
+    assert x.path == "s3://example-bucket/data"
+
+    x = ShardedS3Dataset.from_files([file1, file2, file3])
+    assert len(x.filenames) == 3
+    assert file3.path in x.filenames
+    assert x.format == "csv"
+    assert x.path == "s3://example-bucket/data"
+
+
+@mock_s3
 def test_sharded_dataset() -> None:
     """
     Tests ShardedS3Dataset hashing
