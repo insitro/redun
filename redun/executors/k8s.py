@@ -257,7 +257,6 @@ def k8s_describe_jobs(job_names: List[str], namespace: str) -> List[kubernetes.c
     """
     Returns K8S Job descriptions from the AWS API.
     """
-    breakpoint()
     api_instance = k8s_utils.get_k8s_batch_client()
     jobs = []
     for job_name in job_names:
