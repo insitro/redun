@@ -4,6 +4,9 @@ import random
 from redun import File, script, task
 
 
+redun_namespace = "redun.examples.k8s"
+
+
 @task(executor="k8s")
 def waste_cpu(max_i=1000, max_j=1000):
     """Script that wastes cpu (to test container CPU limits)"""
@@ -11,6 +14,17 @@ def waste_cpu(max_i=1000, max_j=1000):
         for i in range(max_j):
             a = 5
             a += 1
+
+
+@task(executor="k8s", memory=.5)
+def inc(x: int) -> int:
+    #raise ValueError("BOOM")
+    return x + 1
+
+
+@task(executor="k8s")
+def boom(message: str) -> None:
+    raise ValueError(message)
 
 
 @task(script=True, executor="k8s")
