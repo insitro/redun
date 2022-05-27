@@ -69,8 +69,8 @@ def run_docker(
     """
     # Add AWS credentials to environment for docker command.
     env = dict(os.environ)
-    if not aws_utils.is_ec2_instance():
-        env.update(aws_utils.get_aws_env_vars())
+    #if not aws_utils.is_ec2_instance():
+    #    env.update(aws_utils.get_aws_env_vars())
 
     common_args = []
     if cleanup:
