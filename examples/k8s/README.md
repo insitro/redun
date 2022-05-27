@@ -23,6 +23,9 @@ ACCOUNT=$(aws ecr describe-registry --query registryId --output text)
 REGION=$(aws configure get region)
 REGISTRY=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com
 
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY
+
+kubectl delete secret regcred
 kubectl create secret docker-registry regcred \
   --docker-server=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com \
   --docker-username=AWS \
