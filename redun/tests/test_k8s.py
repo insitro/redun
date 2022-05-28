@@ -1,6 +1,7 @@
 import os
 import pickle
-from typing import cast
+from functools import wraps
+from typing import Callable, cast
 from unittest.mock import Mock, patch
 
 import boto3
@@ -25,6 +26,21 @@ from redun.file import Dir
 from redun.scheduler import Job, Scheduler, Traceback
 from redun.tests.utils import mock_s3, mock_scheduler, use_tempdir, wait_until
 from redun.utils import pickle_dumps
+
+
+def mock_k8s(func: Callable):
+    """
+    Mock k8s API clients during tests.
+    """
+
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        with patch("redun.executors.k8s_utils.get_k8s_batch_client"), patch(
+            "redun.executors.k8s_utils.get_k8s_core_client"
+        ):
+            return func(*args, **kwargs)
+
+    return wrapped
 
 
 @pytest.mark.parametrize("array,suffix", [(False, ""), (True, "-array")])
@@ -109,6 +125,7 @@ def task1_custom_module(x):
 
 @use_tempdir
 @mock_s3
+@mock_k8s
 @patch("redun.executors.k8s.k8s_submit")
 @pytest.mark.parametrize(
     "custom_module, expected_load_module, a_task",
@@ -185,6 +202,7 @@ def task1(x):
 
 @use_tempdir
 @mock_s3
+@mock_k8s
 @patch("redun.executors.k8s.k8s_submit")
 def test_submit_task_deep_file(k8s_submit_mock):
     """
@@ -263,6 +281,7 @@ def task1(x):
 
 
 @mock_s3
+@mock_k8s
 @patch("redun.executors.k8s.k8s_utils.delete_job")
 @patch("redun.executors.k8s.k8s_describe_jobs")
 @patch("redun.executors.k8s.get_k8s_job_pods")
@@ -393,6 +412,7 @@ def test_executor(
 
 
 @mock_s3
+@mock_k8s
 def test_executor_handles_unrelated_jobs() -> None:
     """
     Regression test for https://insitro.atlassian.net/browse/DE-2632
@@ -430,6 +450,7 @@ def test_executor_handles_unrelated_jobs() -> None:
 
 
 @mock_s3
+@mock_k8s
 @patch("redun.executors.k8s.package_code")
 def test_code_packaging(package_code_mock: Mock) -> None:
     """
@@ -469,6 +490,7 @@ def test_code_packaging(package_code_mock: Mock) -> None:
 
 
 @mock_s3
+@mock_k8s
 @patch("redun.executors.k8s.k8s_describe_jobs")
 @pytest.mark.skip(reason="not working")
 def test_inflight_join_only_on_first_submission(k8s_describe_jobs_mock: Mock) -> None:
@@ -505,6 +527,7 @@ def test_inflight_join_only_on_first_submission(k8s_describe_jobs_mock: Mock) ->
 
 
 @mock_s3
+@mock_k8s
 @patch("redun.executors.k8s.k8s_describe_jobs")
 @patch("redun.executors.k8s_utils.delete_job")
 @patch("redun.executors.k8s.k8s_submit")
@@ -596,48 +619,7 @@ def test_job_descrs() -> None:
 
 
 @mock_s3
-def test_job_staleness() -> None:
-    """Tests staleness criteria for array'ing jobs"""
-    j1 = Job(array_task(1))
-    j1.task = array_task
-    d = job_array.JobDescription(j1)
-
-    sched = mock_scheduler()
-    exec = mock_executor(sched)
-    arr = job_array.JobArrayer(exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5)
-
-    for i in range(10):
-        arr.add_job(j1, args=(i,), kwargs={})
-
-    assert arr.get_stale_descrs() == []
-    wait_until(lambda: arr.get_stale_descrs() == [d])
-
-
-@mock_s3
-def test_arrayer_thread() -> None:
-    """Tests that the arrayer monitor thread can be restarted after exit"""
-    j1 = Job(array_task(1))
-    j1.task = array_task
-
-    sched = mock_scheduler()
-    exec = mock_executor(sched)
-    arr = job_array.JobArrayer(exec, submit_interval=10000.0, stale_time=0.05, min_array_size=5)
-
-    arr.add_job(j1, args=(1,), kwargs={})
-    assert arr._monitor_thread.is_alive()
-
-    # Stop the monitoring thread.
-    arr.stop()
-    assert not arr._monitor_thread.is_alive()
-
-    # Submitting an additional job should restart the thread.
-    arr.add_job(j1, args=(2,), kwargs={})
-    assert arr._monitor_thread.is_alive()
-
-    arr.stop()
-
-
-@mock_s3
+@mock_k8s
 @patch("redun.executors.k8s_utils.delete_job")
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
 @patch("redun.executors.k8s.k8s_describe_jobs")
@@ -719,6 +701,7 @@ def test_jobs_are_arrayed(
 
 @use_tempdir
 @mock_s3
+@mock_k8s
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
 @patch("redun.executors.k8s.K8SExecutor._submit_single_job")
 def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> None:
@@ -849,6 +832,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
 
 
 @mock_s3
+@mock_k8s
 @use_tempdir
 @patch("redun.executors.k8s.k8s_submit")
 def test_array_oneshot(k8s_submit_mock: Mock) -> None:
