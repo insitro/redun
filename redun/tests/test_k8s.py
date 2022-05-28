@@ -26,8 +26,6 @@ from redun.scheduler import Job, Scheduler, Traceback
 from redun.tests.utils import mock_s3, mock_scheduler, use_tempdir, wait_until
 from redun.utils import pickle_dumps
 
-# skipped job_def tests here
-
 
 @pytest.mark.parametrize("array,suffix", [(False, ""), (True, "-array")])
 def test_get_hash_from_job_name(array: bool, suffix: str) -> None:
@@ -66,13 +64,10 @@ def mock_executor(scheduler: Scheduler, code_package: bool = False) -> K8SExecut
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
 
     executor.get_jobs = Mock()  # type: ignore
-    executor.get_jobs.return_value = client.V1JobList(items=[])
+    executor.get_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")
     s3_client.create_bucket(Bucket="example-bucket")
-
-    # executor.get_array_child_jobs = Mock()
-    # executor.get_array_child_jobs.return_value = []
 
     return executor
 
@@ -397,15 +392,6 @@ def test_executor(
     job.job_tags == [("k8s_job", "k8s-job2-id"), ("aws_log_stream", "log2")]
 
 
-# skip test_executor_docker here
-
-# skip test_executor_error_override here
-# skip test_executor_multi_start here
-
-# skipped docker interactive
-
-
-# skipped docker interactive
 @mock_s3
 def test_executor_handles_unrelated_jobs() -> None:
     """
@@ -429,13 +415,11 @@ def test_executor_handles_unrelated_jobs() -> None:
     hash2 = "987654321"
 
     # Set up mocks to include a headnode job(no hash) and some redun jobs that it "spawned".
-    executor.get_jobs.return_value = client.V1JobList(  # type: ignore
-        items=[
-            create_job_object(uid="headnode", name=f"{prefix}_automation_headnode"),
-            create_job_object(uid="preprocess", name=f"{prefix}_preprocess-{hash1}"),
-            create_job_object(uid="decode", name=f"{prefix}_decode-{hash2}"),
-        ]
-    )
+    executor.get_jobs.return_value = [  # type: ignore
+        create_job_object(uid="headnode", name=f"{prefix}_automation_headnode"),
+        create_job_object(uid="preprocess", name=f"{prefix}_preprocess-{hash1}"),
+        create_job_object(uid="decode", name=f"{prefix}_decode-{hash2}"),
+    ]
 
     executor.gather_inflight_jobs()
 
@@ -543,7 +527,7 @@ def test_executor_inflight_job(
 
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
-    executor.get_jobs.return_value = client.V1JobList(items=[k8s_job])  # type: ignore
+    executor.get_jobs.return_value = [k8s_job]  # type: ignore
     executor.start()
 
     # Hand create job.
@@ -756,7 +740,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
 
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
     executor.get_jobs = Mock()  # type: ignore
-    executor.get_jobs.return_value = client.V1JobList(items=[])
+    executor.get_jobs.return_value = []
 
     # Submit one test job.
     job = Job(other_task(5, 3))

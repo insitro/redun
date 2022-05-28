@@ -268,7 +268,7 @@ def k8s_paginate(request_func: Callable) -> Iterator:
             break
 
 
-def k8s_list_jobs(self) -> Iterator[V1Job]:
+def k8s_list_jobs() -> Iterator[V1Job]:
     """
     Returns active K8S Jobs.
     """
@@ -329,19 +329,13 @@ def get_k8s_job_pods(core_api, job_name: str) -> Iterator[V1Pod]:
     """
     Iterates the pods for a k8s job.
     """
-    token: Optional[str] = None
-    while True:
-        pods = core_api.list_pod_for_all_namespaces(
+    yield from k8s_paginate(
+        lambda _continue: core_api.list_pod_for_all_namespaces(
             watch=False,
             label_selector=f"job-name={job_name}",
-            _continue=token,
+            _continue=_continue,
         )
-        if pods.items:
-            yield from pods.items
-        if pods.metadata._continue:
-            token = pods.metadata._continue
-        else:
-            break
+    )
 
 
 class K8SError(Exception):
@@ -433,9 +427,12 @@ class K8SExecutor(Executor):
         running_arrays: Dict[str, List[Tuple[str, str, int]]] = defaultdict(list)
         core_api = k8s_utils.get_k8s_core_client()
 
+        # We don't currently filter on "inflight" jobs, but that's what the
+        # aws_batch implementation does.
+        jobs = self.get_jobs()
+
         # Get all running jobs by name.
-        inflight_jobs = self.get_jobs()
-        for job in inflight_jobs.items:
+        for job in jobs:
             job_name = job.metadata.name
             if not is_array_job_name(job_name):
                 job_hash = get_hash_from_job_name(job_name)
@@ -707,6 +704,7 @@ class K8SExecutor(Executor):
                     level=logging.WARN,
                 )
         else:
+            # Check status of array k8s job.
             k8s_pods = get_k8s_job_pods(core_api, job.metadata.name)
             redun_jobs = self.pending_k8s_jobs[job.metadata.name]
 
@@ -1033,11 +1031,8 @@ class K8SExecutor(Executor):
         """
         return self._submit(job, args, kwargs)
 
-    def get_jobs(self) -> Any:
+    def get_jobs(self) -> Iterator[V1Job]:
         """
-        Returns K8S Job statuses.
+        Iterates active k8s jobs.
         """
-        batch_api = k8s_utils.get_k8s_batch_client()
-        # We don't currently filter on "inflight" jobs, but that's what the
-        # aws_batch implementation does.
-        return batch_api.list_job_for_all_namespaces(watch=False)
+        return k8s_list_jobs()
