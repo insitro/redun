@@ -452,6 +452,7 @@ class K8SExecutor(Executor):
                         ),
                     )
                 )
+
         # Match up running array jobs with consistent redun job naming scheme.
         for array_name, child_pod_indices in running_arrays.items():
             # Get path to array file directory on S3 from array job name.

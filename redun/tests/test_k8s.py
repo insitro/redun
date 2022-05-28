@@ -28,7 +28,7 @@ from redun.tests.utils import mock_s3, mock_scheduler, use_tempdir, wait_until
 from redun.utils import pickle_dumps
 
 
-def mock_k8s(func: Callable):
+def mock_k8s(func: Callable) -> Callable:
     """
     Mock k8s API clients during tests.
     """
