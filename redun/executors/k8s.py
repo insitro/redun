@@ -6,7 +6,7 @@ import time
 import uuid
 from collections import OrderedDict, defaultdict
 from shlex import quote
-from typing import Any, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
 
 import kubernetes
 from kubernetes.client import V1Job, V1Pod
@@ -39,11 +39,6 @@ T = TypeVar("T")
 SUCCEEDED = "SUCCEEDED"
 FAILED = "FAILED"
 ARRAY_JOB_SUFFIX = "array"
-
-
-def is_array_job_name(job_name: str) -> bool:
-    "Returns true if the job name looks like an array job"
-    return job_name.endswith(f"-{ARRAY_JOB_SUFFIX}")
 
 
 def k8s_submit(
@@ -95,6 +90,11 @@ def get_k8s_job_name(prefix: str, job_hash: str, array: bool = False) -> str:
     Return a K8S Job name by either job or job hash.
     """
     return "{}-{}{}".format(prefix, job_hash, f"-{ARRAY_JOB_SUFFIX}" if array else "")
+
+
+def is_array_job_name(job_name: str) -> bool:
+    "Returns true if the job name looks like an array job"
+    return job_name.endswith(f"-{ARRAY_JOB_SUFFIX}")
 
 
 def get_hash_from_job_name(job_name: str) -> Optional[str]:
@@ -253,15 +253,40 @@ chmod +x .task_command
     )
 
 
+def k8s_paginate(request_func: Callable) -> Iterator:
+    """
+    Yields items from a paginated k8s API endpoint.
+    """
+    token: Optional[str] = None
+    while True:
+        response = request_func(token)
+        if response.items:
+            yield from response.items
+        if response.metadata._continue:
+            token = response.metadata._continue
+        else:
+            break
+
+
+def k8s_list_jobs(self) -> Iterator[V1Job]:
+    """
+    Returns active K8S Jobs.
+    """
+    batch_api = k8s_utils.get_k8s_batch_client()
+    yield from k8s_paginate(
+        lambda _continue: batch_api.list_job_for_all_namespaces(watch=False, _continue=_continue)
+    )
+
+
 def k8s_describe_jobs(job_names: List[str], namespace: str) -> List[kubernetes.client.V1Job]:
     """
-    Returns K8S Job descriptions from the AWS API.
+    Returns K8S Job descriptions.
     """
-    api_instance = k8s_utils.get_k8s_batch_client()
+    batch_api = k8s_utils.get_k8s_batch_client()
     jobs = []
     for job_name in job_names:
         try:
-            jobs.append(api_instance.read_namespaced_job(job_name, namespace=namespace))
+            jobs.append(batch_api.read_namespaced_job(job_name, namespace=namespace))
         except ApiException:
             # TODO: Decide what to do.
             raise
@@ -507,10 +532,8 @@ class K8SExecutor(Executor):
                 jobs = k8s_describe_jobs(pending_jobs, self.namespace)
                 # changing this (IE, removing iter_k8s_job_status) breaks
                 # inflight test jobs =
-                # k8s_describe_jobs(list(self.pending_k8s_jobs.keys()))
                 for job in jobs:
                     self._process_k8s_job_status(job)
-                    # self._process_job_status(job)
                 time.sleep(self.interval)
 
         except Exception as error:
@@ -529,11 +552,6 @@ class K8SExecutor(Executor):
 
         Returns (job_status, status_reason)
         """
-
-        def get_container_state(container_state):
-            for state, details in container_state.to_dict().items():
-                if details:
-                    return {"state": state, **details}
 
         # Get container states for most recent pod.
         # TODO: check sorting.
@@ -574,9 +592,8 @@ class K8SExecutor(Executor):
             # Handle a special case where a job times out, but isn't counted
             # as a 'failure' in job.status.failed.  In this case we want to
             # reject the job early and skip reading logs from the pod
-            # because the pod was already cleaned up
-            conditions = job.status.conditions
-            if conditions[0].type == "Failed":
+            # because the pod was already cleaned up.
+            if job.status.conditions[0].type == "Failed":
                 return FAILED, "Failed: Timeout exceeded."
             else:
                 return None, None
@@ -591,6 +608,9 @@ class K8SExecutor(Executor):
         status_reason: Optional[str],
         k8s_labels: List[Tuple[str, str]] = [],
     ) -> None:
+        """
+        Complete a redun job (done or reject).
+        """
         assert self._scheduler
 
         if job_status == SUCCEEDED:
@@ -648,6 +668,7 @@ class K8SExecutor(Executor):
         Process K8S job statuses.
         """
         core_api = k8s_utils.get_k8s_core_client()
+        batch_api = k8s_utils.get_k8s_batch_client()
 
         if job.spec.parallelism is None or job.spec.parallelism == 1:
             # Check status of single k8s job.
@@ -678,9 +699,8 @@ class K8SExecutor(Executor):
             self._process_redun_job(redun_job, pod, job_status, status_reason, k8s_labels)
 
             # Clean up k8s job immediately.
-            api_instance = k8s_utils.get_k8s_batch_client()
             try:
-                _ = k8s_utils.delete_job(api_instance, job.metadata.name, self.namespace)
+                _ = k8s_utils.delete_job(batch_api, job.metadata.name, self.namespace)
             except kubernetes.client.exceptions.ApiException as e:
                 self.log(
                     f"Failed to delete k8s job {job.metadata.name}: {e}",
@@ -709,14 +729,11 @@ class K8SExecutor(Executor):
                 k8s_labels = [("k8s_job", job.metadata.uid)]
                 self._process_redun_job(redun_job, pod, job_status, status_reason, k8s_labels)
 
-                # Clean up k8s job.
+                # When the last pod finishes, clean up the k8s job.
                 if len(redun_jobs) == 0:
-                    api_instance = k8s_utils.get_k8s_batch_client()
                     try:
                         _ = k8s_utils.delete_job(
-                            api_instance,
-                            job.metadata.name,
-                            job.metadata.namespace,
+                            batch_api, job.metadata.name, job.metadata.namespace
                         )
                     except kubernetes.client.exceptions.ApiException as e:
                         self.log(
@@ -1018,22 +1035,9 @@ class K8SExecutor(Executor):
 
     def get_jobs(self) -> Any:
         """
-        Returns K8S Job statuses from the AWS API.
+        Returns K8S Job statuses.
         """
-        api_instance = k8s_utils.get_k8s_batch_client()
+        batch_api = k8s_utils.get_k8s_batch_client()
         # We don't currently filter on "inflight" jobs, but that's what the
         # aws_batch implementation does.
-        api_response = api_instance.list_job_for_all_namespaces(watch=False)
-        return api_response
-
-    '''
-    def get_array_child_pods(self, job_name: str) -> Any:
-        """Get all the pods for a job array"""
-
-        api_instance = k8s_utils.get_k8s_core_client()
-        label_selector = f"job-name={job_name}"
-        api_response = api_instance.list_pod_for_all_namespaces(
-            watch=False, label_selector=label_selector
-        )
-        return api_response
-    '''
+        return batch_api.list_job_for_all_namespaces(watch=False)
