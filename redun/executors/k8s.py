@@ -290,37 +290,6 @@ def get_pod_logs(pod: kubernetes.client.V1Pod, max_lines: Optional[int] = None) 
     return lines
 
 
-def get_k8s_job_logs(
-    job_id: str,
-    namespace: str,
-    max_lines: Optional[int] = None,
-) -> List[str]:
-    """
-    Returns the logs of a k8s job.
-    """
-    job = k8s_describe_jobs([job_id], namespace)[0]
-    api_instance = k8s_utils.get_k8s_core_client()
-    label_selector = f"job-name={job.metadata.name}"
-    api_response = api_instance.list_pod_for_all_namespaces(label_selector=label_selector)
-
-    if not api_response.items:
-        return [f"Cannot find pod for job {job.metadata.name}"]
-    else:
-        # Use most recent pod for job.
-        pod = api_response.items[-1]
-        return get_pod_logs(pod, max_lines=max_lines)
-
-
-def parse_job_logs(k8s_job_id: str, namespace, max_lines: int = 1000) -> Iterator[str]:
-    """
-    Iterates through most recent logs of an K8S Job.
-    """
-    lines = get_k8s_job_logs(k8s_job_id, namespace, max_lines=max_lines)
-    if len(lines) < max_lines:
-        yield "\n*** Earlier logs are truncated ***\n"
-    yield from lines
-
-
 def parse_pod_logs(pod: kubernetes.client.V1Pod, max_lines: int = 1000) -> Iterator[str]:
     """
     Iterates through most recent logs of an K8S Job.

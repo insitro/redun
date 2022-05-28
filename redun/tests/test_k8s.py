@@ -269,7 +269,6 @@ def task1(x):
 
 @mock_s3
 @patch("redun.executors.k8s.k8s_utils.delete_job")
-@patch("redun.executors.k8s.parse_job_logs")
 @patch("redun.executors.k8s.k8s_describe_jobs")
 @patch("redun.executors.k8s.get_k8s_job_pods")
 @patch("redun.executors.k8s.k8s_submit")
@@ -277,7 +276,6 @@ def test_executor(
     k8s_submit_mock: Mock,
     get_k8s_job_pods_mock: Mock,
     k8s_describe_jobs_mock: Mock,
-    parse_job_logs_mock: Mock,
     delete_job_mock: Mock,
 ) -> None:
     """
@@ -288,7 +286,6 @@ def test_executor(
 
     # Setup K8S mocks.
     k8s_describe_jobs_mock.return_value = iter([])
-    parse_job_logs_mock.return_value = []
     get_k8s_job_pods_mock.return_value = iter([])
 
     scheduler = mock_scheduler()
