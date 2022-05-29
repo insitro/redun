@@ -37,7 +37,7 @@ def run_docker(
     image: str,
     volumes: Iterable[Tuple[str, str]] = [],
     interactive: bool = True,
-    cleanup: bool = True,
+    cleanup: bool = False,
     memory: int = 4,
     vcpus: int = 1,
     gpus: int = 0,
