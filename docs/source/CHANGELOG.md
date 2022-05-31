@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.11
+May 29, 2022
+
+* `#30` - Add missing data.tsv and fix cleanup default
+
 ## 0.8.10
 May 26, 2022
 
