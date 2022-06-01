@@ -222,13 +222,12 @@ def get_or_create_job_definition(
     def sanitize_job_def(job_def: Dict) -> Dict:
         """Overwrite the resource properties with redactions."""
         result = copy.deepcopy(job_def)
-        result["containerProperties"] = result.get("containerProperties", {}).update(
-            no_resource_container_properties
+        result.setdefault("containerProperties", {}).update(no_resource_container_properties)
+        node_range = result.setdefault("nodeProperties", {}).setdefault(
+            "nodeRangeProperties", [{}, {}]
         )
-        node_range = result.get("nodeProperties", {}).get("nodeRangeProperties", [{}, {}])
-        node_range[0].get("container", {}).update(no_resource_container_properties)
-        node_range[1].get("container", {}).update(no_resource_container_properties)
-        result["nodeRangeProperties"] = node_range
+        for node in node_range:
+            node.setdefault("container", {}).update(no_resource_container_properties)
         return result
 
     if existing_job_def:

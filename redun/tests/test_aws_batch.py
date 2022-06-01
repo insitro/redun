@@ -327,6 +327,45 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
     )
     get_aws_client_mock.return_value.register_job_definition.assert_not_called()
 
+    # 4.e. image
+    get_aws_client_mock.return_value.register_job_definition.reset_mock()
+    get_job_definition_mock.return_value = {
+        "jobDefinitionName": "test-jd4a",
+        "type": "other",
+        "containerProperties": {
+            "command": ["ls"],
+            "image": "an-image:latest",
+            "vcpus": 2,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [],
+            "privileged": False,
+        },
+    }
+    get_or_create_job_definition(job_def_name="test-jd4a", image="an-image:custom", role="aRole")
+    assert result == {"jobId": "new-job"}
+    get_aws_client_mock.return_value.register_job_definition.assert_called_with(
+        jobDefinitionName="test-jd4a",
+        type="container",
+        containerProperties={
+            "command": ["ls"],
+            "image": "an-image:custom",
+            "vcpus": 1,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [],
+            "privileged": False,
+        },
+    )
+
 
 @patch("redun.executors.aws_utils.get_aws_client")
 @patch("redun.executors.aws_batch.get_or_create_job_definition")
