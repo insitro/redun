@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.12
+June 01, 2022
+
+* `#153` - DE-5198 Don't drop containerProperties when sanitizing job defs
+* `#151` - remove unused and broken extract_tar import
+
 ## 0.8.11
 May 29, 2022
 
