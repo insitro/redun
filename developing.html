@@ -1,11 +1,11 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Changelog" href="CHANGELOG.html" /><link rel="prev" title="FAQ" href="FAQ.html" />
 
-    <meta name="generator" content="sphinx-4.5.0, furo 2022.04.07"/>
+    <meta name="generator" content="sphinx-5.0.0, furo 2022.04.07"/>
         <title>Developer guide - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
@@ -205,9 +205,9 @@
         </div>
         <article role="main">
           <section id="developer-guide">
-<h1>Developer guide<a class="headerlink" href="#developer-guide" title="Permalink to this headline">#</a></h1>
+<h1>Developer guide<a class="headerlink" href="#developer-guide" title="Permalink to this heading">#</a></h1>
 <section id="development-installation">
-<h2>Development installation<a class="headerlink" href="#development-installation" title="Permalink to this headline">#</a></h2>
+<h2>Development installation<a class="headerlink" href="#development-installation" title="Permalink to this heading">#</a></h2>
 <p>If you have postgres available, (perhaps with <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">postgresql</span></code> on macOS), you can prepare
 an editable installation and run the tests:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>make setup
@@ -223,10 +223,10 @@ make isort
 </div>
 </section>
 <section id="release">
-<h2>Release<a class="headerlink" href="#release" title="Permalink to this headline">#</a></h2>
+<h2>Release<a class="headerlink" href="#release" title="Permalink to this heading">#</a></h2>
 <p>Redun releases are done via the <code class="docutils literal notranslate"><span class="pre">redun-release-auto</span></code> <a class="reference external" href="https://us-west-2.console.aws.amazon.com/codesuite/codebuild/projects/redun-release-auto/">codebuild pipeline</a>.</p>
 <section id="release-steps">
-<h3>Release Steps<a class="headerlink" href="#release-steps" title="Permalink to this headline">#</a></h3>
+<h3>Release Steps<a class="headerlink" href="#release-steps" title="Permalink to this heading">#</a></h3>
 <ol class="arabic simple">
 <li><p>Prepare a release branch and make a PR from this branch with an updated <a class="reference external" href="https://github.com/insitro/redun/blob/db17e39a2efaf9b3be466c60bdfecbe6ce4ea054/redun/__init__.py#L14"><code class="docutils literal notranslate"><span class="pre">__version__</span></code></a> and <a class="reference external" href="https://github.com/insitro/redun/blob/master/docs/source/CHANGELOG.rst"><code class="docutils literal notranslate"><span class="pre">CHANGELOG</span></code></a>
 e.g. https://github.com/insitro/redun/pull/107. Use <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">release_notes.py</span></code></span> script to generate the release notes (see that script for usage).</p></li>
@@ -313,6 +313,7 @@ e.g. https://github.com/insitro/redun/pull/107. Use <span class="xref myst"><cod
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/furo.js"></script>
     </body>

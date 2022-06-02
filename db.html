@@ -1,11 +1,11 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Spark" href="spark.html" /><link rel="prev" title="Configuration" href="config.html" />
 
-    <meta name="generator" content="sphinx-4.5.0, furo 2022.04.07"/>
+    <meta name="generator" content="sphinx-5.0.0, furo 2022.04.07"/>
         <title>Database repo - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
@@ -205,14 +205,14 @@
         </div>
         <article role="main">
           <section id="database-repo">
-<h1>Database repo<a class="headerlink" href="#database-repo" title="Permalink to this headline">#</a></h1>
+<h1>Database repo<a class="headerlink" href="#database-repo" title="Permalink to this heading">#</a></h1>
 <p>redun stores data provenance and cached values in <em>repositories</em>, (repos for short), similar to how <a class="reference external" href="https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository">git stores commit graphs in repos</a>.
 redun repos are currently implemented using either sqlite (the default) or PostgreSQL.
 Additionally, users may specify an external key-value store to avoid bloating the primary repo with large binary objects.</p>
 <p>Once your workflows mature to the point where you want to share them or their results with collaborators, we recommend configuring a persisted database repo for provenance tracking.
 See the <a class="reference internal" href="config.html#backend"><span class="std std-doc">backend configuration</span></a> section for details.</p>
 <section id="database-migration">
-<h2>Database migration<a class="headerlink" href="#database-migration" title="Permalink to this headline">#</a></h2>
+<h2>Database migration<a class="headerlink" href="#database-migration" title="Permalink to this heading">#</a></h2>
 <p>The redun CLI will automatically initialize and upgrade the redun database in most cases, so users will oftentimes not need to manage database versioning themselves. However, there are certain situations where users may want or need to manage database upgrades explicitly, such as upgrading a central shared database. Here, we review common commands for inspecting and managing database version upgrades.</p>
 <p>When the redun CLI is run for the first on a workflow script, by default a new sqlite database is created at <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code>.</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun run workflow.py main
@@ -252,7 +252,7 @@ Final db version: 3.0
 </div>
 <p>Downgrades can be done with <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">db</span> <span class="pre">downgrade</span> <span class="pre">&lt;version&gt;</span></code>.</p>
 <section id="automatic-database-upgrading">
-<h3>Automatic database upgrading<a class="headerlink" href="#automatic-database-upgrading" title="Permalink to this headline">#</a></h3>
+<h3>Automatic database upgrading<a class="headerlink" href="#automatic-database-upgrading" title="Permalink to this heading">#</a></h3>
 <p>For the most common use case, the redun CLI uses a local sqlite database file (e.g. <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code>).
 Since such a database is used by only one client, it is typically safe to automatically upgrade the database if needed.
 Such an upgrade will happen automatically on the next <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">run</span> <span class="pre">...</span></code> command.
@@ -261,7 +261,7 @@ Automigration is not used for non-sqlite databases, since a centrally used datab
 </section>
 </section>
 <section id="optional-value-store">
-<h2>Optional value store<a class="headerlink" href="#optional-value-store" title="Permalink to this headline">#</a></h2>
+<h2>Optional value store<a class="headerlink" href="#optional-value-store" title="Permalink to this heading">#</a></h2>
 <p>By default, values are stored in the database as BLOB columns.
 For most usage patterns, these BLOBs represent the fastest source of growth in the repo.
 Users can specify an external key-value store and a minimum size cutoff beyond which values are written to the value store instead of the primary repo.
@@ -346,6 +346,7 @@ See <code class="docutils literal notranslate"><span class="pre">ValueStore</spa
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/furo.js"></script>
     </body>

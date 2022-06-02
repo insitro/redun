@@ -1,11 +1,11 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Type checking" href="typing.html" /><link rel="prev" title="Database repo" href="db.html" />
 
-    <meta name="generator" content="sphinx-4.5.0, furo 2022.04.07"/>
+    <meta name="generator" content="sphinx-5.0.0, furo 2022.04.07"/>
         <title>Spark - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
@@ -205,15 +205,15 @@
         </div>
         <article role="main">
           <section id="spark">
-<h1>Spark<a class="headerlink" href="#spark" title="Permalink to this headline">#</a></h1>
+<h1>Spark<a class="headerlink" href="#spark" title="Permalink to this heading">#</a></h1>
 <p>Redun can now launch jobs using <a class="reference external" href="https://aws.amazon.com/glue">AWS Glue</a> to run
 <a class="reference external" href="https://spark.apache.org">Apache Spark</a> jobs on a managed cluster. Spark jobs run on many
 CPUs and are especially useful for working with large tabular datasets such as those
 represented in pandas.</p>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">#</a></h2>
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">#</a></h2>
 <section id="data-i-o">
-<h3>Data I/O<a class="headerlink" href="#data-i-o" title="Permalink to this headline">#</a></h3>
+<h3>Data I/O<a class="headerlink" href="#data-i-o" title="Permalink to this heading">#</a></h3>
 <p>Spark datasets are typically saved as multiple files (shards) on S3. The <span class="xref myst">ShardedS3Dataset</span> class represents these datasets in redun while tracking their provenance. Datasets may be
 in a variety of formats, including parquet, csv, and avro. The default is always parquet.</p>
 <p>Useful class functions, briefly:</p>
@@ -239,7 +239,7 @@ in a variety of formats, including parquet, csv, and avro. The default is always
 <p>Note that the number of shards and file names are determined by AWS Glue and not user configurable.</p>
 </section>
 <section id="imported-modules">
-<h3>Imported modules<a class="headerlink" href="#imported-modules" title="Permalink to this headline">#</a></h3>
+<h3>Imported modules<a class="headerlink" href="#imported-modules" title="Permalink to this heading">#</a></h3>
 <p>AWS Glue automates management, provisioning, and deployment of Spark clusters, but only with a <a class="reference external" href="https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-python-libraries.html#glue20-modules-provided">pre-determined set of Python modules</a>.
 Most functionality you may need is already available, including scipy, pandas, etc.</p>
 <p>Additional modules that are available in the public PyPi repository can be
@@ -247,7 +247,7 @@ installed with the <code class="docutils literal notranslate"><span class="pre">
 the glue environment.  However, other modules, especially those using C/C++
 compiled extensions, are not really installable at this time.</p>
 <section id="rdkit">
-<h4>Rdkit<a class="headerlink" href="#rdkit" title="Permalink to this headline">#</a></h4>
+<h4>Rdkit<a class="headerlink" href="#rdkit" title="Permalink to this heading">#</a></h4>
 <p>An exception to this is the <code class="docutils literal notranslate"><span class="pre">rdkit</span></code> module, which has been specially prepared to work in AWS Glue.
 To use <code class="docutils literal notranslate"><span class="pre">rdkit</span></code>, you must call <code class="docutils literal notranslate"><span class="pre">redun.contrib.spark_helpers.enable_rdkit</span></code> from your glue task before
 importing it.</p>
@@ -264,7 +264,7 @@ importing it.</p>
 </div>
 </section>
 <section id="avoiding-import-errors">
-<h4>Avoiding import errors<a class="headerlink" href="#avoiding-import-errors" title="Permalink to this headline">#</a></h4>
+<h4>Avoiding import errors<a class="headerlink" href="#avoiding-import-errors" title="Permalink to this heading">#</a></h4>
 <p>In a file with multiple redun tasks, packages are often imported at the top-level that are needed by non-glue tasks.
 However, when the glue task is launched, those top-level imports may cause the job to fail with ImportError.</p>
 <p>For example, the glue task here will fail due to being unable to import the package <code class="docutils literal notranslate"><span class="pre">foo</span></code>:</p>
@@ -297,12 +297,12 @@ perform required imports for each task within the function body:</p>
 </section>
 </section>
 <section id="accessing-spark-contexts">
-<h3>Accessing Spark contexts<a class="headerlink" href="#accessing-spark-contexts" title="Permalink to this headline">#</a></h3>
+<h3>Accessing Spark contexts<a class="headerlink" href="#accessing-spark-contexts" title="Permalink to this heading">#</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">redun.glue</span></code> module contains helper functions to access the Spark Session and Context objects:
 <code class="docutils literal notranslate"><span class="pre">get_spark_context()</span></code> and <code class="docutils literal notranslate"><span class="pre">get_spark_session()</span></code>. <span class="xref myst">Full Documentation</span></p>
 </section>
 <section id="user-defined-functions">
-<h3>User-defined functions<a class="headerlink" href="#user-defined-functions" title="Permalink to this headline">#</a></h3>
+<h3>User-defined functions<a class="headerlink" href="#user-defined-functions" title="Permalink to this heading">#</a></h3>
 <p>You might want to define your own functions to operate on a dataset. Typically, you’d use the <code class="docutils literal notranslate"><span class="pre">pyspark.sql.functions.udf</span></code> decorator
 on a function to make it a UDF, but when redun evaluates the decorator it will error out as there is no spark context available
 to register the function to.</p>
@@ -310,15 +310,15 @@ to register the function to.</p>
 real-world use of UDFs and this decorator.</p>
 </section>
 <section id="monitoring-spark-jobs">
-<h3>Monitoring Spark jobs<a class="headerlink" href="#monitoring-spark-jobs" title="Permalink to this headline">#</a></h3>
+<h3>Monitoring Spark jobs<a class="headerlink" href="#monitoring-spark-jobs" title="Permalink to this heading">#</a></h3>
 <p>Glue/Spark jobs will log detailed progress information for visualization by a Spark History Server.
 Logs will be at the location specified by the config option <code class="docutils literal notranslate"><span class="pre">spark_history_dir</span></code>.</p>
 </section>
 </section>
 <section id="common-pitfalls">
-<h2>Common pitfalls<a class="headerlink" href="#common-pitfalls" title="Permalink to this headline">#</a></h2>
+<h2>Common pitfalls<a class="headerlink" href="#common-pitfalls" title="Permalink to this heading">#</a></h2>
 <section id="some-workers-keep-dying-and-my-task-fails">
-<h3>Some workers keep dying and my task fails?<a class="headerlink" href="#some-workers-keep-dying-and-my-task-fails" title="Permalink to this headline">#</a></h3>
+<h3>Some workers keep dying and my task fails?<a class="headerlink" href="#some-workers-keep-dying-and-my-task-fails" title="Permalink to this heading">#</a></h3>
 <p>Repetitive failures can be caused by one worker getting overloaded with data and
 running out of memory. Signs of this include large numbers of executors failing as
 seen in Spark UI.</p>
@@ -422,6 +422,7 @@ To do this:</p>
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/furo.js"></script>
     </body>

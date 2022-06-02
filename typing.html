@@ -1,11 +1,11 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="FAQ" href="FAQ.html" /><link rel="prev" title="Spark" href="spark.html" />
 
-    <meta name="generator" content="sphinx-4.5.0, furo 2022.04.07"/>
+    <meta name="generator" content="sphinx-5.0.0, furo 2022.04.07"/>
         <title>Type checking - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
@@ -205,7 +205,7 @@
         </div>
         <article role="main">
           <section id="type-checking">
-<h1>Type checking<a class="headerlink" href="#type-checking" title="Permalink to this headline">#</a></h1>
+<h1>Type checking<a class="headerlink" href="#type-checking" title="Permalink to this heading">#</a></h1>
 <p>redun supports type checking workflows using <a class="reference external" href="https://docs.python.org/3/library/typing.html">Python’s type hints</a> and <a class="reference external" href="https://github.com/python/mypy">mypy</a>.</p>
 <p>Consider the following example workflow:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span>
@@ -230,7 +230,7 @@
 </div>
 <p>redun tasks are lazy functions, so when we call <code class="docutils literal notranslate"><span class="pre">add</span></code> it returns immediately with an <code class="docutils literal notranslate"><span class="pre">Expression</span></code> object which represents the desire to execute the <code class="docutils literal notranslate"><span class="pre">add</span></code> task. The actual execution will happen sometime later by the redun Scheduler. In this example, the fully parameterized type is <code class="docutils literal notranslate"><span class="pre">Expression[int]</span></code>, which represents an <code class="docutils literal notranslate"><span class="pre">Expression</span></code> that will eventually evaluate to an <code class="docutils literal notranslate"><span class="pre">int</span></code>. In terms of type checking, <code class="docutils literal notranslate"><span class="pre">Expression[T]</span></code> will be considered equivalent to <code class="docutils literal notranslate"><span class="pre">T</span></code> (for any type <code class="docutils literal notranslate"><span class="pre">T</span></code>), and can be used wherever <code class="docutils literal notranslate"><span class="pre">T</span></code>s are allowed.</p>
 <section id="overly-permissive-type-checking">
-<h2>Overly permissive type checking<a class="headerlink" href="#overly-permissive-type-checking" title="Permalink to this headline">#</a></h2>
+<h2>Overly permissive type checking<a class="headerlink" href="#overly-permissive-type-checking" title="Permalink to this heading">#</a></h2>
 <p>In general, the type checking rules defined above provide good type checking coverage, however, there is one corner case that is not fully captured currently with redun. Since <code class="docutils literal notranslate"><span class="pre">Expression[T]</span></code> will be considered equivalent to <code class="docutils literal notranslate"><span class="pre">T</span></code>, it is possible to pass an <code class="docutils literal notranslate"><span class="pre">Expression[T]</span></code> to a plain python function (not decorated by <code class="docutils literal notranslate"><span class="pre">@task</span></code>) that only allows <code class="docutils literal notranslate"><span class="pre">T</span></code>. This will type check as allowed but may fail at runtime.</p>
 </section>
 </section>
@@ -308,6 +308,7 @@
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/furo.js"></script>
     </body>
