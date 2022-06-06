@@ -794,6 +794,7 @@ class AWSBatchExecutor(Executor):
             "vcpus": config.getint("vcpus", fallback=1),
             "gpus": config.getint("gpus", fallback=0),
             "memory": config.getint("memory", fallback=4),
+            "shared_memory": config.getint("shared_memory", fallback=None),
             "retries": config.getint("retries", fallback=1),
             "role": config.get("role"),
             "job_name_prefix": config.get("job_name_prefix", fallback="redun-job"),

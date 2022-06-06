@@ -1173,6 +1173,7 @@ def test_executor(
             "vcpus": 1,
             "gpus": 0,
             "memory": 4,
+            "shared_memory": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1209,6 +1210,7 @@ def test_executor(
             "vcpus": 1,
             "gpus": 0,
             "memory": 8,
+            "shared_memory": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1303,6 +1305,7 @@ def test_executor_multinode(
             "vcpus": 1,
             "gpus": 0,
             "memory": 4,
+            "shared_memory": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1364,6 +1367,7 @@ def test_executor_docker(
             "image": "my-image",
             "gpus": 0,
             "memory": 4,
+            "shared_memory": None,
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
         }
@@ -1386,6 +1390,7 @@ def test_executor_docker(
             "image": "my-image",
             "gpus": 0,
             "memory": 4,
+            "shared_memory": None,
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
         }
@@ -1459,6 +1464,7 @@ def test_executor_job_debug(
             "image": "my-image",
             "gpus": 0,
             "memory": 4,
+            "shared_memory": None,
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
         }
@@ -1644,6 +1650,7 @@ def test_interactive(run_docker_mock, iter_local_job_status_mock, get_aws_user_m
         "interactive": True,
         "gpus": 0,
         "memory": 4,
+        "shared_memory": None,
         "vcpus": 1,
         "volumes": [(scratch_dir, scratch_dir)],
     }
