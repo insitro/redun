@@ -11,7 +11,6 @@ from collections import OrderedDict, defaultdict
 from configparser import SectionProxy
 from functools import lru_cache
 from itertools import islice
-from shlex import quote
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 import boto3
@@ -20,7 +19,7 @@ from redun.config import create_config_section
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
-from redun.executors.command import get_oneshot_command
+from redun.executors.command import get_oneshot_command, get_script_task_command
 from redun.executors.docker import DockerExecutor
 from redun.executors.scratch import (
     SCRATCH_ERROR,
@@ -526,46 +525,12 @@ def submit_command(
     """
     Submit a shell command to AWS Batch.
     """
-    input_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_INPUT)
-    output_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_OUTPUT)
-    error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
-    status_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_STATUS)
-
-    # Serialize arguments to input file.
-    input_file = File(input_path)
-    input_file.write(command)
-    assert input_file.exists()
-
-    # Build job command.
-    shell_command = [
-        "bash",
-        "-c",
-        "-o",
-        "pipefail",
-        """
-aws s3 cp {input_path} .task_command
-chmod +x .task_command
-(
-  ./.task_command \
-  2> >(tee .task_error >&2) | tee .task_output
-) && (
-    aws s3 cp .task_output {output_path}
-    aws s3 cp .task_error {error_path}
-    echo ok | aws s3 cp - {status_path}
-) || (
-    [ -f .task_output ] && aws s3 cp .task_output {output_path}
-    [ -f .task_error ] && aws s3 cp .task_error {error_path}
-    echo fail | aws s3 cp - {status_path}
-    {exit_command}
-)
-""".format(
-            input_path=quote(input_path),
-            output_path=quote(output_path),
-            error_path=quote(error_path),
-            status_path=quote(status_path),
-            exit_command="exit 1",
-        ),
-    ]
+    shell_command = get_script_task_command(
+        s3_scratch_prefix,
+        job,
+        command,
+        exit_command="exit 1",
+    )
 
     # Submit to AWS Batch.
     assert job.eval_hash

@@ -5,10 +5,11 @@ from redun.executors.scratch import (
     SCRATCH_ERROR,
     SCRATCH_INPUT,
     SCRATCH_OUTPUT,
+    SCRATCH_STATUS,
     get_array_scratch_file,
     get_job_scratch_file,
 )
-from redun.file import File
+from redun.file import File, get_filesystem
 from redun.scheduler import Job
 from redun.task import Task
 from redun.utils import get_import_paths, pickle_dump
@@ -92,3 +93,50 @@ def get_oneshot_command(
         ]
     )
     return command
+
+
+def get_script_task_command(
+    scratch_prefix: str,
+    job: Job,
+    command: str,
+    exit_command: str = "",
+) -> List[str]:
+    """
+    Returns a shell script to run a script task.
+    """
+    input_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_INPUT)
+    output_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT)
+    error_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR)
+    status_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_STATUS)
+
+    # Serialize arguments to input file.
+    File(input_path).write(command)
+
+    input_stage = File(input_path).stage(".task_command").render_stage()
+    output_unstage = File(output_path).stage(".task_output").render_unstage()
+    error_unstage = File(error_path).stage(".task_error").render_unstage()
+    status_unstage = get_filesystem(url=status_path).shell_copy(None, status_path)
+
+    return [
+        "bash",
+        "-c",
+        "-o",
+        "pipefail",
+        f"""
+{input_stage}
+chmod +x .task_command
+(
+  ./.task_command \
+  2> >(tee .task_error >&2) | tee .task_output
+) && (
+    {output_unstage}
+    {error_unstage}
+    echo ok | {status_unstage}
+) || (
+    [ -f .task_output ] && {output_unstage}
+    [ -f .task_error ] && {error_unstage}
+    echo fail | {status_unstage}
+    {exit_command}
+)
+""",
+    ]

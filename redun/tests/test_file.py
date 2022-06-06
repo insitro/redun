@@ -6,6 +6,7 @@ import boto3
 import pytest
 import vcr
 
+import redun.file
 from redun import File, Scheduler, ShardedS3Dataset, task
 from redun.file import Dir, StagingDir, StagingFile, get_filesystem, glob_file
 from redun.tests.utils import mock_s3, use_tempdir
@@ -675,6 +676,17 @@ def test_staging_render() -> None:
     assert staging_file2.render_unstage() == "cp local.txt remote.txt"
 
 
+def test_staging_render_gs() -> None:
+    """
+    Should be able to render stage commands for gs.
+    """
+    cmd = File("gs://bucket/remote.txt").stage("local.txt").render_stage()
+    assert cmd == "gsutil cp gs://bucket/remote.txt local.txt"
+
+    cmd = File("gs://bucket/remote.txt").stage("local.txt").render_unstage()
+    assert cmd == "gsutil cp local.txt gs://bucket/remote.txt"
+
+
 def test_render_stage_quote() -> None:
     file = File("s3://example-bucket/crazy name \" \\ ' .txt")
     stage_file = file.stage()
@@ -742,7 +754,7 @@ def test_staging_dir_render() -> None:
 
 
 @use_tempdir
-def test_copy_file(scheduler: Scheduler) -> None:
+def test_copy_file_task(scheduler: Scheduler) -> None:
     """
     copy_file should copy a file from one location to another.
     """
@@ -785,3 +797,128 @@ def test_https() -> None:
     # Other File methods should work as expected.
     assert fs.isfile(url)
     assert not fs.isdir(url)
+
+
+def test_shell_copy_local() -> None:
+    """
+    LocalFileSystem should be able to generate shell commands for file copies.
+    """
+    assert File("src.txt").shell_copy_to("dest.txt") == "cp src.txt dest.txt"
+    assert File("src.txt").shell_copy_to("dest space.txt") == "cp src.txt 'dest space.txt'"
+    assert File("src.txt").shell_copy_to(None) == "cat src.txt"
+    assert get_filesystem("local").shell_copy(None, "dest.txt") == "cat > dest.txt"
+
+    assert get_filesystem("local").shell_copy("src", "dest", recursive=True) == "cp -r src dest"
+
+
+def test_shell_copy_s3() -> None:
+    """
+    S3FileSystem should be able to generate shell commands for file copies.
+    """
+    assert (
+        File("s3://bucket/src.txt").shell_copy_to("s3://bucket/dest.txt")
+        == "aws s3 cp --no-progress s3://bucket/src.txt s3://bucket/dest.txt"
+    )
+    assert (
+        File("s3://bucket/src.txt").shell_copy_to("dest.txt")
+        == "aws s3 cp --no-progress s3://bucket/src.txt dest.txt"
+    )
+    assert (
+        File("src.txt").shell_copy_to("s3://bucket/dest.txt")
+        == "aws s3 cp --no-progress src.txt s3://bucket/dest.txt"
+    )
+    assert (
+        File("s3://bucket/src.txt").shell_copy_to(None)
+        == "aws s3 cp --no-progress s3://bucket/src.txt -"
+    )
+    assert (
+        get_filesystem("s3").shell_copy(None, "s3://bucket/dest.txt")
+        == "aws s3 cp --no-progress - s3://bucket/dest.txt"
+    )
+
+    assert (
+        get_filesystem("s3").shell_copy("s3://bucket/src", "s3://bucket/dest", recursive=True)
+        == "aws s3 cp --no-progress --recursive s3://bucket/src s3://bucket/dest"
+    )
+    with pytest.raises(ValueError):
+        assert get_filesystem("s3").shell_copy("s3://bucket/src", None, recursive=True)
+
+
+def test_shell_copy_gs() -> None:
+    """
+    GSFileSystem should be able to generate shell commands for file copies.
+    """
+
+    assert (
+        File("gs://bucket/src.txt").shell_copy_to("gs://bucket/dest.txt")
+        == "gsutil cp gs://bucket/src.txt gs://bucket/dest.txt"
+    )
+    assert (
+        File("gs://bucket/src.txt").shell_copy_to("dest.txt")
+        == "gsutil cp gs://bucket/src.txt dest.txt"
+    )
+    assert (
+        File("src.txt").shell_copy_to("gs://bucket/dest.txt")
+        == "gsutil cp src.txt gs://bucket/dest.txt"
+    )
+    assert File("gs://bucket/src.txt").shell_copy_to(None) == "gsutil cp gs://bucket/src.txt -"
+    assert (
+        get_filesystem("gs").shell_copy(None, "gs://bucket/dest.txt")
+        == "gsutil cp - gs://bucket/dest.txt"
+    )
+
+    assert (
+        get_filesystem("gs").shell_copy("gs://bucket/src", "gs://bucket/dest", recursive=True)
+        == "gsutil cp -r gs://bucket/src gs://bucket/dest"
+    )
+    with pytest.raises(ValueError):
+        assert get_filesystem("gs").shell_copy("gs://bucket/src", None, recursive=True)
+
+
+def test_shell_copy_fs() -> None:
+    """
+    FileSystem should be able to generate shell commands for file copies.
+    """
+    # Cross cloud shell copies.
+    assert (
+        File("s3://bucket/src.txt").shell_copy_to("gs://bucket/dest.txt")
+        == "(aws s3 cp --no-progress s3://bucket/src.txt -) | (gsutil cp - gs://bucket/dest.txt)"
+    )
+    assert (
+        File("http://example.com/src.txt").shell_copy_to("gs://bucket/dest.txt")
+        == "redun fs cp http://example.com/src.txt gs://bucket/dest.txt"
+    )
+
+    assert (
+        Dir("s3://bucket/src").shell_copy_to("gs://bucket/dest")
+        == "redun fs cp --recursive s3://bucket/src gs://bucket/dest"
+    )
+
+
+@use_tempdir
+def test_copy_file() -> None:
+    """
+    Copy a file with copy_file().
+    """
+    src_file = File("src.txt")
+    src_file.write("hello")
+    dest_file = File("dest.txt")
+
+    redun.file.copy_file(src_file.path, dest_file.path)
+    assert dest_file.read() == src_file.read()
+
+
+@use_tempdir
+def test_copy_file_dir() -> None:
+    """
+    Copy a directory with copy_file().
+    """
+    a = File("src/a.txt")
+    a.write("a")
+    b = File("src/b/b.txt")
+    b.write("b")
+
+    dest_dir = Dir("dest")
+
+    redun.file.copy_file("src", dest_dir.path, recursive=True)
+    assert {file.path for file in dest_dir} == {"dest/a.txt", "dest/b/b.txt"}

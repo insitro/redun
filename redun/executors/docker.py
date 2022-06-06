@@ -5,17 +5,14 @@ import threading
 import time
 from collections import OrderedDict
 from configparser import SectionProxy
-from shlex import quote
 from tempfile import mkstemp
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
-from redun.executors.command import get_oneshot_command
+from redun.executors.command import get_oneshot_command, get_script_task_command
 from redun.executors.scratch import (
-    SCRATCH_ERROR,
-    SCRATCH_INPUT,
     SCRATCH_OUTPUT,
     SCRATCH_STATUS,
     get_job_scratch_dir,
@@ -173,48 +170,7 @@ def submit_command(
     """
     Submit a shell command to Docker.
     """
-    input_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_INPUT)
-    output_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT)
-    error_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR)
-    status_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_STATUS)
-
-    # Serialize arguments to input file.
-    input_file = File(input_path)
-    input_file.write(command)
-    assert input_file.exists()
-
-    # Build job command.
-    shell_command = [
-        "bash",
-        "-c",
-        "-o",
-        "pipefail",
-        """
-cp {input_path} .task_command
-chmod +x .task_command
-(
-  ./.task_command \
-  2> >(tee .task_error >&2) | tee .task_output
-) && (
-    cp .task_output {output_path}
-    cp .task_error {error_path}
-    echo ok > {status_path}
-) || (
-    [ -f .task_output ] && cp .task_output {output_path}
-    [ -f .task_error ] && cp .task_error {error_path}
-    echo fail > {status_path}
-    {exit_command}
-)
-""".format(
-            input_path=quote(input_path),
-            output_path=quote(output_path),
-            error_path=quote(error_path),
-            status_path=quote(status_path),
-            exit_command="",
-        ),
-    ]
-
-    # Submit to local Docker.
+    shell_command = get_script_task_command(scratch_prefix, job, command)
     container_id = run_docker(
         shell_command, image=image, **get_docker_job_options(job_options, scratch_prefix)
     )
