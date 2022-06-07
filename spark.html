@@ -2,13 +2,13 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Type checking" href="typing.html" /><link rel="prev" title="Database repo" href="db.html" />
 
-    <meta name="generator" content="sphinx-5.0.0, furo 2022.04.07"/>
+    <meta name="generator" content="sphinx-5.0.1, furo 2022.06.04.1"/>
         <title>Spark - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -190,7 +190,8 @@
           </svg>
           <span>Back to top</span>
         </a>
-        <div class="content-icon-container"><div class="theme-toggle-container theme-toggle-content">
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -227,9 +228,9 @@ in a variety of formats, including parquet, csv, and avro. The default is always
 <p>For example, this tasks uses <code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset</span></code> to convert a dataset from csv to parquet.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">ShardedS3Dataset</span>
 
-<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">"glue"</span><span class="p">)</span>
+<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;glue&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">convert_dataset</span><span class="p">(</span><span class="n">input_csv_dataset</span><span class="p">:</span> <span class="n">ShardedS3Dataset</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ShardedS3Dataset</span><span class="p">:</span>
-    <span class="n">output</span> <span class="o">=</span> <span class="n">ShardedS3Dataset</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">"parquet"</span><span class="p">)</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">ShardedS3Dataset</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">)</span>
 
     <span class="n">loaded</span> <span class="o">=</span> <span class="n">input_csv_dataset</span><span class="o">.</span><span class="n">load_spark</span><span class="p">()</span>
     <span class="n">output</span><span class="o">.</span><span class="n">save_spark</span><span class="p">(</span><span class="n">loaded</span><span class="p">)</span>
@@ -254,7 +255,7 @@ importing it.</p>
 <p>This example uses <code class="docutils literal notranslate"><span class="pre">rdkit</span></code> and installs the <code class="docutils literal notranslate"><span class="pre">potato</span></code> module via pip.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun.contrib.spark_helpers</span> <span class="kn">import</span> <span class="n">enable_rdkit</span>
 
-<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">"glue"</span><span class="p">,</span> <span class="n">additional_libs</span><span class="o">=</span><span class="p">[</span><span class="s2">"potato"</span><span class="p">])</span>
+<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;glue&quot;</span><span class="p">,</span> <span class="n">additional_libs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;potato&quot;</span><span class="p">])</span>
 <span class="k">def</span> <span class="nf">use_rdkit</span><span class="p">():</span>
     <span class="n">enable_rdkit</span><span class="p">()</span>
     <span class="kn">from</span> <span class="nn">rdkit</span> <span class="kn">import</span> <span class="n">Chem</span>
@@ -271,11 +272,11 @@ However, when the glue task is launched, those top-level imports may cause the j
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span>
 <span class="kn">import</span> <span class="nn">foo</span>
 
-<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">"batch"</span><span class="p">)</span>
+<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">use_foo</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">foo</span><span class="o">.</span><span class="n">bar</span><span class="p">()</span>
 
-<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">"glue"</span><span class="p">)</span>
+<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;glue&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">do_stuff</span><span class="p">():</span>
     <span class="k">pass</span>
 </pre></div>
@@ -284,12 +285,12 @@ However, when the glue task is launched, those top-level imports may cause the j
 perform required imports for each task within the function body:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span>
 
-<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">"batch"</span><span class="p">)</span>
+<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">use_foo</span><span class="p">():</span>
     <span class="kn">import</span> <span class="nn">foo</span>
     <span class="k">return</span> <span class="n">foo</span><span class="o">.</span><span class="n">bar</span><span class="p">()</span>
 
-<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">"glue"</span><span class="p">)</span>
+<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;glue&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">do_stuff</span><span class="p">():</span>
     <span class="k">pass</span>
 </pre></div>

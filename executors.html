@@ -2,13 +2,13 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Configuration" href="config.html" /><link rel="prev" title="Tasks" href="tasks.html" />
 
-    <meta name="generator" content="sphinx-5.0.0, furo 2022.04.07"/>
+    <meta name="generator" content="sphinx-5.0.1, furo 2022.06.04.1"/>
         <title>Executors - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -190,7 +190,8 @@
           </svg>
           <span>Back to top</span>
         </a>
-        <div class="content-icon-container"><div class="theme-toggle-container theme-toggle-content">
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -208,26 +209,26 @@
 <h1>Executors<a class="headerlink" href="#executors" title="Permalink to this heading">#</a></h1>
 <p>redun is able to perform task execution across various compute infrastructure using modules called Executors. For example, redun supports executors that execute jobs on threads, processes, and AWS Batch jobs. New kinds of infrastructure can be utilized by registering additional Executor modules.</p>
 <p>Executors are instantiated by sections in the <a class="reference internal" href="config.html"><span class="doc std std-doc">redun configuration</span></a> (<code class="docutils literal notranslate"><span class="pre">.redun/redun.ini</span></code>) following the format <code class="docutils literal notranslate"><span class="pre">[executors.{executor_name}]</span></code>, where <code class="docutils literal notranslate"><span class="pre">{executor_name}</span></code> is a user-specific name for the executor, such as <code class="docutils literal notranslate"><span class="pre">default</span></code>, <code class="docutils literal notranslate"><span class="pre">batch</span></code>, or <code class="docutils literal notranslate"><span class="pre">my_executor</span></code>. These names can then be referenced in workflows using the <code class="docutils literal notranslate"><span class="pre">executor</span></code> task option to indicate on which executor the task should execute:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">"my_executor"</span><span class="p">)</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;my_executor&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">task1</span><span class="p">():</span>
     <span class="c1"># ...</span>
 </pre></div>
 </div>
 <p>By default, tasks execute on the <code class="docutils literal notranslate"><span class="pre">default</span></code> executor, which is a <a class="reference internal" href="#local-executor"><span class="std std-doc">Local executor</span></a> that executes tasks on multiple threads (or processes, if configured).</p>
 <p>In terms of executors, there is no restriction on which tasks can call which other tasks. For example, an AWS Batch task can seemingly “call” a local task, even though AWS Batch jobs don’t have access to the local machine. This is possible because all task calls are lazy and are performed by the scheduler after the calling task completes.</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">"batch"</span><span class="p">)</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">task_on_batch</span><span class="p">():</span>
     <span class="c1"># This code runs on AWS Batch.</span>
     <span class="k">return</span> <span class="n">task_on_default</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># This appears to be a call back to a local task.</span>
 
-<span class="nd">@task</span><span class="p">()</span>  <span class="c1"># option `executor` has default value "default"</span>
+<span class="nd">@task</span><span class="p">()</span>  <span class="c1"># option `executor` has default value &quot;default&quot;</span>
 <span class="k">def</span> <span class="nf">task_on_default</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="c1"># This code runs on the local machine.</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
 </pre></div>
 </div>
 <p>Some executor options can be overridden per task using task options. For example, a user can specify a specific memory requirement (e.g. 10Gb) for a task using the <code class="docutils literal notranslate"><span class="pre">memory</span></code> task option:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">"batch"</span><span class="p">,</span> <span class="n">memory</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">,</span> <span class="n">memory</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">task2</span><span class="p">():</span>
     <span class="c1"># ...</span>
 </pre></div>
@@ -347,7 +348,7 @@ as expensive as the others.</p></li>
 <section id="additional-libs">
 <h4><code class="docutils literal notranslate"><span class="pre">additional_libs</span></code><a class="headerlink" href="#additional-libs" title="Permalink to this heading">#</a></h4>
 <p>A list of additional Python libraries that will be <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>’ed before the run starts. For example,
-<code class="docutils literal notranslate"><span class="pre">additional_libs=["promise",</span> <span class="pre">"alembic==1.0.0"]</span></code> will install the promise and alembic libraries.</p>
+<code class="docutils literal notranslate"><span class="pre">additional_libs=[&quot;promise&quot;,</span> <span class="pre">&quot;alembic==1.0.0&quot;]</span></code> will install the promise and alembic libraries.</p>
 </section>
 <section id="extra-files">
 <h4><code class="docutils literal notranslate"><span class="pre">extra_files</span></code><a class="headerlink" href="#extra-files" title="Permalink to this heading">#</a></h4>

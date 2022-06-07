@@ -2,13 +2,13 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Database repo" href="db.html" /><link rel="prev" title="Executors" href="executors.html" />
 
-    <meta name="generator" content="sphinx-5.0.0, furo 2022.04.07"/>
+    <meta name="generator" content="sphinx-5.0.1, furo 2022.06.04.1"/>
         <title>Configuration - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -190,7 +190,8 @@
           </svg>
           <span>Back to top</span>
         </a>
-        <div class="content-icon-container"><div class="theme-toggle-container theme-toggle-content">
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -267,7 +268,7 @@
 <span class="kn">from</span> <span class="nn">my_workflow_lib.executors</span> <span class="kn">import</span> <span class="n">ProdExecutor</span><span class="p">,</span> <span class="n">DevExecutor</span>
 
 
-<span class="n">redun_namespace</span> <span class="o">=</span> <span class="s2">"acme"</span>
+<span class="n">redun_namespace</span> <span class="o">=</span> <span class="s2">&quot;acme&quot;</span>
 
 
 <span class="nd">@task</span><span class="p">()</span>
@@ -275,9 +276,9 @@
     <span class="c1"># ...</span>
 
 
-<span class="k">def</span> <span class="nf">setup_scheduler</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"prod"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Scheduler</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">setup_scheduler</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;prod&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Scheduler</span><span class="p">:</span>
     <span class="n">scheduler</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">profile</span> <span class="o">==</span> <span class="s2">"prod"</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">profile</span> <span class="o">==</span> <span class="s2">&quot;prod&quot;</span><span class="p">:</span>
         <span class="n">scheduler</span><span class="o">.</span><span class="n">add_executor</span><span class="p">(</span><span class="n">ProdExecutor</span><span class="p">())</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">scheduler</span><span class="o">.</span><span class="n">add_executor</span><span class="p">(</span><span class="n">DevExecutor</span><span class="p">())</span>
@@ -352,14 +353,14 @@ If a local, non-absolute path is specified, it is assumed relative to <code clas
 </pre></div>
 </div>
 <p>specifies two resource limits <code class="docutils literal notranslate"><span class="pre">db</span></code> and <code class="docutils literal notranslate"><span class="pre">web_api</span></code> with available amounts of 10 and 5, respectively. Users can specify that certain tasks require a resource using the <code class="docutils literal notranslate"><span class="pre">limit</span></code> task option:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">limits</span><span class="o">=</span><span class="p">[</span><span class="s2">"db"</span><span class="p">])</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">limits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">])</span>
 <span class="k">def</span> <span class="nf">read_from_database</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
     <span class="c1"># ...</span>
 </pre></div>
 </div>
 <p>Every time the task <code class="docutils literal notranslate"><span class="pre">read_from_database</span></code> is executing, it consumes one unit of resource <code class="docutils literal notranslate"><span class="pre">db</span></code>. It releases its resource when the task completes. This limit allows users to define a maximum concurrency on a per task or resource basis, which is useful for preventing overloading databases or APIs with too many concurrent connections.</p>
 <p>Tasks may specify multiple resources within the <code class="docutils literal notranslate"><span class="pre">limits</span></code> list. Tasks may also consume multiples of a resource by specifying <code class="docutils literal notranslate"><span class="pre">limits</span></code> with a <code class="docutils literal notranslate"><span class="pre">dict</span></code>:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">limits</span><span class="o">=</span><span class="p">{</span><span class="s2">"db"</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">limits</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
 <span class="k">def</span> <span class="nf">read_from_database</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
     <span class="c1"># ...</span>
 </pre></div>
@@ -376,7 +377,7 @@ If a local, non-absolute path is specified, it is assumed relative to <code clas
 </pre></div>
 </div>
 <p>Within a workflow, users can specify which tasks should execute on this executor using the <code class="docutils literal notranslate"><span class="pre">executor</span></code> task option:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">"local_exec"</span><span class="p">)</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;local_exec&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">task1</span><span class="p">():</span>
     <span class="c1"># ...</span>
 </pre></div>
@@ -507,7 +508,7 @@ If a local, non-absolute path is specified, it is assumed relative to <code clas
 <section id="batch-tags">
 <h4><code class="docutils literal notranslate"><span class="pre">batch_tags</span></code><a class="headerlink" href="#batch-tags" title="Permalink to this heading">#</a></h4>
 <p>An optional JSON mapping of string key-value pairs to use as Batch job tags. This could be used to track jobs or query them after execution.</p>
-<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">batch_tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{"project": "acme", "user": "alice"}</span><span class="w"></span>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">batch_tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{&quot;project&quot;: &quot;acme&quot;, &quot;user&quot;: &quot;alice&quot;}</span><span class="w"></span>
 </pre></div>
 </div>
 <section id="default-batch-tags">
@@ -566,7 +567,7 @@ as expensive as the others.</p></li>
 <section id="spark-history-dir">
 <h4><code class="docutils literal notranslate"><span class="pre">spark_history_dir</span></code><a class="headerlink" href="#spark-history-dir" title="Permalink to this heading">#</a></h4>
 <p>String specifying an S3 path to the location where Spark will log history information that can be used by a
-Spark History Server to visualize and monitor job progress. Defaults to <code class="docutils literal notranslate"><span class="pre">f"{s3_scratch_path}/glue/spark_history"</span></code></p>
+Spark History Server to visualize and monitor job progress. Defaults to <code class="docutils literal notranslate"><span class="pre">f&quot;{s3_scratch_path}/glue/spark_history&quot;</span></code></p>
 </section>
 <section id="id8">
 <h4><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code><a class="headerlink" href="#id8" title="Permalink to this heading">#</a></h4>
