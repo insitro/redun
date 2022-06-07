@@ -108,7 +108,7 @@ def run_docker(
         os.close(fd)
         os.remove(cidfile)
 
-        docker_command = ["docker", "run", "-it", "--cidfile", cidfile] + common_args
+        docker_command = ["docker", "run", "-i", "--cidfile", cidfile] + common_args
         subprocess.check_call(docker_command, env=env)
         with open(cidfile) as infile:
             container_id = infile.read().strip()
