@@ -5,7 +5,6 @@ from awsglue.utils import getResolvedOptions
 
 import redun
 from redun.cli import RedunClientError, check_version, import_script
-from redun.executors.aws_utils import extract_tar
 from redun.file import File as BaseFile
 from redun.glue import setup_glue_job
 from redun.scheduler import Traceback, get_task_registry

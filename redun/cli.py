@@ -75,6 +75,7 @@ from redun.executors.aws_batch import (
 from redun.executors.aws_utils import iter_log_stream
 from redun.executors.code_packaging import extract_tar
 from redun.file import File as BaseFile
+from redun.file import copy_file, list_filesystems
 from redun.job_array import AWS_ARRAY_VAR, K8S_ARRAY_VAR
 from redun.logging import log_levels, logger
 from redun.scheduler import DryRunResult, ErrorValue, Scheduler, Traceback, get_task_registry
@@ -1381,6 +1382,21 @@ class RedunClient:
             help="Filter on comma separated statuses ({}).".format(",".join(aws_statuses)),
         )
         aws_logs_parser.set_defaults(func=self.aws_logs_command)
+
+        # Filesystem copy command.
+        fs_parser = subparsers.add_parser(
+            "fs", help="Filesystem commands (local, s3, gs, http, etc)."
+        )
+        fs_parser.set_defaults(func=self.fs_command)
+        fs_subparsers = fs_parser.add_subparsers()
+
+        fs_copy_parser = fs_subparsers.add_parser(
+            "cp", allow_abbrev=False, help="Copy files across filesystems."
+        )
+        fs_copy_parser.add_argument("src_path", help="Source file path.")
+        fs_copy_parser.add_argument("dest_path", help="Destination file path.")
+        fs_copy_parser.set_defaults(func=self.fs_copy_command)
+        fs_copy_parser.set_defaults(show_help=False)
 
         # Server command.
         server_parser = subparsers.add_parser(
@@ -2982,6 +2998,24 @@ class RedunClient:
                 self.display(format_log_stream_event(event))
 
             self.display()
+
+    def fs_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+        """
+        Give information on redun-supported filesystems.
+        """
+        filesystems = sorted(cls.name for cls in list_filesystems())
+        self.display("Supported filesystems:")
+        for fs in filesystems:
+            self.display(f"  {fs}")
+
+    def fs_copy_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+        """
+        Copy files between redun-supported filesystems.
+        """
+        # Detect stdin and stdout paths ('-').
+        src_path = args.src_path if args.src_path != "-" else None
+        dest_path = args.dest_path if args.dest_path != "-" else None
+        copy_file(src_path, dest_path)
 
     def server_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
         """
