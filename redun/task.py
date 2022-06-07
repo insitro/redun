@@ -787,6 +787,7 @@ def wraps_task(
     the cost of the extra powers we have.
 
     .. code-block:: python
+
         # An example of arguments consumed by the wrapper
         def wrapper_with_args(wrapper_arg: int) -> Callable[[Func], Task[Func]]:
 
