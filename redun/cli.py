@@ -71,9 +71,9 @@ from redun.executors.aws_batch import (
     AWSBatchExecutor,
     aws_describe_jobs,
     format_log_stream_event,
-    iter_log_stream,
 )
-from redun.executors.aws_utils import extract_tar
+from redun.executors.aws_utils import iter_log_stream
+from redun.executors.code_packaging import extract_tar
 from redun.file import File as BaseFile
 from redun.job_array import AWS_ARRAY_VAR
 from redun.logging import log_levels, logger
@@ -914,9 +914,8 @@ def format_tags(tags: List[Tag], max_length: int = 50) -> str:
     if not tags:
         return ""
 
-    tags = sorted(tags, key=lambda tag: (tag.key, tag.value))
     tag_list = ", ".join(
-        format_tag_key_value(tag.key, tag.value, max_length=max_length) for tag in tags
+        sorted(format_tag_key_value(tag.key, tag.value, max_length=max_length) for tag in tags)
     )
     return f"({tag_list})"
 

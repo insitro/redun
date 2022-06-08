@@ -45,6 +45,37 @@ def test_file_api() -> None:
 
 
 @use_tempdir
+def test_encoding() -> None:
+    """
+    File read/write/open should support encodings.
+    """
+    text = "hello \u1F600"
+
+    # Read and write utf-8.
+    file = File("hello.txt")
+    file.write(text, encoding="utf-8")
+    assert file.read(encoding="utf-8") == text
+    assert file.read("rb") == b"hello \xe1\xbd\xa00"
+
+    # Read and write utf-16.
+    file2 = File("hello.txt")
+    file2.write(text, encoding="utf-16")
+    assert file2.read(encoding="utf-16") == text
+    assert file2.read("rb") == b"\xff\xfeh\x00e\x00l\x00l\x00o\x00 \x00`\x1f0\x00"
+
+    # Ensure File context can use encoding.
+    with file.open(mode="w", encoding="utf-8") as out:
+        out.write(text)
+
+    with file.open(mode="r", encoding="utf-8") as infile:
+        assert infile.read() == text
+
+    # Binary mode cannot be used with encoding.
+    with pytest.raises(ValueError, match="encoding"):
+        file.open(mode="rb", encoding="utf-8")
+
+
+@use_tempdir
 def test_dir_api() -> None:
 
     dir = Dir("hi")

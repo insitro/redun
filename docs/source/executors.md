@@ -1,5 +1,5 @@
 ---
-tocpdeth: 3
+tocdepth: 3
 ---
 
 # Executors
@@ -87,6 +87,20 @@ During development, it may be easier to run the Docker image locally in order to
 The docker container will run in interactive mode (e.g. `docker run --interactive ...`), allowing users to place debugging breakpoints within tasks or see task output on stdout. The task option `interactive=False` can also be used to run the Docker container without interactive mode.
 
 The task option `volume` can also be used to define volume mounts for the Docker container during debugging. Format is `volume = [(host, container), ...]`, where `host` defines a source path on the host machine, and `container` defines a destination path within the container to perform the mount.
+
+### Multi-node
+
+AWS Batch allows for jobs that simultaneously use multiple compute nodes. See AWS [documentation](https://docs.aws.amazon.com/batch/latest/userguide/multi-node-parallel-jobs.html)
+
+If the executor is configured to use multiple nodes, by setting `num_nodes`, the executor will invoke the task with identical arguments on each node. Batch starts the main node first, then starts the rest of the nodes. The task implementation may inspect the AWS environment variables for details on the multi-node configuration, such as detecting if it is the main node, or determining the IPs to construct a peer network.   
+
+Warning: For python tasks, the executor will instruct only the main node to write its outputs to storage and non-main node outputs are discarded. For script tasks, the various nodes must somehow arrange that the output is only written once, but the infrastructure does not help. 
+
+Multi-node jobs are currently incompatible with array jobs, because this appears not to be supported by AWS.
+
+## Docker executor
+
+The Docker executor (`type=docker`) runs each redun job inside a local Docker container. This executor is used by AWS Batch Executor when using debug mode.
 
 ## AWS Glue Spark executor
 

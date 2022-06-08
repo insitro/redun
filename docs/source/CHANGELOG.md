@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.8.9
+May 17, 2022
+
+* `#131` - [DE-4809] Use AWS job run insights to get better tracebacks for glue jobs
+* Merge remote-tracking branch 'origin/main'
+* `#138` - resolve conflicts with public and private main
+* `#33` - Fixed typos and minor grammatical stuff like missing commas, etc. in the documentation and README.md 
+* `#32` - Update README.md
+* `#136` - Ignore flake8 F401 errors in `__init__.py` files
+
+## 0.8.8
+April 20, 2022
+
+* `#129` - AWS Batch multi-node executor
+* `#130` - Update README.md because compositiblity is not a word.
+* `#128` - DE-4761 fix script reuniting in aws batch executor
+* `#127` - Keep 'redun log' stable tag sorting even for complex tag values
+* `#124` - DE-4689 File encoding v2
+* `#119` - DE-4636 Fix for S3FileSystem threading issues
+* `#120` - Fix job clear bug
+* `#80` - DE-4600 Working example of catch_all
+* `#116` - Bump version to 0.8.7
+
 ## 0.8.7
 
 March 11, 2022

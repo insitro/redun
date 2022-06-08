@@ -224,6 +224,27 @@ An integer (default: 20) that specifies the maximum number of workers to use in 
 A string (default: `fork`) that specifies the [start method](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods) for new processes. Other start methods include `spawn` and `forkserver`.
 
 
+#### Docker executor
+
+#### `image`
+
+A string that specifies the default Docker image. This can be overridden on a per task basis using task options.
+
+#### `scratch`
+
+A string that specifies the scratch path to volume mount for communicating with the Docker container. If the path is relative, it is interpreted to be relative to the redun configuration directory (e.g. `.redun/`).
+
+#### `vcpus`
+
+An integer (default: 1) that specifies the default number of virtual CPUs required for each task. This can be overridden on a per task basis using task options.
+
+#### `gpus`
+
+An integer (default: 0) that specifies the default number of GPUs required for each task. This can be overridden on a per task basis using task options.
+
+#### `memory`
+
+A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.
 
 #### AWS Batch executor
 
@@ -322,6 +343,10 @@ A bool (default: True) that specifies whether redun should add default tags to a
 - redun_execution_id: id of the high-level execution for the whole workflow.
 - redun_project: the project of the workflow, which is typically the root task namespace.
 - redun_aws_user: the user as identified by sts.get_caller_identity.
+
+#### `num_nodes`
+
+If not none, use a multi-node job and set the number of workers. 
 
 #### AWS Glue executor
 

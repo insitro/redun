@@ -32,7 +32,7 @@ from redun.cli import (
     setup_scheduler,
 )
 from redun.executors.aws_batch import BATCH_LOG_GROUP
-from redun.executors.aws_utils import create_tar
+from redun.executors.code_packaging import create_tar
 from redun.job_array import AWS_ARRAY_VAR
 from redun.scheduler import Traceback
 from redun.tags import ANY_VALUE
@@ -1652,6 +1652,56 @@ def main(x: int) -> int:
     output = run_command(client, ["redun", "tag", "update", execution.id, "env=prod2"])
     output = run_command(client, ["redun", "tag", "list", "env=prod2"])
     assert "Exec " in output
+
+
+@use_tempdir
+def test_cli_log_tags_order() -> None:
+    """
+    redun log entries should have tags sorted in a stable way, even if their values are not
+    comparable directly.
+    """
+    file = File("workflow.py")
+    file.write(
+        """
+from redun import task
+from redun.scheduler import apply_tags
+
+redun_namespace = 'test'
+
+@task()
+def example1():
+    return apply_tags(
+        42,
+        execution_tags=[("key", {"b": 1}), ("key", {"a": 2})]
+    )
+
+@task()
+def example2():
+    return apply_tags(
+        42,
+        execution_tags=[("key", {"c": 2}), ("key", {"c": 1})]
+    )
+
+"""
+    )
+
+    # Run example workflow.
+    client = RedunClient()
+    client.execute(["redun", "run", "workflow.py", "example1"])
+    client.execute(["redun", "run", "workflow.py", "example2"])
+
+    lines = run_command(client, ["redun", "log"]).split("\n")
+
+    assert_match_lines(
+        [
+            r"Recent executions:",
+            r"",
+            r"Exec.*key={\"c\": 1}, key={\"c\": 2}.*",
+            r"Exec.*key={\"a\": 2}, key={\"b\": 1}.*",
+            r"",
+        ],
+        lines,
+    )
 
 
 @use_tempdir

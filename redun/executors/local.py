@@ -41,6 +41,9 @@ def exec_script_task(
 
 @register_executor("local")
 class LocalExecutor(Executor):
+    """
+    A redun Executor for running jobs locally using a thread or process pool.
+    """
 
     # Available local executor modes.
     MODES = [THREAD_MODE, PROCESS_MODE]
@@ -142,9 +145,9 @@ class LocalExecutor(Executor):
 
         def on_done(future):
             try:
-                self.scheduler.done_job(job, future.result())
+                self._scheduler.done_job(job, future.result())
             except Exception as error:
-                self.scheduler.reject_job(job, error)
+                self._scheduler.reject_job(job, error)
 
         executor.submit(
             exec_func, mode, job.task.load_module, job.task.fullname, args, kwargs

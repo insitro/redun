@@ -106,14 +106,15 @@ class JobArrayer:
         self.num_pending = 0
 
     @property
-    def executor(self):
+    def executor(self) -> "AWSBatchExecutor":
         exec = self._executor()
         if exec is None:
             raise ValueError("Executor was deleted?")
         return exec
 
-    def _monitor_stale_jobs(self):
+    def _monitor_stale_jobs(self) -> None:
         """Monitoring thread batches up stale jobs"""
+        assert self.executor._scheduler
         try:
             while not self._exit_flag.wait(timeout=self.interval):
                 stales = self.get_stale_descrs()
@@ -124,9 +125,9 @@ class JobArrayer:
             # Since we run this method at the top level of a thread, we need to
             # catch all exceptions so we can properly report them to the
             # scheduler.
-            self.executor.scheduler.reject_job(None, error)
+            self.executor._scheduler.reject_job(None, error)
 
-    def start(self):
+    def start(self) -> None:
         # Do not have a monitor thread when arraying is disabled.
         if not self.min_array_size:
             return
@@ -140,12 +141,12 @@ class JobArrayer:
         self._monitor_thread = threading.Thread(target=self._monitor_stale_jobs, daemon=True)
         self._monitor_thread.start()
 
-    def stop(self):
+    def stop(self) -> None:
         self._exit_flag.set()
         if self._monitor_thread.is_alive():
             self._monitor_thread.join()
 
-    def add_job(self, job: Job, args: Tuple, kwargs: Dict[str, Any]):
+    def add_job(self, job: Job, args: Tuple, kwargs: Dict[str, Any]) -> None:
         """Adds a new job"""
         assert job.task
 
@@ -163,7 +164,7 @@ class JobArrayer:
 
         self.start()
 
-    def get_stale_descrs(self):
+    def get_stale_descrs(self) -> List[JobDescription]:
         """Submits jobs that haven't been touched in a while"""
         currtime = time.time()
         stales = [
@@ -173,7 +174,7 @@ class JobArrayer:
         ]
         return stales
 
-    def submit_pending_jobs(self, descr: JobDescription):
+    def submit_pending_jobs(self, descr: JobDescription) -> None:
         # Lock, otherwise adding a job to this descr at the wrong time could
         # result in timestamps out of sync with jobs.
         with self._lock:
