@@ -4,8 +4,8 @@ import pickle
 from enum import Enum
 from typing import Any, Callable, Dict, Iterator, Optional, Type, cast
 
-from redun.hashing import hash_bytes, hash_tag_bytes
-from redun.utils import iter_nested_value, pickle_dumps
+from redun.hashing import hash_bytes, hash_struct, hash_tag_bytes
+from redun.utils import get_func_source, iter_nested_value, pickle_dumps
 
 MIME_TYPE_PICKLE = "application/python-pickle"
 
@@ -496,8 +496,16 @@ class Function(ProxyValue):
         return f"{self.module}.{self.name}"
 
     def _calc_hash(self) -> str:
-        # Hash is based on fully qualified function name.
-        return hash_tag_bytes("Value.function", self.fullname.encode("utf8"))
+        # Hash based on fully qualified function name and source code.
+        hash = hash_struct(
+            [
+                "Value.function",
+                self.fullname.encode("utf8"),
+                "source",
+                get_func_source(self.instance),
+            ]
+        )
+        return hash
 
     def __getstate__(self) -> dict:
         return {

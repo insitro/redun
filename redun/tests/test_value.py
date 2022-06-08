@@ -102,7 +102,7 @@ def test_function(scheduler: Scheduler) -> None:
     assert scheduler.run(main()) == "hello"
 
     registry = get_type_registry()
-    assert registry.get_hash(hello) == "b29153942a771e3a5d327a81a9ce5eca21aa48db"
+    assert registry.get_hash(hello) == "d57e3c02fb399ad72e41eba2d18054e7a5d6a196"
 
 
 def test_function_parse_arg() -> None:
