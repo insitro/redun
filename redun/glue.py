@@ -5,6 +5,7 @@ Glue related imports are kept isolated, so this can be imported
 people's local machines without issue, and then they call the
 functions that will run when the context is defined.
 """
+import functools
 import typing
 from typing import Callable, List, Optional
 
@@ -88,12 +89,15 @@ def get_num_workers() -> int:
     return int(workers)
 
 
-def udf(wrapped_func: Callable, return_type: Optional["DataType"] = None) -> Callable:
+def udf(wrapped_func: Callable = None, return_type: Optional["DataType"] = None) -> Callable:
     """
     Creates a spark user defined function.
     Wraps `pyspark.sql.functions.udf` so spark context is only needed at
     runtime rather than redun task expression time.
     """
+    if wrapped_func is None:
+        return functools.partial(udf, return_type=return_type)
+
     try:
         get_spark_session()
     except ValueError:
