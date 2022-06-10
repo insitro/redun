@@ -59,7 +59,7 @@ def create_job_object(
     Also creates necessary sub-objects"""
 
     # env = [{"name": key, "value": value} for key, value in get_aws_env_vars().items()]
-    env = dict(os.environ)
+    env = []
     container = client.V1Container(name=name, image=image, command=command, env=env)
 
     if resources is None:
