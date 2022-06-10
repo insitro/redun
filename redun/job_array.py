@@ -11,6 +11,8 @@ from redun.scheduler import Job
 MAX_ARRAY_SIZE = 10000
 # https://docs.aws.amazon.com/batch/latest/userguide/job_env_vars.html
 AWS_ARRAY_VAR = "AWS_BATCH_JOB_ARRAY_INDEX"
+# https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/
+K8S_ARRAY_VAR = "JOB_COMPLETION_INDEX"
 
 # Needed to avoid circular import since AWSBatchExecutor has a JobArrayer.
 if TYPE_CHECKING:
@@ -78,7 +80,7 @@ class JobArrayer:
 
     def __init__(
         self,
-        executor: "AWSBatchExecutor",
+        executor: Any,
         submit_interval: float,
         stale_time: float,
         min_array_size: int,

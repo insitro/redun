@@ -1,4 +1,5 @@
 import os
+import subprocess
 import threading
 from typing import Dict, Iterator, List, NamedTuple, Optional, Tuple
 from urllib.error import URLError
@@ -149,3 +150,44 @@ def iter_log_stream(
             # boto API does not allow passing None, so we must fully exclude the parameter.
             **{"limit": limit} if limit else {},
         )
+
+
+def get_default_registry() -> str:
+    """
+    Returns the default ECR registry.
+    """
+    client = boto3.client("ecr")
+    resp = client.get_authorization_token()
+    registry = resp["authorizationData"][0]["proxyEndpoint"].strip("https://")
+    return registry
+
+
+def get_or_create_repo(repo_name: str) -> dict:
+    """
+    Get or create an ECR repository.
+    """
+    client = boto3.client("ecr")
+
+    resp = client.describe_repositories(repositoryNames=[repo_name])
+    if resp["repositories"]:
+        repo = resp["repositories"][0]
+    else:
+        repo = client.create_repository(repositoryName=repo_name)["repository"]
+    return repo
+
+
+def ecr_push(repo_name: str, registry: Optional[str] = None) -> None:
+
+    # Get default registry based on login.
+    if registry is None:
+        registry = get_default_registry()
+
+    get_or_create_repo(repo_name)
+
+    # docker uri
+    ecr_uri = "/".join([registry, repo_name])
+
+    subprocess.check_call(["docker", "build", "-t", ecr_uri, "."])
+
+    # push
+    subprocess.check_call(["docker", "push", ecr_uri])
