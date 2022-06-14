@@ -2501,94 +2501,98 @@ class RedunClient:
         """
         Evaluate a single task.
         """
-        # Extract code package if specified.
-        if args.code:
-            code_file = BaseFile(args.code)
-            extract_tar(code_file, ".")
-
-        # Setup import paths.
-        for path in args.import_path:
-            add_import_path(path)
-
-        # Get main task.
-        import_script(args.script)
-
-        # Determine if module-level help is needed.
-        if args.task == "help":
-            tasks = sorted(get_task_registry(), key=lambda task: task.fullname)
-            self.display("Tasks available:")
-            for task in tasks:
-                self.display("  ", task.fullname)
-            return None
-
-        # Get requested task.
-        task = get_task_registry().get(args.task)
-        if not task:
-            raise RedunClientError('Unknown task "{}"'.format(args.task))
-
-        output_path = args.output
+        array_job_index: int = -1
         if args.array_job:
             array_job_index = int(os.environ.get(AWS_ARRAY_VAR, "-1"))
             if array_job_index < 0:
                 raise RedunClientError("Array job environment variable not set")
 
-            # Get path to actual output and error files based on index
-            if args.output:
-                with BaseFile(args.output).open() as output_spec_file:
-                    ofiles = json.load(output_spec_file)
-                output_path = ofiles[array_job_index]
-
+            # Get path to actual error file based on index.
             if args.error:
                 with BaseFile(args.error).open() as error_spec_file:
                     efiles = json.load(error_spec_file)
                 args.error = efiles[array_job_index]
-
-        if args.input:
-            # Parse task args from input file.
-            input_file = BaseFile(args.input)
-            with input_file.open("rb") as infile:
-                task_args, task_kwargs = pickle.load(infile)
-
-                # If it's an array job, args will be a list of args for the
-                # array, and we find ours by index
-                if args.array_job:
-                    task_args = task_args[array_job_index]
-                    task_kwargs = task_kwargs[array_job_index]
-
-        else:
-            # Determine arguments for task.
-            task_arg_parser, cli2arg = get_task_arg_parser(task)
-            task_opts = task_arg_parser.parse_args(extra_args)
-
-            # Parse cli arguments to task arguments.
-            task_args = ()
-            task_kwargs = {}
-            for dest, arg in cli2arg.items():
-                value = getattr(task_opts, dest)
-                if value is not None:
-                    task_kwargs[arg] = value
-
-        logger.info("redun :: version {}".format(redun.__version__))
-        logger.info("oneshot:  redun {argv}".format(argv=" ".join(map(quote, argv[1:]))))
-
-        # If output already exists, exit.
-        if output_path and not args.no_cache:
-            output_file = BaseFile(output_path)
-            if output_file.exists():
-                with output_file.open("rb") as infile:
-                    result = pickle.load(infile)
-                if get_type_registry().is_valid_nested(result):
-                    logger.info("Existing output found in {ofile}".format(ofile=output_path))
-                    return result
-
-            # Remove previous output if it exists to avoid reporting stale information.
-            output_file.remove()
 
         # Remove previous error file if it exists to avoid reporting stale information.
         if args.error:
             BaseFile(args.error).remove()
 
         try:
+            # Extract code package if specified.
+            if args.code:
+                code_file = BaseFile(args.code)
+                extract_tar(code_file, ".")
+
+            # Setup import paths.
+            for path in args.import_path:
+                add_import_path(path)
+
+            # Get main task.
+            import_script(args.script)
+
+            # Determine if module-level help is needed.
+            if args.task == "help":
+                tasks = sorted(get_task_registry(), key=lambda task: task.fullname)
+                self.display("Tasks available:")
+                for task in tasks:
+                    self.display("  ", task.fullname)
+                return None
+
+            # Get requested task.
+            task = get_task_registry().get(args.task)
+            if not task:
+                raise RedunClientError('Unknown task "{}"'.format(args.task))
+
+            output_path = args.output
+            if args.array_job:
+                # Get path to actual output file based on index.
+                if args.output:
+                    with BaseFile(args.output).open() as output_spec_file:
+                        ofiles = json.load(output_spec_file)
+                    output_path = ofiles[array_job_index]
+
+            # Determine arguments for task.
+            if args.input:
+                # Parse task args from input file.
+                input_file = BaseFile(args.input)
+                with input_file.open("rb") as infile:
+                    task_args, task_kwargs = pickle.load(infile)
+
+                    # If it's an array job, args will be a list of args for the
+                    # array, and we find ours by index
+                    if args.array_job:
+                        task_args = task_args[array_job_index]
+                        task_kwargs = task_kwargs[array_job_index]
+
+            else:
+                # Parse task args from cli.
+                task_arg_parser, cli2arg = get_task_arg_parser(task)
+                task_opts = task_arg_parser.parse_args(extra_args)
+
+                # Parse cli arguments to task arguments.
+                task_args = ()
+                task_kwargs = {}
+                for dest, arg in cli2arg.items():
+                    value = getattr(task_opts, dest)
+                    if value is not None:
+                        task_kwargs[arg] = value
+
+            logger.info("redun :: version {}".format(redun.__version__))
+            logger.info("oneshot:  redun {argv}".format(argv=" ".join(map(quote, argv[1:]))))
+
+            # If output already exists, exit.
+            if output_path and not args.no_cache:
+                output_file = BaseFile(output_path)
+                if output_file.exists():
+                    with output_file.open("rb") as infile:
+                        result = pickle.load(infile)
+                    if get_type_registry().is_valid_nested(result):
+                        logger.info("Existing output found in {ofile}".format(ofile=output_path))
+                        return result
+
+                # Remove previous output if it exists to avoid reporting stale information.
+                output_file.remove()
+
             result = task.func(*task_args, **task_kwargs)
 
             if output_path:
@@ -2607,7 +2611,6 @@ class RedunClient:
                 error_traceback = Traceback.from_error(error)
                 with BaseFile(args.error).open("wb") as out:
                     pickle_dump((error, error_traceback), out)
-
             raise error
 
     def db_info_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
