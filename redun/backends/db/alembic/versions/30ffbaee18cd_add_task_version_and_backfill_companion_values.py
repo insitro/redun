@@ -56,7 +56,7 @@ def backfill_values_for_lonely_tasks(session: Session) -> None:
         # the `redun.Task` corresponding to the `db_task`. This is acceptable for our needs since
         # func is not consulted during serialization when other parameters (like version) are
         # passed as arguments.
-        redun_task = Task(
+        redun_task: Task = Task(
             func=lambda: None,
             name=db_task.name,
             namespace=db_task.namespace,
