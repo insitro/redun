@@ -2154,7 +2154,7 @@ from redun import task
 
 @task()
 def other_task(x, y):
-   return x - y
+   return x / y
         """
     )
     create_tar("code.tar.gz", ["workflow.py"])
@@ -2191,31 +2191,34 @@ def other_task(x, y):
 
     for i in range(3):
         os.environ[job_array.AWS_ARRAY_VAR] = str(i)
-        client.execute(
-            [
-                "redun",
-                "oneshot",
-                "workflow.py",
-                "--code",
-                "code.tar.gz",
-                "--array-job",
-                "--input",
-                input_path,
-                "--output",
-                output_path,
-                "--error",
-                error_path,
-                "other_task",
-            ]
-        )
-
-        # Check output files are there
-        output_file = File(
-            get_job_scratch_file(
-                executor.s3_scratch_prefix,
-                test_jobs[i],
-                SCRATCH_OUTPUT,
+        try:
+            client.execute(
+                [
+                    "redun",
+                    "oneshot",
+                    "workflow.py",
+                    "--code",
+                    "code.tar.gz",
+                    "--array-job",
+                    "--input",
+                    input_path,
+                    "--output",
+                    output_path,
+                    "--error",
+                    error_path,
+                    "other_task",
+                ]
             )
-        )
 
-        assert pickle.loads(cast(bytes, output_file.read("rb"))) == i - 2 * i
+            # Check expected output.
+            output_file = File(
+                get_job_scratch_file(executor.s3_scratch_prefix, test_jobs[i], SCRATCH_OUTPUT)
+            )
+            assert pickle.loads(cast(bytes, output_file.read("rb"))) == i / (2 * i)
+        except Exception:
+            # Check expected error.
+            error_file = File(
+                get_job_scratch_file(executor.s3_scratch_prefix, test_jobs[i], SCRATCH_ERROR)
+            )
+            error, _ = pickle.loads(cast(bytes, error_file.read("rb")))
+            assert isinstance(error, ZeroDivisionError)
