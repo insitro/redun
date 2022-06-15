@@ -818,6 +818,7 @@ def task1(x):
                                 "redun.tests.test_aws_batch",
                                 "--code",
                                 code_file.path,
+                                "--no-cache",
                                 "--input",
                                 "s3://example-bucket/redun/jobs/eval_hash/input",
                                 "--output",

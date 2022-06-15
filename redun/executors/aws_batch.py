@@ -434,7 +434,8 @@ def submit_task(
         a_task,
         args,
         kwargs,
-        job_options=job_options,
+        # Suppress cache checking since output is discarded.
+        job_options={**job_options, "cache": False},
         code_file=code_file,
         array_uuid=array_uuid,
         output_path="/dev/null",  # Let main command write to scratch file.
