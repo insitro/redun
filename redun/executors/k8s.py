@@ -136,7 +136,7 @@ def get_k8s_job_options(job_options: dict) -> dict:
 def submit_task(
     image: str,
     namespace: str,
-    s3_scratch_prefix: str,
+    scratch_prefix: str,
     job: Job,
     a_task: Task,
     args: Tuple = (),
@@ -150,7 +150,7 @@ def submit_task(
     Submit a redun Task to K8S.
     """
     command = get_oneshot_command(
-        s3_scratch_prefix,
+        scratch_prefix,
         job,
         a_task,
         args,
@@ -187,7 +187,7 @@ def submit_task(
 def submit_command(
     image: str,
     namespace: str,
-    s3_scratch_prefix: str,
+    scratch_prefix: str,
     job: Job,
     command: str,
     job_options: Optional[dict] = None,
@@ -198,10 +198,10 @@ def submit_command(
     # to avoid dangerous default dict
     if job_options is None:
         job_options = {}
-    input_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_INPUT)
-    output_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_OUTPUT)
-    error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
-    status_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_STATUS)
+    input_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_INPUT)
+    output_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT)
+    error_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR)
+    status_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_STATUS)
 
     # Serialize arguments to input file.
     input_file = File(input_path)
@@ -209,35 +209,66 @@ def submit_command(
     assert input_file.exists()
 
     # Build job command.
-    shell_command = [
-        "bash",
-        "-c",
-        "-o",
-        "pipefail",
-        """
-aws s3 cp {input_path} .task_command
-chmod +x .task_command
-(
-  ./.task_command \
-  2> >(tee .task_error >&2) | tee .task_output
-) && (
-    aws s3 cp .task_output {output_path}
-    aws s3 cp .task_error {error_path}
-    echo ok | aws s3 cp - {status_path}
-) || (
-    [ -f .task_output ] && aws s3 cp .task_output {output_path}
-    [ -f .task_error ] && aws s3 cp .task_error {error_path}
-    echo fail | aws s3 cp - {status_path}
-    {exit_command}
-)
-""".format(
-            input_path=quote(input_path),
-            output_path=quote(output_path),
-            error_path=quote(error_path),
-            status_path=quote(status_path),
-            exit_command="exit 1",
-        ),
-    ]
+    if input_file.filesystem.name == "gs":
+        shell_command = [
+            "bash",
+            "-c",
+            "-o",
+            "pipefail",
+            """
+    gsutil cp {input_path} .task_command
+    chmod +x .task_command
+    (
+    ./.task_command \
+    2> >(tee .task_error >&2) | tee .task_output
+    ) && (
+        gsutil cp .task_output {output_path}
+        gsutil cp .task_error {error_path}
+        echo ok | gsutil cp - {status_path}
+    ) || (
+        [ -f .task_output ] && gsutil cp .task_output {output_path}
+        [ -f .task_error ] && gsutil cp .task_error {error_path}
+        echo fail | gsutil cp - {status_path}
+        {exit_command}
+    )
+    """.format(
+                input_path=quote(input_path),
+                output_path=quote(output_path),
+                error_path=quote(error_path),
+                status_path=quote(status_path),
+                exit_command="exit 1",
+            ),
+        ]
+    else:
+        shell_command = [
+            "bash",
+            "-c",
+            "-o",
+            "pipefail",
+            """
+    aws s3 cp {input_path} .task_command
+    chmod +x .task_command
+    (
+    ./.task_command \
+    2> >(tee .task_error >&2) | tee .task_output
+    ) && (
+        aws s3 cp .task_output {output_path}
+        aws s3 cp .task_error {error_path}
+        echo ok | aws s3 cp - {status_path}
+    ) || (
+        [ -f .task_output ] && aws s3 cp .task_output {output_path}
+        [ -f .task_error ] && aws s3 cp .task_error {error_path}
+        echo fail | aws s3 cp - {status_path}
+        {exit_command}
+    )
+    """.format(
+                input_path=quote(input_path),
+                output_path=quote(output_path),
+                error_path=quote(error_path),
+                status_path=quote(status_path),
+                exit_command="exit 1",
+            ),
+        ]
 
     # Submit to K8S.
     assert job.eval_hash
@@ -400,7 +431,7 @@ class K8SExecutor(Executor):
         # Required config.
         self.image = config["image"]
         self.namespace = config.get("namespace", "default")
-        self.s3_scratch_prefix = config["s3_scratch"]
+        self.scratch_prefix = config["scratch"]
 
         # Optional config.
         self.role = config.get("role")
@@ -469,7 +500,7 @@ class K8SExecutor(Executor):
                 continue
             eval_file = File(
                 get_array_scratch_file(
-                    self.s3_scratch_prefix,
+                    self.scratch_prefix,
                     parent_hash,
                     SCRATCH_HASHES,
                 )
@@ -626,7 +657,7 @@ class K8SExecutor(Executor):
 
         if job_status == SUCCEEDED:
             # Assume a recently completed job has valid results.
-            result, exists = parse_job_result(self.s3_scratch_prefix, job)
+            result, exists = parse_job_result(self.scratch_prefix, job)
             if exists:
                 self._scheduler.done_job(job, result, job_tags=k8s_labels)
             else:
@@ -635,7 +666,7 @@ class K8SExecutor(Executor):
                     job,
                     FileNotFoundError(
                         get_job_scratch_file(
-                            self.s3_scratch_prefix,
+                            self.scratch_prefix,
                             job,
                             SCRATCH_OUTPUT,
                         )
@@ -644,7 +675,7 @@ class K8SExecutor(Executor):
                 )
 
         elif job_status == FAILED:
-            error, error_traceback = parse_job_error(self.s3_scratch_prefix, job)
+            error, error_traceback = parse_job_error(self.scratch_prefix, job)
             logs = [f"*** Logs for K8S pod {pod.metadata.name}:\n"]
 
             # TODO: Consider displaying events in the logs since this can have
@@ -822,9 +853,9 @@ class K8SExecutor(Executor):
         if self.code_package is not False and self.code_file is None:
             code_package = self.code_package or {}
             assert isinstance(code_package, dict)
-            self.code_file = package_code(self.s3_scratch_prefix, code_package)
+            self.code_file = package_code(self.scratch_prefix, code_package)
 
-        job_dir = get_job_scratch_dir(self.s3_scratch_prefix, job)
+        job_dir = get_job_scratch_dir(self.scratch_prefix, job)
         job_type = "K8S job"
 
         # Determine job options.
@@ -847,7 +878,7 @@ class K8SExecutor(Executor):
                     k8s_job_id = existing_job.metadata.uid
                     self.log(
                         "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
-                        "  s3_scratch_path = {job_dir}".format(
+                        "  scratch_path = {job_dir}".format(
                             redun_job=job.id,
                             job_type=job_type,
                             k8s_job_id=k8s_job_id,
@@ -874,7 +905,7 @@ class K8SExecutor(Executor):
                     k8s_job_id = existing_job.metadata.uid
                     self.log(
                         "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
-                        "  s3_scratch_path = {job_dir}".format(
+                        "  scratch_path = {job_dir}".format(
                             redun_job=job.id,
                             job_type=job_type,
                             k8s_job_id=k8s_job_id,
@@ -921,36 +952,36 @@ class K8SExecutor(Executor):
 
         # Setup input, output and error path files. Input file is a pickled list
         # of args, and kwargs, for each child job.
-        input_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_INPUT)
+        input_file = get_array_scratch_file(self.scratch_prefix, array_uuid, SCRATCH_INPUT)
         with File(input_file).open("wb") as out:
             pickle_dump([all_args, all_kwargs], out)
 
         # Output file is a plaintext list of output paths, for each child job.
-        output_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_OUTPUT)
+        output_file = get_array_scratch_file(self.scratch_prefix, array_uuid, SCRATCH_OUTPUT)
         output_paths = [
-            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_OUTPUT) for job in jobs
+            get_job_scratch_file(self.scratch_prefix, job, SCRATCH_OUTPUT) for job in jobs
         ]
         with File(output_file).open("w") as ofile:
             json.dump(output_paths, ofile)
 
         # Error file is a plaintext list of error paths, one for each child job.
-        error_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_ERROR)
+        error_file = get_array_scratch_file(self.scratch_prefix, array_uuid, SCRATCH_ERROR)
         error_paths = [
-            get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_ERROR) for job in jobs
+            get_job_scratch_file(self.scratch_prefix, job, SCRATCH_ERROR) for job in jobs
         ]
         with File(error_file).open("w") as efile:
             json.dump(error_paths, efile)
 
         # Eval hash file is plaintext hashes of child jobs for matching for job
         # reuniting.
-        eval_file = get_array_scratch_file(self.s3_scratch_prefix, array_uuid, SCRATCH_HASHES)
+        eval_file = get_array_scratch_file(self.scratch_prefix, array_uuid, SCRATCH_HASHES)
         with File(eval_file).open("w") as eval_f:
             eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
 
         k8s_resp = submit_task(
             image,
             namespace,
-            self.s3_scratch_prefix,
+            self.scratch_prefix,
             job,
             job.task,
             job_options=task_options,
@@ -971,12 +1002,12 @@ class K8SExecutor(Executor):
             "  array_job_id    = {array_job_id}\n"
             "  array_job_name  = {job_name}\n"
             "  array_size      = {array_size}\n"
-            "  s3_scratch_path = {job_dir}".format(
+            "  scratch_path = {job_dir}".format(
                 array_job_id=array_job_id,
                 job_type=job_type,
                 array_size=array_size,
                 k8s_job_id=array_job_id,
-                job_dir=get_array_scratch_file(self.s3_scratch_prefix, array_uuid, ""),
+                job_dir=get_array_scratch_file(self.scratch_prefix, array_uuid, ""),
                 job_name=array_job_name,
             )
         )
@@ -992,7 +1023,7 @@ class K8SExecutor(Executor):
         image = task_options.pop("image", self.image)
         namespace = task_options.pop("namespace", self.namespace)
 
-        job_dir = get_job_scratch_dir(self.s3_scratch_prefix, job)
+        job_dir = get_job_scratch_dir(self.scratch_prefix, job)
         job_type = "K8S job"
 
         # Submit a new Batch job.
@@ -1000,7 +1031,7 @@ class K8SExecutor(Executor):
             k8s_resp = submit_task(
                 image,
                 namespace,
-                self.s3_scratch_prefix,
+                self.scratch_prefix,
                 job,
                 job.task,
                 args=args,
@@ -1013,7 +1044,7 @@ class K8SExecutor(Executor):
             k8s_resp = submit_command(
                 image,
                 namespace,
-                self.s3_scratch_prefix,
+                self.scratch_prefix,
                 job,
                 command,
                 job_options=task_options,
@@ -1025,7 +1056,7 @@ class K8SExecutor(Executor):
             "submit redun job {redun_job} as {job_type} {k8s_job_id}:\n"
             "  job_id          = {k8s_job_id}\n"
             "  job_name        = {job_name}\n"
-            "  s3_scratch_path = {job_dir}".format(
+            "  scratch_path = {job_dir}".format(
                 redun_job=job.id,
                 job_type=job_type,
                 k8s_job_id=k8s_job_id,
