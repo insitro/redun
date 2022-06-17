@@ -474,6 +474,9 @@ class GSFileSystem(FsspecFileSystem):
     def glob(self, pattern: str) -> List[str]:
         return ["gs://" + key for key in self.fs.glob(pattern)]
 
+    def glob(self, pattern: str) -> List[str]:
+        return ["gs://" + key for key in self.fs.glob(pattern)]
+
 
 @register_filesystem
 class S3FileSystem(FileSystem):
