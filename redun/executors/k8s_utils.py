@@ -62,6 +62,7 @@ def create_job_object(
     labels=None,
     uid=None,
     retries=1,
+    annotations=None,
 ):
     """Creates a job object for redun job.
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
@@ -98,7 +99,7 @@ def create_job_object(
     job = client.V1Job(
         api_version="batch/v1",
         kind="Job",
-        metadata=client.V1ObjectMeta(name=name, labels=labels, uid=uid),
+        metadata=client.V1ObjectMeta(annotations=annotations, name=name, labels=labels, uid=uid),
         spec=spec,
     )
     return job

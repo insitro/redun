@@ -57,6 +57,7 @@ def k8s_submit(
     timeout: Optional[int] = None,
     k8s_labels: Optional[Dict[str, str]] = None,
     retries: int = 1,
+    annotations: Dict[str, str] = None,
 ) -> Dict[str, Any]:
     """Prepares and submits a k8s job to the API server"""
     requests = {
@@ -73,6 +74,7 @@ def k8s_submit(
         resources,
         timeout,
         k8s_labels,
+        annotations,
     )
 
     if array_size > 1:
