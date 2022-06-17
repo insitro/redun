@@ -49,14 +49,14 @@ def mock_executor(scheduler: Scheduler, code_package: bool = False) -> K8SExecut
     Returns an K8SExecutor with AWS API mocks.
     """
     image = "my-image"
-    s3_scratch_prefix = "s3://example-bucket/redun/"
+    scratch_prefix = "s3://example-bucket/redun/"
 
     # Setup executor.
     config = Config(
         {
             "k8s": {
                 "image": image,
-                "s3_scratch": s3_scratch_prefix,
+                "scratch": scratch_prefix,
                 "job_monitor_interval": 0.05,
                 "job_stale_time": 0.01,
                 "code_package": code_package,
@@ -89,7 +89,7 @@ def test_executor_config(scheduler: Scheduler) -> None:
         {
             "k8s": {
                 "image": "image",
-                "s3_scratch": "s3_scratch_prefix",
+                "scratch": "scratch_prefix",
                 "code_includes": "*.txt",
             }
         }
@@ -97,7 +97,7 @@ def test_executor_config(scheduler: Scheduler) -> None:
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
 
     assert executor.image == "image"
-    assert executor.s3_scratch_prefix == "s3_scratch_prefix"
+    assert executor.scratch_prefix == "scratch_prefix"
     assert isinstance(executor.code_package, dict)
     assert executor.code_package["includes"] == ["*.txt"]
 
@@ -126,7 +126,7 @@ def test_submit_task(k8s_submit_mock, custom_module, expected_load_module, a_tas
     job_id = "123"
     image = "my-image"
     namespace = "default"
-    s3_scratch_prefix = "s3://example-bucket/redun/"
+    scratch_prefix = "s3://example-bucket/redun/"
 
     s3_client = boto3.client("s3", region_name="us-east-1")
     s3_client.create_bucket(Bucket="example-bucket")
@@ -145,11 +145,11 @@ def task1(x):
     job = Job(a_task())
     job.id = job_id
     job.eval_hash = "eval_hash"
-    code_file = package_code(s3_scratch_prefix)
+    code_file = package_code(scratch_prefix)
     resp = submit_task(
         image,
         namespace,
-        s3_scratch_prefix,
+        scratch_prefix,
         job,
         a_task,
         args=(10,),
@@ -198,7 +198,7 @@ def test_submit_task_deep_file(k8s_submit_mock):
     job_id = "123"
     image = "my-image"
     namespace = "default"
-    s3_scratch_prefix = "s3://example-bucket/redun/"
+    scratch_prefix = "s3://example-bucket/redun/"
 
     client = boto3.client("s3", region_name="us-east-1")
     client.create_bucket(Bucket="example-bucket")
@@ -221,11 +221,11 @@ def task1(x):
     job = Job(module.task1())
     job.id = job_id
     job.eval_hash = "eval_hash"
-    code_file = package_code(s3_scratch_prefix)
+    code_file = package_code(scratch_prefix)
     resp = submit_task(
         image,
         namespace,
-        s3_scratch_prefix,
+        scratch_prefix,
         job,
         module.task1,
         args=(10,),
@@ -749,7 +749,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
         {
             "k8s": {
                 "image": "image",
-                "s3_scratch": "s3_scratch_prefix",
+                "scratch": "scratch_prefix",
                 "code_includes": "*.txt",
                 "min_array_size": 0,
             }
@@ -787,7 +787,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
 #     """
 #     scheduler = mock_scheduler()
 #     executor = mock_executor(scheduler)
-#     executor.s3_scratch_prefix = "./evil\ndirectory"
+#     executor.scratch_prefix = "./evil\ndirectory"
 
 #     redun.executors.k8s.k8s_submit.return_value = create_job_object(uid=job_id)
 
@@ -810,7 +810,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
 #     # Check input file is on S3 and contains list of (args, kwargs) tuples
 #     input_file = File(
 #         get_array_scratch_file(
-#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_INPUT
+#             executor.scratch_prefix, array_uuid, redun.executors.aws_utils.scratch_INPUT
 #         )
 #     )
 #     assert input_file.exists()
@@ -823,7 +823,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
 #     # Check output paths file is on S3 and contains correct output paths
 #     output_file = File(
 #         get_array_scratch_file(
-#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
+#             executor.scratch_prefix, array_uuid, redun.executors.aws_utils.scratch_OUTPUT
 #         )
 #     )
 #     assert output_file.exists()
@@ -831,7 +831,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
 
 #     assert ofiles == [
 #         get_job_scratch_file(
-#             executor.s3_scratch_prefix, j, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
+#             executor.scratch_prefix, j, redun.executors.aws_utils.scratch_OUTPUT
 #         )
 #         for j in test_jobs
 #     ]
@@ -839,7 +839,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
 #     # Error paths are the same as output, basically
 #     error_file = File(
 #         get_array_scratch_file(
-#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_ERROR
+#             executor.scratch_prefix, array_uuid, redun.executors.aws_utils.scratch_ERROR
 #         )
 #     )
 #     assert error_file.exists()
@@ -847,7 +847,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
 
 #     assert efiles == [
 #         get_job_scratch_file(
-#             executor.s3_scratch_prefix, j, redun.executors.aws_utils.S3_SCRATCH_ERROR
+#             executor.scratch_prefix, j, redun.executors.aws_utils.scratch_ERROR
 #         )
 #         for j in test_jobs
 #     ]
@@ -855,7 +855,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
 #     # Child job eval hashes should be present as well.
 #     eval_file = File(
 #         get_array_scratch_file(
-#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_HASHES
+#             executor.scratch_prefix, array_uuid, redun.executors.aws_utils.scratch_HASHES
 #         )
 #     )
 #     with eval_file.open("r") as evfile:
@@ -892,7 +892,7 @@ def other_task(x, y):
     # Submit 10 jobs that will be arrayed
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
-    executor.s3_scratch_prefix = "."
+    executor.scratch_prefix = "."
 
     jo = create_job_object(uid="array-job-id")
     jo.spec.parallelism = 10
@@ -913,7 +913,7 @@ def other_task(x, y):
 
     # Now run 2 of those jobs and make sure they work ok
     client = RedunClient()
-    array_dir = os.path.join(executor.s3_scratch_prefix, "array_jobs", array_uuid)
+    array_dir = os.path.join(executor.scratch_prefix, "array_jobs", array_uuid)
     input_path = os.path.join(array_dir, SCRATCH_INPUT)
     output_path = os.path.join(array_dir, SCRATCH_OUTPUT)
     error_path = os.path.join(array_dir, SCRATCH_ERROR)
@@ -942,7 +942,7 @@ def other_task(x, y):
         # Check output files are there
         output_file = File(
             get_job_scratch_file(
-                executor.s3_scratch_prefix,
+                executor.scratch_prefix,
                 test_jobs[i],
                 SCRATCH_OUTPUT,
             )

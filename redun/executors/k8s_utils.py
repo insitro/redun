@@ -3,6 +3,7 @@
 # It uses the Official Python client library for kubernetes:
 # https://github.com/kubernetes-client/python
 from kubernetes import client, config
+from kubernetes.config import ConfigException
 
 from redun.executors.aws_utils import get_aws_env_vars
 
@@ -12,7 +13,11 @@ DEFAULT_JOB_PREFIX = "redun-job"
 def get_k8s_batch_client():
     """returns an API client supporting k8s batch API
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/BatchV1Api.md"""
-    config.load_kube_config()
+    try:
+        config.load_kube_config()
+    except ConfigException:
+        print(f"Warning: config.load_kube_config() failed. Resorting to config.load_incluster_config().")
+        config.load_incluster_config()
     batch_v1 = client.BatchV1Api()
     return batch_v1
 
@@ -20,7 +25,11 @@ def get_k8s_batch_client():
 def get_k8s_core_client():
     """returns an API client support k8s core API
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md"""
-    config.load_kube_config()
+    try:
+        config.load_kube_config()
+    except ConfigException:
+        print(f"Warning: config.load_kube_config() failed. Resorting to config.load_incluster_config().")
+        config.load_incluster_config()
     core_v1 = client.CoreV1Api()
     return core_v1
 
@@ -58,8 +67,10 @@ def create_job_object(
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
     Also creates necessary sub-objects"""
 
-    # env = [{"name": key, "value": value} for key, value in get_aws_env_vars().items()]
-    env = dict(os.environ)
+    try:
+        env = [{"name": key, "value": value} for key, value in get_aws_env_vars().items()]
+    except:
+        env = []
     container = client.V1Container(name=name, image=image, command=command, env=env)
 
     if resources is None:
