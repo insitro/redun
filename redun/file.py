@@ -468,6 +468,9 @@ class GSFileSystem(FsspecFileSystem):
 
     name = "gs"
 
+    def glob(self, pattern: str) -> List[str]:
+        return ["gs://" + key for key in self.fs.glob(pattern)]
+
 
 @register_filesystem
 class S3FileSystem(FileSystem):
@@ -1192,6 +1195,77 @@ class ShardedS3Dataset(Value):
         self.update_hash()
 
     @classmethod
+    def from_files(
+        cls, files: List[File], format: Optional[str] = None, allow_additional_files: bool = False
+    ) -> "ShardedS3Dataset":
+        """
+        Helper function to create a ShardedS3Dataset from a list of redun Files.
+        This can be helpful for provenance tracking from methods that return multiple
+        files and the "root directory" is wanted for later use.
+
+        If a dataset cannot be created that contains all the files, such as being in
+        different S3 prefixes, a ValueError is raised. If files do not all have the
+        same format, a ValueError will be raised.
+
+        Parameters
+        ----------
+        files : List[File]
+            Files that should be included in the dataset.
+
+        format : Optional[str]
+            If specified, files are considered to be in this format.
+
+        allow_additional_files : bool
+            If True, allows the resulting ShardedS3Dataset to contain files not in
+            `files`. If False, a ValueError will be raised if a ShardedS3Dataset cannot
+            be constructed.
+
+        Raises
+        ------
+        ValueError
+            If a dataset could not be created from the given files.
+        """
+        # Check all files are actually on S3.
+        if not all(f.filesystem.name == "s3" for f in files):
+            raise ValueError("All files must be on S3 to construct a ShardedS3Dataset")
+
+        # All files should exist.
+        for f in files:
+            if not f.exists():
+                raise FileNotFoundError(
+                    f"File {f.path} must exist to construct a dataset with it."
+                )
+
+        # os.path does not like the "s3://" prefix so we remove it and then add it back.
+        if len(files) == 1:
+            root_path = f"s3:/{os.path.split(files[0].path.replace('s3://', '/'))[0]}"
+        elif len(files) > 1:
+            root_path = f"s3:/{os.path.commonpath([f.path.replace('s3://', '/') for f in files])}"
+        else:
+            raise ValueError("Cannot construct a dataset from an empty list of files.")
+
+        if not format:
+            formats = set(os.path.splitext(f.path)[1].replace(".", "") for f in files)
+            if not formats or len(formats) > 1:
+                raise ValueError(
+                    f"Multiple or zero file extensions found: {formats}."
+                    " Could not detect format for ShardedS3Dataset."
+                )
+            format = formats.pop()
+
+        result = ShardedS3Dataset(root_path, format=format, recurse=True)
+
+        # Other files should not be included in the dataset unless specifically requested.
+        if not allow_additional_files:
+            extras = set(result.filenames) - set(f.path for f in files)
+            if extras:
+                raise ValueError(
+                    f"Additional files {extras} would be added to dataset but "
+                    "`allow_additional_files=False`"
+                )
+        return result
+
+    @classmethod
     def from_data(
         cls,
         dataset: Union["pandas.DataFrame", "pyspark.sql.DataFrame"],
@@ -1201,7 +1275,7 @@ class ShardedS3Dataset(Value):
         catalog_database: str = "default",
         catalog_table: Optional[str] = None,
         format_options: Dict[str, Any] = {},
-    ):
+    ) -> "ShardedS3Dataset":
         """
         Helper function to create a ShardedS3Dataset from an existing DataFrame-like object.
 
@@ -1324,6 +1398,10 @@ class StagingFile(Staging[File]):
             return "aws s3 cp --no-progress {} {}".format(
                 quote(self.local.path), quote(self.remote.path)
             )
+        elif self.remote.filesystem.name == "s3" or self.local.filesystem.name == "s3":
+            return "gsutil cp {} {}".format(
+                quote(self.local.path), quote(self.remote.path)
+            )
         else:
             return "cp {} {}".format(quote(self.local.path), quote(self.remote.path))
 
@@ -1335,6 +1413,10 @@ class StagingFile(Staging[File]):
         # TODO: Generalize.
         if self.remote.filesystem.name == "s3" or self.local.filesystem.name == "s3":
             return "aws s3 cp --no-progress {} {}".format(
+                quote(self.remote.path), quote(self.local.path)
+            )
+        elif self.remote.filesystem.name == "gs" or self.local.filesystem.name == "gs":
+            return "gsutil cp {} {}".format(
                 quote(self.remote.path), quote(self.local.path)
             )
         else:
@@ -1392,6 +1474,10 @@ class StagingDir(Staging[Dir]):
             return "aws s3 cp --no-progress --recursive {} {}".format(
                 quote(self.local.path), quote(self.remote.path)
             )
+        elif self.remote.filesystem.name == "gs" or self.local.filesystem.name == "gs":
+            return "gsutil cp -r {} {}".format(
+                quote(self.local.path), quote(self.remote.path)
+            )
         else:
             return "cp -r {} {}".format(quote(self.local.path), quote(self.remote.path))
 
@@ -1403,6 +1489,10 @@ class StagingDir(Staging[Dir]):
         # TODO: Generalize.
         if self.remote.filesystem.name == "s3" or self.local.filesystem.name == "s3":
             return "aws s3 cp --no-progress --recursive {} {}".format(
+                quote(self.remote.path), quote(self.local.path)
+            )
+        elif self.remote.filesystem.name == "gs" or self.local.filesystem.name == "gs":
+            return "gsutil cp -r {} {}".format(
                 quote(self.remote.path), quote(self.local.path)
             )
         else:
