@@ -68,10 +68,8 @@ def create_job_object(
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
     Also creates necessary sub-objects"""
 
-    try:
-        env = [{"name": key, "value": value} for key, value in get_aws_env_vars().items()]
-    except:
-        env = []
+    # env = [{"name": key, "value": value} for key, value in get_aws_env_vars().items()]
+    env = []
     container = client.V1Container(name=name, image=image, command=command, env=env)
 
     if resources is None:
