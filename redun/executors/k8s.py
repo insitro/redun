@@ -57,6 +57,8 @@ def k8s_submit(
     timeout: Optional[int] = None,
     k8s_labels: Optional[Dict[str, str]] = None,
     retries: int = 1,
+    service_account_name: Optional[str] = "default",
+    annotations: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Prepares and submits a k8s job to the API server"""
     requests = {
@@ -67,12 +69,14 @@ def k8s_submit(
     resources = k8s_utils.create_resources(requests, limits)
 
     k8s_job = k8s_utils.create_job_object(
-        job_name,
-        image,
-        command,
-        resources,
-        timeout,
-        k8s_labels,
+        name=job_name,
+        image=image,
+        command=command,
+        resources=resources,
+        timeout=timeout,
+        labels=k8s_labels,
+        service_account_name=service_account_name,
+        annotations=annotations
     )
 
     if array_size > 1:
@@ -129,7 +133,7 @@ def get_k8s_job_options(job_options: dict) -> dict:
     """
     Returns K8S-specific job options from general job options.
     """
-    keys = ["memory", "vcpus", "k8s_labels", "retries", "timeout"]
+    keys = ["memory", "vcpus", "k8s_labels", "annotations", "service_account_name", "retries", "timeout"]
     return {key: job_options[key] for key in keys if key in job_options}
 
 
@@ -444,8 +448,11 @@ class K8SExecutor(Executor):
             "vcpus": config.getint("vcpus", 1),
             "memory": config.getint("memory", 4),
             "retries": config.getint("retries", 1),
+            "service_account_name": config.get("service_account_name", "default"),
             "job_name_prefix": config.get("job_name_prefix", k8s_utils.DEFAULT_JOB_PREFIX),
         }
+        if config.get("annotations"):
+            self.default_task_options["annotations"] = json.loads(config.get("annotations"))
         if config.get("k8s_labels"):
             self.default_task_options["k8s_labels"] = json.loads(config.get("k8s_labels"))
         self.use_default_k8s_labels = config.getboolean("default_k8s_labels", True)
