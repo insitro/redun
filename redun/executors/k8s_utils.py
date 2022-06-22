@@ -61,6 +61,8 @@ def create_job_object(
     labels=None,
     uid=None,
     retries=1,
+    service_account_name="default",
+    annotations=None,
 ):
     """Creates a job object for redun job.
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
@@ -74,7 +76,7 @@ def create_job_object(
     else:
         container.resources = resources
     pod_spec = client.V1PodSpec(
-        restart_policy="Never", image_pull_secrets=[{"name": "regcred"}], containers=[container]
+        service_account_name=service_account_name, restart_policy="Never", image_pull_secrets=[{"name": "regcred"}], containers=[container]
     )
 
     # Create and configurate a pod template spec section
@@ -96,7 +98,7 @@ def create_job_object(
     job = client.V1Job(
         api_version="batch/v1",
         kind="Job",
-        metadata=client.V1ObjectMeta(name=name, labels=labels, uid=uid),
+        metadata=client.V1ObjectMeta(annotations=annotations, name=name, labels=labels, uid=uid),
         spec=spec,
     )
     return job
