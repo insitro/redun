@@ -16,7 +16,7 @@ def get_k8s_batch_client():
     try:
         config.load_kube_config()
     except ConfigException:
-        print(f"Warning: config.load_kube_config() failed. Resorting to config.load_incluster_config().")
+        # print(f"Warning: config.load_kube_config() failed. Resorting to config.load_incluster_config().")
         config.load_incluster_config()
     batch_v1 = client.BatchV1Api()
     return batch_v1
@@ -28,7 +28,7 @@ def get_k8s_core_client():
     try:
         config.load_kube_config()
     except ConfigException:
-        print(f"Warning: config.load_kube_config() failed. Resorting to config.load_incluster_config().")
+        # print(f"Warning: config.load_kube_config() failed. Resorting to config.load_incluster_config().")
         config.load_incluster_config()
     core_v1 = client.CoreV1Api()
     return core_v1
