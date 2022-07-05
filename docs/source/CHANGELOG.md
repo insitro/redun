@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.14
+July 5, 2022
+* `#165` - Switch conda package to noarch
+* `#168` - Bump version of `black` in `redun_server`
+
 ## 0.8.13
 June 16, 2022
 
