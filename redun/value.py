@@ -1,8 +1,11 @@
+import datetime
 import importlib
 import os
 import pickle
 from enum import Enum
 from typing import Any, Callable, Dict, Iterator, Optional, Type, cast
+
+from dateutil.parser import parse as parse_date
 
 from redun.hashing import hash_bytes, hash_struct, hash_tag_bytes
 from redun.utils import get_func_source, iter_nested_value, pickle_dumps
@@ -440,6 +443,19 @@ class EnumType(ProxyValue):
             return name2item[arg]
         except KeyError:
             raise ValueError("{} is not a valid {}".format(arg, raw_type.__name__))
+
+
+class DatetimeType(ProxyValue):
+    """
+    Augment datetime.datetime to support argument parsing.
+    """
+
+    type = datetime.datetime
+    type_name = "datetime.datetime"
+
+    @classmethod
+    def parse_arg(cls, raw_type: Type, arg: str) -> datetime.datetime:
+        return parse_date(arg)
 
 
 # Get the type for python functions.
