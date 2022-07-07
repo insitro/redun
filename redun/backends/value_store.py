@@ -58,3 +58,12 @@ class ValueStore:
                 return infile.read(), True
         except FileNotFoundError:
             return b"", False
+
+    def size(self, value_hash: str) -> int:
+        """
+        Returns the size in bytes of a Value.
+        """
+        try:
+            return File(self.get_value_path(value_hash)).size()
+        except FileNotFoundError:
+            return -1

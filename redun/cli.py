@@ -185,8 +185,8 @@ def format_arguments(args: List[Argument]) -> str:
 
     text = ", ".join(
         chain(
-            (trim_string(repr(arg.value_parsed)) for arg in pos_args),
-            ("{}={}".format(arg.arg_key, trim_string(repr(arg.value_parsed))) for arg in kw_args),
+            (trim_string(repr(arg.value.preview)) for arg in pos_args),
+            ("{}={}".format(arg.arg_key, trim_string(repr(arg.value.preview))) for arg in kw_args),
         )
     )
     return text
@@ -2175,7 +2175,7 @@ class RedunClient:
                 "Value {hash} {type} {value} {tags}".format(
                     hash=value.value_hash[:8],
                     type=value.type,
-                    value=trim_string(repr(value.value_parsed) or value.type),
+                    value=trim_string(repr(value.preview) or value.type),
                     tags=tags,
                 ),
                 indent=indent,
@@ -2192,7 +2192,7 @@ class RedunClient:
         self.display(
             "{value_name} = {value}\n".format(
                 value_name=value_name,
-                value=repr(value.value_parsed),
+                value=repr(value.preview),
             ),
             indent=indent + 2,
         )

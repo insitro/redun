@@ -1,8 +1,10 @@
 import os
+from typing import cast
 
 import boto3
 
 from redun import task
+from redun.backends.db import MAX_VALUE_SIZE_PREVIEW, LargeValue, RedunBackendDb, Value
 from redun.config import Config
 from redun.file import Dir
 from redun.scheduler import Scheduler
@@ -85,3 +87,41 @@ def test_value_store_s3() -> None:
     directory = Dir(value_store_path)
     assert directory.exists()
     assert len(list(directory)) == 3  # Input, output and task.
+
+
+def test_preview_value(tmpdir) -> None:
+    """
+    We should be able to preview large values.
+    """
+
+    @task()
+    def make_str(n: int) -> str:
+        return "A" * n
+
+    # Setup a scheduler with a value store.
+    value_store_path = os.path.join(tmpdir, "values/")
+    config = {"backend": {"value_store_path": value_store_path, "value_store_min_size": "100"}}
+    scheduler = Scheduler(config=Config(config))
+    backend = cast(RedunBackendDb, scheduler.backend)
+    assert backend.session
+
+    # Let's make a small value.
+    small_result = scheduler.run(make_str(3))
+    assert small_result == "AAA"
+
+    # Let's make a large value.
+    value_size = MAX_VALUE_SIZE_PREVIEW + 10
+    large_result = scheduler.run(make_str(value_size))
+    assert len(large_result) == value_size
+
+    # Small value should preview as itself.
+    value_hash = scheduler.type_registry.get_hash(small_result)
+    value_row = backend.session.query(Value).filter(Value.value_hash == value_hash).one()
+    assert value_row.preview == small_result
+
+    # Large value should preview as a LargeValue object.
+    value_hash = scheduler.type_registry.get_hash(large_result)
+    value_row = backend.session.query(Value).filter(Value.value_hash == value_hash).one()
+    preview = value_row.preview
+    assert isinstance(preview, LargeValue)
+    assert str(preview) == "builtins.str(hash=c901f470, size=1000020)"

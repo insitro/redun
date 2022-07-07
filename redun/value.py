@@ -1,14 +1,13 @@
 import datetime
 import importlib
 import os
-import pickle
 from enum import Enum
 from typing import Any, Callable, Dict, Iterator, Optional, Type, cast
 
 from dateutil.parser import parse as parse_date
 
 from redun.hashing import hash_bytes, hash_struct, hash_tag_bytes
-from redun.utils import get_func_source, iter_nested_value, pickle_dumps
+from redun.utils import get_func_source, iter_nested_value, pickle_dumps, pickle_loads
 
 MIME_TYPE_PICKLE = "application/python-pickle"
 
@@ -168,7 +167,10 @@ class TypeRegistry:
         """
         Returns a deserialization of bytes `data` into a new Value.
         """
-        raw_type = self.parse_type_name(type_name)
+        try:
+            raw_type = self.parse_type_name(type_name)
+        except TypeError:
+            raise InvalidValueError(f"Unknown type: {type_name}")
         value_type = self.get_type(raw_type)
         assert value_type
         return value_type.deserialize(raw_type, data)
@@ -293,7 +295,7 @@ class Value(metaclass=MetaValue):
         """
         Returns a deserialization of bytes `data` into a new Value.
         """
-        return pickle.loads(data)
+        return pickle_loads(data)
 
     def __getstate__(self) -> dict:
         """
@@ -557,7 +559,7 @@ class Function(ProxyValue):
     @classmethod
     def deserialize(self, raw_type: Any, data: bytes) -> Any:
         # Deserialize the Function wrapper and return the inner python function.
-        func_wrapper = pickle.loads(data)
+        func_wrapper = pickle_loads(data)
         return func_wrapper.instance
 
     @classmethod
@@ -620,7 +622,7 @@ class FileCache(ProxyValue):
     @classmethod
     def _deserialize(cls, data: bytes) -> Any:
         # User defined deserialization.
-        return pickle.loads(data)
+        return pickle_loads(data)
 
     def serialize(self) -> bytes:
         from redun.file import File
