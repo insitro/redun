@@ -67,6 +67,7 @@ from redun.utils import (
     pickle_preview,
     str2bool,
     trim_string,
+    with_pickle_preview,
 )
 from redun.value import InvalidValueError
 
@@ -81,6 +82,7 @@ DEFAULT_DB_PASSWORD_ENV = "REDUN_DB_PASSWORD"
 DEFAULT_MAX_VALUE_SIZE = 1000000000
 DEFAULT_VALUE_STORE_MIN_SIZE = 1024
 REDUN_DB_UNKNOWN_VERSION = 99
+MAX_VALUE_SIZE_PREVIEW = 1000000
 
 SA_DIALECT_POSTGRESQL = "postgresql"
 
@@ -309,17 +311,56 @@ class Value(Base):
 
     @property
     def preview(self) -> Any:
-        return pickle_preview(self.value)
+        """
+        Returns a deserialized value, or a preview if there is an error or value is too large.
+        """
+        backend = cast(RedunSession, object_session(self)).backend
+        size = backend._get_value_size(self)
+
+        if size > MAX_VALUE_SIZE_PREVIEW:
+            return LargeValue(self, size)
+        else:
+            with with_pickle_preview():
+                value, _ = backend._get_value(self)
+                return value
 
     @property
     def value_parsed(self) -> Optional[Any]:
-        return self.preview
+        """
+        Returns a deserialized value, or a preview if there is an error.
+        """
+        backend = cast(RedunSession, object_session(self)).backend
+        with with_pickle_preview():
+            value, _ = backend._get_value(self)
+            return value
+
+    @property
+    def in_value_store(self) -> bool:
+        """
+        Returns True if value data is in a ValueStore.
+        """
+        # We use a zero-length byte string in the db to denote that value data
+        # is in a ValueStore.
+        return len(self.value) == 0
 
     def __repr__(self) -> str:
         return "Value(hash='{value_hash}', value={value})".format(
             value_hash=self.value_hash[:8],
             value=trim_string(repr(self.value_parsed)),
         )
+
+
+class LargeValue:
+    """
+    A Value too large to display.
+    """
+
+    def __init__(self, value: Value, size: int):
+        self.value = value
+        self.size = size
+
+    def __repr__(self) -> str:
+        return f"{self.value.type}(hash={self.value.value_hash[:8]}, size={self.size})"
 
 
 class File(Base):
@@ -1029,6 +1070,18 @@ def get_abs_path(root_dir: str, path: str) -> str:
         return path
 
 
+class RedunSession(Session):
+    """
+    Sqlalchemy Session with a reference to the redun backend.
+
+    This is used to give Sqlalchemy models access to the redun backend API.
+    """
+
+    def __init__(self, backend: "RedunBackendDb", *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.backend: "RedunBackendDb" = backend
+
+
 class RedunBackendDb(RedunBackend):
     def __init__(
         self,
@@ -1088,7 +1141,7 @@ class RedunBackendDb(RedunBackend):
             # share the database engine (which is thread safe) but get a new database session
             # (which is not)
             cloned_backend = shallowcopy(self)
-            cloned_backend.session = session or self.Session()
+            cloned_backend.session = session or self.Session(backend=self)
             return cloned_backend
         else:
             raise RedunDatabaseError(
@@ -1099,8 +1152,8 @@ class RedunBackendDb(RedunBackend):
         self.engine = create_engine(
             self.db_uri, connect_args=self.connect_args, echo=self._db_echo
         )
-        self.Session = sessionmaker(bind=self.engine)
-        self.session = self.Session()
+        self.Session = sessionmaker(bind=self.engine, class_=RedunSession)
+        self.session = self.Session(backend=self)
         return self.engine
 
     @staticmethod
@@ -1629,12 +1682,34 @@ class RedunBackendDb(RedunBackend):
         """
         Retrieve value data from db row or ValueStore.
         """
-        if value_row.value:
+        if not value_row.in_value_store:
             # Use data in db row if defined.
             return value_row.value, True
         elif self.value_store:
             # Fall back to ValueStore to retrieve binary data.
             return self.value_store.get(value_row.value_hash)
+        else:
+            raise AssertionError("ValueStore is not defined.")
+
+    def _get_value(self, value_row: Value) -> Tuple[Any, bool]:
+        """
+        Gets a value from a Value model.
+        """
+        data, has_value = self._get_value_data(value_row)
+        if not has_value:
+            return None, False
+        return self._deserialize_value(value_row.type, data)
+
+    def _get_value_size(self, value_row: Value) -> int:
+        """
+        Returns the size in bytes of a Value from db row or ValueStore.
+        """
+        if not value_row.in_value_store:
+            # Use data in db row if defined.
+            return len(value_row.value)
+        elif self.value_store:
+            # Fall back to ValueStore.
+            return self.value_store.size(value_row.value_hash)
         else:
             raise AssertionError("ValueStore is not defined.")
 
@@ -1646,12 +1721,7 @@ class RedunBackendDb(RedunBackend):
         value_row = self.session.query(Value).filter_by(value_hash=value_hash).one_or_none()
         if not value_row:
             return None, False
-
-        data, has_value = self._get_value_data(value_row)
-        if not has_value:
-            return None, False
-
-        return self._deserialize_value(value_row.type, data)
+        return self._get_value(value_row)
 
     def get_cache(self, call_hash: str) -> Tuple[Any, bool]:
         """
@@ -1666,11 +1736,7 @@ class RedunBackendDb(RedunBackend):
         )
         if not value_row:
             return None, False
-
-        data, has_value = self._get_value_data(value_row)
-        if not has_value:
-            return None, False
-        return self._deserialize_value(value_row.type, data)
+        return self._get_value(value_row)
 
     def get_eval_cache(self, eval_hash: str) -> Tuple[Any, bool]:
         assert self.session
@@ -1682,11 +1748,7 @@ class RedunBackendDb(RedunBackend):
         )
         if not value_row:
             return None, False
-
-        data, has_value = self._get_value_data(value_row)
-        if not has_value:
-            return None, False
-        return self._deserialize_value(value_row.type, data)
+        return self._get_value(value_row)
 
     def set_eval_cache(
         self, eval_hash: str, task_hash: str, args_hash: str, value: Any, value_hash: str = None
