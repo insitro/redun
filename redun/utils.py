@@ -2,10 +2,13 @@ import inspect
 import io
 import itertools
 import json
+import pickle
 import re
 import sys
+import threading
 from abc import ABC, abstractmethod
 from collections.abc import Iterable as IterableABC
+from contextlib import contextmanager
 from pickle import Unpickler
 from pickle import dump as allowed_dump_func
 from pickle import dumps as allowed_dumps_func
@@ -37,6 +40,8 @@ PICKLE_PROTOCOL = 3
 
 # Additional python import paths added by user.
 _redun_import_paths: List[str] = []
+
+_local = threading.local()
 
 
 def assert_never(value: NoReturn) -> NoReturn:
@@ -111,6 +116,32 @@ def pickle_dumps(obj: Any) -> bytes:
     This is used to standardize the protocol used for serialization.
     """
     return allowed_dumps_func(obj, protocol=PICKLE_PROTOCOL)
+
+
+def pickle_loads(data: bytes) -> Any:
+    """
+    Official unpickling method for redun.
+
+    This is used to allow pickle previews with a preview context is active.
+    """
+    if getattr(_local, "num_pickle_preview_active", 0) > 0:
+        return pickle_preview(data, raise_error=_local.pickle_preview_raise_error)
+    else:
+        return pickle.loads(data)
+
+
+@contextmanager
+def with_pickle_preview(raise_error: bool = False) -> Iterator[None]:
+    """
+    Enable pickle preview within a context.
+
+    We keep a count of how many nested contexts are active.
+    """
+    num_pickle_preview_active = getattr(_local, "num_pickle_preview_active", 0)
+    _local.num_pickle_preview_active = num_pickle_preview_active + 1
+    _local.pickle_preview_raise_error = raise_error
+    yield
+    _local.num_pickle_preview_active -= 1
 
 
 def iter_nested_value_children(value: Any) -> Iterable[Tuple[bool, Any]]:
@@ -331,7 +362,8 @@ def pickle_preview(data: bytes, raise_error: bool = False) -> Any:
     unpickler = PreviewingUnpickler(infile)
 
     try:
-        return unpickler.load()
+        with with_pickle_preview(raise_error):
+            return unpickler.load()
     except Exception as error:
         if raise_error:
             raise

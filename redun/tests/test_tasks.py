@@ -65,6 +65,10 @@ def test_task_config() -> None:
     assert my_task3.fullname == "my_namespace2.my_task3"
 
 
+def helper():
+    print("hello")
+
+
 def test_task_hashing():  # typing: ignore
     """
     Test various forms of Task hashing.
@@ -118,6 +122,23 @@ def test_task_hashing():  # typing: ignore
         return 10
 
     assert task1.get_hash() == "156d0a1a6fac078702c4796dcce77337a37af8ed"
+
+    # Testing that a change in helper source code will modify the task hash
+    global helper
+
+    @task(hash_includes=[helper])
+    def task1():
+        return 10
+
+    assert task1.get_hash() == "3177281599f4961164534cd2f9d94a892db123b2"
+
+    helper.__code__ = (lambda _: print("hello! i am different now!")).__code__
+
+    @task(hash_includes=[helper])
+    def task1():
+        return 10
+
+    assert task1.get_hash() == "a11d9a4abf033b0ced1f9e766f407b3c6151ed29"
 
 
 def test_version() -> None:

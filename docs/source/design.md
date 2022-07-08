@@ -307,7 +307,15 @@ def step1(a, b):
     return a + b
 ```
 
+Users may also want to tether a task hash to other objects. This can be done with the `hash_includes` argument in the task decorator, which is especially useful to force re-execution of a task if its plain Python helper functions change. Note that this will override versioning.
+```py
+def helper(a, b):
+  return a * b
 
+@task(hash_includes=[helper])
+def step1(a, b):
+    return str(helper(a, b))
+```
 ### Task naming
 
 Every task has a name and namespace that uniquely identifies it within and across workflows. Task names and namespaces are also used as part of [task hashing](#task-hashing) to ensure unique hashes. Typically, the name of a task can be automatically inferred from the function's name (e.g. `func.__name__`) and the namespace can be set once at the top of a module (`redun_namespace`). For example, in this workflow

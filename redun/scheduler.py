@@ -459,7 +459,7 @@ class Frame(FrameSummary, Value):
         self.job: Job = job
 
         # Advance past decorator.
-        if self.line.strip().startswith("@"):
+        if self._line and self._line.strip().startswith("@"):
             while True:
                 self.lineno += 1
                 line = linecache.getline(self.filename, self.lineno).strip()

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.14
+July 5, 2022
+* `#165` - Switch conda package to noarch
+* `#168` - Bump version of `black` in `redun_server`
+
+## 0.8.13
+June 16, 2022
+
+* `#162` - DE-5345 Fx multi-node doing caching 
+* `#155` - Update linting tools 
+* `#161` - DE-5312 Expand the try-catch to include input parsing 
+* `#157` - [DE-3475] Fix UDF type arg being ignored, add some Spark tests 
+* `#156` - De4653 hash code alt 
+* `#149` - Generalize file staging 
+* `#159` - Fix aws batch shared memory 
+* `#152` - Added docstrings to key Glue job functions 
+
 ## 0.8.12
 June 01, 2022
 

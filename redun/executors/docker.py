@@ -29,6 +29,10 @@ SUCCEEDED = "SUCCEEDED"
 FAILED = "FAILED"
 
 
+class DockerError(Exception):
+    pass
+
+
 def run_docker(
     command: List[str],
     image: str,
@@ -106,14 +110,20 @@ def run_docker(
         os.remove(cidfile)
 
         docker_command = ["docker", "run", "-it", "--cidfile", cidfile] + common_args
-        subprocess.check_call(docker_command, env=env)
+        try:
+            subprocess.check_call(docker_command, env=env)
+        except subprocess.CalledProcessError as error:
+            raise DockerError(error)
         with open(cidfile) as infile:
             container_id = infile.read().strip()
         os.remove(cidfile)
     else:
         # Run Docker in the background.
         docker_command = ["docker", "run", "-d"] + common_args
-        container_id = subprocess.check_output(docker_command, env=env).strip().decode("utf8")
+        try:
+            container_id = subprocess.check_output(docker_command, env=env).strip().decode("utf8")
+        except subprocess.CalledProcessError as error:
+            raise DockerError(error)
 
     return container_id
 
@@ -336,9 +346,7 @@ class DockerExecutor(Executor):
                 )
         elif job["status"] == FAILED:
             redun_job = self._pending_jobs.pop(job["jobId"])
-            error, error_traceback = parse_job_error(
-                self._scratch_prefix, redun_job, batch_job_metadata=job
-            )
+            error, error_traceback = parse_job_error(self._scratch_prefix, redun_job)
             error_traceback.logs = [line + "\n" for line in job["logs"].split("\n")]
             self._scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
 
@@ -364,26 +372,31 @@ class DockerExecutor(Executor):
         image: str = job_options.pop("image", self._image)
 
         # Submit a new Batch job.
-        if not job.task.script:
-            docker_resp = submit_task(
-                image,
-                self._scratch_prefix,
-                job,
-                job.task,
-                args=args,
-                kwargs=kwargs,
-                job_options=job_options,
-                code_file=self._code_file,
-            )
-        else:
-            command = get_task_command(job.task, args, kwargs)
-            docker_resp = submit_command(
-                image,
-                self._scratch_prefix,
-                job,
-                command,
-                job_options=job_options,
-            )
+        try:
+            if not job.task.script:
+                docker_resp = submit_task(
+                    image,
+                    self._scratch_prefix,
+                    job,
+                    job.task,
+                    args=args,
+                    kwargs=kwargs,
+                    job_options=job_options,
+                    code_file=self._code_file,
+                )
+            else:
+                command = get_task_command(job.task, args, kwargs)
+                docker_resp = submit_command(
+                    image,
+                    self._scratch_prefix,
+                    job,
+                    command,
+                    job_options=job_options,
+                )
+        except DockerError:
+            error, error_traceback = parse_job_error(self._scratch_prefix, job)
+            self._scheduler.reject_job(job, error, error_traceback=error_traceback)
+            return
 
         job_dir = get_job_scratch_dir(self._scratch_prefix, job)
         self.log(
