@@ -82,7 +82,7 @@ def parse_code_package_config(config) -> Union[dict, bool]:
     return {"includes": shlex.split(include_config), "excludes": shlex.split(exclude_config)}
 
 
-def package_code(scratch_prefix: str, code_package: dict = {}, use_zip=False) -> File:
+def package_code(scratch_prefix: str, code_package: dict = {}, use_zip: bool = False) -> File:
     """
     Package code to scratch directory.
     """

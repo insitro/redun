@@ -76,7 +76,7 @@ from redun.executors.aws_utils import iter_log_stream
 from redun.executors.code_packaging import extract_tar
 from redun.file import File as BaseFile
 from redun.file import copy_file, list_filesystems
-from redun.job_array import AWS_ARRAY_VAR
+from redun.job_array import AWS_ARRAY_VAR, K8S_ARRAY_VAR
 from redun.logging import log_levels, logger
 from redun.scheduler import DryRunResult, ErrorValue, Scheduler, Traceback, get_task_registry
 from redun.tags import (
@@ -2503,8 +2503,13 @@ class RedunClient:
         """
         array_job_index: int = -1
         if args.array_job:
-            array_job_index = int(os.environ.get(AWS_ARRAY_VAR, "-1"))
-            if array_job_index < 0:
+            logger.info("redun :: DEK VERSION")
+            print("Env: ", os.environ)
+            if AWS_ARRAY_VAR in os.environ:
+                array_job_index = int(os.environ[AWS_ARRAY_VAR])
+            elif K8S_ARRAY_VAR in os.environ:
+                array_job_index = int(os.environ[K8S_ARRAY_VAR])
+            else:
                 raise RedunClientError("Array job environment variable not set")
 
             # Get path to actual error file based on index.
