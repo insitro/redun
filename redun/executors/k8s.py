@@ -78,6 +78,15 @@ def k8s_submit(
     k8s_job.spec.restart_policy = "OnFailure"
     # if batch_tags:
     #    batch_job_args["tags"] = batch_tags
+    api_instance = k8s_utils.get_k8s_core_client()
+    try:
+        k8s_utils.create_namespace(api_instance, namespace)
+    except kubernetes.client.exceptions.ApiException as e:
+        if e.status == 409 and e.reason == 'Conflict':
+            pass
+        else:
+            print("Unexpected exception creating namespace", e.body)
+            return e
     api_instance = k8s_utils.get_k8s_batch_client()
     api_response = k8s_utils.create_job(api_instance, k8s_job, namespace=namespace)
     return api_response
