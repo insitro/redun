@@ -94,6 +94,11 @@ def create_job_object(
     return job
 
 
+def create_namespace(api_instance, namespace):
+    """Create a k8s namespace job"""
+    return api_instance.create_namespace(client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace)))
+
+
 def create_job(api_instance, job, namespace):
     """Create an actual k8s job"""
     api_response = api_instance.create_namespaced_job(body=job, namespace=namespace)
