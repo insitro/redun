@@ -809,7 +809,7 @@ class Job(Base):
     @property
     def status(self) -> str:
         """
-        Returns Job status (DONE, CACHED, FAILED).
+        Returns Job status (DONE, CACHED, FAILED, RUNNING).
 
         Currently, we denote a FAILED Job by not recording its end_time.
         In the future, we will likely record an explicit status so that we can

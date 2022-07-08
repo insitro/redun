@@ -703,6 +703,7 @@ def test_log_job_status(scheduler: Scheduler) -> None:
         "| ALL           0       0       0       0       3       3",
         "| main          0       0       0       0       1       1",
         "| task1         0       0       0       0       2       2",
+        "",
     ]
 
 
