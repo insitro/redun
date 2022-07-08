@@ -431,6 +431,40 @@ def get_ignore_warnings_from_config(scheduler_config: Section) -> Set[str]:
     return set(warnings_text.strip().split())
 
 
+def format_job_statuses(
+    job_status_counts: Dict[str, Dict[str, int]],
+    timestamp: Optional[datetime.datetime] = None,
+) -> Iterator[str]:
+    """
+    Format job status table (Dict[task_name, Dict[status, count]]).
+    """
+    # Create counts table.
+    task_names = sorted(job_status_counts.keys())
+    table: List[List[str]] = (
+        [["TASK"] + Job.STATUSES]
+        + [
+            ["ALL"]
+            + [
+                str(sum(job_status_counts[task_name][status] for task_name in task_names))
+                for status in Job.STATUSES
+            ]
+        ]
+        + [
+            [task_name] + [str(job_status_counts[task_name][status]) for status in Job.STATUSES]
+            for task_name in task_names
+        ]
+    )
+
+    # Display job status table.
+    if timestamp is None:
+        timestamp = datetime.datetime.now()
+    yield "| JOB STATUS {}".format(timestamp.strftime("%Y/%m/%d %H:%M:%S"))
+
+    for line in format_table(table, "lrrrrrr", min_width=7):
+        yield f"| {line}"
+    yield ""
+
+
 class Frame(FrameSummary, Value):
     """
     Frame of a :class:`Traceback` for :class:`Job` failure.
@@ -878,30 +912,7 @@ class Scheduler:
                 status_counts[task_name][status] += count
                 status_counts[task_name]["TOTAL"] += count
 
-        # Create counts table.
-        task_names = sorted(status_counts.keys())
-        table: List[List[str]] = (
-            [["TASK"] + Job.STATUSES]
-            + [
-                ["ALL"]
-                + [
-                    str(sum(status_counts[task_name][status] for task_name in task_names))
-                    for status in Job.STATUSES
-                ]
-            ]
-            + [
-                [task_name] + [str(status_counts[task_name][status]) for status in Job.STATUSES]
-                for task_name in task_names
-            ]
-        )
-
-        now = datetime.datetime.now()
-        report_lines: List[str] = []
-        report_lines.append("| JOB STATUS {}".format(now.strftime("%Y/%m/%d %H:%M:%S")))
-
-        for line in format_table(table, "lrrrrrr", min_width=7):
-            report_lines.append("| " + line)
-        return report_lines
+        return list(format_job_statuses(status_counts))
 
     def log_job_statuses(self) -> None:
         """
