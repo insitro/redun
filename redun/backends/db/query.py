@@ -491,6 +491,16 @@ class CallGraphQuery:
         [result] = self.all()
         return result
 
+    def one_or_none(self) -> Base:
+        """
+        Returns exactly one record. Returns None if too few or too many.
+        """
+        results = list(self.all())
+        if not results:
+            return None
+        [result] = results
+        return result
+
     def first(self) -> Optional[Base]:
         """
         Returns first record if it exists.

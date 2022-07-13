@@ -13,7 +13,7 @@ phases:
   install:
     commands:
       - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
-      - apt-get update && apt-get install -y postgresql-client
+      - apt-get update && apt-get install -y postgresql-client graphviz graphviz-dev
       - pyenv install -s 3.6.10
       - pyenv install -s 3.7.10
       - pyenv install -s 3.8.8

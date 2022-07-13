@@ -21,7 +21,7 @@ requirements = [
     # packages needed to run in the glue environment.
 ]
 
-extras = {"glue": ["pandas", "pyarrow", "pyspark"]}
+extras = {"glue": ["pandas", "pyarrow", "pyspark"], "viz": "pygraphviz"}
 
 if REQUIRE_POSTGRES:
     requirements.append(PSYCOPG2_VERSION)

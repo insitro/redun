@@ -38,6 +38,18 @@ The above assumes the following dependencies are installed:
 * `pg_config` (in the `postgresql-devel` package; on ubuntu: `apt-get install libpq-dev`)
 * `gcc` (on ubuntu or similar `sudo apt-get install gcc`)
 
+### Optional Visualization
+
+To generate graphviz images and dot files, use
+
+```sh
+pip install redun[viz]
+```
+
+The above assumes the following dependencies are installed:
+* `graphviz` (on ubuntu: `apt-get install graphviz graphviz-dev`, via homebrew: `brew install graphviz`)
+* `gcc` (on ubuntu or similar `sudo apt-get install gcc`)
+
 ## Use cases
 
 redun's general approach to defining workflows makes it a good choice for implementing workflows for a wide-variety of use cases:
