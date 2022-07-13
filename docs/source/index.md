@@ -2,7 +2,7 @@
 hide-toc: true
 ---
 
-<img src="redun.svg" width="200"/>
+<img src="_static/redun.svg" width="200"/>
 
 *yet another redundant workflow engine*
 
@@ -62,6 +62,7 @@ FAQ
 :hidden:
 
 developing
+visualization
 CHANGELOG
 ```
 

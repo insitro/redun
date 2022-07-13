@@ -98,6 +98,7 @@ from redun.tags import (
 from redun.task import Task as BaseTask
 from redun.utils import add_import_path, format_table, pickle_dump, trim_string
 from redun.value import NoneType, function_type, get_type_registry
+from redun.visualize import viz_record
 
 # Constants.
 REDUN_DESCRIPTION = """\
@@ -1202,6 +1203,62 @@ class RedunClient:
         )
         log_parser.set_defaults(func=self.log_command)
 
+        # Viz command
+        viz_parser = subparsers.add_parser(
+            "viz", help="Produce visualization of specific execution."
+        )
+        viz_parser.add_argument(
+            "--format", help="Output format. [Universal]", choices=["dot", "png"]
+        )
+        viz_parser.add_argument(
+            "--output",
+            help="Absolute filepath to save image or dot text into. [Universal]",
+        )
+        viz_parser.add_argument(
+            "--horizontal",
+            action="store_true",
+            help="Orient the graph from left to right instead of top to bottom. [Universal]",
+        )
+        viz_parser.add_argument(
+            "--no-truncation",
+            action="store_true",
+            help="Prevent truncation of value nodes. [Universal]",
+        )
+        viz_parser.add_argument(
+            "--hash",
+            action="store_true",
+            help="Display each object's hash. [Universal]",
+        )
+        viz_parser.add_argument(
+            "--no-detail",
+            action="store_true",
+            help="Produce only the job graph. [Non-value Queries]",
+        )
+        viz_parser.add_argument(
+            "--jobs",
+            action="store_true",
+            help="Visualize jobs as their own nodes. [Execution Queries]",
+        )
+        viz_parser.add_argument(
+            "--dataflow",
+            action="store_true",
+            help="Deconstruct values into their leaf subvalues to track dataflow. \
+                  [Non-value Queries]",
+        )
+        viz_parser.add_argument(
+            "--deduplicate",
+            action="store_true",
+            help="""Condense identical values into the same node. \
+                 (Note this should NOT be used if your program moves values that have low entropy \
+                 and a high chance of hash collisions). [Non-value Queries]""",
+        )
+        viz_parser.add_argument(
+            "--wrap-calls",
+            action="store_true",
+            help="Wrap routing calls around arguments in value queries. [Value Queries]",
+        )
+        viz_parser.set_defaults(func=self.viz_command)
+
         # Repl command.
         repl_parser = subparsers.add_parser("repl", help="Get a repl for querying history.")
         repl_parser.set_defaults(func=self.repl_command)
@@ -1588,6 +1645,7 @@ class RedunClient:
                 cache=not args.no_cache,
                 tags=tags,
             )
+
         except DryRunResult:
             sys.exit(1)
 
@@ -1602,6 +1660,7 @@ class RedunClient:
                 debugger.botframe = None
 
                 debugger.interaction(None, tb)
+
             raise
 
         if result is not None:
@@ -1678,11 +1737,37 @@ class RedunClient:
 
         return None
 
+    def viz_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+        """
+        Performs the visualization command.
+        """
+
+        self.get_scheduler(args)
+
+        scheduler = self.scheduler
+        assert scheduler
+        assert isinstance(scheduler.backend, RedunBackendDb)
+        assert scheduler.backend.session
+
+        props = args.__dict__
+        props["detail"] = not args.no_detail
+        props["direction"] = "LR" if props["horizontal"] else "TB"
+
+        if extra_args:
+            id = extra_args[0]
+            query = CallGraphQuery(scheduler.backend.session)
+            record = query.like_id(id).one_or_none()
+
+            if not record:
+                raise RedunClientError(f"Provided id {id} is invalid.")
+
+            viz_record(scheduler, record, props)
+
     def log_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
         """
         Performs the log command.
 
-        This is a the main command for querying the CallGraph.
+        This is the main command for querying the CallGraph.
         """
         self.get_scheduler(args)
 
