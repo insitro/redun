@@ -1072,6 +1072,53 @@ def task_error(x: int):
     assert isinstance(error_traceback, Traceback)
 
 
+@use_tempdir
+def test_oneshot_error_bad_input() -> None:
+    """
+    oneshot should produce an error file when input file is bad.
+    """
+    file = File("workflow_error.py")
+    file.write(
+        """
+from redun import task
+
+@task()
+def task1(x: int):
+    return x
+"""
+    )
+
+    create_tar("code.tar.gz", ["workflow_error.py"])
+
+    # Remove the original file to force the use of the code package.
+    file.remove()
+
+    client = RedunClient()
+    with pytest.raises(FileNotFoundError):
+        client.execute(
+            [
+                "redun",
+                "oneshot",
+                "--code",
+                "code.tar.gz",
+                "--input",
+                "does_not_exist",
+                "--output",
+                "out",
+                "--error",
+                "error",
+                "workflow_error.py",
+                "task1",
+            ]
+        )
+
+    error_file = File("error")
+    error, error_traceback = pickle.loads(cast(bytes, error_file.read("rb")))
+
+    assert isinstance(error, FileNotFoundError)
+    assert isinstance(error_traceback, Traceback)
+
+
 @mock_logs
 @freeze_time("2020-01-01 00:00:00", tz_offset=-7)
 @patch("redun.executors.aws_batch.aws_describe_jobs")

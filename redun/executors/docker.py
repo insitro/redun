@@ -5,17 +5,14 @@ import threading
 import time
 from collections import OrderedDict
 from configparser import SectionProxy
-from shlex import quote
 from tempfile import mkstemp
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
-from redun.executors.command import get_oneshot_command
+from redun.executors.command import get_oneshot_command, get_script_task_command
 from redun.executors.scratch import (
-    SCRATCH_ERROR,
-    SCRATCH_INPUT,
     SCRATCH_OUTPUT,
     SCRATCH_STATUS,
     get_job_scratch_dir,
@@ -30,6 +27,10 @@ from redun.task import Task
 
 SUCCEEDED = "SUCCEEDED"
 FAILED = "FAILED"
+
+
+class DockerError(Exception):
+    pass
 
 
 def run_docker(
@@ -108,15 +109,21 @@ def run_docker(
         os.close(fd)
         os.remove(cidfile)
 
-        docker_command = ["docker", "run", "-i", "--cidfile", cidfile] + common_args
-        subprocess.check_call(docker_command, env=env)
+        docker_command = ["docker", "run", "-it", "--cidfile", cidfile] + common_args
+        try:
+            subprocess.check_call(docker_command, env=env)
+        except subprocess.CalledProcessError as error:
+            raise DockerError(error)
         with open(cidfile) as infile:
             container_id = infile.read().strip()
         os.remove(cidfile)
     else:
         # Run Docker in the background.
         docker_command = ["docker", "run", "-d"] + common_args
-        container_id = subprocess.check_output(docker_command, env=env).strip().decode("utf8")
+        try:
+            container_id = subprocess.check_output(docker_command, env=env).strip().decode("utf8")
+        except subprocess.CalledProcessError as error:
+            raise DockerError(error)
 
     return container_id
 
@@ -173,48 +180,7 @@ def submit_command(
     """
     Submit a shell command to Docker.
     """
-    input_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_INPUT)
-    output_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT)
-    error_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR)
-    status_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_STATUS)
-
-    # Serialize arguments to input file.
-    input_file = File(input_path)
-    input_file.write(command)
-    assert input_file.exists()
-
-    # Build job command.
-    shell_command = [
-        "bash",
-        "-c",
-        "-o",
-        "pipefail",
-        """
-cp {input_path} .task_command
-chmod +x .task_command
-(
-  ./.task_command \
-  2> >(tee .task_error >&2) | tee .task_output
-) && (
-    cp .task_output {output_path}
-    cp .task_error {error_path}
-    echo ok > {status_path}
-) || (
-    [ -f .task_output ] && cp .task_output {output_path}
-    [ -f .task_error ] && cp .task_error {error_path}
-    echo fail > {status_path}
-    {exit_command}
-)
-""".format(
-            input_path=quote(input_path),
-            output_path=quote(output_path),
-            error_path=quote(error_path),
-            status_path=quote(status_path),
-            exit_command="",
-        ),
-    ]
-
-    # Submit to local Docker.
+    shell_command = get_script_task_command(scratch_prefix, job, command)
     container_id = run_docker(
         shell_command, image=image, **get_docker_job_options(job_options, scratch_prefix)
     )
@@ -279,6 +245,7 @@ class DockerExecutor(Executor):
             "vcpus": config.getint("vcpus", fallback=1),
             "gpus": config.getint("gpus", fallback=0),
             "memory": config.getint("memory", fallback=4),
+            "shared_memory": config.getint("shared_memory", fallback=None),
         }
 
         self._is_running = False
@@ -379,9 +346,7 @@ class DockerExecutor(Executor):
                 )
         elif job["status"] == FAILED:
             redun_job = self._pending_jobs.pop(job["jobId"])
-            error, error_traceback = parse_job_error(
-                self._scratch_prefix, redun_job, batch_job_metadata=job
-            )
+            error, error_traceback = parse_job_error(self._scratch_prefix, redun_job)
             error_traceback.logs = [line + "\n" for line in job["logs"].split("\n")]
             self._scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
 
@@ -407,26 +372,31 @@ class DockerExecutor(Executor):
         image: str = job_options.pop("image", self._image)
 
         # Submit a new Batch job.
-        if not job.task.script:
-            docker_resp = submit_task(
-                image,
-                self._scratch_prefix,
-                job,
-                job.task,
-                args=args,
-                kwargs=kwargs,
-                job_options=job_options,
-                code_file=self._code_file,
-            )
-        else:
-            command = get_task_command(job.task, args, kwargs)
-            docker_resp = submit_command(
-                image,
-                self._scratch_prefix,
-                job,
-                command,
-                job_options=job_options,
-            )
+        try:
+            if not job.task.script:
+                docker_resp = submit_task(
+                    image,
+                    self._scratch_prefix,
+                    job,
+                    job.task,
+                    args=args,
+                    kwargs=kwargs,
+                    job_options=job_options,
+                    code_file=self._code_file,
+                )
+            else:
+                command = get_task_command(job.task, args, kwargs)
+                docker_resp = submit_command(
+                    image,
+                    self._scratch_prefix,
+                    job,
+                    command,
+                    job_options=job_options,
+                )
+        except DockerError:
+            error, error_traceback = parse_job_error(self._scratch_prefix, job)
+            self._scheduler.reject_job(job, error, error_traceback=error_traceback)
+            return
 
         job_dir = get_job_scratch_dir(self._scratch_prefix, job)
         self.log(

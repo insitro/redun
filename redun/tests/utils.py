@@ -16,7 +16,7 @@ import sqlalchemy.event
 from aiobotocore.response import StreamingBody
 from botocore.awsrequest import AWSResponse
 from moto import mock_s3 as _mock_s3
-from moto.core.models import MockRawResponse
+from moto.core.botocore_stubber import MockRawResponse
 from urllib3.response import HTTPHeaderDict
 
 from redun import Scheduler
@@ -134,7 +134,7 @@ def patch_aws(func: Callable) -> Callable:
     def wrapped(*args, **kwargs):
         # Apply patches.
         with patch("botocore.awsrequest.AWSResponse", PatchedAWSResponse), patch(
-            "moto.core.models.AWSResponse", PatchedAWSResponse
+            "moto.core.botocore_stubber.AWSResponse", PatchedAWSResponse
         ), patch(
             "botocore.endpoint.convert_to_response_dict", convert_to_response_dict_patch
         ), patch(

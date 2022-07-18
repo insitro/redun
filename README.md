@@ -14,7 +14,7 @@ redun's key features are:
 - Past intermediate results are cached centrally and reused across workflows.
 - Past call graphs can be used as a data lineage record and can be queried for debugging and auditing.
 
-See the [original blog post](https://insitro.medium.com/when-data-science-goes-with-the-flow-insitro-introduces-redun-8b06b707a14b), [documentation](https://insitro.github.io/redun/design.html), [tutorial](examples/README.md), and [influences](https://insitro.github.io/redun/design.html#influences) for more.
+To learn more, see our [Medium](https://insitro.medium.com/when-data-science-goes-with-the-flow-insitro-introduces-redun-8b06b707a14b) and [AWS HPC](https://aws.amazon.com/blogs/hpc/data-science-workflows-at-insitro-using-redun-on-aws-batch/) blog posts, as well as our [documentation](https://insitro.github.io/redun/design.html), [tutorial](examples/README.md), and [influences](https://insitro.github.io/redun/design.html#influences).
 
 *About the name:* The name "redun" is self-deprecating (there are [A LOT](https://github.com/pditommaso/awesome-pipeline) of workflow engines), but it is also a reference to its original inspiration, the [redo](https://apenwarr.ca/log/20101214) build system.
 

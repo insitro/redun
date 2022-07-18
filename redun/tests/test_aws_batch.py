@@ -327,6 +327,45 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
     )
     get_aws_client_mock.return_value.register_job_definition.assert_not_called()
 
+    # 4.e. image
+    get_aws_client_mock.return_value.register_job_definition.reset_mock()
+    get_job_definition_mock.return_value = {
+        "jobDefinitionName": "test-jd4a",
+        "type": "other",
+        "containerProperties": {
+            "command": ["ls"],
+            "image": "an-image:latest",
+            "vcpus": 2,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [],
+            "privileged": False,
+        },
+    }
+    get_or_create_job_definition(job_def_name="test-jd4a", image="an-image:custom", role="aRole")
+    assert result == {"jobId": "new-job"}
+    get_aws_client_mock.return_value.register_job_definition.assert_called_with(
+        jobDefinitionName="test-jd4a",
+        type="container",
+        containerProperties={
+            "command": ["ls"],
+            "image": "an-image:custom",
+            "vcpus": 1,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [],
+            "privileged": False,
+        },
+    )
+
 
 @patch("redun.executors.aws_utils.get_aws_client")
 @patch("redun.executors.aws_batch.get_or_create_job_definition")
@@ -779,6 +818,7 @@ def task1(x):
                                 "redun.tests.test_aws_batch",
                                 "--code",
                                 code_file.path,
+                                "--no-cache",
                                 "--input",
                                 "s3://example-bucket/redun/jobs/eval_hash/input",
                                 "--output",
@@ -1134,6 +1174,7 @@ def test_executor(
             "vcpus": 1,
             "gpus": 0,
             "memory": 4,
+            "shared_memory": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1170,6 +1211,7 @@ def test_executor(
             "vcpus": 1,
             "gpus": 0,
             "memory": 8,
+            "shared_memory": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1264,6 +1306,7 @@ def test_executor_multinode(
             "vcpus": 1,
             "gpus": 0,
             "memory": 4,
+            "shared_memory": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1325,6 +1368,7 @@ def test_executor_docker(
             "image": "my-image",
             "gpus": 0,
             "memory": 4,
+            "shared_memory": None,
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
         }
@@ -1347,6 +1391,7 @@ def test_executor_docker(
             "image": "my-image",
             "gpus": 0,
             "memory": 4,
+            "shared_memory": None,
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
         }
@@ -1420,6 +1465,7 @@ def test_executor_job_debug(
             "image": "my-image",
             "gpus": 0,
             "memory": 4,
+            "shared_memory": None,
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
         }
@@ -1605,6 +1651,7 @@ def test_interactive(run_docker_mock, iter_local_job_status_mock, get_aws_user_m
         "interactive": True,
         "gpus": 0,
         "memory": 4,
+        "shared_memory": None,
         "vcpus": 1,
         "volumes": [(scratch_dir, scratch_dir)],
     }
@@ -2108,7 +2155,7 @@ from redun import task
 
 @task()
 def other_task(x, y):
-   return x - y
+   return x / y
         """
     )
     create_tar("code.tar.gz", ["workflow.py"])
@@ -2145,31 +2192,34 @@ def other_task(x, y):
 
     for i in range(3):
         os.environ[job_array.AWS_ARRAY_VAR] = str(i)
-        client.execute(
-            [
-                "redun",
-                "oneshot",
-                "workflow.py",
-                "--code",
-                "code.tar.gz",
-                "--array-job",
-                "--input",
-                input_path,
-                "--output",
-                output_path,
-                "--error",
-                error_path,
-                "other_task",
-            ]
-        )
-
-        # Check output files are there
-        output_file = File(
-            get_job_scratch_file(
-                executor.s3_scratch_prefix,
-                test_jobs[i],
-                SCRATCH_OUTPUT,
+        try:
+            client.execute(
+                [
+                    "redun",
+                    "oneshot",
+                    "workflow.py",
+                    "--code",
+                    "code.tar.gz",
+                    "--array-job",
+                    "--input",
+                    input_path,
+                    "--output",
+                    output_path,
+                    "--error",
+                    error_path,
+                    "other_task",
+                ]
             )
-        )
 
-        assert pickle.loads(cast(bytes, output_file.read("rb"))) == i - 2 * i
+            # Check expected output.
+            output_file = File(
+                get_job_scratch_file(executor.s3_scratch_prefix, test_jobs[i], SCRATCH_OUTPUT)
+            )
+            assert pickle.loads(cast(bytes, output_file.read("rb"))) == i / (2 * i)
+        except Exception:
+            # Check expected error.
+            error_file = File(
+                get_job_scratch_file(executor.s3_scratch_prefix, test_jobs[i], SCRATCH_ERROR)
+            )
+            error, _ = pickle.loads(cast(bytes, error_file.read("rb")))
+            assert isinstance(error, ZeroDivisionError)

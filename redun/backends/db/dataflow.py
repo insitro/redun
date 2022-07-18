@@ -1265,7 +1265,7 @@ def display_value(value: Value) -> str:
     """
     Format a Value to a string.
     """
-    return trim_string(repr(value.value_parsed))
+    return trim_string(repr(value.preview))
 
 
 def display_hash(node: Optional[DataflowNode]) -> str:

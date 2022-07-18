@@ -1,12 +1,48 @@
 # Changelog
 
+## 0.8.14
+July 5, 2022
+* `#165` - Switch conda package to noarch
+* `#168` - Bump version of `black` in `redun_server`
+
+## 0.8.13
+June 16, 2022
+
+* `#162` - DE-5345 Fx multi-node doing caching 
+* `#155` - Update linting tools 
+* `#161` - DE-5312 Expand the try-catch to include input parsing 
+* `#157` - [DE-3475] Fix UDF type arg being ignored, add some Spark tests 
+* `#156` - De4653 hash code alt 
+* `#149` - Generalize file staging 
+* `#159` - Fix aws batch shared memory 
+* `#152` - Added docstrings to key Glue job functions 
+
+## 0.8.12
+June 01, 2022
+
+* `#153` - DE-5198 Don't drop containerProperties when sanitizing job defs
+* `#151` - remove unused and broken extract_tar import
+
+## 0.8.11
+May 29, 2022
+
+* `#30` - Add missing data.tsv and fix cleanup default
+
+## 0.8.10
+May 26, 2022
+
+* `#146` - Update moto to 3.1.10
+* `#145` - DE-5109 Fix missing `--array-job` argument for `redun oneshot`
+* `#144` - Add more docs to docker executor functions/classes
+* `#137` - DE-4915 Breakout DockerExecutor and consolidate scratch and code packaging
+
 ## 0.8.9
 May 17, 2022
 
 * `#131` - [DE-4809] Use AWS job run insights to get better tracebacks for glue jobs
 * Merge remote-tracking branch 'origin/main'
 * `#138` - resolve conflicts with public and private main
-* `#33` - Fixed typos and minor grammatical stuff like missing commas, etc. in the documentation and README.md 
+* `#33` - Fixed typos and minor grammatical stuff like missing commas, etc. in the documentation and README.md
 * `#32` - Update README.md
 * `#136` - Ignore flake8 F401 errors in `__init__.py` files
 
