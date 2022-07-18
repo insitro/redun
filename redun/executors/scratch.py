@@ -89,9 +89,7 @@ def parse_job_result(
     return None, False
 
 
-def parse_job_error(
-    scratch_prefix: str, job: Job, batch_job_metadata: Optional[dict] = None
-) -> Tuple[Exception, Traceback]:
+def parse_job_error(scratch_prefix: str, job: Job) -> Tuple[Exception, Traceback]:
     """
     Returns job error from scratch directory.
     """

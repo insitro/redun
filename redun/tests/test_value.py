@@ -1,6 +1,8 @@
+import datetime
 import pickle
 
 import pytest
+from dateutil.tz import tzoffset
 
 from redun import File, Scheduler, task
 from redun.tests.utils import use_tempdir
@@ -74,6 +76,22 @@ def test_value_serialization() -> None:
     assert task_calls == ["task1", "task1"]
 
 
+def test_parse_datetime() -> None:
+    """
+    The TypeRegistry should be able to parse datetimes.
+    """
+    registry = get_type_registry()
+    assert registry.parse_arg(datetime.datetime, "2022-07-01") == datetime.datetime(
+        2022, 7, 1, 0, 0
+    )
+    assert registry.parse_arg(datetime.datetime, "2022-07-01 10:05:33") == datetime.datetime(
+        2022, 7, 1, 10, 5, 33
+    )
+    assert registry.parse_arg(datetime.datetime, "2022-07-01 10:05:33 +0400") == datetime.datetime(
+        2022, 7, 1, 10, 5, 33, tzinfo=tzoffset(None, 14400)
+    )
+
+
 def hello():
     # Example plain python function that we use below as an argument and return value in workflows.
     return "hello"
@@ -102,7 +120,7 @@ def test_function(scheduler: Scheduler) -> None:
     assert scheduler.run(main()) == "hello"
 
     registry = get_type_registry()
-    assert registry.get_hash(hello) == "b29153942a771e3a5d327a81a9ce5eca21aa48db"
+    assert registry.get_hash(hello) == "d57e3c02fb399ad72e41eba2d18054e7a5d6a196"
 
 
 def test_function_parse_arg() -> None:

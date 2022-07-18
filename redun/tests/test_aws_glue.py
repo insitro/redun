@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import boto3
 import moto
+from moto.core.models import base_decorator
 from moto.glue.responses import GlueResponse
 
 from redun import File, task
@@ -111,7 +112,7 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
 
 
 redun_glue_backend = RedunGlueBackend()
-mock_redun_glue = redun_glue_backend.decorator
+mock_redun_glue = base_decorator({"global": redun_glue_backend})
 
 
 class RedunGlueResponse(GlueResponse):

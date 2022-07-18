@@ -116,6 +116,34 @@ def get_or_create_glue_job_definition(
 ) -> str:
     """
     Gets or creates an AWS Glue Job.
+
+    Parameters
+    ----------
+    script_location : str
+        S3 path of script that runs Spark job.
+
+    role : str
+        ARN of IAM role to associate with Glue job.
+
+    temp_dir : str
+        S3 path of scratch directory associated with job data and code.
+
+    extra_py_files : str
+        Comma separated S3 file paths for additional Python code needed for job.
+
+    spark_history_dir : str
+        S3 path where Spark event logs are stored.
+
+    additional_python_modules : List[str]
+        Python modules to be installed with pip before job start.
+
+    aws_region : str
+        AWS region in which to run the Glue job.
+
+    Returns
+    -------
+    str
+        Unique Glue job definition name.
     """
     client = aws_utils.get_aws_client("glue", aws_region=aws_region)
 
@@ -512,7 +540,7 @@ class AWSGlueExecutor(Executor):
                 job_name=self.glue_job_name,
                 job_type="AWS Glue job",
                 job_dir=get_job_scratch_dir(self.s3_scratch_prefix, job),
-                retries=glue_resp["ResponseMetadata"]["RetryAttempts"],
+                retries=glue_resp.get("ResponseMetadata", {}).get("RetryAttempts"),
             )
         )
         return glue_resp["JobRunId"]
@@ -530,6 +558,52 @@ def submit_glue_job(
 ) -> Dict[str, Any]:
     """
     Submits a redun task to AWS glue.
+
+    Parameters
+    ----------
+    job : Job
+        The :class:`redun.scheduler.Job` that is in the process of resolving the Task `a_task`.
+
+    a_task : Task
+        The :class:`redun.task.Task` to be run by the `job`.
+
+    s3_scratch_prefix : str
+        Prefix for S3 url where job files, including additional Python and data files, will reside.
+
+    glue_job_name : str
+        Name of Glue job definition to run.
+
+    redun_zip_location : str
+        S3 path of zipped redun source code.
+
+    code_file : File
+        Code to be executed as a redun workflow. Path within `redun.file.File` should be an S3 url.
+
+    job_options : Dict[str, Any]
+        Option map to configure job initialization and execution.
+
+        Required fields
+            `worker_type`: str
+            `timeout`: int
+            `workers`: int
+
+        Optional fields
+            `additional_libs`: List[str]
+            `extra_py_files`: List[str]
+            `extra_files`: List[str]
+
+    aws_region : str
+        AWS region in which to run the Glue job.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Response contains `JobRunId` field.
+
+    Raises
+    ------
+    ValueError
+        If `worker_type` is not a valid predefined Glue worker type string.
     """
     input_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_INPUT)
     output_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_OUTPUT)

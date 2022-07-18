@@ -38,13 +38,9 @@ bencoding is used in bittorrent files
 use the exposed functions to encode/decode them.
 """
 
+from collections.abc import Iterable, Mapping
 from io import SEEK_CUR, BytesIO
 from string import digits
-
-try:  # py 3.3
-    from collections.abc import Iterable, Mapping
-except ImportError:
-    from collections import Iterable, Mapping
 
 try:
     str = unicode  # type: ignore

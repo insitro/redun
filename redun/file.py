@@ -3,6 +3,7 @@ import glob
 import io
 import os
 import shutil
+import sys
 import threading
 from shlex import quote
 from typing import (
@@ -69,6 +70,13 @@ def get_filesystem_class(
     return _proto2filesystem_class[proto]
 
 
+def list_filesystems() -> List[Type["FileSystem"]]:
+    """
+    Returns list of supported filesystems.
+    """
+    return list(_proto2filesystem_class.values())
+
+
 def open_file(url: str, mode: str = "r", encoding: Optional[str] = None, **kwargs: Any) -> IO:
     """
     Open a file stream.
@@ -85,6 +93,49 @@ def open_file(url: str, mode: str = "r", encoding: Optional[str] = None, **kwarg
         Additional arguments for the underlying file stream. They are Filesystem-specific.
     """
     return get_filesystem(url=url).open(url, mode=mode, encoding=encoding, **kwargs)
+
+
+def copy_file(src_path: Optional[str], dest_path: Optional[str], recursive: bool = False) -> None:
+    """
+    Copy a file. Files can be from different filesystems.
+
+    Parameters
+    ----------
+    src_path : Optional[str]
+        Source path to copy from. If None, use stdin.
+    dest_path : Optional[str]
+        Destination path to copy to. If None, use stdout.
+    recursive : bool
+        If True, copy a directory tree of files.
+    """
+    if src_path is not None and dest_path is not None:
+        if not recursive:
+            File(src_path).copy_to(File(dest_path))
+        else:
+            Dir(src_path).copy_to(Dir(dest_path))
+        return
+
+    if recursive:
+        raise ValueError("recursive is not supported with stdin or stdout.")
+
+    infile: Optional[IO] = None
+    outfile: Optional[IO] = None
+    try:
+        if src_path is None:
+            infile = sys.stdin.buffer
+        else:
+            infile = open_file(src_path, "rb")
+        if dest_path is None:
+            outfile = sys.stdout.buffer
+        else:
+            outfile = open_file(dest_path, "wb")
+
+        shutil.copyfileobj(infile, outfile)
+    finally:
+        if infile:
+            infile.close()
+        if outfile:
+            outfile.close()
 
 
 def glob_file(pattern: str) -> List[str]:
@@ -193,6 +244,41 @@ class FileSystem(abc.ABC):
         """
         with open_file(src_path, "rb") as infile, open_file(dest_path, "wb") as outfile:
             shutil.copyfileobj(infile, outfile)
+
+    def shell_copy(
+        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False
+    ) -> str:
+        """
+        Returns a shell command for performing a file copy.
+
+        Parameters
+        ----------
+        src_path : Optional[str]
+            Source path to copy from. If None, use stdin.
+        dest_path : Optional[str]
+            Destination path to copy to. If None, use stdout.
+        recursive : bool
+            If True, copy a directory tree of files.
+        """
+        if recursive:
+            if src_path and dest_path:
+                return f"redun fs cp --recursive {quote(src_path)} {quote(dest_path)}"
+            else:
+                raise ValueError("recursive is not supported with stdin or stdout.")
+
+        src_cmd = get_filesystem(url=src_path).shell_copy(src_path, None) if src_path else None
+        dest_cmd = get_filesystem(url=dest_path).shell_copy(None, dest_path) if dest_path else None
+
+        if src_cmd and dest_cmd:
+            # Combine two fs-specific shell commands through a pipe.
+            return f"({src_cmd}) | ({dest_cmd})"
+        elif src_cmd:
+            return src_cmd
+        elif dest_cmd:
+            return dest_cmd
+        else:
+            # At least one path must be defined.
+            raise ValueError("At least one path must be defined.")
 
     def glob(self, pattern: str) -> List[str]:
         """
@@ -308,6 +394,45 @@ class LocalFileSystem(FileSystem):
             # Perform generic copy.
             super().copy(src_path, dest_path)
 
+    def shell_copy(
+        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False
+    ) -> str:
+        """
+        Returns a shell command for performing a file copy.
+
+        Parameters
+        ----------
+        src_path : Optional[str]
+            Source path to copy from. If None, use stdin.
+        dest_path : Optional[str]
+            Destination path to copy to. If None, use stdout.
+        recursive : bool
+            If True, copy a directory tree of files.
+        """
+        protos = {get_proto(path) for path in [src_path, dest_path] if path}
+        if "local" not in protos:
+            # Fallback to generic copy strategy.
+            return super().shell_copy(src_path, dest_path, recursive=recursive)
+
+        other_proto = next((proto for proto in protos if proto != "local"), None)
+        if other_proto:
+            # Let other proto produce the command.
+            return get_filesystem(other_proto).shell_copy(src_path, dest_path, recursive=recursive)
+
+        if src_path and dest_path:
+            if not recursive:
+                return f"cp {quote(src_path)} {quote(dest_path)}"
+            else:
+                return f"cp -r {quote(src_path)} {quote(dest_path)}"
+        elif recursive:
+            raise ValueError("recursive is not supported with stdin or stdout.")
+        elif src_path:
+            return f"cat {quote(src_path)}"
+        elif dest_path:
+            return f"cat > {quote(dest_path)}"
+        else:
+            raise ValueError("At least one path must be given.")
+
     def glob(self, pattern: str) -> List[str]:
         """
         Returns filenames matching pattern.
@@ -408,6 +533,30 @@ class FsspecFileSystem(FileSystem):
             # Perform generic copy.
             super().copy(src_path, dest_path)
 
+    def shell_copy(
+        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False
+    ) -> str:
+        """
+        Returns a shell command for performing a file copy.
+
+        Parameters
+        ----------
+        src_path : Optional[str]
+            Source path to copy from. If None, use stdin.
+        dest_path : Optional[str]
+            Destination path to copy to. If None, use stdout.
+        recursive : bool
+            If True, copy a directory tree of files.
+        """
+        if recursive:
+            if not src_path or not dest_path:
+                raise ValueError("recursive is not supported with stdin or stdout.")
+            return f"redun fs cp --recursive {quote(src_path)} {quote(dest_path)}"
+        else:
+            src_path = src_path or "-"
+            dest_path = dest_path or "-"
+            return f"redun fs cp {quote(src_path)} {quote(dest_path)}"
+
     def glob(self, pattern: str) -> List[str]:
         """
         Returns filenames matching pattern.
@@ -468,8 +617,39 @@ class GSFileSystem(FsspecFileSystem):
 
     name = "gs"
 
-    def glob(self, pattern: str) -> List[str]:
-        return ["gs://" + key for key in self.fs.glob(pattern)]
+    def shell_copy(
+        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False
+    ) -> str:
+        """
+        Returns a shell command for performing a file copy.
+
+        Parameters
+        ----------
+        src_path : Optional[str]
+            Source path to copy from. If None, use stdin.
+        dest_path : Optional[str]
+            Destination path to copy to. If None, use stdout.
+        recursive : bool
+            If True, copy a directory tree of files.
+        """
+        protos = {get_proto(path) for path in [src_path, dest_path] if path}
+        if "gs" not in protos or not (protos <= {"local", "gs"}):
+            # Fallback to generic copy strategy.
+            return super().shell_copy(src_path, dest_path, recursive=recursive)
+
+        if src_path and dest_path:
+            if not recursive:
+                return f"gsutil cp {quote(src_path)} {quote(dest_path)}"
+            else:
+                return f"gsutil cp -r {quote(src_path)} {quote(dest_path)}"
+        elif recursive:
+            raise ValueError("recursive is not supported with stdin or stdout.")
+        elif src_path:
+            return f"gsutil cp {quote(src_path)} -"
+        elif dest_path:
+            return f"gsutil cp - {quote(dest_path)}"
+        else:
+            raise ValueError("At least one path must be given.")
 
 
 @register_filesystem
@@ -566,6 +746,40 @@ class S3FileSystem(FileSystem):
         else:
             # Perform generic copy.
             super().copy(src_path, dest_path)
+
+    def shell_copy(
+        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False
+    ) -> str:
+        """
+        Returns a shell command for performing a file copy.
+
+        Parameters
+        ----------
+        src_path : Optional[str]
+            Source path to copy from. If None, use stdin.
+        dest_path : Optional[str]
+            Destination path to copy to. If None, use stdout.
+        recursive : bool
+            If True, copy a directory tree of files.
+        """
+        protos = {get_proto(path) for path in [src_path, dest_path] if path}
+        if "s3" not in protos or not (protos <= {"local", "s3"}):
+            # Fallback to generic copy strategy.
+            return super().shell_copy(src_path, dest_path, recursive=recursive)
+
+        if src_path and dest_path:
+            if not recursive:
+                return f"aws s3 cp --no-progress {quote(src_path)} {quote(dest_path)}"
+            else:
+                return f"aws s3 cp --no-progress --recursive {quote(src_path)} {quote(dest_path)}"
+        elif recursive:
+            raise ValueError("recursive is not supported with stdin or stdout.")
+        elif src_path:
+            return f"aws s3 cp --no-progress {quote(src_path)} -"
+        elif dest_path:
+            return f"aws s3 cp --no-progress - {quote(dest_path)}"
+        else:
+            raise ValueError("At least one path must be given.")
 
     def glob(self, pattern: str) -> List[str]:
         return ["s3://" + key for key in self.s3.glob(pattern)]
@@ -690,6 +904,17 @@ class File(Value):
         self.filesystem.copy(self.path, dest_file.path)
         dest_file.update_hash()
         return dest_file
+
+    def shell_copy_to(self, dest_path: Optional[str]) -> str:
+        """
+        Returns a shell command for copying the file to a destination path.
+
+        Parameters
+        ----------
+        dest_path : Optional[str]
+            Destination path to copy to. If None, use stdout.
+        """
+        return self.filesystem.shell_copy(self.path, dest_path)
 
     def isfile(self) -> bool:
         return self.filesystem.isfile(self.path)
@@ -837,6 +1062,17 @@ class Dir(FileSet):
             dest_file = dest_dir.file(rel_path)
             src_file.copy_to(dest_file, skip_if_exists=skip_if_exists)
         return dest_dir
+
+    def shell_copy_to(self, dest_path: str) -> str:
+        """
+        Returns a shell command for copying the directory to a destination path.
+
+        Parameters
+        ----------
+        dest_path : str
+            Destination path to copy to.
+        """
+        return self.filesystem.shell_copy(self.path, dest_path, recursive=True)
 
     def stage(self, local: Optional[str] = None) -> "StagingDir":
         if not local:
@@ -1389,38 +1625,24 @@ class StagingFile(Staging[File]):
         return self.local.copy_to(self.remote)
 
     def render_unstage(self) -> str:
+        """
+        Returns a shell command for unstaging a file.
+        """
         if self.local.path == self.remote.path:
             # No staging is needed.
             return ""
 
-        # TODO: Generalize.
-        if self.remote.filesystem.name == "s3" or self.local.filesystem.name == "s3":
-            return "aws s3 cp --no-progress {} {}".format(
-                quote(self.local.path), quote(self.remote.path)
-            )
-        elif self.remote.filesystem.name == "s3" or self.local.filesystem.name == "s3":
-            return "gsutil cp {} {}".format(
-                quote(self.local.path), quote(self.remote.path)
-            )
-        else:
-            return "cp {} {}".format(quote(self.local.path), quote(self.remote.path))
+        return self.local.shell_copy_to(self.remote.path)
 
     def render_stage(self) -> str:
+        """
+        Returns a shell command for staging a file.
+        """
         if self.local.path == self.remote.path:
             # No staging is needed.
             return ""
 
-        # TODO: Generalize.
-        if self.remote.filesystem.name == "s3" or self.local.filesystem.name == "s3":
-            return "aws s3 cp --no-progress {} {}".format(
-                quote(self.remote.path), quote(self.local.path)
-            )
-        elif self.remote.filesystem.name == "gs" or self.local.filesystem.name == "gs":
-            return "gsutil cp {} {}".format(
-                quote(self.remote.path), quote(self.local.path)
-            )
-        else:
-            return "cp {} {}".format(quote(self.remote.path), quote(self.local.path))
+        return self.remote.shell_copy_to(self.local.path)
 
 
 class StagingDir(Staging[Dir]):
@@ -1465,35 +1687,21 @@ class StagingDir(Staging[Dir]):
         return self.local.copy_to(self.remote)
 
     def render_unstage(self) -> str:
+        """
+        Returns a shell command for unstaging a directory.
+        """
         if self.local.path == self.remote.path:
             # No staging is needed.
             return ""
 
-        # TODO: Generalize.
-        if self.remote.filesystem.name == "s3" or self.local.filesystem.name == "s3":
-            return "aws s3 cp --no-progress --recursive {} {}".format(
-                quote(self.local.path), quote(self.remote.path)
-            )
-        elif self.remote.filesystem.name == "gs" or self.local.filesystem.name == "gs":
-            return "gsutil cp -r {} {}".format(
-                quote(self.local.path), quote(self.remote.path)
-            )
-        else:
-            return "cp -r {} {}".format(quote(self.local.path), quote(self.remote.path))
+        return self.local.shell_copy_to(self.remote.path)
 
     def render_stage(self) -> str:
+        """
+        Returns a shell command for staging a directory.
+        """
         if self.local.path == self.remote.path:
             # No staging is needed.
             return ""
 
-        # TODO: Generalize.
-        if self.remote.filesystem.name == "s3" or self.local.filesystem.name == "s3":
-            return "aws s3 cp --no-progress --recursive {} {}".format(
-                quote(self.remote.path), quote(self.local.path)
-            )
-        elif self.remote.filesystem.name == "gs" or self.local.filesystem.name == "gs":
-            return "gsutil cp -r {} {}".format(
-                quote(self.remote.path), quote(self.local.path)
-            )
-        else:
-            return "cp -r {} {}".format(quote(self.remote.path), quote(self.local.path))
+        return self.remote.shell_copy_to(self.local.path)

@@ -1,11 +1,13 @@
+import datetime
 import importlib
 import os
-import pickle
 from enum import Enum
 from typing import Any, Callable, Dict, Iterator, Optional, Type, cast
 
-from redun.hashing import hash_bytes, hash_tag_bytes
-from redun.utils import iter_nested_value, pickle_dumps
+from dateutil.parser import parse as parse_date
+
+from redun.hashing import hash_bytes, hash_struct, hash_tag_bytes
+from redun.utils import get_func_source, iter_nested_value, pickle_dumps, pickle_loads
 
 MIME_TYPE_PICKLE = "application/python-pickle"
 
@@ -165,7 +167,10 @@ class TypeRegistry:
         """
         Returns a deserialization of bytes `data` into a new Value.
         """
-        raw_type = self.parse_type_name(type_name)
+        try:
+            raw_type = self.parse_type_name(type_name)
+        except TypeError:
+            raise InvalidValueError(f"Unknown type: {type_name}")
         value_type = self.get_type(raw_type)
         assert value_type
         return value_type.deserialize(raw_type, data)
@@ -290,7 +295,7 @@ class Value(metaclass=MetaValue):
         """
         Returns a deserialization of bytes `data` into a new Value.
         """
-        return pickle.loads(data)
+        return pickle_loads(data)
 
     def __getstate__(self) -> dict:
         """
@@ -442,6 +447,19 @@ class EnumType(ProxyValue):
             raise ValueError("{} is not a valid {}".format(arg, raw_type.__name__))
 
 
+class DatetimeType(ProxyValue):
+    """
+    Augment datetime.datetime to support argument parsing.
+    """
+
+    type = datetime.datetime
+    type_name = "datetime.datetime"
+
+    @classmethod
+    def parse_arg(cls, raw_type: Type, arg: str) -> datetime.datetime:
+        return parse_date(arg)
+
+
 # Get the type for python functions.
 function_type = type(lambda: None)
 
@@ -496,8 +514,16 @@ class Function(ProxyValue):
         return f"{self.module}.{self.name}"
 
     def _calc_hash(self) -> str:
-        # Hash is based on fully qualified function name.
-        return hash_tag_bytes("Value.function", self.fullname.encode("utf8"))
+        # Hash based on fully qualified function name and source code.
+        hash = hash_struct(
+            [
+                "Value.function",
+                self.fullname.encode("utf8"),
+                "source",
+                get_func_source(self.instance),
+            ]
+        )
+        return hash
 
     def __getstate__(self) -> dict:
         return {
@@ -533,7 +559,7 @@ class Function(ProxyValue):
     @classmethod
     def deserialize(self, raw_type: Any, data: bytes) -> Any:
         # Deserialize the Function wrapper and return the inner python function.
-        func_wrapper = pickle.loads(data)
+        func_wrapper = pickle_loads(data)
         return func_wrapper.instance
 
     @classmethod
@@ -596,7 +622,7 @@ class FileCache(ProxyValue):
     @classmethod
     def _deserialize(cls, data: bytes) -> Any:
         # User defined deserialization.
-        return pickle.loads(data)
+        return pickle_loads(data)
 
     def serialize(self) -> bytes:
         from redun.file import File

@@ -10,7 +10,6 @@ from collections import OrderedDict, defaultdict
 from configparser import SectionProxy
 from functools import lru_cache
 from itertools import islice
-from shlex import quote
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 import boto3
@@ -19,7 +18,7 @@ from redun.config import create_config_section
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
-from redun.executors.command import get_oneshot_command
+from redun.executors.command import get_oneshot_command, get_script_task_command
 from redun.executors.docker import DockerExecutor
 from redun.executors.scratch import (
     SCRATCH_ERROR,
@@ -180,13 +179,12 @@ def get_or_create_job_definition(
     def sanitize_job_def(job_def: Dict) -> Dict:
         """Overwrite the resource properties with redactions."""
         result = copy.deepcopy(job_def)
-        result["containerProperties"] = result.get("containerProperties", {}).update(
-            no_resource_container_properties
+        result.setdefault("containerProperties", {}).update(no_resource_container_properties)
+        node_range = result.setdefault("nodeProperties", {}).setdefault(
+            "nodeRangeProperties", [{}, {}]
         )
-        node_range = result.get("nodeProperties", {}).get("nodeRangeProperties", [{}, {}])
-        node_range[0].get("container", {}).update(no_resource_container_properties)
-        node_range[1].get("container", {}).update(no_resource_container_properties)
-        result["nodeRangeProperties"] = node_range
+        for node in node_range:
+            node.setdefault("container", {}).update(no_resource_container_properties)
         return result
 
     if existing_job_def:
@@ -436,7 +434,8 @@ def submit_task(
         a_task,
         args,
         kwargs,
-        job_options=job_options,
+        # Suppress cache checking since output is discarded.
+        job_options={**job_options, "cache": False},
         code_file=code_file,
         array_uuid=array_uuid,
         output_path="/dev/null",  # Let main command write to scratch file.
@@ -485,46 +484,12 @@ def submit_command(
     """
     Submit a shell command to AWS Batch.
     """
-    input_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_INPUT)
-    output_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_OUTPUT)
-    error_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_ERROR)
-    status_path = get_job_scratch_file(s3_scratch_prefix, job, SCRATCH_STATUS)
-
-    # Serialize arguments to input file.
-    input_file = File(input_path)
-    input_file.write(command)
-    assert input_file.exists()
-
-    # Build job command.
-    shell_command = [
-        "bash",
-        "-c",
-        "-o",
-        "pipefail",
-        """
-aws s3 cp {input_path} .task_command
-chmod +x .task_command
-(
-  ./.task_command \
-  2> >(tee .task_error >&2) | tee .task_output
-) && (
-    aws s3 cp .task_output {output_path}
-    aws s3 cp .task_error {error_path}
-    echo ok | aws s3 cp - {status_path}
-) || (
-    [ -f .task_output ] && aws s3 cp .task_output {output_path}
-    [ -f .task_error ] && aws s3 cp .task_error {error_path}
-    echo fail | aws s3 cp - {status_path}
-    {exit_command}
-)
-""".format(
-            input_path=quote(input_path),
-            output_path=quote(output_path),
-            error_path=quote(error_path),
-            status_path=quote(status_path),
-            exit_command="exit 1",
-        ),
-    ]
+    shell_command = get_script_task_command(
+        s3_scratch_prefix,
+        job,
+        command,
+        exit_command="exit 1",
+    )
 
     # Submit to AWS Batch.
     assert job.eval_hash
@@ -753,6 +718,7 @@ class AWSBatchExecutor(Executor):
             "vcpus": config.getint("vcpus", fallback=1),
             "gpus": config.getint("gpus", fallback=0),
             "memory": config.getint("memory", fallback=4),
+            "shared_memory": config.getint("shared_memory", fallback=None),
             "retries": config.getint("retries", fallback=1),
             "role": config.get("role"),
             "job_name_prefix": config.get("job_name_prefix", fallback="redun-job"),

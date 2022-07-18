@@ -84,6 +84,7 @@ def test_executor_docker(
         "image": "my-image",
         "gpus": 0,
         "memory": 4,
+        "shared_memory": None,
         "vcpus": 1,
         "volumes": [(scratch_dir, scratch_dir)],
     }
