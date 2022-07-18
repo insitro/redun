@@ -1256,6 +1256,7 @@ class AWSBatchExecutor(Executor):
                 job,
                 command,
                 job_options=task_options,
+                aws_region=self.aws_region,
             )
 
         self.log(
