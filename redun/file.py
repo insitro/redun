@@ -651,6 +651,9 @@ class GSFileSystem(FsspecFileSystem):
         else:
             raise ValueError("At least one path must be given.")
 
+    def glob(self, pattern: str) -> List[str]:
+        return ["gs://" + key for key in self.fs.glob(pattern)]
+
 
 @register_filesystem
 class S3FileSystem(FileSystem):
