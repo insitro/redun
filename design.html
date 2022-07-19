@@ -167,6 +167,7 @@
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="developing.html">Developer guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">Changelog</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
@@ -918,7 +919,7 @@ Hello, World!
 <h2>Data provenance<a class="headerlink" href="#data-provenance" title="Permalink to this heading">#</a></h2>
 <section id="call-graphs">
 <h3>Call graphs<a class="headerlink" href="#call-graphs" title="Permalink to this heading">#</a></h3>
-<img src="redun-call-graph.svg" width="100%"/>
+<img src="_static/redun-call-graph.svg" width="100%"/>
 <p>Depicted above is an example call graph and job tree (left) for an execution of a workflow (right). When each task is called, a CallNode is recorded along with all the Values used as arguments and return values. As tasks (<code class="docutils literal notranslate"><span class="pre">main</span></code>) call child tasks, children CallNodes are recorded (<code class="docutils literal notranslate"><span class="pre">task1</span></code> and <code class="docutils literal notranslate"><span class="pre">task2</span></code>). “Horizontal” dataflow is also recorded between sibling tasks, such as <code class="docutils literal notranslate"><span class="pre">task1</span></code> and <code class="docutils literal notranslate"><span class="pre">task2</span></code>. Each node in the call graph is identified by a unique hash and each Job and Execution is identified by a unique UUID. This information is stored by default in the redun database <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code>.</p>
 </section>
 <section id="querying-call-graphs">

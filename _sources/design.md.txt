@@ -826,7 +826,7 @@ def main(x):
 
 ### Call graphs
 
-<img src="redun-call-graph.svg" width="100%"/>
+<img src="_static/redun-call-graph.svg" width="100%"/>
 
 Depicted above is an example call graph and job tree (left) for an execution of a workflow (right). When each task is called, a CallNode is recorded along with all the Values used as arguments and return values. As tasks (`main`) call child tasks, children CallNodes are recorded (`task1` and `task2`). "Horizontal" dataflow is also recorded between sibling tasks, such as `task1` and `task2`. Each node in the call graph is identified by a unique hash and each Job and Execution is identified by a unique UUID. This information is stored by default in the redun database `.redun/redun.db`.
 
