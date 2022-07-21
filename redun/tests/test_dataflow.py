@@ -606,7 +606,7 @@ c_file_2 <-- derives from
 list_files_result <-- <b9dea9ed> list_files(dir)
   dir = <dc00c649> 'my-prog/'
 
-dir <-- argument of <da0d3de8> main(dir)
+dir <-- argument of <2151d173> main(dir)
     <-- origin
 """,
         output,
@@ -674,7 +674,7 @@ x_2 <-- <cf9b2b45> x_3
 x_3 <-- <cf9b2b45> task1(x_4)
   x_4 = <279a8e0b> 10
 
-x_4 <-- argument of <71257ad0> main(x)
+x_4 <-- argument of <b08130cb> main(x)
     <-- origin
 """,
         output,
