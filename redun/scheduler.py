@@ -355,6 +355,29 @@ class Job:
         """
         parent_job.child_jobs.append(self)
 
+    def collapse(self, other_job: "Job") -> None:
+        """
+        Collapse this Job into `other_job`.
+
+        This method is used when equivalent Jobs are detected, and we want to
+        perform Common Subexpression Elimination (CSE).
+        """
+
+        # Inform parent job, to use other_job instead.
+        parent_job = self.parent_job
+        assert parent_job
+        parent_job.child_jobs[parent_job.child_jobs.index(self)] = other_job
+
+        def then(result: Any) -> None:
+            self.call_hash = other_job.call_hash
+            self.resolve(result)
+
+        def fail(error: Any) -> None:
+            self.call_hash = other_job.call_hash
+            self.reject(error)
+
+        other_job.result_promise.then(then, fail)
+
     def resolve(self, result: Any) -> None:
         """
         Resolves a Job with a final concrete value, `result`.
@@ -729,9 +752,22 @@ class Scheduler:
         self.events_queue: queue.Queue = queue.Queue()
         self.workflow_promise: Optional[Promise] = None
         self._current_execution: Optional[Execution] = None
-        self._pending_expr: Dict[str, Tuple[Promise, Job]] = {}
+
+        # Tracking for expression cycles. We store pending expressions by their parent_job
+        # because the parent_job's lifetime corresponds to the expression's lifetime.
+        # This makes for straightforward deallocation.
+        self._pending_expr: Dict[Optional[Job], Dict[Expression, Promise]] = defaultdict(dict)
+
+        # Tracking for Common Subexpression Elimination (CSE) for pending Jobs.
+        self._pending_jobs: Dict[Optional[str], Job] = {}
+
+        # Currenting pending/running jobs.
         self._jobs: Set[Job] = set()
+
+        # Job status of finalized jobs.
         self._finalized_jobs: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
+        # Execution modes.
         self.dryrun = False
         self.use_cache = True
 
@@ -841,6 +877,7 @@ class Scheduler:
         start_time = time.time()
         self.thread_id = threading.get_ident()
         self._pending_expr.clear()
+        self._pending_jobs.clear()
         self._jobs.clear()
         result = self.evaluate(expr)
         self.process_events(result)
@@ -954,44 +991,17 @@ class Scheduler:
             lambda _: map_nested_value(resolve_term, pending_expr)
         )
 
-    def _check_pending_expr(
-        self, expr: TaskExpression, parent_job: Optional[Job]
-    ) -> Optional[Promise]:
-        """
-        Returns a promise for an expression currently pending evaluation.
-
-        This check is necessary to avoid double evaluating an expression that is
-        not in the cache yet since it is pending.
-
-        This is a form of common subexpression elimination.
-        https://en.wikipedia.org/wiki/Common_subexpression_elimination
-        """
-
-        # Check pending evaluation cache for whether this expression is being evaluated already.
-        promise_job = self._pending_expr.get(expr.get_hash())
-        if not promise_job:
-            return None
-
-        # We need to notify parent_job of this new child job.
-        # This is used to calculate proper call_hash.
-        # TODO: Decide whether to record multiple parents. Jobs can form a DAG too.
-        promise, job2 = promise_job
-        if parent_job:
-            job2.notify_parent(parent_job)
-
-        # Wait for other job to finish, and then copy call_hash to this expression.
-        def callback(result: Any) -> Any:
-            expr.call_hash = job2.call_hash
-            return result
-
-        return promise.then(callback)
-
     def evaluate_apply(self, expr: ApplyExpression, parent_job: Optional[Job] = None) -> Promise:
         """
         Begin an evaluation of an ApplyExpression.
 
         Returns a Promise that will resolve/reject when the evaluation is complete.
         """
+        # Detect cycles.
+        pending_promise = self._pending_expr[parent_job].get(expr)
+        if pending_promise:
+            return pending_promise
+
         if isinstance(expr, SchedulerExpression):
             task = self.task_registry.get(expr.task_name)
             if not task:
@@ -1005,14 +1015,9 @@ class Scheduler:
 
             # Scheduler tasks are executed with access to scheduler, parent_job, and
             # raw args (i.e. possibly unevaluated).
-            return task.func(self, parent_job, expr, *expr.args, **expr.kwargs)
+            promise = task.func(self, parent_job, expr, *expr.args, **expr.kwargs)
 
         elif isinstance(expr, TaskExpression):
-            # Reuse promise if expression is already pending evaluation.
-            pending_promise = self._check_pending_expr(expr, parent_job)
-            if pending_promise:
-                return pending_promise
-
             # TaskExpressions need to be executed in a new Job.
             job = Job(expr, parent_job=parent_job, execution=self._current_execution)
             self._jobs.add(job)
@@ -1035,10 +1040,6 @@ class Scheduler:
             args_promise = self.evaluate(expr_args, parent_job=parent_job)
             promise = args_promise.then(lambda eval_args: self.exec_job(job, eval_args))
 
-            # Record pending expression.
-            self._pending_expr[expr.get_hash()] = (promise, job)
-            return promise
-
         elif isinstance(expr, SimpleExpression):
             # Simple Expressions can be executed synchronously.
             func = get_lazy_operation(expr.func_name)
@@ -1053,7 +1054,7 @@ class Scheduler:
 
             # Evaluate args, apply func, evaluate result.
             args_promise = self.evaluate((expr.args, expr.kwargs), parent_job=parent_job)
-            return args_promise.then(
+            promise = args_promise.then(
                 lambda eval_args: self.evaluate(
                     cast(Callable, func)(*eval_args[0], **eval_args[1]), parent_job=parent_job
                 )
@@ -1061,6 +1062,10 @@ class Scheduler:
 
         else:
             raise NotImplementedError("Unknown expression: {}".format(expr))
+
+        # Recording pending expressions.
+        self._pending_expr[parent_job][expr] = promise
+        return promise
 
     def _is_job_within_limits(self, job_limits: dict) -> bool:
         """
@@ -1093,6 +1098,10 @@ class Scheduler:
         self._jobs_pending_limits.append((job, eval_args))
 
     def _check_jobs_pending_limits(self) -> None:
+        """
+        Checks whether Jobs pending due to limits can now satistify limits and run.
+        """
+
         def _add_limits(limits1, limits2):
             return {
                 limit_name: limits1[limit_name] + limits2[limit_name]
@@ -1117,6 +1126,27 @@ class Scheduler:
 
         for job, eval_args in ready_jobs:
             self.exec_job(job, eval_args)
+
+    def _check_pending_job(self, job: Job) -> Optional[Job]:
+        """
+        Checks whether an equivalent Job is already running.
+
+        This check is necessary to avoid double evaluating an expression that is
+        not in the cache yet since it is pending.
+
+        This is a form of common subexpression elimination.
+        https://en.wikipedia.org/wiki/Common_subexpression_elimination
+        """
+        pending_job = self._pending_jobs.get(job.eval_hash)
+        if not pending_job:
+            # New job.
+            self._pending_jobs[job.eval_hash] = job
+            return None
+
+        # Remove job from pending list.
+        self._jobs.remove(job)
+        job.collapse(pending_job)
+        return pending_job
 
     def exec_job(self, job: Job, eval_args: Tuple[Tuple, dict]) -> Promise:
         """
@@ -1151,14 +1181,18 @@ class Scheduler:
         if not self.use_cache:
             job.task_options["cache"] = False
 
-        self.backend.record_job_start(job)
-
         # Preprocess arguments before sending them to task function.
         args, kwargs = job.eval_args
         args, kwargs = self.preprocess_args(job, args, kwargs)
 
         # Check cache using eval_hash as key.
         job.eval_hash, job.args_hash = self.get_eval_hash(job.task, args, kwargs)
+
+        # Check whether a job of the same eval_hash is already running.
+        if self._check_pending_job(job):
+            return
+
+        self.backend.record_job_start(job)
 
         # HACK: This is a workaround introduced by DE-4761. See the ticket for
         # notes on how script_task could be redesigned to remove the need for
@@ -1260,10 +1294,6 @@ class Scheduler:
             result = self.postprocess_result(job, result, job.eval_hash)
             self.set_cache(job.eval_hash, job.task.hash, job.args_hash, result)
 
-        # Clear pending expression lookup.
-        if job.expr.get_hash() in self._pending_expr:
-            del self._pending_expr[job.expr.get_hash()]
-
         # Eval result (child tasks), then resolve job.
         self.evaluate(result, parent_job=job).then(
             lambda result: self.resolve_job(job, result)
@@ -1328,6 +1358,13 @@ class Scheduler:
         """
         self._jobs.remove(job)
         self._finalized_jobs[job.task_name][job.status] += 1
+
+        # By poping the job, we free up all expressions that we created within
+        # the job. They no longer can be part of any more cycles.
+        self._pending_expr.pop(job, None)
+
+        # When a job finishes, we no longer need to track in memory for CSE.
+        self._pending_jobs.pop(job.eval_hash, None)
 
     def _record_job_tags(self, job: Job) -> None:
         """

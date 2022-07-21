@@ -7,7 +7,9 @@ import pytest
 from sqlalchemy.orm import Session
 
 from redun import Scheduler, task
-from redun.backends.db import Execution, RedunBackendDb
+from redun.backends.db import Execution
+from redun.backends.db import Job as JobDb
+from redun.backends.db import RedunBackendDb
 from redun.config import Config
 from redun.expression import SchedulerExpression
 from redun.promise import Promise
@@ -1532,3 +1534,68 @@ def test_job_clear(scheduler: Scheduler) -> None:
 
     with pytest.raises(ValueError, match="raised by child"):
         scheduler.run(main(10))
+
+
+def test_common_expression() -> None:
+    """
+    Scheduler should use Common Expression Elimination.
+    """
+
+    @task
+    def id(x: int) -> int:
+        return x
+
+    @task
+    def add(a: int, b: int) -> int:
+        return a + b
+
+    @task
+    def boom(x: int) -> int:
+        raise ValueError("BOOM!")
+
+    # There should be only one job for add.
+    scheduler = Scheduler()
+    assert isinstance(scheduler.backend, RedunBackendDb)
+    assert scheduler.backend.session
+    assert scheduler.run([add(1, 2), add(1, 2)]) == [3, 3]
+    assert scheduler.backend.session.query(JobDb).filter(JobDb.task_hash == add.hash).count() == 1
+
+    # We should do CSE after argument expressions are evaluated, such as `id(2)`.
+    scheduler = Scheduler()
+    assert isinstance(scheduler.backend, RedunBackendDb)
+    assert scheduler.backend.session
+
+    # Cache id(2) so that we can force `add(1, id(2))` and `add(1, 2)` at the same time
+    # and excercise the CSE logic on two different expressions.
+    assert scheduler.run(id(2)) == 2
+    assert scheduler.run([add(1, id(2)), add(1, 2)]) == [3, 3]
+    assert scheduler.backend.session.query(JobDb).filter(JobDb.task_hash == add.hash).count() == 1
+
+    # Expressions that have been collapsed by CSE should also propagate errors.
+    scheduler = Scheduler()
+    assert isinstance(scheduler.backend, RedunBackendDb)
+    assert scheduler.backend.session
+    with pytest.raises(ValueError, match="BOOM"):
+        scheduler.run([boom(1), boom(1)])
+    assert scheduler.backend.session.query(JobDb).filter(JobDb.task_hash == boom.hash).count() == 1
+
+
+def test_cycle_expression() -> None:
+    """
+    Scheduler should not double evaluate cycles in the Expression Graph.
+    """
+    calls = []
+
+    @scheduler_task(namespace="redun.tests.test_scheduler")
+    def echo(scheduler, parent_job, expr, x) -> Promise:
+        calls.append("id")
+        promise: Promise[int] = Promise()
+        promise.do_resolve(x)
+        return promise
+
+    # We should call echo only once.
+    scheduler = Scheduler()
+    x = echo(1)
+    y = x + x
+    assert scheduler.run(y) == 2
+    assert calls == ["id"]
