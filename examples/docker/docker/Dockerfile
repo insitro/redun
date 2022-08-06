@@ -3,7 +3,8 @@ FROM ubuntu:20.04
 # Install OS-level libraries.
 RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     python3 \
-    python3-pip && \
+    python3-pip \
+    graphviz-dev && \
     apt-get clean
 
 WORKDIR /code
