@@ -246,6 +246,7 @@ class DockerExecutor(Executor):
             "gpus": config.getint("gpus", fallback=0),
             "memory": config.getint("memory", fallback=4),
             "shared_memory": config.getint("shared_memory", fallback=None),
+            "interactive": config.getboolean("interactive", fallback=False),
         }
 
         self._is_running = False
