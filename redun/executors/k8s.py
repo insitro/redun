@@ -689,12 +689,9 @@ class K8SExecutor(Executor):
 
                 index = int(pod.metadata.annotations["batch.kubernetes.io/job-completion-index"])
                 redun_job = redun_jobs.pop(index, None)
-                if not redun_job:
-                    # redun job is already finished.
-                    return
-
-                k8s_labels = [("k8s_job", job.metadata.uid)]
-                self._process_redun_job(redun_job, pod, job_status, status_reason, k8s_labels)
+                if redun_job:
+                    k8s_labels = [("k8s_job", job.metadata.uid)]
+                    self._process_redun_job(redun_job, pod, job_status, status_reason, k8s_labels)
 
                 # When the last pod finishes, clean up the k8s job.
                 if len(redun_jobs) == 0:
