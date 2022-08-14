@@ -17,6 +17,14 @@ def get_k8s_batch_client():
     return batch_v1
 
 
+def get_k8s_version_client():
+    """returns an API client support k8s version API
+    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/VersionApi.md"""
+    config.load_kube_config()
+    version = client.VersionApi()
+    return version
+
+
 def get_k8s_core_client():
     """returns an API client support k8s core API
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md"""
@@ -98,7 +106,13 @@ def create_namespace(api_instance, namespace):
     """Create a k8s namespace job"""
     return api_instance.create_namespace(client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace)))
 
-
+def get_version(api_instance):
+    api_instance = get_k8s_version_client()
+    version_info = api_instance.get_code()
+    major = int(version_info.major)
+    minor = int(version_info.minor)
+    return major, minor
+    
 def create_job(api_instance, job, namespace):
     """Create an actual k8s job"""
     api_response = api_instance.create_namespaced_job(body=job, namespace=namespace)
