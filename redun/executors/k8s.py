@@ -54,6 +54,7 @@ def k8s_submit(
     array_size: int = 0,
     memory: int = 4,
     vcpus: int = 1,
+    gpus: int = 0,
     timeout: Optional[int] = None,
     k8s_labels: Optional[Dict[str, str]] = None,
     retries: int = 1,
@@ -64,6 +65,7 @@ def k8s_submit(
     requests = {
         "memory": f"{memory}G",
         "cpu": vcpus,
+        "nvidia.com/gpu": gpus,
     }
     limits = requests
     resources = k8s_utils.create_resources(requests, limits)
