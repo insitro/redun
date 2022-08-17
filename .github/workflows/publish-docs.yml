@@ -15,7 +15,7 @@ jobs:
         run: |
           cd docs
           pip install -r requirements.txt
-          make html
+          make api html
 
       - name: Checkout gh-pages branch
         uses: actions/checkout@v2

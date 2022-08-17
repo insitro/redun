@@ -8,7 +8,7 @@ hide-toc: true
 
 **redun** aims to be a more expressive and efficient workflow framework, built on top of the popular Python programming language.
 It takes the somewhat contrarian view that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, composability, recursion, high order functions, etc).
-redun's key insight is that workflows can be expressed as [lazy expressions](#whats-the-trick), which are then evaluated by a scheduler that performs automatic parallelization, caching, and data provenance logging.
+redun's key insight is that workflows can be expressed as lazy expressions, which are then evaluated by a scheduler that performs automatic parallelization, caching, and data provenance logging.
 
 redun's key features are:
 
@@ -70,6 +70,7 @@ CHANGELOG
 :caption: Reference
 :hidden:
 
+API docs <redun/modules>
 GitHub repository <https://github.com/insitro/redun>
 ```
 
