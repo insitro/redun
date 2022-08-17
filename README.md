@@ -1,4 +1,4 @@
-<img src="docs/source/redun.svg" width="200"/>
+<img src="docs/source/_static/redun.svg" width="200"/>
 
 *yet another redundant workflow engine*
 
