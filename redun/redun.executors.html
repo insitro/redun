@@ -3,13 +3,13 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Design overview" href="design.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="prev" title="redun.backends.db package" href="redun.backends.db.html" />
 
     <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
-        <title>redun</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+        <title>redun.executors package - redun</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
 
@@ -123,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="#"><div class="brand">redun</div></a>
+      <a href="../index.html"><div class="brand">redun</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -134,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -143,42 +143,42 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="#">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
   
   
   <span class="sidebar-brand-text">redun</span>
   
-</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul>
-<li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tasks.html">Tasks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="executors.html">Executors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="db.html">Database repo</a></li>
-<li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
-<li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
-<li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tasks.html">Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../db.html">Database repo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../spark.html">Spark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="developing.html">Developer guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
-<li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developing.html">Developer guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CHANGELOG.html">Changelog</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
-<ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="redun/modules.html">API docs</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="redun/redun.html">redun package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l3 has-children"><a class="reference internal" href="redun/redun.backends.html">redun.backends package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="redun/redun.backends.db.html">redun.backends.db package</a></li>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">API docs</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="redun.html">redun package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="redun.backends.html">redun.backends package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html">redun.backends.db package</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="redun/redun.executors.html">redun.executors package</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">redun.executors package</a></li>
 </ul>
 </li>
 </ul>
@@ -211,52 +211,46 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          <img src="_static/redun.svg" width="200"/>
-<p><em>yet another redundant workflow engine</em></p>
-<p><strong>redun</strong> aims to be a more expressive and efficient workflow framework, built on top of the popular Python programming language.
-It takes the somewhat contrarian view that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, composability, recursion, high order functions, etc).
-redun’s key insight is that workflows can be expressed as lazy expressions, which are then evaluated by a scheduler that performs automatic parallelization, caching, and data provenance logging.</p>
-<p>redun’s key features are:</p>
-<ul class="simple">
-<li><p>Workflows are defined by lazy expressions that when evaluated emit dynamic directed acyclic graphs (DAGs), enabling complex data flows.</p></li>
-<li><p>Incremental computation that is reactive to both data changes as well as code changes.</p></li>
-<li><p>Workflow tasks can be executed on a variety of compute backend (threads, processes, AWS batch jobs, Spark jobs, etc).</p></li>
-<li><p>Data changes are detected for in memory values as well as external data sources such as files and object stores using file hashing.</p></li>
-<li><p>Code changes are detected by hashing individual Python functions and comparing them against historical call graph recordings.</p></li>
-<li><p>Past intermediate results are cached centrally and reused across workflows.</p></li>
-<li><p>Past call graphs can be used as a data lineage record and can be queried for debugging and auditing.</p></li>
-</ul>
-<p>See the <a class="reference internal" href="design.html"><span class="doc std std-doc">docs</span></a>, <a class="reference external" href="https://github.com/insitro/redun/tree/main/examples">tutorial</a>, and <a class="reference internal" href="design.html#influences"><span class="std std-doc">influences</span></a> for more.</p>
-<p><em>About the name:</em> The name “redun” is self deprecating (there are <a class="reference external" href="https://github.com/pditommaso/awesome-pipeline">A LOT</a> of workflow engines), but it is also a reference to its original inspiration, the <a class="reference external" href="https://apenwarr.ca/log/20101214">redo</a> build system.</p>
-<section id="install">
-<h1>Install<a class="headerlink" href="#install" title="Permalink to this heading">#</a></h1>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip install redun
-</pre></div>
-</div>
-<p>See <a class="reference internal" href="developing.html"><span class="doc std std-doc">developing</span></a> for more information on working with the code.</p>
-<section id="postgres-backend">
-<h2>Postgres backend<a class="headerlink" href="#postgres-backend" title="Permalink to this heading">#</a></h2>
-<p>To use postgres as a recording backend, use</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip install redun<span class="o">[</span>postgres<span class="o">]</span>
-</pre></div>
-</div>
-<p>The above assumes the following dependencies are installed:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">pg_config</span></code> (in the <code class="docutils literal notranslate"><span class="pre">postgresql-devel</span></code> package; on ubuntu: <code class="docutils literal notranslate"><span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">libpq-dev</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">gcc</span></code> (on ubuntu or similar <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">gcc</span></code>)</p></li>
-</ul>
-<div class="toctree-wrapper compound">
-</div>
-<div class="toctree-wrapper compound">
-</div>
-<div class="toctree-wrapper compound">
-</div>
+          <section id="redun-executors-package">
+<h1>redun.executors package<a class="headerlink" href="#redun-executors-package" title="Permalink to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="redun-executors-aws-batch-module">
+<h2>redun.executors.aws_batch module<a class="headerlink" href="#redun-executors-aws-batch-module" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="redun-executors-aws-glue-module">
+<h2>redun.executors.aws_glue module<a class="headerlink" href="#redun-executors-aws-glue-module" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="redun-executors-aws-utils-module">
+<h2>redun.executors.aws_utils module<a class="headerlink" href="#redun-executors-aws-utils-module" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="redun-executors-base-module">
+<h2>redun.executors.base module<a class="headerlink" href="#redun-executors-base-module" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="redun-executors-code-packaging-module">
+<h2>redun.executors.code_packaging module<a class="headerlink" href="#redun-executors-code-packaging-module" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="redun-executors-command-module">
+<h2>redun.executors.command module<a class="headerlink" href="#redun-executors-command-module" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="redun-executors-docker-module">
+<h2>redun.executors.docker module<a class="headerlink" href="#redun-executors-docker-module" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="redun-executors-local-module">
+<h2>redun.executors.local module<a class="headerlink" href="#redun-executors-local-module" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="redun-executors-scratch-module">
+<h2>redun.executors.scratch module<a class="headerlink" href="#redun-executors-scratch-module" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this heading">#</a></h2>
 </section>
 </section>
 
@@ -265,16 +259,18 @@ redun’s key insight is that workflows can be expressed as lazy expressions, wh
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="design.html">
+          
+          <a class="prev-page" href="redun.backends.db.html">
+              <svg><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
-                  <span>Next</span>
+                  <span>Previous</span>
                 </div>
-                <div class="title">Design overview</div>
+                
+                <div class="title">redun.backends.db package</div>
+                
               </div>
-              <svg><use href="#svg-arrow-right"></use></svg>
             </a>
-          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -295,17 +291,46 @@ redun’s key insight is that workflows can be expressed as lazy expressions, wh
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            Contents
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">redun.executors package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#redun-executors-aws-batch-module">redun.executors.aws_batch module</a></li>
+<li><a class="reference internal" href="#redun-executors-aws-glue-module">redun.executors.aws_glue module</a></li>
+<li><a class="reference internal" href="#redun-executors-aws-utils-module">redun.executors.aws_utils module</a></li>
+<li><a class="reference internal" href="#redun-executors-base-module">redun.executors.base module</a></li>
+<li><a class="reference internal" href="#redun-executors-code-packaging-module">redun.executors.code_packaging module</a></li>
+<li><a class="reference internal" href="#redun-executors-command-module">redun.executors.command module</a></li>
+<li><a class="reference internal" href="#redun-executors-docker-module">redun.executors.docker module</a></li>
+<li><a class="reference internal" href="#redun-executors-local-module">redun.executors.local module</a></li>
+<li><a class="reference internal" href="#redun-executors-scratch-module">redun.executors.scratch module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/scripts/furo.js"></script>
+</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/scripts/furo.js"></script>
     </body>
 </html>

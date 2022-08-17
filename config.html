@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Database repo" href="db.html" /><link rel="prev" title="Executors" href="executors.html" />
 
-    <meta name="generator" content="sphinx-5.0.2, furo 2022.06.21"/>
+    <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
         <title>Configuration - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
@@ -172,6 +172,17 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="redun/modules.html">API docs</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="redun/redun.html">redun package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="redun/redun.backends.html">redun.backends package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun/redun.backends.db.html">redun.backends.db package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun/redun.executors.html">redun.executors package</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference external" href="https://github.com/insitro/redun">GitHub repository</a></li>
 </ul>
 
@@ -425,6 +436,10 @@ If a local, non-absolute path is specified, it is assumed relative to <code clas
 <section id="memory">
 <h4><code class="docutils literal notranslate"><span class="pre">memory</span></code><a class="headerlink" href="#memory" title="Permalink to this heading">#</a></h4>
 <p>A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.</p>
+</section>
+<section id="interactive">
+<h4><code class="docutils literal notranslate"><span class="pre">interactive</span></code><a class="headerlink" href="#interactive" title="Permalink to this heading">#</a></h4>
+<p>A bool (default: False) that specifies whether the Docker container should be run in interactive mode. This is useful for debugging a workflow since the stdout of every container will be redirected to the terminal.</p>
 </section>
 <section id="aws-batch-executor">
 <h4>AWS Batch executor<a class="headerlink" href="#aws-batch-executor" title="Permalink to this heading">#</a></h4>
@@ -690,6 +705,7 @@ cost overruns.</p>
 <li><a class="reference internal" href="#vcpus"><code class="docutils literal notranslate"><span class="pre">vcpus</span></code></a></li>
 <li><a class="reference internal" href="#gpus"><code class="docutils literal notranslate"><span class="pre">gpus</span></code></a></li>
 <li><a class="reference internal" href="#memory"><code class="docutils literal notranslate"><span class="pre">memory</span></code></a></li>
+<li><a class="reference internal" href="#interactive"><code class="docutils literal notranslate"><span class="pre">interactive</span></code></a></li>
 <li><a class="reference internal" href="#aws-batch-executor">AWS Batch executor</a></li>
 <li><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">image</span></code></a></li>
 <li><a class="reference internal" href="#queue"><code class="docutils literal notranslate"><span class="pre">queue</span></code></a></li>

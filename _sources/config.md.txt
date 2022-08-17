@@ -246,6 +246,11 @@ An integer (default: 0) that specifies the default number of GPUs required for e
 
 A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.
 
+#### `interactive`
+
+A bool (default: False) that specifies whether the Docker container should be run in interactive mode. This is useful for debugging a workflow since the stdout of every container will be redirected to the terminal.
+
+
 #### AWS Batch executor
 
 The [AWS Batch executor](executors.md#aws-batch-executor) (`type = aws_batch`) executes tasks on the AWS Batch compute service.
