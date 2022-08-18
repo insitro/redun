@@ -239,10 +239,11 @@ class Job:
     def __init__(
         self,
         expr: TaskExpression,
+        id: Optional[str] = None,
         parent_job: Optional["Job"] = None,
         execution: Optional[Execution] = None,
     ):
-        self.id = str(uuid.uuid4())
+        self.id = id or str(uuid.uuid4())
         self.expr = expr
         self.args = expr.args
         self.kwargs = expr.kwargs
@@ -810,6 +811,49 @@ class Scheduler:
                 "tasks needing namespace: {}".format(", ".join(task_names))
             )
 
+    def _run(
+        self,
+        expr: TaskExpression[Result],
+        parent_job: Optional[Job] = None,
+        dryrun: bool = False,
+        cache: bool = True,
+    ) -> Promise[Result]:
+        """
+        Run the scheduler to evaluate an Expression `expr`.
+
+        This is a private method that returns the original workflow Promise.
+        """
+        # Set scheduler and start executors.
+        set_current_scheduler(self)
+        for executor in self.executors.values():
+            executor.start()
+        self.dryrun = dryrun
+        self.use_cache = cache
+        self.traceback = None
+
+        self._validate_tasks()
+        self.backend.calc_current_nodes({task.hash for task in self.task_registry})
+
+        # Start event loop to evaluate expression.
+        start_time = time.time()
+        self.thread_id = threading.get_ident()
+        self._pending_expr.clear()
+        self._pending_jobs.clear()
+        self._jobs.clear()
+        result = self.evaluate(expr, parent_job=parent_job)
+        self.process_events(result)
+
+        # Log execution duration.
+        duration = time.time() - start_time
+        self.log(f"Execution duration: {duration:.2f} seconds")
+
+        # Stop executors and unset scheduler.
+        for executor in self.executors.values():
+            executor.stop()
+        set_current_scheduler(None)
+
+        return result
+
     @overload
     def run(
         self,
@@ -841,24 +885,14 @@ class Scheduler:
         tags: Iterable[Tuple[str, Any]] = (),
     ) -> Result:
         """
-        Run the scheduler to evaluate a Task or Expression.
+        Run the scheduler to evaluate an Expression `expr`.
         """
         if needs_root_task(self.task_registry, expr):
             # Ensure we always have one root-level job encompassing the whole execution.
             expr = root_task(quote(expr))
 
-        self._validate_tasks()
-        self.backend.calc_current_nodes({task.hash for task in self.task_registry})
-
-        # Set scheduler and start executors.
-        set_current_scheduler(self)
-        for executor in self.executors.values():
-            executor.start()
-        self.dryrun = dryrun
-        self.use_cache = cache
-        self.traceback = None
-
-        # Start execution.
+        # Initialize execution.
+        parent_job: Optional[Job]
         if exec_argv is None:
             exec_argv = ["scheduler.run", trim_string(repr(expr))]
         self._current_execution = Execution(self.backend.record_execution(exec_argv))
@@ -873,23 +907,9 @@ class Scheduler:
             )
         )
 
-        # Start event loop to evaluate expression.
-        start_time = time.time()
-        self.thread_id = threading.get_ident()
-        self._pending_expr.clear()
-        self._pending_jobs.clear()
-        self._jobs.clear()
-        result = self.evaluate(expr)
-        self.process_events(result)
-
-        # Log execution duration.
-        duration = time.time() - start_time
-        self.log(f"Execution duration: {duration:.2f} seconds")
-
-        # Stop executors and unset scheduler.
-        for executor in self.executors.values():
-            executor.stop()
-        set_current_scheduler(None)
+        result: Promise[Result] = self._run(
+            cast(TaskExpression[Result], expr), dryrun=dryrun, cache=cache
+        )
 
         # Return or raise result depending on whether it succeeded.
         if result.is_fulfilled:
@@ -902,12 +922,70 @@ class Scheduler:
                 for line in self.traceback.format():
                     self.log(line.rstrip("\n"))
 
-            raise result.value
+            raise result.error
 
         elif result.is_pending and self.dryrun:
             self.log("Dryrun: Additional jobs would run.")
             raise DryRunResult()
 
+        else:
+            raise AssertionError("Unexpected state")
+
+    def extend_run(
+        self,
+        expr: Union[Expression[Result], Result],
+        parent_job_id: str,
+        dryrun: bool = False,
+        cache: bool = True,
+    ) -> dict:
+        """
+        Extend an existing scheduler execution (run) to evaluate a Task or Expression.
+        """
+        if needs_root_task(self.task_registry, expr):
+            # Ensure we always have one root-level job encompassing the whole execution.
+            expr = root_task(quote(expr))
+
+        # Extend an existing execution.
+        parent_job_details = self.backend.get_job(parent_job_id)
+        if not parent_job_details:
+            raise ValueError(f"Unknown parent_job_id: {parent_job_id}")
+        self._current_execution = Execution(parent_job_details["execution_id"])
+        # Create dummy parent_job to mimic job in the parent scheduler:
+        # - We need to set its id to match the given parent_job_id.
+        # - We set the same execution id as the original parent_job.
+        # - Any expression will do, so we use a minimal root task.
+        # - We also mimic the task and eval_args being set like they are in exec_job().
+        parent_job = Job(
+            root_task(quote(None)),  # type: ignore
+            id=parent_job_id,
+            execution=self._current_execution,
+        )
+        parent_job.task = root_task
+        parent_job.eval_args = ((quote(None),), {})
+
+        result: Promise[Result] = self._run(
+            cast(TaskExpression[Result], expr), parent_job=parent_job, dryrun=dryrun, cache=cache
+        )
+
+        # There will always be one new job id for this subexecution.
+        [job] = parent_job.child_jobs
+
+        # Return the result along with the job id to allow caller to stitch the job tree.
+        if result.is_fulfilled:
+            return {
+                "result": result.value,
+                "job_id": job.id,
+                "call_hash": job.call_hash,
+            }
+        elif result.is_rejected:
+            return {
+                "error": result.error,
+                "job_id": job.id,
+                "call_hash": job.call_hash,
+            }
+        elif result.is_pending and self.dryrun:
+            # Return an incomplete run due to dryrun being active.
+            return {"dryrun": True, "job_id": job.id, "call_hash": job.call_hash}
         else:
             raise AssertionError("Unexpected state")
 
@@ -2172,14 +2250,23 @@ def _subrun_root_task(
         Returns a dict result from running the sub-scheduler on `expr`.  The dict contains extra
         information pertaining to the sub-scheduler as follows:
         {
-          'result': sub-scheduler evaluation of `expr`
+          'result': sub-scheduler evaluation of `expr`, present if successful
+          'error': exception raised by sub-scheduler, present if error was encountered
+          'dryrun': present if dryrun was requested and workflow can't complete
+
+          'job_id': Job id of root Job in sub-scheduler,
+                    present if parent_job_id given in run_config
+          'call_hash': call_hash of root CallNode in sub-scheduler,
+                       present if parent_job_id given in run_config
+
           'status': sub-scheduler final job status poll (list of str)
           'config': sub-scheduler config dict (useful for confirming exactly what config
             settings were used).
+          'run_config': a dict of run configuration used by the sub-scheduler
         }
-    """
-    from redun.functools import force
 
+        parent_job_id is present in run_config, only results are return. Errors are raised.
+    """
     sub_scheduler = Scheduler(config=Config(config_dict=config))
     sub_scheduler.load()
 
@@ -2190,16 +2277,35 @@ def _subrun_root_task(
         for module in load_modules:
             importlib.import_module(module)
 
-    result = sub_scheduler.run(force(expr), **run_config)
-    return {
-        "result": result,
-        "status": sub_scheduler.get_job_status_report(),
+    subrun_result: dict = {
         "config": sub_scheduler.config.get_config_dict(),
-        "run_config": {
-            "dryrun": sub_scheduler.dryrun,
-            "cache": sub_scheduler.use_cache,
-        },
     }
+
+    # Extend an existing Execution if the parent_job_id is given. Otherwise, start
+    # a new Execution.
+    if "parent_job_id" in run_config:
+        result = sub_scheduler.extend_run(expr.eval(), **run_config)
+
+        # If extending an Execution, supplement result value with additional
+        # information such as job id and call_hash.
+        if not isinstance(result, dict):
+            raise AssertionError(f"Unknown scheduler result: {result}")
+        subrun_result.update(result)
+
+    else:
+        result = sub_scheduler.run(expr.eval(), **run_config)
+        subrun_result["result"] = result
+
+    subrun_result.update(
+        {
+            "run_config": {
+                "dryrun": sub_scheduler.dryrun,
+                "cache": sub_scheduler.use_cache,
+            },
+            "status": sub_scheduler.get_job_status_report(),
+        }
+    )
+    return subrun_result
 
 
 @scheduler_task(namespace="redun", version="1")
@@ -2210,6 +2316,7 @@ def subrun(
     expr: Any,
     executor: str,
     config: Optional[Dict[str, Any]] = None,
+    new_execution: bool = False,
     **task_options: dict,
 ) -> Promise:
     """
@@ -2246,19 +2353,22 @@ def subrun(
 
     Parameters
     ----------
-    expr
+    expr : Any
         Expression to be run by sub-scheduler.
-    executor
+    executor : str
         Executor name for the special redun task that launches the sub-scheduler
         (_subrun_root_task). E.g. `batch` to launch the sub-scheduler in AWS Batch. Note
         that this is a config key in the  *local* scheduler's config.
-    config
+    config : dict
         Optional sub-scheduler config dict. Must be a two-level dict that can be used to
         initialize a :class:`Config` object [see :method:`Config.get_config_dict()`.  If None or
         empty, the local Scheduler's config will be passed to the sub-scheduler and any values
         with local config_dir will be replaced with ".".  Do not include database credentials as
         they will be logged as clear text in the call graph.
-    task_options
+    new_execution : bool
+        If True, record the provenance of the evaluation of `expr` as a new Execution, otherwise
+        extend the current Execution with new Jobs.
+    **task_options : Any
         Task options for _subrun_root_task.  E.g. when running the sub-scheduler via Batch
         executor, you can pass ECS configuration (e.g. `memory`, `vcpus`, `batch_tags`).
 
@@ -2267,7 +2377,6 @@ def subrun(
     Dict[str, Any]
         Returns a dict result of evaluating the _subrun_root_task
     """
-    from redun.functools import delay
 
     # If a config wasn't provided, forward the parent scheduler's backend config to the
     # sub-scheduler, replacing the local config_dir with "."
@@ -2285,14 +2394,18 @@ def subrun(
             continue
         load_modules.add(module_name)
 
+    # Prepare child task call for subrun.
+    run_config: Dict[str, Any] = {
+        "dryrun": scheduler.dryrun,
+        "cache": scheduler.use_cache,
+    }
+    if not new_execution:
+        run_config["parent_job_id"] = parent_job.id
     subrun_root_task_expr = _subrun_root_task.options(executor=executor, **task_options)(
-        expr=delay(expr),
+        expr=quote(expr),
         config=config,
         load_modules=sorted(load_modules),
-        run_config={
-            "dryrun": scheduler.dryrun,
-            "cache": scheduler.use_cache,
-        },
+        run_config=run_config,
     )
 
     def log_banner(msg):
@@ -2301,7 +2414,18 @@ def subrun(
         scheduler.log("-" * 79)
 
     def then(subrun_result):
-        # Echo subs-scheduler report.
+        if "job_id" in subrun_result:
+            # Create stub-job representing the job in the subscheduler.
+            # The call_hash is needed to compute the right call_hash of parent_job.
+            job = Job(
+                root_task(quote(None)),  # type: ignore
+                id=subrun_result["job_id"],
+                parent_job=parent_job,
+                execution=scheduler._current_execution,
+            )
+            job.call_hash = subrun_result["call_hash"]
+
+        # Echo sub-scheduler report.
         scheduler.log()
         log_banner(
             f"BEGIN: Sub-scheduler report (executor='{executor}'), {trim_string(repr(expr))}"
@@ -2322,7 +2446,16 @@ def subrun(
         log_banner("END: Sub-scheduler report")
         scheduler.log()
 
-        # Return the user's result.
-        return subrun_result["result"]
+        if "result" in subrun_result:
+            # Return the user's result.
+            return subrun_result["result"]
+
+        elif "error" in subrun_result:
+            # Reraise the error.
+            raise subrun_result["error"]
+
+        elif "dryrun" in subrun_result:
+            # Return a promise that never resolves.
+            return Promise()
 
     return scheduler.evaluate(subrun_root_task_expr, parent_job=parent_job).then(then)

@@ -6,9 +6,11 @@ from unittest.mock import patch
 import pytest
 import sqlalchemy
 
+from redun.backends.base import calc_call_hash
+from redun.backends.db import Execution, Job
 from redun.cli import get_config_dir, setup_scheduler
 from redun.executors.local import LocalExecutor
-from redun.scheduler import Config, DryRunResult, Scheduler, subrun
+from redun.scheduler import Config, DryRunResult, ErrorValue, Scheduler, subrun
 from redun.task import task
 from redun.tests.scripts.workflow_subrun_process_executor import main
 from redun.tests.utils import use_tempdir
@@ -17,10 +19,10 @@ from redun.tests.utils import use_tempdir
 redun_namespace = "test_subrun"
 
 
-# All unit tests should use in-memory db
-IN_MEMORY_DB_URI = "sqlite:///:memory:"
-
 CONFIG_DICT = {
+    "backend": {
+        "db_uri": "sqlite:///redun.db",
+    },
     "executors.default": {
         "type": "local",
         "mode": "thread",
@@ -30,6 +32,147 @@ CONFIG_DICT = {
         "mode": "process",
     },
 }
+
+
+@task
+def bar(x):
+    return {
+        "pid": os.getpid(),
+        "result": x,
+    }
+
+
+@task
+def foo(x):
+    return {
+        "pid": os.getpid(),
+        "result": bar(x),
+    }
+
+
+@use_tempdir
+def test_subrun():
+    """
+    subrun should perform the full compute in a new process.
+    """
+
+    @task
+    def local_main(x):
+        return {"pid": os.getpid(), "result": subrun(foo(x), executor="process")}
+
+    # Assert that the foo and bar tasks appear in local scheduler's log
+    scheduler = Scheduler(config=Config(config_dict=CONFIG_DICT))
+    scheduler.load()
+    result = scheduler.run(local_main(5))
+
+    # foo should run in a different process from local_main.
+    assert result["result"]["pid"] != result["pid"]
+
+    # bar should run in the same process as foo.
+    assert result["result"]["result"]["pid"] == result["result"]["pid"]
+
+    # The CallGraph should have foo and bar "stitched" in.
+    exec = scheduler.backend.session.query(Execution).one()
+    assert exec.job.task.name == "local_main"
+    assert exec.job.child_jobs[1].task.name == "foo"
+    assert exec.job.child_jobs[1].child_jobs[0].task.name == "bar"
+
+    # local_main's call_hash should be properly recorded.
+    call_node = exec.job.call_node
+    assert call_node.call_hash == calc_call_hash(
+        call_node.task_hash,
+        call_node.args_hash,
+        call_node.value_hash,
+        sorted(job.call_hash for job in exec.job.child_jobs),
+    )
+
+
+@task
+def bar_fail(x):
+    raise ValueError(f"BOOM: {os.getpid()}")
+
+
+@task
+def foo_fail(x):
+    return {
+        "pid": os.getpid(),
+        "result": bar_fail(x),
+    }
+
+
+@use_tempdir
+def test_subrun_fail():
+    """
+    subrun should propagate exceptions.
+    """
+
+    @task
+    def local_main(x):
+        return {"pid": os.getpid(), "result": subrun(foo_fail(x), executor="default")}
+
+    # Assert that the error in the subscheduler is reraised in the parent scheduler.
+    scheduler = Scheduler(config=Config(config_dict=CONFIG_DICT))
+    scheduler.load()
+    with pytest.raises(ValueError, match="BOOM"):
+        scheduler.run(local_main(5))
+
+    # The CallGraph should have foo and bar "stitched" in.
+    exec = scheduler.backend.session.query(Execution).one()
+    assert exec.job.task.name == "local_main"
+    assert exec.job.child_jobs[1].task.name == "foo_fail"
+    assert exec.job.child_jobs[1].child_jobs[0].task.name == "bar_fail"
+
+    # The error should be recorded along the Job tree.
+    assert isinstance(exec.job.call_node.value.value_parsed, ErrorValue)
+    assert isinstance(exec.job.child_jobs[1].call_node.value.value_parsed, ErrorValue)
+    assert isinstance(
+        exec.job.child_jobs[1].child_jobs[0].call_node.value.value_parsed, ErrorValue
+    )
+
+    # local_main's call_hash should be properly recorded.
+    call_node = exec.job.call_node
+    assert call_node.call_hash == calc_call_hash(
+        call_node.task_hash,
+        call_node.args_hash,
+        call_node.value_hash,
+        sorted(job.call_hash for job in exec.job.child_jobs),
+    )
+
+
+@use_tempdir
+def test_subrun_new_execution():
+    """
+    subrun should create a new execution for the expression.
+    """
+
+    @task
+    def local_main(x):
+        return {
+            "pid": os.getpid(),
+            "result": subrun(foo(x), executor="process", new_execution=True),
+        }
+
+    # Assert that the foo and bar tasks appear in local scheduler's log
+    scheduler = Scheduler(config=Config(config_dict=CONFIG_DICT))
+    scheduler.load()
+    result = scheduler.run(local_main(5))
+
+    # foo should run in a different process from local_main.
+    assert result["result"]["pid"] != result["pid"]
+
+    # bar should run in the same process as foo.
+    assert result["result"]["result"]["pid"] == result["result"]["pid"]
+
+    # The CallGraph should have foo and bar "stitched" in.
+    execs = (
+        scheduler.backend.session.query(Execution)
+        .join(Job, Job.id == Execution.job_id)
+        .order_by(Job.start_time)
+        .all()
+    )
+    assert execs[0].job.task.name == "local_main"
+    assert execs[1].job.task.name == "foo"
+    assert execs[1].job.child_jobs[0].task.name == "bar"
 
 
 # ==========================================================================================
@@ -74,7 +217,7 @@ def test_subscheduler_status_report():
 
     @task
     def local_main(x):
-        return subrun(foo(x), "default", CONFIG_DICT)
+        return subrun(foo(x), "default", CONFIG_DICT, new_execution=True)
 
     # Assert that the foo and bar tasks appear in local scheduler's log
     scheduler = Scheduler()
@@ -113,7 +256,7 @@ def test_subscheduler_config():
 
     @task
     def local_main(x):
-        return subrun(foo(x), "default", CONFIG_DICT)
+        return subrun(foo(x), "default", CONFIG_DICT, new_execution=True)
 
     scheduler = Scheduler(Config(CONFIG_DICT))
     scheduler.load()
@@ -131,7 +274,7 @@ def test_subscheduler_uses_local_config():
 
     @task
     def local_main(x):
-        return subrun(foo(x), "default")
+        return subrun(foo(x), executor="default", new_execution=True)
 
     scheduler = Scheduler(config=Config(CONFIG_DICT))
     scheduler.load()
@@ -178,7 +321,7 @@ workers=10
 
     @task
     def local_main(x, remote_config):
-        return subrun(foo(x), "default", config=remote_config, cache=False)
+        return subrun(foo(x), "default", config=remote_config, new_execution=True, cache=False)
 
     # Replace the local config's config_dir with a valid directory: "/tmp"
     # Verify that the local config_dir was actually used by the sub-scheduler
@@ -233,6 +376,7 @@ workers=10
         scheduler.run(local_main(5, conf))
 
 
+@use_tempdir
 def test_subscheduler_run_config():
     """Verify that run_config values are correctly adopted by sub-scheduler"""
 
@@ -247,11 +391,11 @@ def test_subscheduler_run_config():
     scheduler = Scheduler(config=Config(CONFIG_DICT))
     scheduler.load()
     with pytest.raises(DryRunResult):
-        assert 5 == scheduler.run(local_main(5), dryrun=True)
+        scheduler.run(local_main(5), dryrun=True)
 
     # Verify cache=False run config is adopted by sub-scheduler
     with patch.object(scheduler, "log") as mock_log:
-        assert 5 == scheduler.run(local_main(5), cache=False)
+        assert scheduler.run(local_main(5), cache=False) == 5
         assert _config_found_in_logs(
             mock_log,
             {
@@ -270,7 +414,9 @@ def test_subrun_nested_list_of_tasks():
 
     @task
     def local_main(x):
-        return subrun([foo(x), [foo(2 * x), foo(3 * x)]], "default", CONFIG_DICT)
+        return subrun(
+            [foo(x), [foo(2 * x), foo(3 * x)]], "default", CONFIG_DICT, new_execution=True
+        )
 
     scheduler = Scheduler()
     scheduler.load()
@@ -294,7 +440,7 @@ def test_subrun_cached():
     @task()
     def local_main(x):
         task_calls.append("local_main")
-        return subrun(foo(x), executor="default")
+        return subrun(foo(x), executor="default", new_execution=True)
 
     scheduler = Scheduler()
     scheduler.load()
@@ -322,7 +468,7 @@ def test_subrun_root_task_cached():
     @task(cache=False)
     def local_main(x):
         task_calls.append("local_main")
-        return subrun(foo(x), executor="default")
+        return subrun(foo(x), executor="default", new_execution=True)
 
     scheduler = Scheduler()
     scheduler.load()
@@ -350,7 +496,9 @@ def test_subrun_root_task_disabled_cached():
     @task(cache=False)
     def local_main(x):
         task_calls.append("local_main")
-        return subrun(foo(x), executor="default", cache=False)  # disable caching
+        return subrun(
+            foo(x), executor="default", new_execution=True, cache=False
+        )  # disable caching
 
     scheduler = Scheduler()
     scheduler.load()
@@ -377,13 +525,14 @@ def test_subrun_root_task_disabled_cached():
 
 
 @pytest.mark.parametrize("start_method", ["fork", "forkserver", "spawn"])
+@use_tempdir
 def test_process_executor(start_method: str):
     """Verify subrun() supports process executor
 
     All tasks use the process executor so PIDs for each task must differ
     """
     config_dict = {
-        "backend": {"db_uri": IN_MEMORY_DB_URI},
+        "backend": {"db_uri": "sqlite:///redun.db"},
         "executors.process_main": {
             "type": "local",
             "mode": "process",
@@ -393,7 +542,7 @@ def test_process_executor(start_method: str):
             "type": "local",
             "mode": "process",
             "start_method": start_method,
-            "max_workers": "33",  # must be string for equality assertion in this test to work
+            "max_workers": "4",  # must be string for equality assertion in this test to work
         },
     }
 

@@ -1957,16 +1957,17 @@ class RedunBackendDb(RedunBackend):
 
     def record_job_start(self, job: "BaseJob", now: Optional[datetime] = None) -> Job:
         assert self.session
-        assert self.current_execution
 
         task = job.task
         assert task
+        assert job.execution
 
         # Get or create task.
         self.record_value(task)
 
         if not job.parent_job:
             # Record top-level job for the execution.
+            assert self.current_execution
             assert self.current_execution.job_id is None
             self.current_execution.job_id = job.id  # type: ignore
             self.session.add(self.current_execution)
@@ -1978,7 +1979,7 @@ class RedunBackendDb(RedunBackend):
             start_time=now,
             task_hash=task.hash,
             parent_id=(job.parent_job.id if job.parent_job else None),
-            execution_id=self.current_execution.id,
+            execution_id=job.execution.id,
         )
         self.session.add(db_job)
         self.session.commit()
@@ -2003,6 +2004,20 @@ class RedunBackendDb(RedunBackend):
         db_job.call_hash = job.call_hash
         self.session.add(db_job)
         self.session.commit()
+
+    def get_job(self, job_id: str) -> Optional[dict]:
+        """
+        Returns details for a Job.
+        """
+        assert self.session
+        job = self.session.query(Job).filter_by(id=job_id).one_or_none()
+        if not job:
+            return None
+        return {
+            "job_id": job.id,
+            "parent_id": job.parent_id,
+            "execution_id": job.execution_id,
+        }
 
     def record_tags(
         self,

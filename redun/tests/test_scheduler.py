@@ -1599,3 +1599,75 @@ def test_cycle_expression() -> None:
     y = x + x
     assert scheduler.run(y) == 2
     assert calls == ["id"]
+
+
+def test_extend_run(scheduler: Scheduler, session: Session) -> None:
+    """
+    Scheduler should support extending an Execution.
+    """
+
+    @task
+    def main(x):
+        return x + 1
+
+    @task
+    def fail():
+        raise ValueError("BOOM")
+
+    assert scheduler.run(main(10)) == 11
+    job = session.query(JobDb).one()
+
+    result = scheduler.extend_run(main(11), parent_job_id=job.id)
+    assert result["result"] == 12
+
+    # Ensure other execution info is present.
+    assert result["job_id"]
+    assert result["call_hash"]
+
+    # The new job should be a child of the parent job.
+    child_job = session.query(JobDb).get(result["job_id"])
+    assert child_job.parent_job.id == job.id
+    assert child_job.id in {j.id for j in job.child_jobs}
+
+    # extend_run should also return errors.
+    result = scheduler.extend_run(fail(), parent_job_id=job.id)
+    assert isinstance(result["error"], ValueError)
+    assert str(result["error"]) == "BOOM"
+    assert result["job_id"]
+    assert result["call_hash"]
+
+    # Force session to refetch new data.
+    job_id = job.id
+    session.expunge_all()
+
+    # The new job should be a child of the parent job.
+    child_job = session.query(JobDb).get(result["job_id"])
+    job = session.query(JobDb).get(job_id)
+    assert child_job.parent_job.id == job.id
+    assert child_job.id in {j.id for j in job.child_jobs}
+
+
+def test_extend_run_dryrun(scheduler: Scheduler, session: Session) -> None:
+    """
+    Scheduler should support extending an Execution with dryrun.
+    """
+
+    @task
+    def main(x):
+        return x + 1
+
+    @task
+    def fail():
+        raise ValueError("BOOM")
+
+    assert scheduler.run(main(10)) == 11
+    job = session.query(JobDb).one()
+
+    # We should have an incomplete run due to dryrun=True.
+    result = scheduler.extend_run(main(11), parent_job_id=job.id, dryrun=True)
+    assert result["dryrun"]
+
+    # If we finish the run and then do dryrun, we should get a complete run due to caching.
+    result = scheduler.extend_run(main(11), parent_job_id=job.id)
+    result = scheduler.extend_run(main(11), parent_job_id=job.id, dryrun=True)
+    assert result["result"] == 12
