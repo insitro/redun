@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.15
+August 18, 2022
+
+* `#179` - Add job stitching to subrun
+* `#185` - include api reference in sphinx docs
+* `#181` - DE-5801 Add interactive config for docker executor
+* `#180` - [DE-5731] Make vizualization functionality optional when pygraphviz is unavailable
+* `#178` - Update docs to describe db migrations
+* `#175` - DE-5591 Fix Common Subexpression Elimination (CSE)
+* `#47` - pass self.region to submit_command() from AWSBatchExecutor._submit_single_job()
+* `#174` - Update test_pull_request.yml
+* `#160` - Call graph visualizer
+* `#126` - Improved display of job status
+* `#125` - Better support for previewing large values
+* `#170` - add support for parsing datetime
+* `#38` - Bump pyspark from 3.1.1 to 3.1.3
+* `#37` - working on fixing docs build
+
 ## 0.8.14
 July 5, 2022
 * `#165` - Switch conda package to noarch
