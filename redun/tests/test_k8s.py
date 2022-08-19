@@ -37,6 +37,8 @@ def mock_k8s(func: Callable) -> Callable:
     def wrapped(*args, **kwargs):
         with patch("redun.executors.k8s_utils.get_k8s_batch_client"), patch(
             "redun.executors.k8s_utils.get_k8s_core_client"
+        ), patch("redun.executors.k8s_utils.get_k8s_version_client"), patch(
+            "redun.executors.k8s_utils.get_version", return_value=(1, 23)
         ):
             return func(*args, **kwargs)
 
