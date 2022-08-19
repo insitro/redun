@@ -881,6 +881,10 @@ class K8SExecutor(Executor):
         if k8s_job_id is None:
             self.arrayer.add_job(job, args, kwargs)
 
+        from redun.executors.k8s_utils import import_aws_secrets
+
+        import_aws_secrets()
+
         self._start()
 
     def _submit_array_job(

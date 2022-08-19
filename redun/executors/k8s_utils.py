@@ -2,9 +2,14 @@
 # This library contains standardized routines for interacting with k8s through its API
 # It uses the Official Python client library for kubernetes:
 # https://github.com/kubernetes-client/python
+from base64 import b64encode
+from typing import Any
+
 from kubernetes import client, config
+from kubernetes.client.exceptions import ApiException
 from kubernetes.config import ConfigException
 
+from redun.executors.aws_utils import get_aws_env_vars
 from redun.logging import logger
 
 DEFAULT_JOB_PREFIX = "redun-job"
@@ -45,6 +50,35 @@ def get_k8s_core_client():
     load_k8s_config()
     core_v1 = client.CoreV1Api()
     return core_v1
+
+
+def delete_k8s_secret(secret_name: str, namespace: str) -> None:
+    core_api = get_k8s_core_client()
+    try:
+        core_api.delete_namespaced_secret(secret_name, namespace)
+    except ApiException as error:
+        if error.status != 404:
+            raise
+
+
+def create_k8s_secret(secret_name: str, namespace: str, secret_data: dict) -> Any:
+    # Delete existing secret if it exists.
+    delete_k8s_secret(secret_name, namespace)
+
+    # Build secret.
+    metadata = {"name": secret_name, "namespace": namespace}
+    data = {
+        key: b64encode(value.encode("utf8")).decode("utf8") for key, value in secret_data.items()
+    }
+    body = client.V1Secret("v1", data, False, "Secret", metadata, type="Opaque")
+
+    # Create secret.
+    core_api = get_k8s_core_client()
+    return core_api.create_namespaced_secret(namespace, body)
+
+
+def import_aws_secrets(namespace: str = "default") -> None:
+    create_k8s_secret("redun-aws", namespace, get_aws_env_vars())
 
 
 def create_resources(requests=None, limits=None):

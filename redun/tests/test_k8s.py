@@ -39,6 +39,8 @@ def mock_k8s(func: Callable) -> Callable:
             "redun.executors.k8s_utils.get_k8s_core_client"
         ), patch("redun.executors.k8s_utils.get_k8s_version_client"), patch(
             "redun.executors.k8s_utils.get_version", return_value=(1, 23)
+        ), patch(
+            "redun.executors.k8s_utils.import_aws_secrets"
         ):
             return func(*args, **kwargs)
 
