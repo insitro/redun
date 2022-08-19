@@ -3,16 +3,28 @@
 # It uses the Official Python client library for kubernetes:
 # https://github.com/kubernetes-client/python
 from kubernetes import client, config
+from kubernetes.config import ConfigException
 
 from redun.executors.aws_utils import get_aws_env_vars
 
 DEFAULT_JOB_PREFIX = "redun-job"
 
 
+def load_k8s_config() -> None:
+    """
+    Load kubernetes config.
+    """
+    try:
+        config.load_kube_config()
+    except ConfigException:
+        # print(f"Warning: config.load_kube_config() failed. Resorting to config.load_incluster_config().")
+        config.load_incluster_config()
+
+
 def get_k8s_batch_client():
     """returns an API client supporting k8s batch API
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/BatchV1Api.md"""
-    config.load_kube_config()
+    load_k8s_config()
     batch_v1 = client.BatchV1Api()
     return batch_v1
 
@@ -20,7 +32,7 @@ def get_k8s_batch_client():
 def get_k8s_version_client():
     """returns an API client support k8s version API
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/VersionApi.md"""
-    config.load_kube_config()
+    load_k8s_config()
     version = client.VersionApi()
     return version
 
@@ -28,7 +40,7 @@ def get_k8s_version_client():
 def get_k8s_core_client():
     """returns an API client support k8s core API
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md"""
-    config.load_kube_config()
+    load_k8s_config()
     core_v1 = client.CoreV1Api()
     return core_v1
 
@@ -108,13 +120,15 @@ def create_namespace(api_instance, namespace):
     """Create a k8s namespace job"""
     return api_instance.create_namespace(client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace)))
 
+
 def get_version(api_instance):
     api_instance = get_k8s_version_client()
     version_info = api_instance.get_code()
     major = int(version_info.major)
     minor = int(version_info.minor)
     return major, minor
-    
+
+
 def create_job(api_instance, job, namespace):
     """Create an actual k8s job"""
     api_response = api_instance.create_namespaced_job(body=job, namespace=namespace)

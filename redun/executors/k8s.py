@@ -820,7 +820,7 @@ class K8SExecutor(Executor):
                     k8s_job_id = existing_job.metadata.uid
                     self.log(
                         "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
-                        "  s3_scratch_path = {job_dir}".format(
+                        "  scratch_path = {job_dir}".format(
                             redun_job=job.id,
                             job_type=job_type,
                             k8s_job_id=k8s_job_id,
@@ -847,7 +847,7 @@ class K8SExecutor(Executor):
                     k8s_job_id = existing_job.metadata.uid
                     self.log(
                         "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
-                        "  s3_scratch_path = {job_dir}".format(
+                        "  scratch_path = {job_dir}".format(
                             redun_job=job.id,
                             job_type=job_type,
                             k8s_job_id=k8s_job_id,
@@ -944,7 +944,7 @@ class K8SExecutor(Executor):
             "  array_job_id    = {array_job_id}\n"
             "  array_job_name  = {job_name}\n"
             "  array_size      = {array_size}\n"
-            "  s3_scratch_path = {job_dir}".format(
+            "  scratch_path    = {job_dir}".format(
                 array_job_id=array_job_id,
                 job_type=job_type,
                 array_size=array_size,
@@ -998,7 +998,7 @@ class K8SExecutor(Executor):
             "submit redun job {redun_job} as {job_type} {k8s_job_id}:\n"
             "  job_id          = {k8s_job_id}\n"
             "  job_name        = {job_name}\n"
-            "  s3_scratch_path = {job_dir}".format(
+            "  scratch_path    = {job_dir}".format(
                 redun_job=job.id,
                 job_type=job_type,
                 k8s_job_id=k8s_job_id,
