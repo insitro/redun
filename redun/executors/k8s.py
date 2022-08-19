@@ -47,6 +47,7 @@ def k8s_submit(
     array_size: int = 0,
     memory: int = 4,
     vcpus: int = 1,
+    gpus: int = 0,
     timeout: Optional[int] = None,
     k8s_labels: Optional[Dict[str, str]] = None,
     retries: int = 1,
@@ -55,6 +56,7 @@ def k8s_submit(
     requests = {
         "memory": f"{memory}G",
         "cpu": vcpus,
+        "nvidia.com/gpu": gpus,
     }
     limits = requests
     resources = k8s_utils.create_resources(requests, limits)
@@ -136,7 +138,7 @@ def get_k8s_job_options(job_options: dict) -> dict:
     """
     Returns K8S-specific job options from general job options.
     """
-    keys = ["memory", "vcpus", "k8s_labels", "retries", "timeout"]
+    keys = ["memory", "vcpus", "gpus", "k8s_labels", "retries", "timeout"]
     return {key: job_options[key] for key in keys if key in job_options}
 
 
