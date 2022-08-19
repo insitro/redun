@@ -327,6 +327,7 @@ def test_executor(
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash",
         "array_size": 0,
         "retries": 1,
+        "service_account_name": "default",
         "vcpus": 1,
         "memory": 4,
         "k8s_labels": {
@@ -359,6 +360,7 @@ def test_executor(
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash2",
         "array_size": 0,
         "retries": 1,
+        "service_account_name": "default",
         "vcpus": 1,
         "memory": 8,
         "k8s_labels": {
