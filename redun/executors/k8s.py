@@ -28,6 +28,7 @@ from redun.executors.scratch import (
 )
 from redun.file import File
 from redun.job_array import JobArrayer
+from redun.logging import logger
 from redun.scheduler import Job, Scheduler
 from redun.scripting import get_task_command
 from redun.task import Task
@@ -71,7 +72,7 @@ def k8s_submit(
         timeout=timeout,
         labels=k8s_labels,
         service_account_name=service_account_name,
-        annotations=annotations
+        annotations=annotations,
     )
 
     if array_size > 1:
@@ -88,7 +89,7 @@ def k8s_submit(
     try:
         k8s_utils.create_namespace(api_instance, namespace)
     except kubernetes.client.exceptions.ApiException as e:
-        if e.status == 409 and e.reason == 'Conflict':
+        if e.status == 409 and e.reason == "Conflict":
             pass
         else:
             print("Unexpected exception creating namespace", e.body)
@@ -142,7 +143,16 @@ def get_k8s_job_options(job_options: dict) -> dict:
     """
     Returns K8S-specific job options from general job options.
     """
-    keys = ["memory", "vcpus", "gpus", "k8s_labels", "annotations", "service_account_name", "retries", "timeout"]
+    keys = [
+        "memory",
+        "vcpus",
+        "gpus",
+        "k8s_labels",
+        "annotations",
+        "service_account_name",
+        "retries",
+        "timeout",
+    ]
     return {key: job_options[key] for key in keys if key in job_options}
 
 
@@ -398,7 +408,10 @@ class K8SExecutor(Executor):
         if major == 1 and minor < 21:
             # Versions prior to 1.21 didn't support indexed jobs
             # (https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/)
-            print("Warning: kubernetes server version is too old for indexed k8s jobs, defaulting to individual redun jobs")
+            logger.warn(
+                "kubernetes server version is too old for indexed k8s jobs, "
+                "defaulting to individual redun jobs"
+            )
             min_array_size = 0
             max_array_size = 0
 
@@ -407,7 +420,7 @@ class K8SExecutor(Executor):
             submit_interval=self.interval,
             stale_time=config.getfloat("job_stale_time", 3.0),
             min_array_size=min_array_size,
-            max_array_size=max_array_size
+            max_array_size=max_array_size,
         )
 
     def gather_inflight_jobs(self) -> None:

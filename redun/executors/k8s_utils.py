@@ -6,6 +6,7 @@ from kubernetes import client, config
 from kubernetes.config import ConfigException
 
 from redun.executors.aws_utils import get_aws_env_vars
+from redun.logging import logger
 
 DEFAULT_JOB_PREFIX = "redun-job"
 
@@ -17,7 +18,9 @@ def load_k8s_config() -> None:
     try:
         config.load_kube_config()
     except ConfigException:
-        # print(f"Warning: config.load_kube_config() failed. Resorting to config.load_incluster_config().")
+        logger.warn(
+            "config.load_kube_config() failed. Resorting to config.load_incluster_config()."
+        )
         config.load_incluster_config()
 
 
@@ -82,7 +85,7 @@ def create_job_object(
 
     try:
         env = [{"name": key, "value": value} for key, value in get_aws_env_vars().items()]
-    except:
+    except Exception:
         # TODO: Catch specific exception or use explicit opt-in.
         env = []
     container = client.V1Container(name=name, image=image, command=command, env=env)
@@ -92,7 +95,10 @@ def create_job_object(
     else:
         container.resources = resources
     pod_spec = client.V1PodSpec(
-        service_account_name=service_account_name, restart_policy="Never", image_pull_secrets=[{"name": "regcred"}], containers=[container]
+        service_account_name=service_account_name,
+        restart_policy="Never",
+        image_pull_secrets=[{"name": "regcred"}],
+        containers=[container],
     )
 
     # Create and configurate a pod template spec section
@@ -122,7 +128,9 @@ def create_job_object(
 
 def create_namespace(api_instance, namespace):
     """Create a k8s namespace job"""
-    return api_instance.create_namespace(client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace)))
+    return api_instance.create_namespace(
+        client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace))
+    )
 
 
 def get_version(api_instance):
