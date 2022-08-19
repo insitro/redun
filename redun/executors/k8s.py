@@ -382,12 +382,23 @@ class K8SExecutor(Executor):
 
         self.interval = config.getfloat("job_monitor_interval", 5.0)
 
+        min_array_size = config.getint("min_array_size", 5)
+        max_array_size = config.getint("max_array_size", 1000)
+        api_instance = k8s_utils.get_k8s_version_client()
+        major, minor = k8s_utils.get_version(api_instance)
+        if major == 1 and minor < 21:
+            # Versions prior to 1.21 didn't support indexed jobs
+            # (https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/)
+            print("Warning: kubernetes server version is too old for indexed k8s jobs, defaulting to individual redun jobs")
+            min_array_size = 0
+            max_array_size = 0
+
         self.arrayer = JobArrayer(
             executor=self,
             submit_interval=self.interval,
             stale_time=config.getfloat("job_stale_time", 3.0),
-            min_array_size=config.getint("min_array_size", 5),
-            max_array_size=config.getint("max_array_size", 1000),
+            min_array_size=min_array_size,
+            max_array_size=max_array_size
         )
 
     def gather_inflight_jobs(self) -> None:
