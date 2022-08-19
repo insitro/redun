@@ -93,6 +93,7 @@ def mock_executor(scheduler: Scheduler, code_package: bool = False) -> K8SExecut
 # skipped batch tags tests here
 
 
+@mock_k8s
 def test_executor_config(scheduler: Scheduler) -> None:
     """
     Executor should be able to parse its config.
