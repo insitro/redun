@@ -106,6 +106,12 @@ class RedunBackend(abc.ABC):
     ) -> None:
         pass
 
+    def get_job(self, job_id: str) -> Optional[dict]:
+        """
+        Returns details for a Job.
+        """
+        pass
+
     def record_tags(
         self,
         entity_type: TagEntityType,

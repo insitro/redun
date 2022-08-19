@@ -156,6 +156,11 @@ class CallGraphQuery:
     def _join_jobs(self):
         return self.clone(executions=self._executions.join(Job, Job.id == Execution.job_id))
 
+    def _join_tasks(self):
+        return self.clone(
+            jobs=self._jobs.join(Task, Task.hash == Job.task_hash),
+        )
+
     def _join_executions(self):
         """
         Join Executions to each subquery.
@@ -272,6 +277,32 @@ class CallGraphQuery:
 
         return self.clone(
             filter_types=self._filter_types & {"Job"},
+            filters=self._filters + [filter],
+        )
+
+    def filter_task_names(self, task_names: Iterable[str]) -> "CallGraphQuery":
+        """
+        Filter by Task names.
+        """
+
+        def task_term(task_name: str):
+            if "." in task_name:
+                namespace, name = task_name.rsplit(".", 1)
+                return (Task.namespace == namespace) & (Task.name == name)
+            else:
+                return Task.name == task_name
+
+        clause = reduce(sa.or_, map(task_term, task_names))
+
+        def filter(query):
+            return query.clone(
+                jobs=query._jobs.filter(clause),
+                tasks=query._tasks.filter(clause),
+            )
+
+        return self.clone(
+            filter_types=self._filter_types & {"Job", "Task"},
+            joins=self._joins | {"task"},
             filters=self._filters + [filter],
         )
 
@@ -395,6 +426,8 @@ class CallGraphQuery:
             query = query._join_files()
         if "job" in self._joins:
             query = query._join_jobs()
+        if "task" in self._joins:
+            query = query._join_tasks()
         if "execution" in self._joins:
             query = query._join_executions()
 
@@ -456,6 +489,16 @@ class CallGraphQuery:
         Returns exactly one record. Raises error if too few or too many.
         """
         [result] = self.all()
+        return result
+
+    def one_or_none(self) -> Base:
+        """
+        Returns exactly one record. Returns None if too few or too many.
+        """
+        results = list(self.all())
+        if not results:
+            return None
+        [result] = results
         return result
 
     def first(self) -> Optional[Base]:

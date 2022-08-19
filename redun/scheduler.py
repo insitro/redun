@@ -239,10 +239,11 @@ class Job:
     def __init__(
         self,
         expr: TaskExpression,
+        id: Optional[str] = None,
         parent_job: Optional["Job"] = None,
         execution: Optional[Execution] = None,
     ):
-        self.id = str(uuid.uuid4())
+        self.id = id or str(uuid.uuid4())
         self.expr = expr
         self.args = expr.args
         self.kwargs = expr.kwargs
@@ -355,6 +356,29 @@ class Job:
         """
         parent_job.child_jobs.append(self)
 
+    def collapse(self, other_job: "Job") -> None:
+        """
+        Collapse this Job into `other_job`.
+
+        This method is used when equivalent Jobs are detected, and we want to
+        perform Common Subexpression Elimination (CSE).
+        """
+
+        # Inform parent job, to use other_job instead.
+        parent_job = self.parent_job
+        assert parent_job
+        parent_job.child_jobs[parent_job.child_jobs.index(self)] = other_job
+
+        def then(result: Any) -> None:
+            self.call_hash = other_job.call_hash
+            self.resolve(result)
+
+        def fail(error: Any) -> None:
+            self.call_hash = other_job.call_hash
+            self.reject(error)
+
+        other_job.result_promise.then(then, fail)
+
     def resolve(self, result: Any) -> None:
         """
         Resolves a Job with a final concrete value, `result`.
@@ -429,6 +453,40 @@ def get_ignore_warnings_from_config(scheduler_config: Section) -> Set[str]:
     if not warnings_text:
         return set()
     return set(warnings_text.strip().split())
+
+
+def format_job_statuses(
+    job_status_counts: Dict[str, Dict[str, int]],
+    timestamp: Optional[datetime.datetime] = None,
+) -> Iterator[str]:
+    """
+    Format job status table (Dict[task_name, Dict[status, count]]).
+    """
+    # Create counts table.
+    task_names = sorted(job_status_counts.keys())
+    table: List[List[str]] = (
+        [["TASK"] + Job.STATUSES]
+        + [
+            ["ALL"]
+            + [
+                str(sum(job_status_counts[task_name][status] for task_name in task_names))
+                for status in Job.STATUSES
+            ]
+        ]
+        + [
+            [task_name] + [str(job_status_counts[task_name][status]) for status in Job.STATUSES]
+            for task_name in task_names
+        ]
+    )
+
+    # Display job status table.
+    if timestamp is None:
+        timestamp = datetime.datetime.now()
+    yield "| JOB STATUS {}".format(timestamp.strftime("%Y/%m/%d %H:%M:%S"))
+
+    for line in format_table(table, "lrrrrrr", min_width=7):
+        yield f"| {line}"
+    yield ""
 
 
 class Frame(FrameSummary, Value):
@@ -695,9 +753,22 @@ class Scheduler:
         self.events_queue: queue.Queue = queue.Queue()
         self.workflow_promise: Optional[Promise] = None
         self._current_execution: Optional[Execution] = None
-        self._pending_expr: Dict[str, Tuple[Promise, Job]] = {}
+
+        # Tracking for expression cycles. We store pending expressions by their parent_job
+        # because the parent_job's lifetime corresponds to the expression's lifetime.
+        # This makes for straightforward deallocation.
+        self._pending_expr: Dict[Optional[Job], Dict[Expression, Promise]] = defaultdict(dict)
+
+        # Tracking for Common Subexpression Elimination (CSE) for pending Jobs.
+        self._pending_jobs: Dict[Optional[str], Job] = {}
+
+        # Currenting pending/running jobs.
         self._jobs: Set[Job] = set()
+
+        # Job status of finalized jobs.
         self._finalized_jobs: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
+        # Execution modes.
         self.dryrun = False
         self.use_cache = True
 
@@ -740,6 +811,49 @@ class Scheduler:
                 "tasks needing namespace: {}".format(", ".join(task_names))
             )
 
+    def _run(
+        self,
+        expr: TaskExpression[Result],
+        parent_job: Optional[Job] = None,
+        dryrun: bool = False,
+        cache: bool = True,
+    ) -> Promise[Result]:
+        """
+        Run the scheduler to evaluate an Expression `expr`.
+
+        This is a private method that returns the original workflow Promise.
+        """
+        # Set scheduler and start executors.
+        set_current_scheduler(self)
+        for executor in self.executors.values():
+            executor.start()
+        self.dryrun = dryrun
+        self.use_cache = cache
+        self.traceback = None
+
+        self._validate_tasks()
+        self.backend.calc_current_nodes({task.hash for task in self.task_registry})
+
+        # Start event loop to evaluate expression.
+        start_time = time.time()
+        self.thread_id = threading.get_ident()
+        self._pending_expr.clear()
+        self._pending_jobs.clear()
+        self._jobs.clear()
+        result = self.evaluate(expr, parent_job=parent_job)
+        self.process_events(result)
+
+        # Log execution duration.
+        duration = time.time() - start_time
+        self.log(f"Execution duration: {duration:.2f} seconds")
+
+        # Stop executors and unset scheduler.
+        for executor in self.executors.values():
+            executor.stop()
+        set_current_scheduler(None)
+
+        return result
+
     @overload
     def run(
         self,
@@ -771,24 +885,14 @@ class Scheduler:
         tags: Iterable[Tuple[str, Any]] = (),
     ) -> Result:
         """
-        Run the scheduler to evaluate a Task or Expression.
+        Run the scheduler to evaluate an Expression `expr`.
         """
         if needs_root_task(self.task_registry, expr):
             # Ensure we always have one root-level job encompassing the whole execution.
             expr = root_task(quote(expr))
 
-        self._validate_tasks()
-        self.backend.calc_current_nodes({task.hash for task in self.task_registry})
-
-        # Set scheduler and start executors.
-        set_current_scheduler(self)
-        for executor in self.executors.values():
-            executor.start()
-        self.dryrun = dryrun
-        self.use_cache = cache
-        self.traceback = None
-
-        # Start execution.
+        # Initialize execution.
+        parent_job: Optional[Job]
         if exec_argv is None:
             exec_argv = ["scheduler.run", trim_string(repr(expr))]
         self._current_execution = Execution(self.backend.record_execution(exec_argv))
@@ -803,22 +907,9 @@ class Scheduler:
             )
         )
 
-        # Start event loop to evaluate expression.
-        start_time = time.time()
-        self.thread_id = threading.get_ident()
-        self._pending_expr.clear()
-        self._jobs.clear()
-        result = self.evaluate(expr)
-        self.process_events(result)
-
-        # Log execution duration.
-        duration = time.time() - start_time
-        self.log(f"Execution duration: {duration:.2f} seconds")
-
-        # Stop executors and unset scheduler.
-        for executor in self.executors.values():
-            executor.stop()
-        set_current_scheduler(None)
+        result: Promise[Result] = self._run(
+            cast(TaskExpression[Result], expr), dryrun=dryrun, cache=cache
+        )
 
         # Return or raise result depending on whether it succeeded.
         if result.is_fulfilled:
@@ -831,12 +922,70 @@ class Scheduler:
                 for line in self.traceback.format():
                     self.log(line.rstrip("\n"))
 
-            raise result.value
+            raise result.error
 
         elif result.is_pending and self.dryrun:
             self.log("Dryrun: Additional jobs would run.")
             raise DryRunResult()
 
+        else:
+            raise AssertionError("Unexpected state")
+
+    def extend_run(
+        self,
+        expr: Union[Expression[Result], Result],
+        parent_job_id: str,
+        dryrun: bool = False,
+        cache: bool = True,
+    ) -> dict:
+        """
+        Extend an existing scheduler execution (run) to evaluate a Task or Expression.
+        """
+        if needs_root_task(self.task_registry, expr):
+            # Ensure we always have one root-level job encompassing the whole execution.
+            expr = root_task(quote(expr))
+
+        # Extend an existing execution.
+        parent_job_details = self.backend.get_job(parent_job_id)
+        if not parent_job_details:
+            raise ValueError(f"Unknown parent_job_id: {parent_job_id}")
+        self._current_execution = Execution(parent_job_details["execution_id"])
+        # Create dummy parent_job to mimic job in the parent scheduler:
+        # - We need to set its id to match the given parent_job_id.
+        # - We set the same execution id as the original parent_job.
+        # - Any expression will do, so we use a minimal root task.
+        # - We also mimic the task and eval_args being set like they are in exec_job().
+        parent_job = Job(
+            root_task(quote(None)),  # type: ignore
+            id=parent_job_id,
+            execution=self._current_execution,
+        )
+        parent_job.task = root_task
+        parent_job.eval_args = ((quote(None),), {})
+
+        result: Promise[Result] = self._run(
+            cast(TaskExpression[Result], expr), parent_job=parent_job, dryrun=dryrun, cache=cache
+        )
+
+        # There will always be one new job id for this subexecution.
+        [job] = parent_job.child_jobs
+
+        # Return the result along with the job id to allow caller to stitch the job tree.
+        if result.is_fulfilled:
+            return {
+                "result": result.value,
+                "job_id": job.id,
+                "call_hash": job.call_hash,
+            }
+        elif result.is_rejected:
+            return {
+                "error": result.error,
+                "job_id": job.id,
+                "call_hash": job.call_hash,
+            }
+        elif result.is_pending and self.dryrun:
+            # Return an incomplete run due to dryrun being active.
+            return {"dryrun": True, "job_id": job.id, "call_hash": job.call_hash}
         else:
             raise AssertionError("Unexpected state")
 
@@ -878,30 +1027,7 @@ class Scheduler:
                 status_counts[task_name][status] += count
                 status_counts[task_name]["TOTAL"] += count
 
-        # Create counts table.
-        task_names = sorted(status_counts.keys())
-        table: List[List[str]] = (
-            [["TASK"] + Job.STATUSES]
-            + [
-                ["ALL"]
-                + [
-                    str(sum(status_counts[task_name][status] for task_name in task_names))
-                    for status in Job.STATUSES
-                ]
-            ]
-            + [
-                [task_name] + [str(status_counts[task_name][status]) for status in Job.STATUSES]
-                for task_name in task_names
-            ]
-        )
-
-        now = datetime.datetime.now()
-        report_lines: List[str] = []
-        report_lines.append("| JOB STATUS {}".format(now.strftime("%Y/%m/%d %H:%M:%S")))
-
-        for line in format_table(table, "lrrrrrr", min_width=7):
-            report_lines.append("| " + line)
-        return report_lines
+        return list(format_job_statuses(status_counts))
 
     def log_job_statuses(self) -> None:
         """
@@ -943,44 +1069,17 @@ class Scheduler:
             lambda _: map_nested_value(resolve_term, pending_expr)
         )
 
-    def _check_pending_expr(
-        self, expr: TaskExpression, parent_job: Optional[Job]
-    ) -> Optional[Promise]:
-        """
-        Returns a promise for an expression currently pending evaluation.
-
-        This check is necessary to avoid double evaluating an expression that is
-        not in the cache yet since it is pending.
-
-        This is a form of common subexpression elimination.
-        https://en.wikipedia.org/wiki/Common_subexpression_elimination
-        """
-
-        # Check pending evaluation cache for whether this expression is being evaluated already.
-        promise_job = self._pending_expr.get(expr.get_hash())
-        if not promise_job:
-            return None
-
-        # We need to notify parent_job of this new child job.
-        # This is used to calculate proper call_hash.
-        # TODO: Decide whether to record multiple parents. Jobs can form a DAG too.
-        promise, job2 = promise_job
-        if parent_job:
-            job2.notify_parent(parent_job)
-
-        # Wait for other job to finish, and then copy call_hash to this expression.
-        def callback(result: Any) -> Any:
-            expr.call_hash = job2.call_hash
-            return result
-
-        return promise.then(callback)
-
     def evaluate_apply(self, expr: ApplyExpression, parent_job: Optional[Job] = None) -> Promise:
         """
         Begin an evaluation of an ApplyExpression.
 
         Returns a Promise that will resolve/reject when the evaluation is complete.
         """
+        # Detect cycles.
+        pending_promise = self._pending_expr[parent_job].get(expr)
+        if pending_promise:
+            return pending_promise
+
         if isinstance(expr, SchedulerExpression):
             task = self.task_registry.get(expr.task_name)
             if not task:
@@ -994,14 +1093,9 @@ class Scheduler:
 
             # Scheduler tasks are executed with access to scheduler, parent_job, and
             # raw args (i.e. possibly unevaluated).
-            return task.func(self, parent_job, expr, *expr.args, **expr.kwargs)
+            promise = task.func(self, parent_job, expr, *expr.args, **expr.kwargs)
 
         elif isinstance(expr, TaskExpression):
-            # Reuse promise if expression is already pending evaluation.
-            pending_promise = self._check_pending_expr(expr, parent_job)
-            if pending_promise:
-                return pending_promise
-
             # TaskExpressions need to be executed in a new Job.
             job = Job(expr, parent_job=parent_job, execution=self._current_execution)
             self._jobs.add(job)
@@ -1024,10 +1118,6 @@ class Scheduler:
             args_promise = self.evaluate(expr_args, parent_job=parent_job)
             promise = args_promise.then(lambda eval_args: self.exec_job(job, eval_args))
 
-            # Record pending expression.
-            self._pending_expr[expr.get_hash()] = (promise, job)
-            return promise
-
         elif isinstance(expr, SimpleExpression):
             # Simple Expressions can be executed synchronously.
             func = get_lazy_operation(expr.func_name)
@@ -1042,7 +1132,7 @@ class Scheduler:
 
             # Evaluate args, apply func, evaluate result.
             args_promise = self.evaluate((expr.args, expr.kwargs), parent_job=parent_job)
-            return args_promise.then(
+            promise = args_promise.then(
                 lambda eval_args: self.evaluate(
                     cast(Callable, func)(*eval_args[0], **eval_args[1]), parent_job=parent_job
                 )
@@ -1050,6 +1140,10 @@ class Scheduler:
 
         else:
             raise NotImplementedError("Unknown expression: {}".format(expr))
+
+        # Recording pending expressions.
+        self._pending_expr[parent_job][expr] = promise
+        return promise
 
     def _is_job_within_limits(self, job_limits: dict) -> bool:
         """
@@ -1082,6 +1176,10 @@ class Scheduler:
         self._jobs_pending_limits.append((job, eval_args))
 
     def _check_jobs_pending_limits(self) -> None:
+        """
+        Checks whether Jobs pending due to limits can now satistify limits and run.
+        """
+
         def _add_limits(limits1, limits2):
             return {
                 limit_name: limits1[limit_name] + limits2[limit_name]
@@ -1106,6 +1204,27 @@ class Scheduler:
 
         for job, eval_args in ready_jobs:
             self.exec_job(job, eval_args)
+
+    def _check_pending_job(self, job: Job) -> Optional[Job]:
+        """
+        Checks whether an equivalent Job is already running.
+
+        This check is necessary to avoid double evaluating an expression that is
+        not in the cache yet since it is pending.
+
+        This is a form of common subexpression elimination.
+        https://en.wikipedia.org/wiki/Common_subexpression_elimination
+        """
+        pending_job = self._pending_jobs.get(job.eval_hash)
+        if not pending_job:
+            # New job.
+            self._pending_jobs[job.eval_hash] = job
+            return None
+
+        # Remove job from pending list.
+        self._jobs.remove(job)
+        job.collapse(pending_job)
+        return pending_job
 
     def exec_job(self, job: Job, eval_args: Tuple[Tuple, dict]) -> Promise:
         """
@@ -1140,14 +1259,18 @@ class Scheduler:
         if not self.use_cache:
             job.task_options["cache"] = False
 
-        self.backend.record_job_start(job)
-
         # Preprocess arguments before sending them to task function.
         args, kwargs = job.eval_args
         args, kwargs = self.preprocess_args(job, args, kwargs)
 
         # Check cache using eval_hash as key.
         job.eval_hash, job.args_hash = self.get_eval_hash(job.task, args, kwargs)
+
+        # Check whether a job of the same eval_hash is already running.
+        if self._check_pending_job(job):
+            return
+
+        self.backend.record_job_start(job)
 
         # HACK: This is a workaround introduced by DE-4761. See the ticket for
         # notes on how script_task could be redesigned to remove the need for
@@ -1249,10 +1372,6 @@ class Scheduler:
             result = self.postprocess_result(job, result, job.eval_hash)
             self.set_cache(job.eval_hash, job.task.hash, job.args_hash, result)
 
-        # Clear pending expression lookup.
-        if job.expr.get_hash() in self._pending_expr:
-            del self._pending_expr[job.expr.get_hash()]
-
         # Eval result (child tasks), then resolve job.
         self.evaluate(result, parent_job=job).then(
             lambda result: self.resolve_job(job, result)
@@ -1317,6 +1436,13 @@ class Scheduler:
         """
         self._jobs.remove(job)
         self._finalized_jobs[job.task_name][job.status] += 1
+
+        # By poping the job, we free up all expressions that we created within
+        # the job. They no longer can be part of any more cycles.
+        self._pending_expr.pop(job, None)
+
+        # When a job finishes, we no longer need to track in memory for CSE.
+        self._pending_jobs.pop(job.eval_hash, None)
 
     def _record_job_tags(self, job: Job) -> None:
         """
@@ -2124,14 +2250,23 @@ def _subrun_root_task(
         Returns a dict result from running the sub-scheduler on `expr`.  The dict contains extra
         information pertaining to the sub-scheduler as follows:
         {
-          'result': sub-scheduler evaluation of `expr`
+          'result': sub-scheduler evaluation of `expr`, present if successful
+          'error': exception raised by sub-scheduler, present if error was encountered
+          'dryrun': present if dryrun was requested and workflow can't complete
+
+          'job_id': Job id of root Job in sub-scheduler,
+                    present if parent_job_id given in run_config
+          'call_hash': call_hash of root CallNode in sub-scheduler,
+                       present if parent_job_id given in run_config
+
           'status': sub-scheduler final job status poll (list of str)
           'config': sub-scheduler config dict (useful for confirming exactly what config
             settings were used).
+          'run_config': a dict of run configuration used by the sub-scheduler
         }
-    """
-    from redun.functools import force
 
+        parent_job_id is present in run_config, only results are return. Errors are raised.
+    """
     sub_scheduler = Scheduler(config=Config(config_dict=config))
     sub_scheduler.load()
 
@@ -2142,16 +2277,35 @@ def _subrun_root_task(
         for module in load_modules:
             importlib.import_module(module)
 
-    result = sub_scheduler.run(force(expr), **run_config)
-    return {
-        "result": result,
-        "status": sub_scheduler.get_job_status_report(),
+    subrun_result: dict = {
         "config": sub_scheduler.config.get_config_dict(),
-        "run_config": {
-            "dryrun": sub_scheduler.dryrun,
-            "cache": sub_scheduler.use_cache,
-        },
     }
+
+    # Extend an existing Execution if the parent_job_id is given. Otherwise, start
+    # a new Execution.
+    if "parent_job_id" in run_config:
+        result = sub_scheduler.extend_run(expr.eval(), **run_config)
+
+        # If extending an Execution, supplement result value with additional
+        # information such as job id and call_hash.
+        if not isinstance(result, dict):
+            raise AssertionError(f"Unknown scheduler result: {result}")
+        subrun_result.update(result)
+
+    else:
+        result = sub_scheduler.run(expr.eval(), **run_config)
+        subrun_result["result"] = result
+
+    subrun_result.update(
+        {
+            "run_config": {
+                "dryrun": sub_scheduler.dryrun,
+                "cache": sub_scheduler.use_cache,
+            },
+            "status": sub_scheduler.get_job_status_report(),
+        }
+    )
+    return subrun_result
 
 
 @scheduler_task(namespace="redun", version="1")
@@ -2162,6 +2316,7 @@ def subrun(
     expr: Any,
     executor: str,
     config: Optional[Dict[str, Any]] = None,
+    new_execution: bool = False,
     **task_options: dict,
 ) -> Promise:
     """
@@ -2198,19 +2353,22 @@ def subrun(
 
     Parameters
     ----------
-    expr
+    expr : Any
         Expression to be run by sub-scheduler.
-    executor
+    executor : str
         Executor name for the special redun task that launches the sub-scheduler
         (_subrun_root_task). E.g. `batch` to launch the sub-scheduler in AWS Batch. Note
         that this is a config key in the  *local* scheduler's config.
-    config
+    config : dict
         Optional sub-scheduler config dict. Must be a two-level dict that can be used to
         initialize a :class:`Config` object [see :method:`Config.get_config_dict()`.  If None or
         empty, the local Scheduler's config will be passed to the sub-scheduler and any values
         with local config_dir will be replaced with ".".  Do not include database credentials as
         they will be logged as clear text in the call graph.
-    task_options
+    new_execution : bool
+        If True, record the provenance of the evaluation of `expr` as a new Execution, otherwise
+        extend the current Execution with new Jobs.
+    **task_options : Any
         Task options for _subrun_root_task.  E.g. when running the sub-scheduler via Batch
         executor, you can pass ECS configuration (e.g. `memory`, `vcpus`, `batch_tags`).
 
@@ -2219,7 +2377,6 @@ def subrun(
     Dict[str, Any]
         Returns a dict result of evaluating the _subrun_root_task
     """
-    from redun.functools import delay
 
     # If a config wasn't provided, forward the parent scheduler's backend config to the
     # sub-scheduler, replacing the local config_dir with "."
@@ -2237,14 +2394,18 @@ def subrun(
             continue
         load_modules.add(module_name)
 
+    # Prepare child task call for subrun.
+    run_config: Dict[str, Any] = {
+        "dryrun": scheduler.dryrun,
+        "cache": scheduler.use_cache,
+    }
+    if not new_execution:
+        run_config["parent_job_id"] = parent_job.id
     subrun_root_task_expr = _subrun_root_task.options(executor=executor, **task_options)(
-        expr=delay(expr),
+        expr=quote(expr),
         config=config,
         load_modules=sorted(load_modules),
-        run_config={
-            "dryrun": scheduler.dryrun,
-            "cache": scheduler.use_cache,
-        },
+        run_config=run_config,
     )
 
     def log_banner(msg):
@@ -2253,7 +2414,18 @@ def subrun(
         scheduler.log("-" * 79)
 
     def then(subrun_result):
-        # Echo subs-scheduler report.
+        if "job_id" in subrun_result:
+            # Create stub-job representing the job in the subscheduler.
+            # The call_hash is needed to compute the right call_hash of parent_job.
+            job = Job(
+                root_task(quote(None)),  # type: ignore
+                id=subrun_result["job_id"],
+                parent_job=parent_job,
+                execution=scheduler._current_execution,
+            )
+            job.call_hash = subrun_result["call_hash"]
+
+        # Echo sub-scheduler report.
         scheduler.log()
         log_banner(
             f"BEGIN: Sub-scheduler report (executor='{executor}'), {trim_string(repr(expr))}"
@@ -2274,7 +2446,16 @@ def subrun(
         log_banner("END: Sub-scheduler report")
         scheduler.log()
 
-        # Return the user's result.
-        return subrun_result["result"]
+        if "result" in subrun_result:
+            # Return the user's result.
+            return subrun_result["result"]
+
+        elif "error" in subrun_result:
+            # Reraise the error.
+            raise subrun_result["error"]
+
+        elif "dryrun" in subrun_result:
+            # Return a promise that never resolves.
+            return Promise()
 
     return scheduler.evaluate(subrun_root_task_expr, parent_job=parent_job).then(then)

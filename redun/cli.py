@@ -78,7 +78,14 @@ from redun.file import File as BaseFile
 from redun.file import copy_file, list_filesystems
 from redun.job_array import AWS_ARRAY_VAR, K8S_ARRAY_VAR
 from redun.logging import log_levels, logger
-from redun.scheduler import DryRunResult, ErrorValue, Scheduler, Traceback, get_task_registry
+from redun.scheduler import (
+    DryRunResult,
+    ErrorValue,
+    Scheduler,
+    Traceback,
+    format_job_statuses,
+    get_task_registry,
+)
 from redun.tags import (
     ANY_VALUE,
     DOC_KEY,
@@ -91,6 +98,15 @@ from redun.tags import (
 from redun.task import Task as BaseTask
 from redun.utils import add_import_path, format_table, pickle_dump, trim_string
 from redun.value import NoneType, function_type, get_type_registry
+
+# pygraphviz may not be installed. If not, disable
+# the visualization functionality.
+try:
+    from redun.visualize import viz_record
+
+    viz_is_enabled = True
+except ModuleNotFoundError:
+    viz_is_enabled = False
 
 # Constants.
 REDUN_DESCRIPTION = """\
@@ -1170,6 +1186,9 @@ class RedunClient:
             "--job-status", help="Filter jobs by status (comma separated: DONE, CACHED, FAILED)."
         )
         log_parser.add_argument(
+            "--task-name", action="append", help="Filter tasks and jobs by name."
+        )
+        log_parser.add_argument(
             "--value-type", action="append", help="Filter Values by their type."
         )
         log_parser.add_argument("--file-path", action="append", help="Filter by File path.")
@@ -1184,7 +1203,68 @@ class RedunClient:
         log_parser.add_argument(
             "--exec-tag", action="append", help="Filter by execution tag (format: key=value)."
         )
+        log_parser.add_argument(
+            "--detail",
+            action="store_true",
+            default=False,
+            help="Show full record details.",
+        )
         log_parser.set_defaults(func=self.log_command)
+
+        # Viz command
+        if viz_is_enabled:
+            viz_parser = subparsers.add_parser(
+                "viz", help="Produce visualization of specific execution."
+            )
+            viz_parser.add_argument(
+                "--format", help="Output format. [Universal]", choices=["dot", "png"]
+            )
+            viz_parser.add_argument(
+                "--output", help="Absolute filepath to save image or dot text into. [Universal]"
+            )
+            viz_parser.add_argument(
+                "--horizontal",
+                action="store_true",
+                help="Orient the graph from left to right instead of top to bottom. [Universal]",
+            )
+            viz_parser.add_argument(
+                "--no-truncation",
+                action="store_true",
+                help="Prevent truncation of value nodes. [Universal]",
+            )
+            viz_parser.add_argument(
+                "--hash", action="store_true", help="Display each object's hash. [Universal]"
+            )
+            viz_parser.add_argument(
+                "--no-detail",
+                action="store_true",
+                help="Produce only the job graph. [Non-value Queries]",
+            )
+            viz_parser.add_argument(
+                "--jobs",
+                action="store_true",
+                help="Visualize jobs as their own nodes. [Execution Queries]",
+            )
+            viz_parser.add_argument(
+                "--dataflow",
+                action="store_true",
+                help="Deconstruct values into their leaf subvalues to track dataflow. \
+                      [Non-value Queries]",
+            )
+            viz_parser.add_argument(
+                "--deduplicate",
+                action="store_true",
+                help="""Condense identical values into the same node. \
+                     (Note this should NOT be used if your program moves values that \
+                      have low entropy and a high chance of hash collisions). \
+                      [Non-value Queries]""",
+            )
+            viz_parser.add_argument(
+                "--wrap-calls",
+                action="store_true",
+                help="Wrap routing calls around arguments in value queries. [Value Queries]",
+            )
+            viz_parser.set_defaults(func=self.viz_command)
 
         # Repl command.
         repl_parser = subparsers.add_parser("repl", help="Get a repl for querying history.")
@@ -1572,6 +1652,7 @@ class RedunClient:
                 cache=not args.no_cache,
                 tags=tags,
             )
+
         except DryRunResult:
             sys.exit(1)
 
@@ -1586,6 +1667,7 @@ class RedunClient:
                 debugger.botframe = None
 
                 debugger.interaction(None, tb)
+
             raise
 
         if result is not None:
@@ -1662,11 +1744,37 @@ class RedunClient:
 
         return None
 
+    def viz_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+        """
+        Performs the visualization command.
+        """
+
+        self.get_scheduler(args)
+
+        scheduler = self.scheduler
+        assert scheduler
+        assert isinstance(scheduler.backend, RedunBackendDb)
+        assert scheduler.backend.session
+
+        props = args.__dict__
+        props["detail"] = not args.no_detail
+        props["direction"] = "LR" if props["horizontal"] else "TB"
+
+        if extra_args:
+            id = extra_args[0]
+            query = CallGraphQuery(scheduler.backend.session)
+            record = query.like_id(id).one_or_none()
+
+            if not record:
+                raise RedunClientError(f"Provided id {id} is invalid.")
+
+            viz_record(scheduler, record, props)
+
     def log_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
         """
         Performs the log command.
 
-        This is a the main command for querying the CallGraph.
+        This is the main command for querying the CallGraph.
         """
         self.get_scheduler(args)
 
@@ -1678,7 +1786,7 @@ class RedunClient:
 
         # Display defaults.
         indent = 0
-        detail = False
+        detail = args.detail
         compact = True
         display = "general"
 
@@ -1726,6 +1834,11 @@ class RedunClient:
             query = query.filter_types(record_types)
 
         if extra_args:
+            # Check unknown filters.
+            for arg in extra_args:
+                if arg != "-" and arg.startswith("-"):
+                    raise RedunClientError(f"Unknown filter: {arg}")
+
             # Search for specialty ids first.
             id = extra_args[0]
             detail = True
@@ -1740,8 +1853,6 @@ class RedunClient:
 
         elif not record_types:
             # Default show executions.
-            detail = False
-            compact = True
             self.display("Recent executions:\n")
 
             query = query.filter_types({"Execution"})
@@ -1755,6 +1866,10 @@ class RedunClient:
                 )
             )
             query = query.filter_execution_ids(exec.id for exec in execs)
+
+        # Filter task properties.
+        if args.task_name:
+            query = query.filter_task_names(args.task_name)
 
         # Filter by tags.
         if args.tag:
@@ -1842,6 +1957,7 @@ class RedunClient:
         if detail and show_jobs:
             if status == "DONE":
                 duration = execution.job.duration
+                end_time = execution.job.end_time
             else:
                 times = [(job.start_time, job.end_time) for job in execution.jobs]
                 start_time = min(start_time for start_time, _ in times)
@@ -1852,6 +1968,16 @@ class RedunClient:
             self.display_doc_tags(execution.tags, indent=indent)
             self.display()
 
+            # Display job status table.
+            job_status_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+            for job in execution.jobs:
+                job_status_counts[job.task.fullname][job.status] += 1
+                job_status_counts[job.task.fullname]["TOTAL"] += 1
+
+            for line in format_job_statuses(job_status_counts, end_time):
+                self.display(line)
+
+            # Display job tree.
             job_statuses = Counter(job.status for job in execution.jobs)
             self.display(
                 "Jobs: {total} (DONE: {done}, CACHED: {cached}, FAILED: {failed})".format(

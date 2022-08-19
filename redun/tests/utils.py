@@ -334,7 +334,10 @@ def import_all_modules(pkg):
 
     Ignores explicitly marked modules.
     """
-    ignored_modules = ("redun.backends.db.alembic.env",)  # https://stackoverflow.com/a/52575218
+    ignored_modules = (
+        "redun.backends.db.alembic.env",
+        "redun.visualize",
+    )  # https://stackoverflow.com/a/52575218
     modules = []
     for _, module_name, is_pkg in pkgutil.iter_modules(pkg.__path__):
         full_name = f"{pkg.__name__}.{module_name}"

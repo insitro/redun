@@ -87,6 +87,7 @@ def test_executor_docker(
         "shared_memory": None,
         "vcpus": 1,
         "volumes": [(scratch_dir, scratch_dir)],
+        "interactive": False,
     }
 
     # Simulate output file created by job.

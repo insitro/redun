@@ -1371,6 +1371,7 @@ def test_executor_docker(
             "shared_memory": None,
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
+            "interactive": False,
         }
 
         run_docker_mock.reset_mock()
@@ -1394,6 +1395,7 @@ def test_executor_docker(
             "shared_memory": None,
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
+            "interactive": False,
         }
 
         # Simulate output file created by job.
@@ -1468,6 +1470,7 @@ def test_executor_job_debug(
             "shared_memory": None,
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
+            "interactive": False,
         }
 
         # Simulate output file created by job.

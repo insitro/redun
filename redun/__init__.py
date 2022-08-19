@@ -19,4 +19,4 @@ from redun.scheduler import (  # noqa: F401
 from redun.scripting import script
 from redun.task import PartialTask, Task, get_task_registry, task
 
-__version__ = "0.8.14"
+__version__ = "0.8.15"

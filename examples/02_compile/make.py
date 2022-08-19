@@ -21,7 +21,6 @@ def link(prog_path: str, o_files: List[File]) -> File:
     """
     Link several object files together into one program.
     """
-    print("linking")
     os.system("gcc -o {prog_path} {o_files}".format(
         prog_path=prog_path,
         o_files=' '.join(o_file.path for o_file in o_files),

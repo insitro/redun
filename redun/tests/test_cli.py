@@ -1342,6 +1342,33 @@ def test_query(scheduler: Scheduler, backend: RedunBackendDb, session: Session) 
     assert list(query.empty().all()) == []
 
 
+def test_filter_task_names(
+    scheduler: Scheduler, backend: RedunBackendDb, session: Session
+) -> None:
+    """
+    Should be able to filter by task name.
+    """
+
+    @task(namespace="ns")
+    def task1(x):
+        return x + 1
+
+    @task(namespace="ns")
+    def main():
+        return task1(10)
+
+    assert scheduler.run(main()) == 11
+
+    # All entities should be part of query.
+    query = CallGraphQuery(session)
+
+    assert len(list(query.filter_types(["Job"]).filter_task_names(["task1"]).all())) == 1
+    assert len(list(query.filter_types(["Job"]).filter_task_names(["ns.task1"]).all())) == 1
+    assert len(list(query.filter_types(["Task"]).filter_task_names(["task1"]).all())) == 1
+    assert len(list(query.filter_types(["Job"]).filter_task_names(["task1", "main"]).all())) == 2
+    assert len(list(query.filter_types(["Task"]).filter_task_names(["bad_task"]).all())) == 0
+
+
 def test_value_subqueries(scheduler: Scheduler, backend: RedunBackendDb, session: Session) -> None:
     """
     CallGraphQuery should be able to query Values by Execution.
@@ -1554,6 +1581,13 @@ def main(x: int):
             r"Exec .* \[ DONE \] ....-..-.. ..:..:..:  run workflow.py main --x 10 \(.*\)",
             r"Duration: 0:00:..\...",
             r"",
+            r"\| JOB STATUS ..../../.. ..:..:..",
+            r"\| TASK       PENDING RUNNING  FAILED  CACHED    DONE   TOTAL",
+            r"\| ",
+            r"\| ALL              0       0       0       2       0       2",
+            r"\| test\.main        0       0       0       1       0       1",
+            r"\| test\.task1       0       0       0       1       0       1",
+            r"",
             r"Jobs: 2 \(DONE: 0, CACHED: 2, FAILED: 0\)",
             r"--------------------------------------------------------------------------------",
             r"Job ........ \[CACHED\] ....-..-.. ..:..:..:  test.main\(x=10\) ",
@@ -1569,6 +1603,13 @@ def main(x: int):
         [
             r"Exec .* \[ DONE \] ....-..-.. ..:..:..:  run workflow.py main --x 10 \(.*\)",
             r"Duration: 0:00:..\...",
+            r"",
+            r"\| JOB STATUS ..../../.. ..:..:..",
+            r"\| TASK       PENDING RUNNING  FAILED  CACHED    DONE   TOTAL",
+            r"\| ",
+            r"\| ALL              0       0       0       2       0       2",
+            r"\| test\.main        0       0       0       1       0       1",
+            r"\| test\.task1       0       0       0       1       0       1",
             r"",
             r"Jobs: 2 \(DONE: 0, CACHED: 2, FAILED: 0\)",
             r"--------------------------------------------------------------------------------",
