@@ -5,7 +5,6 @@
 from kubernetes import client, config
 from kubernetes.config import ConfigException
 
-from redun.executors.aws_utils import get_aws_env_vars
 from redun.logging import logger
 
 DEFAULT_JOB_PREFIX = "redun-job"
