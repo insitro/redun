@@ -83,11 +83,27 @@ def create_job_object(
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
     Also creates necessary sub-objects"""
 
-    try:
-        env = [{"name": key, "value": value} for key, value in get_aws_env_vars().items()]
-    except Exception:
-        # TODO: Catch specific exception or use explicit opt-in.
-        env = []
+    # Container environment variables.
+    env = []
+
+    # Forward AWS secrets to the container environment variables.
+    aws_env_keys = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN"]
+    env.extend(
+        [
+            {
+                "name": key,
+                "valueFrom": {
+                    "secretKeyRef": {
+                        "name": "redun-aws",
+                        "key": key,
+                        "optional": True,
+                    },
+                },
+            }
+            for key in aws_env_keys
+        ]
+    )
+
     container = client.V1Container(name=name, image=image, command=command, env=env)
 
     if resources is None:
