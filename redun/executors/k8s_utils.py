@@ -77,8 +77,8 @@ def create_k8s_secret(secret_name: str, namespace: str, secret_data: dict) -> An
     return core_api.create_namespaced_secret(namespace, body)
 
 
-def import_aws_secrets(namespace: str = "default") -> None:
-    create_k8s_secret("redun-aws", namespace, get_aws_env_vars())
+def import_aws_secrets(job_name: str = "redun-job", namespace: str = "default") -> None:
+    create_k8s_secret(job_name + "-aws", namespace, get_aws_env_vars())
 
 
 def create_resources(requests=None, limits=None):
@@ -121,13 +121,14 @@ def create_job_object(
 
     # Forward AWS secrets to the container environment variables.
     aws_env_keys = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN"]
+    secret_name = name + "-aws"
     env.extend(
         [
             {
                 "name": key,
                 "valueFrom": {
                     "secretKeyRef": {
-                        "name": "redun-aws",
+                        "name": secret_name,
                         "key": key,
                         "optional": True,
                     },
