@@ -880,7 +880,7 @@ class K8SExecutor(Executor):
 
         from redun.executors.k8s_utils import import_aws_secrets
 
-        import_aws_secrets()
+        import_aws_secrets(namespace=self.namespace)
 
         self._start()
 
