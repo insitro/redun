@@ -3,65 +3,85 @@
 # It uses the Official Python client library for kubernetes:
 # https://github.com/kubernetes-client/python
 from base64 import b64encode
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config import ConfigException
 
-from redun.executors.aws_utils import get_aws_env_vars
 from redun.logging import logger
 
 DEFAULT_JOB_PREFIX = "redun-job"
 
 
-def load_k8s_config() -> None:
+class K8SClient:
     """
-    Load kubernetes config.
+    This class manages multiple k8s clients and their config loading.
+    """
+
+    def __init__(self):
+        self._is_loaded = False
+        self._core: Optional[client.CoreV1Api] = None
+        self._batch: Optional[client.BatchV1Api] = None
+
+    def load_config(self) -> None:
+        """
+        Loads k8s config if not loaded.
+        """
+        if not self._is_loaded:
+            try:
+                config.load_kube_config()
+            except ConfigException:
+                logger.warn(
+                    "config.load_kube_config() failed. "
+                    "Resorting to config.load_incluster_config()."
+                )
+                config.load_incluster_config()
+            self._is_loaded = True
+
+    def version(self) -> Tuple[int, int]:
+        """
+        Returns an API client support k8s version API.
+
+        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/VersionApi.md
+        """
+        self.load_config()
+        version_info = client.VersionApi().get_code()
+        major = int(version_info.major)
+        minor = int(version_info.minor)
+        return major, minor
+
+    @property
+    def core(self) -> client.CoreV1Api:
+        """
+        Returns an API client support k8s core API.
+
+        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md
+        """
+        if not self._core:
+            self.load_config()
+            self._core = client.CoreV1Api()
+        return self._core
+
+    @property
+    def batch(self) -> client.BatchV1Api:
+        """
+        Returns an API client supporting k8s batch API.
+
+        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/BatchV1Api.md
+        """
+        if not self._batch:
+            self.load_config()
+            self._batch = client.BatchV1Api()
+        return self._batch
+
+
+def delete_k8s_secret(k8s_client: K8SClient, secret_name: str, namespace: str) -> None:
+    """
+    Deletes a k8s Secret. If Secret doesn't exist, it does not throw an error.
     """
     try:
-        config.load_kube_config()
-    except ConfigException:
-        logger.warn(
-            "config.load_kube_config() failed. Resorting to config.load_incluster_config()."
-        )
-        config.load_incluster_config()
-
-
-def get_k8s_version_client() -> client.VersionApi:
-    """
-    Returns an API client support k8s version API.
-
-    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/VersionApi.md
-    """
-    load_k8s_config()
-    return client.VersionApi()
-
-
-def get_k8s_batch_client() -> client.BatchV1Api:
-    """
-    Returns an API client supporting k8s batch API.
-
-    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/BatchV1Api.md
-    """
-    load_k8s_config()
-    return client.BatchV1Api()
-
-
-def get_k8s_core_client() -> client.CoreV1Api:
-    """
-    Returns an API client support k8s core API.
-
-    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md
-    """
-    load_k8s_config()
-    return client.CoreV1Api()
-
-
-def delete_k8s_secret(secret_name: str, namespace: str) -> None:
-    core_api = get_k8s_core_client()
-    try:
-        core_api.delete_namespaced_secret(secret_name, namespace)
+        k8s_client.core.delete_namespaced_secret(secret_name, namespace)
     except ApiException as error:
         if error.status != 404:
             # If secret doesn't exist, then this is a no-op.
@@ -69,11 +89,15 @@ def delete_k8s_secret(secret_name: str, namespace: str) -> None:
 
 
 def create_k8s_secret(
-    secret_name: str, namespace: str, secret_data: dict, secret_type: str = "Opaque"
+    k8s_client: K8SClient,
+    secret_name: str,
+    namespace: str,
+    secret_data: dict,
+    secret_type: str = "Opaque",
 ) -> Any:
-    # Delete existing secret if it exists.
-    # delete_k8s_secret(secret_name, namespace)
-
+    """
+    Creates a k8s Secret from a dict of key-value pairs.
+    """
     # Build secret.
     metadata = {"name": secret_name, "namespace": namespace}
     data = {
@@ -82,21 +106,20 @@ def create_k8s_secret(
     body = client.V1Secret("v1", data, False, "Secret", metadata, type=secret_type)
 
     # Create secret.
-    core_api = get_k8s_core_client()
     try:
-        return core_api.create_namespaced_secret(namespace, body)
+        return k8s_client.core.create_namespaced_secret(namespace, body)
     except ApiException as error:
         if error.status == 409:
             # Secret already exists, just patch it.
-            core_api.replace_namespaced_secret(secret_name, namespace, body)
+            return k8s_client.core.replace_namespaced_secret(secret_name, namespace, body)
 
 
-def import_aws_secrets(namespace: str = "default") -> Any:
-    return create_k8s_secret("redun-aws", namespace, get_aws_env_vars())
+def create_resources(
+    requests: Optional[dict] = None, limits: Optional[dict] = None
+) -> client.V1ResourceRequirements:
+    """
+    Creates resource limits for k8s pods.
 
-
-def create_resources(requests=None, limits=None) -> client.V1ResourceRequirements:
-    """Creates resource limits for k8s pods
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ResourceRequirements.md
     """
     resources = client.V1ResourceRequirements()
@@ -191,29 +214,31 @@ def create_job_object(
     return job
 
 
-def create_namespace(api_instance, namespace):
+def create_namespace(k8s_client: K8SClient, namespace: str) -> None:
     """Create a k8s namespace job"""
-    return api_instance.create_namespace(
-        client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace))
+    try:
+        k8s_client.core.create_namespace(
+            client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace))
+        )
+    except client.exceptions.ApiException as error:
+        if error.status == 409 and error.reason == "Conflict":
+            pass
+        else:
+            logger.error("Unexpected exception creating namespace", error.body)
+            raise
+
+
+def create_job(k8s_client: K8SClient, job: client.V1Job, namespace: str) -> Any:
+    """
+    Creates an actual k8s job.
+    """
+    return k8s_client.batch.create_namespaced_job(body=job, namespace=namespace)
+
+
+def delete_job(k8s_client: K8SClient, name: str, namespace: str) -> Any:
+    """
+    Deletes an existing k8s job.
+    """
+    return k8s_client.batch.delete_namespaced_job(
+        name=name, namespace=namespace, body=client.V1DeleteOptions()
     )
-
-
-def get_version(api_instance):
-    api_instance = get_k8s_version_client()
-    version_info = api_instance.get_code()
-    major = int(version_info.major)
-    minor = int(version_info.minor)
-    return major, minor
-
-
-def create_job(api_instance, job, namespace):
-    """Create an actual k8s job"""
-    api_response = api_instance.create_namespaced_job(body=job, namespace=namespace)
-    return api_response
-
-
-def delete_job(api_instance, name, namespace):
-    """Delete an existing k8s job"""
-    body = client.V1DeleteOptions()
-    api_response = api_instance.delete_namespaced_job(name=name, namespace=namespace, body=body)
-    return api_response

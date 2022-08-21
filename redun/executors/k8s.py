@@ -9,7 +9,7 @@ from collections import OrderedDict, defaultdict
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
 
 import kubernetes
-from kubernetes.client import V1Job, V1Pod
+from kubernetes.client import CoreV1Api, V1Job, V1Pod
 from kubernetes.client.exceptions import ApiException
 
 from redun.executors import aws_utils, k8s_utils
@@ -42,6 +42,7 @@ ARRAY_JOB_SUFFIX = "array"
 
 
 def k8s_submit(
+    k8s_client: k8s_utils.K8SClient,
     command: List[str],
     image: str,
     namespace: str,
@@ -88,18 +89,8 @@ def k8s_submit(
     k8s_job.spec.restart_policy = "OnFailure"
     # if batch_tags:
     #    batch_job_args["tags"] = batch_tags
-    api_instance = k8s_utils.get_k8s_core_client()
-    try:
-        k8s_utils.create_namespace(api_instance, namespace)
-    except kubernetes.client.exceptions.ApiException as e:
-        if e.status == 409 and e.reason == "Conflict":
-            pass
-        else:
-            print("Unexpected exception creating namespace", e.body)
-            return e
-    api_instance = k8s_utils.get_k8s_batch_client()
-    api_response = k8s_utils.create_job(api_instance, k8s_job, namespace=namespace)
-    return api_response
+
+    return k8s_utils.create_job(k8s_client, k8s_job, namespace=namespace)
 
 
 def get_k8s_job_name(prefix: str, job_hash: str, array: bool = False) -> str:
@@ -160,6 +151,7 @@ def get_k8s_job_options(job_options: dict) -> dict:
 
 
 def submit_task(
+    k8s_client: k8s_utils.K8SClient,
     image: str,
     namespace: str,
     scratch_prefix: str,
@@ -200,6 +192,7 @@ def submit_task(
         array=bool(array_size),
     )
     result = k8s_submit(
+        k8s_client,
         command,
         image=image,
         namespace=namespace,
@@ -213,6 +206,7 @@ def submit_task(
 
 
 def submit_command(
+    k8s_client: k8s_utils.K8SClient,
     image: str,
     namespace: str,
     scratch_prefix: str,
@@ -235,6 +229,7 @@ def submit_command(
     assert job.eval_hash
     job_name = get_k8s_job_name(job_options.get("job_name_prefix", "k8s-job"), job.eval_hash)
     return k8s_submit(
+        k8s_client,
         shell_command,
         image=image,
         namespace=namespace,
@@ -259,21 +254,24 @@ def k8s_paginate(request_func: Callable) -> Iterator:
             break
 
 
-def k8s_list_jobs() -> Iterator[V1Job]:
+def k8s_list_jobs(k8s_client: k8s_utils.K8SClient) -> Iterator[V1Job]:
     """
     Returns active K8S Jobs.
     """
-    batch_api = k8s_utils.get_k8s_batch_client()
     yield from k8s_paginate(
-        lambda _continue: batch_api.list_job_for_all_namespaces(watch=False, _continue=_continue)
+        lambda _continue: k8s_client.batch.list_job_for_all_namespaces(
+            watch=False, _continue=_continue
+        )
     )
 
 
-def k8s_describe_jobs(job_names: List[str], namespace: str) -> List[kubernetes.client.V1Job]:
+def k8s_describe_jobs(
+    k8s_client: k8s_utils.K8SClient, job_names: List[str], namespace: str
+) -> List[kubernetes.client.V1Job]:
     """
     Returns K8S Job descriptions.
     """
-    batch_api = k8s_utils.get_k8s_batch_client()
+    batch_api = k8s_client.batch
     jobs = []
     for job_name in job_names:
         try:
@@ -284,7 +282,9 @@ def k8s_describe_jobs(job_names: List[str], namespace: str) -> List[kubernetes.c
     return jobs
 
 
-def get_pod_logs(pod: kubernetes.client.V1Pod, max_lines: Optional[int] = None) -> List[str]:
+def get_pod_logs(
+    k8s_client: k8s_utils.K8SClient, pod: kubernetes.client.V1Pod, max_lines: Optional[int] = None
+) -> List[str]:
     """
     Returns the logs of a K8S pod.
     """
@@ -292,8 +292,7 @@ def get_pod_logs(pod: kubernetes.client.V1Pod, max_lines: Optional[int] = None) 
     if max_lines is not None:
         kwargs["tail_lines"] = max_lines
 
-    api_instance = k8s_utils.get_k8s_core_client()
-    log_response = api_instance.read_namespaced_pod_log(
+    log_response = k8s_client.core.read_namespaced_pod_log(
         pod.metadata.name, namespace=pod.metadata.namespace, timestamps=True, **kwargs
     )
     lines = log_response.split("\n")
@@ -306,17 +305,19 @@ def get_pod_logs(pod: kubernetes.client.V1Pod, max_lines: Optional[int] = None) 
     return lines
 
 
-def parse_pod_logs(pod: kubernetes.client.V1Pod, max_lines: int = 1000) -> Iterator[str]:
+def parse_pod_logs(
+    k8s_client: k8s_utils.K8SClient, pod: kubernetes.client.V1Pod, max_lines: int = 1000
+) -> Iterator[str]:
     """
     Iterates through most recent logs of an K8S Job.
     """
-    lines = get_pod_logs(pod, max_lines=max_lines)
+    lines = get_pod_logs(k8s_client, pod, max_lines=max_lines)
     if len(lines) < max_lines:
         yield "\n*** Earlier logs are truncated ***\n"
     yield from lines
 
 
-def get_k8s_job_pods(core_api, job_name: str) -> Iterator[V1Pod]:
+def get_k8s_job_pods(core_api: CoreV1Api, job_name: str) -> Iterator[V1Pod]:
     """
     Iterates the pods for a k8s job.
     """
@@ -404,6 +405,7 @@ class K8SExecutor(Executor):
         self.use_default_k8s_labels = config.getboolean("default_k8s_labels", True)
 
         self.is_running = False
+        self._k8s_client = k8s_utils.K8SClient()
         # We use an OrderedDict in order to retain submission order.
         self.pending_k8s_jobs: Dict[str, Any] = OrderedDict()
         self.preexisting_k8s_jobs: Dict[str, Any] = {}  # Job hash -> Job ID
@@ -412,8 +414,8 @@ class K8SExecutor(Executor):
 
         min_array_size = config.getint("min_array_size", 5)
         max_array_size = config.getint("max_array_size", 1000)
-        api_instance = k8s_utils.get_k8s_version_client()
-        major, minor = k8s_utils.get_version(api_instance)
+
+        major, minor = self._k8s_client.version()
         if major == 1 and minor < 21:
             # Versions prior to 1.21 didn't support indexed jobs
             # (https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/)
@@ -435,7 +437,6 @@ class K8SExecutor(Executor):
     def gather_inflight_jobs(self) -> None:
         """Collect existing k8s jobs and match them up to redun jobs"""
         running_arrays: Dict[str, List[Tuple[str, str, int]]] = defaultdict(list)
-        core_api = k8s_utils.get_k8s_core_client()
 
         # We don't currently filter on "inflight" jobs, but that's what the
         # aws_batch implementation does.
@@ -450,7 +451,7 @@ class K8SExecutor(Executor):
                     self.preexisting_k8s_jobs[job_hash] = job.metadata.uid
                 continue
             # Get all child pods of running array jobs for reuniting.
-            for child_pod in get_k8s_job_pods(core_api, job.metadata.name):
+            for child_pod in get_k8s_job_pods(self._k8s_client.core, job.metadata.name):
                 running_arrays[job_name].append(
                     (
                         child_pod.metadata.name,
@@ -517,18 +518,27 @@ class K8SExecutor(Executor):
             if value:
                 env_vars[env_var] = value
 
-        k8s_utils.create_k8s_secret(self.secret_name, self.namespace, env_vars)
+        k8s_utils.create_k8s_secret(self._k8s_client, self.secret_name, self.namespace, env_vars)
 
     def _start(self) -> None:
         """
         Start monitoring thread.
         """
-        if not self.is_running:
-            self.is_running = True
-            self._setup_secrets()
+        if self.is_running:
+            return
 
-            self._thread = threading.Thread(target=self._monitor, daemon=False)
-            self._thread.start()
+        self.is_running = True
+
+        # Start k8s client.
+        self._k8s_client = k8s_utils.K8SClient()
+
+        # Ensure k8s namespace exists.
+        k8s_utils.create_namespace(self._k8s_client, self.namespace)
+
+        self._setup_secrets()
+
+        self._thread = threading.Thread(target=self._monitor, daemon=False)
+        self._thread.start()
 
     def stop(self) -> None:
         """
@@ -559,7 +569,7 @@ class K8SExecutor(Executor):
                 # Copy pending_k8s_jobs.keys() since it can change due to new
                 # submissions.
                 pending_jobs = list(self.pending_k8s_jobs.keys())
-                jobs = k8s_describe_jobs(pending_jobs, self.namespace)
+                jobs = k8s_describe_jobs(self._k8s_client, pending_jobs, self.namespace)
                 # changing this (IE, removing iter_k8s_job_status) breaks
                 # inflight test jobs =
                 for job in jobs:
@@ -678,7 +688,7 @@ class K8SExecutor(Executor):
             if status_reason:
                 logs.append(f"statusReason: {status_reason}\n")
             try:
-                logs.extend(parse_pod_logs(pod))
+                logs.extend(parse_pod_logs(self._k8s_client, pod))
             except Exception as e:
                 logs.append(f"Failed to parse task logs for redun job {job.id}: {e}")
 
@@ -697,12 +707,9 @@ class K8SExecutor(Executor):
         """
         Process K8S job statuses.
         """
-        core_api = k8s_utils.get_k8s_core_client()
-        batch_api = k8s_utils.get_k8s_batch_client()
-
         if job.spec.parallelism is None or job.spec.parallelism == 1:
             # Check status of single k8s job.
-            pods = list(get_k8s_job_pods(core_api, job.metadata.name))
+            pods = list(get_k8s_job_pods(self._k8s_client.core, job.metadata.name))
 
             if not pods:
                 # No pods yet, do nothing.
@@ -730,7 +737,7 @@ class K8SExecutor(Executor):
 
             # Clean up k8s job immediately.
             try:
-                _ = k8s_utils.delete_job(batch_api, job.metadata.name, self.namespace)
+                k8s_utils.delete_job(self._k8s_client, job.metadata.name, self.namespace)
             except kubernetes.client.exceptions.ApiException as e:
                 self.log(
                     f"Failed to delete k8s job {job.metadata.name}: {e}",
@@ -738,7 +745,7 @@ class K8SExecutor(Executor):
                 )
         else:
             # Check status of array k8s job.
-            k8s_pods = get_k8s_job_pods(core_api, job.metadata.name)
+            k8s_pods = get_k8s_job_pods(self._k8s_client.core, job.metadata.name)
             redun_jobs = self.pending_k8s_jobs[job.metadata.name]
 
             for pod in k8s_pods:
@@ -760,8 +767,8 @@ class K8SExecutor(Executor):
                 # When the last pod finishes, clean up the k8s job.
                 if len(redun_jobs) == 0:
                     try:
-                        _ = k8s_utils.delete_job(
-                            batch_api, job.metadata.name, job.metadata.namespace
+                        k8s_utils.delete_job(
+                            self._k8s_client, job.metadata.name, job.metadata.namespace
                         )
                     except kubernetes.client.exceptions.ApiException as e:
                         self.log(
@@ -854,7 +861,9 @@ class K8SExecutor(Executor):
                 # Single job case Make sure k8s API still has a status on this
                 # job.
                 job_name = task_options["job_name_prefix"] + "-" + job.eval_hash
-                existing_jobs = k8s_describe_jobs([job_name], namespace=self.namespace)
+                existing_jobs = k8s_describe_jobs(
+                    self._k8s_client, [job_name], namespace=self.namespace
+                )
                 existing_job = existing_jobs[0]  # should be index
                 # Reunite with inflight k8s job, if present.
                 if existing_job:
@@ -881,7 +890,9 @@ class K8SExecutor(Executor):
                     parent_hash,
                 ) = k8s_job_id
                 job_name = f"{task_options['job_name_prefix']}-{parent_hash}-array"
-                existing_jobs = k8s_describe_jobs([job_name], namespace=self.namespace)
+                existing_jobs = k8s_describe_jobs(
+                    self._k8s_client, [job_name], namespace=self.namespace
+                )
                 existing_job = existing_jobs[0]
                 # Reunite with inflight k8s job, if present.
                 if existing_job:
@@ -962,6 +973,7 @@ class K8SExecutor(Executor):
             eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
 
         k8s_resp = submit_task(
+            self._k8s_client,
             image,
             namespace,
             self.scratch_prefix,
@@ -1013,6 +1025,7 @@ class K8SExecutor(Executor):
         # Submit a new Batch job.
         if not job.task.script:
             k8s_resp = submit_task(
+                self._k8s_client,
                 image,
                 namespace,
                 self.scratch_prefix,
@@ -1027,6 +1040,7 @@ class K8SExecutor(Executor):
         else:
             command = get_task_command(job.task, args, kwargs)
             k8s_resp = submit_command(
+                self._k8s_client,
                 image,
                 namespace,
                 self.scratch_prefix,
@@ -1068,4 +1082,4 @@ class K8SExecutor(Executor):
         """
         Iterates active k8s jobs.
         """
-        return k8s_list_jobs()
+        return k8s_list_jobs(self._k8s_client)

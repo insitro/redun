@@ -15,7 +15,7 @@ from redun.config import Config
 from redun.executors.code_packaging import create_tar, package_code
 from redun.executors.command import REDUN_REQUIRED_VERSION
 from redun.executors.k8s import K8SExecutor, get_hash_from_job_name, get_k8s_job_name, submit_task
-from redun.executors.k8s_utils import DEFAULT_JOB_PREFIX, create_job_object
+from redun.executors.k8s_utils import DEFAULT_JOB_PREFIX, K8SClient, create_job_object
 from redun.executors.scratch import (
     SCRATCH_ERROR,
     SCRATCH_INPUT,
@@ -35,12 +35,8 @@ def mock_k8s(func: Callable) -> Callable:
 
     @wraps(func)
     def wrapped(*args, **kwargs):
-        with patch("redun.executors.k8s_utils.get_k8s_batch_client"), patch(
-            "redun.executors.k8s_utils.get_k8s_core_client"
-        ), patch("redun.executors.k8s_utils.get_k8s_version_client"), patch(
-            "redun.executors.k8s_utils.get_version", return_value=(1, 23)
-        ), patch(
-            "redun.executors.k8s_utils.import_aws_secrets"
+        with patch.object(K8SClient, "core"), patch.object(K8SClient, "batch"), patch.object(
+            K8SClient, "version", return_value=(1, 23)
         ):
             return func(*args, **kwargs)
 
@@ -147,6 +143,7 @@ def test_submit_task(k8s_submit_mock, custom_module, expected_load_module, a_tas
 
     s3_client = boto3.client("s3", region_name="us-east-1")
     s3_client.create_bucket(Bucket="example-bucket")
+    k8s_client = Mock()
 
     redun.executors.k8s.k8s_submit.return_value = create_job_object(uid=job_id)
 
@@ -164,6 +161,7 @@ def task1(x):
     job.eval_hash = "eval_hash"
     code_file = package_code(scratch_prefix)
     resp = submit_task(
+        k8s_client,
         image,
         namespace,
         scratch_prefix,
@@ -182,6 +180,7 @@ def task1(x):
 
     # We should have submitted a job to K8S.
     redun.executors.k8s.k8s_submit.assert_called_with(
+        k8s_client,
         [
             "redun",
             "--check-version",
@@ -221,6 +220,7 @@ def test_submit_task_deep_file(k8s_submit_mock):
 
     client = boto3.client("s3", region_name="us-east-1")
     client.create_bucket(Bucket="example-bucket")
+    k8s_client = Mock()
 
     redun.executors.k8s.k8s_submit.return_value = {"jobId": "k8s-job-id"}
 
@@ -242,6 +242,7 @@ def task1(x):
     job.eval_hash = "eval_hash"
     code_file = package_code(scratch_prefix)
     resp = submit_task(
+        k8s_client,
         image,
         namespace,
         scratch_prefix,
@@ -261,6 +262,7 @@ def task1(x):
 
     # We should have submitted a job to k8s.
     redun.executors.k8s.k8s_submit.assert_called_with(
+        k8s_client,
         [
             "redun",
             "--check-version",
