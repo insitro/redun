@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 import threading
 import time
@@ -11,7 +12,7 @@ import kubernetes
 from kubernetes.client import V1Job, V1Pod
 from kubernetes.client.exceptions import ApiException
 
-from redun.executors import k8s_utils
+from redun.executors import aws_utils, k8s_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
 from redun.executors.command import get_oneshot_command, get_script_task_command
@@ -52,8 +53,9 @@ def k8s_submit(
     timeout: Optional[int] = None,
     k8s_labels: Optional[Dict[str, str]] = None,
     retries: int = 1,
-    service_account_name: Optional[str] = "default",
+    service_account_name: str = "default",
     annotations: Optional[Dict[str, str]] = None,
+    secret_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Prepares and submits a k8s job to the API server"""
     requests = {
@@ -73,6 +75,7 @@ def k8s_submit(
         labels=k8s_labels,
         service_account_name=service_account_name,
         annotations=annotations,
+        secret_name=secret_name,
     )
 
     if array_size > 1:
@@ -168,6 +171,7 @@ def submit_task(
     array_uuid: Optional[str] = None,
     array_size: int = 0,
     code_file: Optional[File] = None,
+    secret_name: Optional[str] = None,
 ) -> kubernetes.client.V1Job:
     """
     Submit a redun Task to K8S.
@@ -201,6 +205,7 @@ def submit_task(
         namespace=namespace,
         job_name=job_name,
         array_size=array_size,
+        secret_name=secret_name,
         **get_k8s_job_options(job_options),
     )
 
@@ -214,6 +219,7 @@ def submit_command(
     job: Job,
     command: str,
     job_options: dict = {},
+    secret_name: Optional[str] = None,
 ) -> kubernetes.client.V1Job:
     """
     Submit a shell command to K8S
@@ -233,6 +239,7 @@ def submit_command(
         image=image,
         namespace=namespace,
         job_name=job_name,
+        secret_name=secret_name,
         **get_k8s_job_options(job_options),
     )
 
@@ -377,6 +384,9 @@ class K8SExecutor(Executor):
         # Optional config.
         self.role = config.get("role")
         self.code_package = parse_code_package_config(config)
+        self.secret_name: Optional[str] = config.get("secret_name")
+        self.use_import_aws_secrets: bool = config.getboolean("import_aws_secrets", fallback=True)
+        self.secret_env_vars = config.get("secret_env_vars", fallback="").strip().split()
 
         self.code_file: Optional[File] = None
 
@@ -490,12 +500,34 @@ class K8SExecutor(Executor):
                     parent_hash,
                 )
 
+    def _setup_secrets(self) -> None:
+        if not self.secret_name:
+            # If secret name is not given, do not setup secrets.
+            return
+
+        # Determine env vars to import through a k8s secret.
+        env_vars = {}
+
+        # Import AWS secrets.
+        if self.use_import_aws_secrets:
+            env_vars.update(aws_utils.get_aws_env_vars())
+
+        # Import local env vars into secret.
+        for env_var in self.secret_env_vars:
+            value = os.environ.get(env_var)
+            if value:
+                env_vars[env_var] = value
+
+        k8s_utils.create_k8s_secret(self.secret_name, self.namespace, env_vars)
+
     def _start(self) -> None:
         """
         Start monitoring thread.
         """
         if not self.is_running:
             self.is_running = True
+            self._setup_secrets()
+
             self._thread = threading.Thread(target=self._monitor, daemon=False)
             self._thread.start()
 
@@ -878,10 +910,6 @@ class K8SExecutor(Executor):
         if k8s_job_id is None:
             self.arrayer.add_job(job, args, kwargs)
 
-        from redun.executors.k8s_utils import import_aws_secrets
-
-        import_aws_secrets()
-
         self._start()
 
     def _submit_array_job(
@@ -944,6 +972,7 @@ class K8SExecutor(Executor):
             code_file=self.code_file,
             array_uuid=array_uuid,
             array_size=array_size,
+            secret_name=self.secret_name,
         )
 
         # Add entire array to array jobs, and all jobs in array to pending jobs.
@@ -994,6 +1023,7 @@ class K8SExecutor(Executor):
                 kwargs=kwargs,
                 job_options=task_options,
                 code_file=self.code_file,
+                secret_name=self.secret_name,
             )
         else:
             command = get_task_command(job.task, args, kwargs)
@@ -1004,6 +1034,7 @@ class K8SExecutor(Executor):
                 job,
                 command,
                 job_options=task_options,
+                secret_name=self.secret_name,
             )
 
         k8s_job_id = k8s_resp.metadata.uid

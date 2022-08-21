@@ -3,7 +3,7 @@
 # It uses the Official Python client library for kubernetes:
 # https://github.com/kubernetes-client/python
 from base64 import b64encode
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
@@ -61,27 +61,34 @@ def delete_k8s_secret(secret_name: str, namespace: str) -> None:
             raise
 
 
-def create_k8s_secret(secret_name: str, namespace: str, secret_data: dict) -> Any:
+def create_k8s_secret(
+    secret_name: str, namespace: str, secret_data: dict, secret_type: str = "Opaque"
+) -> Any:
     # Delete existing secret if it exists.
-    delete_k8s_secret(secret_name, namespace)
+    # delete_k8s_secret(secret_name, namespace)
 
     # Build secret.
     metadata = {"name": secret_name, "namespace": namespace}
     data = {
         key: b64encode(value.encode("utf8")).decode("utf8") for key, value in secret_data.items()
     }
-    body = client.V1Secret("v1", data, False, "Secret", metadata, type="Opaque")
+    body = client.V1Secret("v1", data, False, "Secret", metadata, type=secret_type)
 
     # Create secret.
     core_api = get_k8s_core_client()
-    return core_api.create_namespaced_secret(namespace, body)
+    try:
+        return core_api.create_namespaced_secret(namespace, body)
+    except ApiException as error:
+        if error.status == 409:
+            # Secret already exists, just patch it.
+            core_api.replace_namespaced_secret(secret_name, namespace, body)
 
 
-def import_aws_secrets(namespace: str = "default") -> None:
-    create_k8s_secret("redun-aws", namespace, get_aws_env_vars())
+def import_aws_secrets(namespace: str = "default") -> Any:
+    return create_k8s_secret("redun-aws", namespace, get_aws_env_vars())
 
 
-def create_resources(requests=None, limits=None):
+def create_resources(requests=None, limits=None) -> client.V1ResourceRequirements:
     """Creates resource limits for k8s pods
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ResourceRequirements.md
     """
@@ -101,17 +108,18 @@ def create_resources(requests=None, limits=None):
 
 
 def create_job_object(
-    name=DEFAULT_JOB_PREFIX,
-    image="bash",
-    command="false",
-    resources=None,
-    timeout=None,
-    labels=None,
-    uid=None,
-    retries=1,
-    service_account_name="default",
-    annotations=None,
-):
+    name: str = DEFAULT_JOB_PREFIX,
+    image: str = "bash",
+    command: List[str] = ["false"],
+    resources: Optional[client.V1ResourceRequirements] = None,
+    timeout: Optional[int] = None,
+    labels: Optional[dict] = None,
+    uid: Optional[str] = None,
+    retries: int = 1,
+    service_account_name: Optional[str] = "default",
+    annotations: Optional[Dict[str, str]] = None,
+    secret_name: Optional[str] = None,
+) -> client.V1Job:
     """Creates a job object for redun job.
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
     Also creates necessary sub-objects"""
@@ -121,21 +129,22 @@ def create_job_object(
 
     # Forward AWS secrets to the container environment variables.
     aws_env_keys = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN"]
-    env.extend(
-        [
-            {
-                "name": key,
-                "valueFrom": {
-                    "secretKeyRef": {
-                        "name": "redun-aws",
-                        "key": key,
-                        "optional": True,
+    if secret_name:
+        env.extend(
+            [
+                {
+                    "name": key,
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": secret_name,
+                            "key": key,
+                            "optional": True,
+                        },
                     },
-                },
-            }
-            for key in aws_env_keys
-        ]
-    )
+                }
+                for key in aws_env_keys
+            ]
+        )
 
     container = client.V1Container(name=name, image=image, command=command, env=env)
 
