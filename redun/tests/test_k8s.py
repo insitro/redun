@@ -202,6 +202,7 @@ def task1(x):
         namespace="default",
         job_name="k8s-job-eval_hash",
         array_size=0,
+        secret_name=None,
     )
 
 
@@ -282,6 +283,7 @@ def task1(x):
         namespace="default",
         job_name="k8s-job-eval_hash",
         array_size=0,
+        secret_name=None,
     )
 
 
@@ -333,6 +335,7 @@ def test_executor(
         "array_size": 0,
         "retries": 1,
         "service_account_name": "default",
+        "secret_name": None,
         "vcpus": 1,
         "memory": 4,
         "k8s_labels": {
@@ -366,6 +369,7 @@ def test_executor(
         "array_size": 0,
         "retries": 1,
         "service_account_name": "default",
+        "secret_name": None,
         "vcpus": 1,
         "memory": 8,
         "k8s_labels": {

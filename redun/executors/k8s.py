@@ -382,7 +382,6 @@ class K8SExecutor(Executor):
         self.scratch_prefix = config["scratch"]
 
         # Optional config.
-        self.role = config.get("role")
         self.code_package = parse_code_package_config(config)
         self.secret_name: Optional[str] = config.get("secret_name")
         self.use_import_aws_secrets: bool = config.getboolean("import_aws_secrets", fallback=True)

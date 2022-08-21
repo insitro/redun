@@ -28,28 +28,34 @@ def load_k8s_config() -> None:
         config.load_incluster_config()
 
 
-def get_k8s_batch_client():
-    """returns an API client supporting k8s batch API
-    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/BatchV1Api.md"""
+def get_k8s_version_client() -> client.VersionApi:
+    """
+    Returns an API client support k8s version API.
+
+    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/VersionApi.md
+    """
     load_k8s_config()
-    batch_v1 = client.BatchV1Api()
-    return batch_v1
+    return client.VersionApi()
 
 
-def get_k8s_version_client():
-    """returns an API client support k8s version API
-    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/VersionApi.md"""
+def get_k8s_batch_client() -> client.BatchV1Api:
+    """
+    Returns an API client supporting k8s batch API.
+
+    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/BatchV1Api.md
+    """
     load_k8s_config()
-    version = client.VersionApi()
-    return version
+    return client.BatchV1Api()
 
 
-def get_k8s_core_client():
-    """returns an API client support k8s core API
-    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md"""
+def get_k8s_core_client() -> client.CoreV1Api:
+    """
+    Returns an API client support k8s core API.
+
+    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md
+    """
     load_k8s_config()
-    core_v1 = client.CoreV1Api()
-    return core_v1
+    return client.CoreV1Api()
 
 
 def delete_k8s_secret(secret_name: str, namespace: str) -> None:
@@ -58,6 +64,7 @@ def delete_k8s_secret(secret_name: str, namespace: str) -> None:
         core_api.delete_namespaced_secret(secret_name, namespace)
     except ApiException as error:
         if error.status != 404:
+            # If secret doesn't exist, then this is a no-op.
             raise
 
 
