@@ -57,7 +57,7 @@ def k8s_submit(
     service_account_name: str = "default",
     annotations: Optional[Dict[str, str]] = None,
     secret_name: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> kubernetes.client.V1Job:
     """Prepares and submits a k8s job to the API server"""
     requests = {
         "memory": f"{memory}G",
@@ -450,19 +450,19 @@ class K8SExecutor(Executor):
                 if job_hash:
                     self.preexisting_k8s_jobs[job_hash] = job.metadata.uid
                 continue
+
             # Get all child pods of running array jobs for reuniting.
-            for child_pod in get_k8s_job_pods(self._k8s_client.core, job.metadata.name):
-                running_arrays[job_name].append(
-                    (
-                        child_pod.metadata.name,
-                        child_pod.metadata.uid,
-                        int(
-                            child_pod.metadata.annotations[
-                                "batch.kubernetes.io/job-completion-index"
-                            ]
-                        ),
-                    )
+            child_pods = get_k8s_job_pods(self._k8s_client.core, job.metadata.name)
+            running_arrays[job_name].extend(
+                (
+                    child_pod.metadata.name,
+                    child_pod.metadata.uid,
+                    int(
+                        child_pod.metadata.annotations["batch.kubernetes.io/job-completion-index"]
+                    ),
                 )
+                for child_pod in child_pods
+            )
 
         # Match up running array jobs with consistent redun job naming scheme.
         for array_name, child_pod_indices in running_arrays.items():
@@ -501,6 +501,9 @@ class K8SExecutor(Executor):
                 )
 
     def _setup_secrets(self) -> None:
+        """
+        Setup secrets for k8s jobs.
+        """
         if not self.secret_name:
             # If secret name is not given, do not setup secrets.
             return
@@ -528,9 +531,6 @@ class K8SExecutor(Executor):
             return
 
         self.is_running = True
-
-        # Start k8s client.
-        self._k8s_client = k8s_utils.K8SClient()
 
         # Ensure k8s namespace exists.
         k8s_utils.create_namespace(self._k8s_client, self.namespace)
@@ -755,8 +755,11 @@ class K8SExecutor(Executor):
                     return
 
                 if "batch.kubernetes.io/job-completion-index" not in pod.metadata.annotations:
-                    print("missing job-completion-index", pod.metadata.annotations)
-                    return
+                    self.log(
+                        f"Pod {pod.metadata.name} is missing job-completion-index:",
+                        pod.metadata.annotations,
+                    )
+                    continue
 
                 index = int(pod.metadata.annotations["batch.kubernetes.io/job-completion-index"])
                 redun_job = redun_jobs.pop(index, None)
@@ -852,10 +855,11 @@ class K8SExecutor(Executor):
         task_options = self._get_job_options(job)
         use_cache = task_options.get("cache", True)
 
-        # # Determine if we can reunite with a previous K8S output or job.
+        # Determine if we can reunite with a previous K8S output or job.
         k8s_job_id: Optional[str] = None
         if use_cache and job.eval_hash in self.preexisting_k8s_jobs:
             k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
+
             # Handle both single and array jobs.
             if type(k8s_job_id) != tuple:
                 # Single job case Make sure k8s API still has a status on this
@@ -881,6 +885,7 @@ class K8SExecutor(Executor):
                     self.pending_k8s_jobs[job_name] = job
                 else:
                     k8s_job_id = None
+
             elif isinstance(k8s_job_id, tuple):
                 # Array job case
                 (

@@ -228,11 +228,20 @@ def create_namespace(k8s_client: K8SClient, namespace: str) -> None:
             raise
 
 
-def create_job(k8s_client: K8SClient, job: client.V1Job, namespace: str) -> Any:
+def create_job(k8s_client: K8SClient, job: client.V1Job, namespace: str) -> client.V1Job:
     """
     Creates an actual k8s job.
     """
-    return k8s_client.batch.create_namespaced_job(body=job, namespace=namespace)
+    try:
+        return k8s_client.batch.create_namespaced_job(body=job, namespace=namespace)
+    except client.exceptions.ApiException as error:
+        if error.status == 409 and error.reason == "Conflict":
+            # Job already exsists, return it.
+            job = k8s_client.batch.read_namespaced_job(job.metadata.name, namespace=namespace)
+            return job
+        else:
+            logger.error("Error submitting k8s job:", error.body)
+            raise
 
 
 def delete_job(k8s_client: K8SClient, name: str, namespace: str) -> Any:
