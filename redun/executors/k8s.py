@@ -6,7 +6,7 @@ import threading
 import time
 import uuid
 from collections import OrderedDict, defaultdict
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, Union, cast
 
 import kubernetes
 from kubernetes.client import CoreV1Api, V1Job, V1Pod
@@ -407,8 +407,10 @@ class K8SExecutor(Executor):
         self.is_running = False
         self._k8s_client = k8s_utils.K8SClient()
         # We use an OrderedDict in order to retain submission order.
-        self.pending_k8s_jobs: Dict[str, Any] = OrderedDict()
-        self.preexisting_k8s_jobs: Dict[str, Any] = {}  # Job hash -> Job ID
+        self.pending_k8s_jobs: Dict[str, Union[Job, Dict[int, Job]]] = OrderedDict()
+        self.preexisting_k8s_jobs: Dict[
+            str, Union[str, Tuple[str, str, int, str]]
+        ] = {}  # Job hash -> Job ID
 
         self.interval = config.getfloat("job_monitor_interval", 5.0)
 
@@ -727,10 +729,11 @@ class K8SExecutor(Executor):
                     return
 
             # Determine redun Job and job_labels.
-            redun_job = self.pending_k8s_jobs.pop(job.metadata.name)
-            if isinstance(redun_job, dict):
-                redun_job = redun_job[0]
-                assert isinstance(redun_job, Job)
+            redun_job: Job = cast(Job, self.pending_k8s_jobs.pop(job.metadata.name))
+            # TODO: Do we need this case?
+            # if isinstance(redun_job, dict):
+            #    redun_job = redun_job[0]
+            #    assert isinstance(redun_job, Job)
 
             k8s_labels = [("k8s_job", job.metadata.uid)]
             self._process_redun_job(redun_job, pod, job_status, status_reason, k8s_labels)
@@ -746,7 +749,7 @@ class K8SExecutor(Executor):
         else:
             # Check status of array k8s job.
             k8s_pods = get_k8s_job_pods(self._k8s_client.core, job.metadata.name)
-            redun_jobs = self.pending_k8s_jobs[job.metadata.name]
+            redun_jobs = cast(Dict[int, Job], self.pending_k8s_jobs[job.metadata.name])
 
             for pod in k8s_pods:
                 job_status, status_reason = self._process_pod_status(pod)
@@ -762,10 +765,10 @@ class K8SExecutor(Executor):
                     continue
 
                 index = int(pod.metadata.annotations["batch.kubernetes.io/job-completion-index"])
-                redun_job = redun_jobs.pop(index, None)
-                if redun_job:
+                redun_job2: Optional[Job] = redun_jobs.pop(index, None)
+                if redun_job2:
                     k8s_labels = [("k8s_job", job.metadata.uid)]
-                    self._process_redun_job(redun_job, pod, job_status, status_reason, k8s_labels)
+                    self._process_redun_job(redun_job2, pod, job_status, status_reason, k8s_labels)
 
                 # When the last pod finishes, clean up the k8s job.
                 if len(redun_jobs) == 0:
@@ -856,12 +859,12 @@ class K8SExecutor(Executor):
         use_cache = task_options.get("cache", True)
 
         # Determine if we can reunite with a previous K8S output or job.
-        k8s_job_id: Optional[str] = None
+        k8s_job_id: Optional[Union[str, Tuple[str, str, int, str]]] = None
         if use_cache and job.eval_hash in self.preexisting_k8s_jobs:
             k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
 
             # Handle both single and array jobs.
-            if type(k8s_job_id) != tuple:
+            if isinstance(k8s_job_id, str):
                 # Single job case Make sure k8s API still has a status on this
                 # job.
                 job_name = task_options["job_name_prefix"] + "-" + job.eval_hash
@@ -888,19 +891,14 @@ class K8SExecutor(Executor):
 
             elif isinstance(k8s_job_id, tuple):
                 # Array job case
-                (
-                    child_job_id,
-                    child_job_name,
-                    child_job_index,
-                    parent_hash,
-                ) = k8s_job_id
+                _, _, child_job_index, parent_hash = cast(Tuple[str, str, int, str], k8s_job_id)
                 job_name = f"{task_options['job_name_prefix']}-{parent_hash}-array"
                 existing_jobs = k8s_describe_jobs(
                     self._k8s_client, [job_name], namespace=self.namespace
                 )
-                existing_job = existing_jobs[0]
                 # Reunite with inflight k8s job, if present.
-                if existing_job:
+                if existing_jobs:
+                    existing_job = existing_jobs[0]
                     k8s_job_id = existing_job.metadata.uid
                     self.log(
                         "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
@@ -913,8 +911,8 @@ class K8SExecutor(Executor):
                     )
                     assert k8s_job_id
                     if job_name not in self.pending_k8s_jobs:
-                        self.pending_k8s_jobs[job_name] = {}
-                    self.pending_k8s_jobs[job_name][child_job_index] = job
+                        self.pending_k8s_jobs[job_name] = cast(Dict[int, Job], {})
+                    cast(Dict[int, Job], self.pending_k8s_jobs[job_name])[child_job_index] = job
                 else:
                     k8s_job_id = None
             else:
@@ -995,7 +993,7 @@ class K8SExecutor(Executor):
         array_job_name = k8s_resp.metadata.name
         self.pending_k8s_jobs[array_job_name] = {}
         for i in range(array_size):
-            self.pending_k8s_jobs[array_job_name][i] = jobs[i]
+            cast(Dict[int, Job], self.pending_k8s_jobs[array_job_name])[i] = jobs[i]
         array_job_id = k8s_resp.metadata.uid
 
         self.log(
