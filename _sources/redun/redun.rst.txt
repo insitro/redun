@@ -149,6 +149,14 @@ redun.scripting module
    :undoc-members:
    :show-inheritance:
 
+redun.sphinx module
+-------------------
+
+.. automodule:: redun.sphinx
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.tags module
 -----------------
 

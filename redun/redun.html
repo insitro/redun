@@ -2270,6 +2270,17 @@ with the indicated table name.</p></li>
 </div>
 <div class="section" id="module-redun.functools">
 <span id="redun-functools-module"></span><h2>redun.functools module<a class="headerlink" href="#module-redun.functools" title="Permalink to this heading">#</a></h2>
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.functools.apply_func">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">apply_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.functools.apply_func" title="Permalink to this definition">#</a></dt>
+<dd><p>Apply a Python function to possibly lazy arguments.</p>
+<p>The function <cite>func</cite> must be defined at the module-level.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">lazy_list</span> <span class="o">=</span> <span class="n">a_task_returning_a_list</span><span class="p">()</span>
+<span class="n">lazy_length</span> <span class="o">=</span> <span class="n">apply_func</span><span class="p">(</span><span class="nb">len</span><span class="p">)(</span><span class="n">lazy_list</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.functools.as_task">
 <span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">as_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.functools.as_task" title="Permalink to this definition">#</a></dt>
@@ -2286,6 +2297,20 @@ with the indicated table name.</p></li>
 <dd><p>Compose Tasks together.</p>
 </dd></dl>
 
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.functools.compose_apply">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">compose_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tasks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">redun.task.Task</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.functools.compose_apply" title="Permalink to this definition">#</a></dt>
+<dd><p>Helper function for applying a composition of Tasks to arguments.</p>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.functools.const">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">const</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.functools.const" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the first argument unchanged (constant) and discards the second.</p>
+<p>This is useful for forcing execution of the second argument, but discarding
+it’s value from downstream parts of the workflow.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.functools.delay">
 <span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">delay</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.functools.delay" title="Permalink to this definition">#</a></dt>
@@ -2294,6 +2319,32 @@ with the indicated table name.</p></li>
 - <a class="reference external" href="http://web.mit.edu/scheme_v9.2/doc/mit-scheme-ref/Promises.html">http://web.mit.edu/scheme_v9.2/doc/mit-scheme-ref/Promises.html</a>
 - <a class="reference external" href="http://people.cs.aau.dk/~normark/prog3-03/html/notes/eval-order_themes-delay-stream-section.html">http://people.cs.aau.dk/~normark/prog3-03/html/notes/eval-order_themes-delay-stream-section.html</a>  # noqa: E501
 - <a class="reference external" href="https://docs.racket-lang.org/reference/Delayed_Evaluation.html">https://docs.racket-lang.org/reference/Delayed_Evaluation.html</a></p>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.functools.eval_">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">eval_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.functools.eval_" title="Permalink to this definition">#</a></dt>
+<dd><p>Evaluate <cite>code</cite> with <cite>kwargs</cite> as local variables.</p>
+<p>If a position argument is given, its value is assigned to local
+variables defined by <cite>pos_args</cite>.</p>
+<p>This can be useful for small manipulations of lazy values.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">records</span> <span class="o">=</span> <span class="n">task1</span><span class="p">()</span>
+<span class="n">names</span> <span class="o">=</span> <span class="n">eval_</span><span class="p">(</span><span class="s2">&quot;[record.name for record in records]&quot;</span><span class="p">,</span> <span class="n">records</span><span class="o">=</span><span class="n">records</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">task2</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.functools.flat_map">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">flat_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a_task</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">redun.task.Task</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.functools.flat_map" title="Permalink to this definition">#</a></dt>
+<dd><p>Apply a task <cite>a_task</cite> on a sequence of <cite>values</cite> and flatten the result.</p>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.functools.flatten">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">flatten</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_of_lists</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.functools.flatten" title="Permalink to this definition">#</a></dt>
+<dd><p>Flatten a list of lists into a flat list.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -2306,10 +2357,37 @@ with the indicated table name.</p></li>
 - <a class="reference external" href="https://docs.racket-lang.org/reference/Delayed_Evaluation.html">https://docs.racket-lang.org/reference/Delayed_Evaluation.html</a></p>
 </dd></dl>
 
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.functools.identity">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">identity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.functools.identity" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns its input argument.</p>
+</dd></dl>
+
+<dl class="py scheduler_task">
+<dt class="sig sig-object py" id="redun.functools.map_">
+<em class="property"><span class="pre">(scheduler_task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">map_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a_task</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">redun.task.Task</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.functools.map_" title="Permalink to this definition">#</a></dt>
+<dd><p>Map a task to a list of values, similar to <cite>map(f, xs)</cite>.</p>
+</dd></dl>
+
+<dl class="py scheduler_task">
+<dt class="sig sig-object py" id="redun.functools.seq">
+<em class="property"><span class="pre">(scheduler_task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">seq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exprs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.functools.seq" title="Permalink to this definition">#</a></dt>
+<dd><p>Evaluate the expressions serially.</p>
+<p>The name <cite>seq()</cite> is inspired from Haskell:
+- <a class="reference external" href="https://wiki.haskell.org/Seq">https://wiki.haskell.org/Seq</a></p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.functools.starmap">
 <span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">starmap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a_task</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.expression.Expression" title="redun.expression.Expression"><span class="pre">Expression</span></a><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.functools.starmap" title="Permalink to this definition">#</a></dt>
 <dd><p>Map a task to a list of keyword arguments.</p>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.functools.zip_">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.functools.</span></span><span class="sig-name descname"><span class="pre">zip_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">lists</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.functools.zip_" title="Permalink to this definition">#</a></dt>
+<dd><p>Zips two or lists into a list of tuples.</p>
+<p>This is a task equivalent of zip().</p>
 </dd></dl>
 
 </div>
@@ -3091,6 +3169,217 @@ perform Common Subexpression Elimination (CSE).</p>
 
 </dd></dl>
 
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.scheduler._subrun_root_task">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">_subrun_root_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_modules</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.scheduler._subrun_root_task" title="Permalink to this definition">#</a></dt>
+<dd><p>Launches a sub-scheduler and runs the provided expression by first “unwrapping” it.
+The evaluated result is returned within a dict alongside other sub-scheduler-related
+state to the caller.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>expr</strong> (<a class="reference internal" href="#redun.expression.TaskExpression" title="redun.expression.TaskExpression"><em>TaskExpression</em></a>) – TaskExpression to be run by sub-scheduler.</p></li>
+<li><p><strong>config</strong> – A two-level python dict to configure the sub-scheduler.  (Will be used to initialize a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Config</span></code> object via the <cite>config_dict</cite> kwarg.)</p></li>
+<li><p><strong>load_modules</strong> – List of modules that must be imported before starting the sub-scheduler. Before
+launching the sub-scheduler, the modules that define the user tasks must be imported.</p></li>
+<li><p><strong>run_config</strong> – Sub-scheduler run() kwargs. These are typically the local-scheduler run() kwargs that
+should also apply to the sub-scheduler such as <cite>dryrun</cite> and <cite>cache</cite> settings.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>Returns a dict result from running the sub-scheduler on <cite>expr</cite>.  The dict contains extra
+information pertaining to the sub-scheduler as follows:
+{</p>
+<blockquote>
+<div><p>’result’: sub-scheduler evaluation of <cite>expr</cite>, present if successful
+‘error’: exception raised by sub-scheduler, present if error was encountered
+‘dryrun’: present if dryrun was requested and workflow can’t complete</p>
+<dl class="simple">
+<dt>’job_id’: Job id of root Job in sub-scheduler,</dt><dd><p>present if parent_job_id given in run_config</p>
+</dd>
+<dt>’call_hash’: call_hash of root CallNode in sub-scheduler,</dt><dd><p>present if parent_job_id given in run_config</p>
+</dd>
+</dl>
+<p>’status’: sub-scheduler final job status poll (list of str)
+‘config’: sub-scheduler config dict (useful for confirming exactly what config</p>
+<blockquote>
+<div><p>settings were used).</p>
+</div></blockquote>
+<p>’run_config’: a dict of run configuration used by the sub-scheduler</p>
+</div></blockquote>
+<p>}</p>
+<p>parent_job_id is present in run_config, only results are return. Errors are raised.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py scheduler_task">
+<dt class="sig sig-object py" id="redun.scheduler.apply_tags">
+<em class="property"><span class="pre">(scheduler_task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">apply_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job_tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execution_tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.scheduler.apply_tags" title="Permalink to this definition">#</a></dt>
+<dd><p>Apply tags to a value, job, or execution.</p>
+<p>Returns the original value.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">task1</span><span class="p">():</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="c1"># Apply tags on the value 10.</span>
+    <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">[(</span><span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">)])</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">task2</span><span class="p">():</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="c1"># Apply tags on the current job.</span>
+    <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">job_tags</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">)])</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">task3</span><span class="p">():</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="c1"># Apply tags on the current execution.</span>
+    <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">execution_tags</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">)])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py scheduler_task">
+<dt class="sig sig-object py" id="redun.scheduler.catch">
+<em class="property"><span class="pre">(scheduler_task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">catch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">catch_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.scheduler.catch" title="Permalink to this definition">#</a></dt>
+<dd><p>Catch exceptions <cite>error</cite> of class <cite>error_class</cite> from <cite>expr</cite> and evaluate <cite>recover(error)</cite>.</p>
+<p>The following example catches the <cite>ZeroDivisionError</cite> raised by <cite>divider(0)</cite>
+and returns 0.0 instead.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">denom</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">recover</span><span class="p">(</span><span class="n">error</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mf">0.0</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">catch</span><span class="p">(</span>
+        <span class="n">divider</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+        <span class="ne">ZeroDivisionError</span><span class="p">,</span>
+        <span class="n">recover</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>This is equivalent to the regular python code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">denom</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">denom</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ZeroDivisionError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.0</span>
+</pre></div>
+</div>
+<p><cite>catch()</cite> can also handle multiple Exception classes as well as multiple
+recover expressions.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">catch</span><span class="p">(</span>
+        <span class="n">task1</span><span class="p">(),</span>
+        <span class="p">(</span><span class="ne">ZeroDivisionError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">),</span>
+        <span class="n">recover1</span><span class="p">,</span>
+        <span class="ne">KeyError</span><span class="p">,</span>
+        <span class="n">recover2</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>which is equivalent to the regular python code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">task1</span><span class="p">()</span>
+<span class="k">except</span> <span class="p">(</span><span class="ne">ZeroDivisionError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">recover1</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">recover2</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>expr</strong> (<a class="reference internal" href="#redun.expression.Expression" title="redun.expression.Expression"><em>Expression</em></a>) – Main expression to evaluate.</p></li>
+<li><p><strong>error_recover_pairs</strong> – A list of alternating error_class and recover Tasks.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py scheduler_task">
+<dt class="sig sig-object py" id="redun.scheduler.catch_all">
+<em class="property"><span class="pre">(scheduler_task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">catch_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exprs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_class</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">NoneType</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Exception</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Exception</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recover</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">redun.task.Task</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">S</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneType</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.scheduler.catch_all" title="Permalink to this definition">#</a></dt>
+<dd><p>Catch all exceptions that occur in the nested value <cite>exprs</cite>.</p>
+<p>This task works similar to <cite>catch</cite>, except it takes multiple
+expressions within a nested value (e.g. a list, set, dict, etc).
+Any exceptions raised by the expressions are caught and processed only after
+all expressions succeed or fail. For example, this can be useful in large
+fanouts where the user wants to avoid one small error stopping the whole
+workflow immediately. Consider the following code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">denom</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">recover</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+    <span class="n">nerrors</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">))</span>
+    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">nerrors</span><span class="si">}</span><span class="s2"> error(s) occurred.&quot;</span><span class="p">)</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">result</span> <span class="n">catch_all</span><span class="p">([</span><span class="n">divider</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">divider</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">divider</span><span class="p">(</span><span class="mi">2</span><span class="p">)],</span> <span class="ne">ZeroDivisionError</span><span class="p">,</span> <span class="n">recover</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each of the expressions in the list <cite>[divider(1), divider(0), divider(2)]</cite>
+will be allowed to finish before the exceptions are processed by <cite>recover</cite>. If
+there are no exceptions, the evaluated list is returned. If there are any
+exceptions, the list is passed to <cite>recover</cite>, where it will contain each
+successful result or Exception. <cite>recover</cite> then has the opportunity to process
+all errors together. In the example above, the total number of errors is
+reraised.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>exprs</strong> – A nested value (list, set, dict, tuple, NamedTuple) of expressions to evaluate.</p></li>
+<li><p><strong>error_class</strong> (<em>Union</em><em>[</em><em>Exception</em><em>, </em><em>Tuple</em><em>[</em><a class="reference internal" href="#redun.expression.Expression" title="redun.expression.Expression"><em>Expression</em></a><em>, </em><em>...</em><em>]</em><em>]</em>) – An Exception or Exceptions to catch.</p></li>
+<li><p><strong>recover</strong> (<a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><em>Task</em></a>) – A task to call if any errors occurs. It will be called with the nested
+value containing both successful results and errors.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py scheduler_task">
+<dt class="sig sig-object py" id="redun.scheduler.cond">
+<em class="property"><span class="pre">(scheduler_task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">cond</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond_expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">then_expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">rest</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.scheduler.cond" title="Permalink to this definition">#</a></dt>
+<dd><p>Conditionally execute expressions, i.e. a lazy if-statement.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">is_even</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">task1</span><span class="p">():</span>
+    <span class="c1"># ...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">task2</span><span class="p">():</span>
+    <span class="c1"># ...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">cond</span><span class="p">(</span>
+        <span class="n">is_even</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+        <span class="n">task1</span><span class="p">(),</span>
+        <span class="n">task2</span><span class="p">()</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.scheduler.format_arg">
 <span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">format_arg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">200</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.scheduler.format_arg" title="Permalink to this definition">#</a></dt>
@@ -3148,10 +3437,22 @@ perform Common Subexpression Elimination (CSE).</p>
 <dd><p>Returns True if debugger REPL is currently active.</p>
 </dd></dl>
 
+<dl class="py scheduler_task">
+<dt class="sig sig-object py" id="redun.scheduler.merge_handles">
+<em class="property"><span class="pre">(scheduler_task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">merge_handles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handles_expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">redun.handle.Handle</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.scheduler.merge_handles" title="Permalink to this definition">#</a></dt>
+<dd><p>Merge multiple handles into one.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.scheduler.needs_root_task">
 <span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">needs_root_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.task.TaskRegistry" title="redun.task.TaskRegistry"><span class="pre">TaskRegistry</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.scheduler.needs_root_task" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns True if expression <cite>expr</cite> needs to be wrapped in a root task.</p>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.scheduler.root_task">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">root_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.expression.QuotedExpression" title="redun.expression.QuotedExpression"><span class="pre">redun.expression.QuotedExpression</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Result</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Result</span></span></span><a class="headerlink" href="#redun.scheduler.root_task" title="Permalink to this definition">#</a></dt>
+<dd><p>Default task used for a root job in an Execution.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -3176,6 +3477,61 @@ process-wide. Relying on <cite>sys.gettrace()</cite> is not enough because it is
 thread-specific.</p>
 </dd></dl>
 
+<dl class="py scheduler_task">
+<dt class="sig sig-object py" id="redun.scheduler.subrun">
+<em class="property"><span class="pre">(scheduler_task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">subrun</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">executor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneType</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_execution</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">task_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.scheduler.subrun" title="Permalink to this definition">#</a></dt>
+<dd><p>Evaluates an expression <cite>expr</cite> in a sub-scheduler running within Executor <cite>executor</cite>.</p>
+<p><cite>executor</cite> and optional <cite>task_options</cite> are used to configure the special redun task (
+_subrun_root_task) that starts the sub-scheduler. For example, you can configure the task
+with a batch executor to run the sub-scheduler on AWS Batch.</p>
+<p><cite>config</cite>: To ease configuration management of the sub-scheduler, you can pass a <cite>config</cite>
+dict which contains configuration that would otherwise require a redun.ini file in the
+sub-scheduler environment. If you do not pass a config, the local scheduler’s config will be
+forwarded to the sub-scheduler (replacing the local <cite>config_dir</cite> with “.”). In practice,
+the sub-scheduler’s <cite>config_dir</cite> should be less important as you probably want to log both
+local and sub-scheduler call graphs to a common database. You can also obtain a copy of the
+local scheduler’s config and customize it as needed. Instantiate the scheduler directly instead
+of calling <cite>redun run</cite>.  Then access its config via
+<cite>scheduler.py::get_scheduler_config_dict()</cite>.</p>
+<p>Note on code packaging: The user is responsible for ensuring that the chosen Executor for
+invoking the sub-scheduler copies over all user-task scripts.  E.g. the local scheduler may
+be launched on local tasks defined in workflow1.py but subrun(executor=”batch) is invoked on
+taskX defined in workflow2.py.  In this case, the user must ensure workflow2.py is copied to
+the batch node by placing it within the same directory tree as workflow1.py.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>expr</strong> (<em>Any</em>) – Expression to be run by sub-scheduler.</p></li>
+<li><p><strong>executor</strong> (<em>str</em>) – Executor name for the special redun task that launches the sub-scheduler
+(_subrun_root_task). E.g. <cite>batch</cite> to launch the sub-scheduler in AWS Batch. Note
+that this is a config key in the  <em>local</em> scheduler’s config.</p></li>
+<li><p><strong>config</strong> (<em>dict</em>) – Optional sub-scheduler config dict. Must be a two-level dict that can be used to
+initialize a <code class="xref py py-class docutils literal notranslate"><span class="pre">Config</span></code> object (see <a href="#id3"><span class="problematic" id="id4">:method:`Config.get_config_dict()`</span></a>).  If None or
+empty, the local Scheduler’s config will be passed to the sub-scheduler and any values
+with local config_dir will be replaced with “.”.  Do not include database credentials as
+they will be logged as clear text in the call graph.</p></li>
+<li><p><strong>new_execution</strong> (<em>bool</em>) – If True, record the provenance of the evaluation of <cite>expr</cite> as a new Execution, otherwise
+extend the current Execution with new Jobs.</p></li>
+<li><p><strong>**task_options</strong> (<em>Any</em>) – Task options for _subrun_root_task.  E.g. when running the sub-scheduler via Batch
+executor, you can pass ECS configuration (e.g. <cite>memory</cite>, <cite>vcpus</cite>, <cite>batch_tags</cite>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Returns a dict result of evaluating the _subrun_root_task</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.scheduler.throw">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">throw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.scheduler.throw" title="Permalink to this definition">#</a></dt>
+<dd><p>Raises an exception.</p>
+<p>This is task is useful in cases where raising needs to be done lazily.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="module-redun.scripting">
 <span id="redun-scripting-module"></span><h2>redun.scripting module<a class="headerlink" href="#module-redun.scripting" title="Permalink to this heading">#</a></h2>
@@ -3184,6 +3540,23 @@ thread-specific.</p>
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.scripting.</span></span><span class="sig-name descname"><span class="pre">ScriptError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stderr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.scripting.ScriptError" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Error raised when user script returns failure (non-zero exit code).</p>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.scripting._script">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scripting.</span></span><span class="sig-name descname"><span class="pre">_script</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneType</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.scripting._script" title="Permalink to this definition">#</a></dt>
+<dd><p>Internal task for executing a script.</p>
+<p>This task correctly implements reactivity to changing inputs and outputs.
+<cite>script_task()</cite> alone is unable to implement such reactivity because its
+only argument is a shell script string and its output is the stdout.
+Thus, the ultimate input and output files of the script are accessed
+outside the usual redun detection mechanisms (task arguments
+and return values).</p>
+<p>To achieve the correct reactivity, <cite>script_task()</cite> is special-cased in the Scheduler
+to not use caching, in order to force it to always execute when called.
+Additionally, <cite>_script()</cite> is configured with <cite>check_valid=”shallow”</cite> to
+skip execution of its child tasks, <cite>script_task()</cite> and <cite>postprocess_script()</cite>,
+if its previous outputs are still valid (i.e. not altered or deleted).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -3221,6 +3594,12 @@ this command to a temporary file, mark the file as executable,
 execute the file, and remove the temporary file.</p>
 </dd></dl>
 
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.scripting.postprocess_script">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scripting.</span></span><span class="sig-name descname"><span class="pre">postprocess_script</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneType</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.scripting.postprocess_script" title="Permalink to this definition">#</a></dt>
+<dd><p>Postprocess the results of a script task.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.scripting.prepare_command">
 <span class="sig-prename descclassname"><span class="pre">redun.scripting.</span></span><span class="sig-name descname"><span class="pre">prepare_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_shell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'#!/usr/bin/env</span> <span class="pre">bash\nset</span> <span class="pre">-exo</span> <span class="pre">pipefail'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.scripting.prepare_command" title="Permalink to this definition">#</a></dt>
@@ -3234,6 +3613,163 @@ execute the file, and remove the temporary file.</p>
 <dd><p>Execute a shell script as a redun task with file staging.</p>
 </dd></dl>
 
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.scripting.script_task">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scripting.</span></span><span class="sig-name descname"><span class="pre">script_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.scripting.script_task" title="Permalink to this definition">#</a></dt>
+<dd><p>Execute a shell script as redun Task.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-redun.sphinx">
+<span id="redun-sphinx-module"></span><h2>redun.sphinx module<a class="headerlink" href="#module-redun.sphinx" title="Permalink to this heading">#</a></h2>
+<p>Sphinx documentation plugin used to document redun tasks.</p>
+<div class="section" id="introduction">
+<h3>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">#</a></h3>
+<div class="section" id="usage">
+<h4>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">#</a></h4>
+<p>Add the extension to your <code class="file docutils literal notranslate"><span class="pre">docs/conf.py</span></code> configuration module:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">extensions</span> <span class="o">=</span> <span class="p">(</span><span class="o">...</span><span class="p">,</span>
+              <span class="s1">&#39;redun.sphinx&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you’d like to change the prefix for tasks in reference documentation
+then you can change the <code class="docutils literal notranslate"><span class="pre">redun_task_prefix</span></code> configuration value:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">redun_task_prefix</span> <span class="o">=</span> <span class="s1">&#39;(task)&#39;</span>  <span class="c1"># &lt; default</span>
+</pre></div>
+</div>
+<p>With the extension installed <cite>autodoc</cite> will automatically find
+task decorated objects (e.g. when using the automodule directive)
+and generate the correct (as well as add a <code class="docutils literal notranslate"><span class="pre">(task)</span></code> prefix),
+and you can also refer to the tasks using <cite>:task:proj.tasks.add</cite>
+syntax.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">autotask::</span></code> to alternatively manually document a task.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="redun.sphinx.SchedulerTaskDirective">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.sphinx.</span></span><span class="sig-name descname"><span class="pre">SchedulerTaskDirective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lineno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content_offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_machine</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.sphinx.SchedulerTaskDirective" title="Permalink to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">PyFunction</span></code></p>
+<p>Sphinx scheduler_task directive.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.sphinx.SchedulerTaskDirective.get_signature_prefix">
+<span class="sig-name descname"><span class="pre">get_signature_prefix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Node</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.sphinx.SchedulerTaskDirective.get_signature_prefix" title="Permalink to this definition">#</a></dt>
+<dd><p>May return a prefix to put before the object name in the
+signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="redun.sphinx.SchedulerTaskDocumenter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.sphinx.</span></span><span class="sig-name descname"><span class="pre">SchedulerTaskDocumenter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DocumenterBridge</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.sphinx.SchedulerTaskDocumenter" title="Permalink to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#redun.sphinx.TaskDocumenter" title="redun.sphinx.TaskDocumenter"><code class="xref py py-class docutils literal notranslate"><span class="pre">TaskDocumenter</span></code></a></p>
+<p>Document redun scheduler_task definitions.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.sphinx.SchedulerTaskDocumenter.can_document_member">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">can_document_member</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">member</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">membername</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isattr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.sphinx.SchedulerTaskDocumenter.can_document_member" title="Permalink to this definition">#</a></dt>
+<dd><p>Called to see if a member can be documented by this Documenter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.sphinx.SchedulerTaskDocumenter.format_args">
+<span class="sig-name descname"><span class="pre">format_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.sphinx.SchedulerTaskDocumenter.format_args" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns a string documenting the task’s parameters.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.sphinx.SchedulerTaskDocumenter.member_order">
+<span class="sig-name descname"><span class="pre">member_order</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">11</span></em><a class="headerlink" href="#redun.sphinx.SchedulerTaskDocumenter.member_order" title="Permalink to this definition">#</a></dt>
+<dd><p>order if autodoc_member_order is set to ‘groupwise’</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.sphinx.SchedulerTaskDocumenter.objtype">
+<span class="sig-name descname"><span class="pre">objtype</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'scheduler_task'</span></em><a class="headerlink" href="#redun.sphinx.SchedulerTaskDocumenter.objtype" title="Permalink to this definition">#</a></dt>
+<dd><p>name by which the directive is called (auto…) and the default
+generated directive name</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="redun.sphinx.TaskDirective">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.sphinx.</span></span><span class="sig-name descname"><span class="pre">TaskDirective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lineno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content_offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_machine</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.sphinx.TaskDirective" title="Permalink to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">PyFunction</span></code></p>
+<p>Sphinx task directive.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.sphinx.TaskDirective.get_signature_prefix">
+<span class="sig-name descname"><span class="pre">get_signature_prefix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Node</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.sphinx.TaskDirective.get_signature_prefix" title="Permalink to this definition">#</a></dt>
+<dd><p>May return a prefix to put before the object name in the
+signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="redun.sphinx.TaskDocumenter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.sphinx.</span></span><span class="sig-name descname"><span class="pre">TaskDocumenter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DocumenterBridge</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.sphinx.TaskDocumenter" title="Permalink to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FunctionDocumenter</span></code></p>
+<p>Document redun task definitions.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.sphinx.TaskDocumenter.can_document_member">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">can_document_member</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">member</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">membername</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isattr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.sphinx.TaskDocumenter.can_document_member" title="Permalink to this definition">#</a></dt>
+<dd><p>Called to see if a member can be documented by this Documenter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.sphinx.TaskDocumenter.check_module">
+<span class="sig-name descname"><span class="pre">check_module</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.sphinx.TaskDocumenter.check_module" title="Permalink to this definition">#</a></dt>
+<dd><p>Check if <em>self.object</em> is really defined in the module given by
+<em>self.modname</em>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.sphinx.TaskDocumenter.document_members">
+<span class="sig-name descname"><span class="pre">document_members</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">all_members</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.sphinx.TaskDocumenter.document_members" title="Permalink to this definition">#</a></dt>
+<dd><p>Generate reST for member documentation.</p>
+<p>If <em>all_members</em> is True, document all members, else those given by
+<em>self.options.members</em>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.sphinx.TaskDocumenter.format_args">
+<span class="sig-name descname"><span class="pre">format_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.sphinx.TaskDocumenter.format_args" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns a string documenting the task’s parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.sphinx.TaskDocumenter.get_doc">
+<span class="sig-name descname"><span class="pre">get_doc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ignore</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.sphinx.TaskDocumenter.get_doc" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the formatted docstring for the task.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.sphinx.TaskDocumenter.member_order">
+<span class="sig-name descname"><span class="pre">member_order</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">11</span></em><a class="headerlink" href="#redun.sphinx.TaskDocumenter.member_order" title="Permalink to this definition">#</a></dt>
+<dd><p>order if autodoc_member_order is set to ‘groupwise’</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.sphinx.TaskDocumenter.objtype">
+<span class="sig-name descname"><span class="pre">objtype</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'task'</span></em><a class="headerlink" href="#redun.sphinx.TaskDocumenter.objtype" title="Permalink to this definition">#</a></dt>
+<dd><p>name by which the directive is called (auto…) and the default
+generated directive name</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.sphinx.autodoc_skip_member_handler">
+<span class="sig-prename descclassname"><span class="pre">redun.sphinx.</span></span><span class="sig-name descname"><span class="pre">autodoc_skip_member_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">what</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.sphinx.autodoc_skip_member_handler" title="Permalink to this definition">#</a></dt>
+<dd><p>Handler for autodoc-skip-member event.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.sphinx.setup">
+<span class="sig-prename descclassname"><span class="pre">redun.sphinx.</span></span><span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.sphinx.setup" title="Permalink to this definition">#</a></dt>
+<dd><p>Setup Sphinx extension.</p>
+</dd></dl>
+
+</div>
+</div>
 </div>
 <div class="section" id="module-redun.tags">
 <span id="redun-tags-module"></span><h2>redun.tags module<a class="headerlink" href="#module-redun.tags" title="Permalink to this heading">#</a></h2>
@@ -3330,7 +3866,7 @@ using the <a class="reference internal" href="#redun.task.task" title="redun.tas
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
 </pre></div>
 </div>
-<p>Similar to pickling of functions, <a href="#id3"><span class="problematic" id="id4">`</span></a>Task`s specify the work to execute by reference, not by
+<p>Similar to pickling of functions, Tasks specify the work to execute by reference, not by
 value. This is important for serialization and caching, since a task is always reattached
 to the latest implementation and task options just-in-time.</p>
 <p>Task options may give direction to the scheduler about the execution environment, but must
@@ -3486,19 +4022,20 @@ within the <code class="xref py py-class docutils literal notranslate"><span cla
 For example, one can implement <cite>cond()</cite>, <cite>seq()</cite> and <cite>catch()</cite> using
 scheduler tasks.</p>
 <p>When evaluated, scheduler tasks are called with a reference to the
-<code class="xref py py-class docutils literal notranslate"><span class="pre">Scheduler</span></code> and the parent <code class="xref py py-class docutils literal notranslate"><span class="pre">Job</span></code> as it’s first two arguments.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Scheduler</span></code>, the parent <code class="xref py py-class docutils literal notranslate"><span class="pre">Job</span></code>, and the full <code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerExpression</span></code>
+as it’s first three arguments.
 It’s remaining arguments are the same as those passed from the user, however,
 they are not evaluated and may contain <code class="xref py py-class docutils literal notranslate"><span class="pre">Expression`s.</span> <span class="pre">It</span> <span class="pre">is</span> <span class="pre">the</span>
 <span class="pre">responsibility</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">scheduler</span> <span class="pre">task</span> <span class="pre">to</span> <span class="pre">explicitly</span> <span class="pre">evaluate</span> <span class="pre">arguments</span>
 <span class="pre">by</span> <span class="pre">using</span> <span class="pre">`Scheduler.evaluate()</span></code> as needed. Overall, this allows the scheduler
 task to implement custom evaluation semantics. Lastly, the scheduler task
 must return a <code class="xref py py-class docutils literal notranslate"><span class="pre">Promise</span></code> that resolves to the result of the task.</p>
-<p>This concept corresponds to fexpr in Lisp:
-- <a class="reference external" href="https://en.wikipedia.org/wiki/Fexpr">https://en.wikipedia.org/wiki/Fexpr</a></p>
+<p>This concept corresponds to fexpr in Lisp: <a class="reference external" href="https://en.wikipedia.org/wiki/Fexpr">https://en.wikipedia.org/wiki/Fexpr</a></p>
 <p>For example, one could implement a lazy if-statement called <cite>cond</cite> using
 this scheduler task:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@scheduler_task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">cond</span><span class="p">(</span><span class="n">scheduler</span><span class="p">,</span> <span class="n">parent_job</span><span class="p">,</span> <span class="n">pred_expr</span><span class="p">,</span> <span class="n">then_expr</span><span class="p">,</span> <span class="n">else_expr</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">cond</span><span class="p">(</span><span class="n">scheduler</span><span class="p">:</span> <span class="n">Scheduler</span><span class="p">,</span> <span class="n">parent_job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">scheduler_expr</span><span class="p">:</span> <span class="n">SchedulerExpression</span><span class="p">,</span>
+         <span class="n">pred_expr</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">then_expr</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">else_expr</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Promise</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">then</span><span class="p">(</span><span class="n">pred</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">pred</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">then_expr</span><span class="p">,</span> <span class="n">parent_job</span><span class="o">=</span><span class="n">parent_job</span><span class="p">)</span>
@@ -3540,18 +4077,17 @@ considered as part of cache invalidation. This list may be reordered without imp
 the computation. Each list item must be hashable by <cite>redun.value.TypeRegistry.get_hash</cite>.</p></li>
 <li><p><strong>source</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, task.source will be set to this string. It is the caller’s responsibility
 to ensure that <cite>source</cite> matches the provided <cite>func</cite> for proper hashing.</p></li>
-<li><p><strong>**task_options_base</strong> – <p>Additional options for configuring a task or specifying behaviors of tasks. Since
+<li><p><strong>**task_options_base</strong> (<em>Any</em>) – <p>Additional options for configuring a task or specifying behaviors of tasks. Since
 these are provided at task construction time (this is typically at Python module-load
-time), they are the “base” set. Known keys:
-load_module : Optional[str]</p>
+time), they are the “base” set. Example keys:</p>
 <blockquote>
-<div><p>The module to load to import this task. (Default: infer from function
-<cite>func.__module__</cite>)</p>
-</div></blockquote>
-<dl class="simple">
+<div><dl class="simple">
+<dt>load_module<span class="classifier">Optional[str]</span></dt><dd><p>The module to load to import this task. (Default: infer from <cite>func.__module__</cite>)</p>
+</dd>
 <dt>wrapped_task<span class="classifier">Optional[Task]</span></dt><dd><p>If present, a reference to the task wrapped by this one.</p>
 </dd>
 </dl>
+</div></blockquote>
 </p></li>
 </ul>
 </dd>
@@ -3647,6 +4183,47 @@ the computation. Each list item must be hashable by <cite>redun.value.TypeRegist
 </div>
 <div class="section" id="module-redun.tools">
 <span id="redun-tools-module"></span><h2>redun.tools module<a class="headerlink" href="#module-redun.tools" title="Permalink to this heading">#</a></h2>
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.tools.copy_dir">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.tools.</span></span><span class="sig-name descname"><span class="pre">copy_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.file.Dir" title="redun.file.Dir"><span class="pre">redun.file.Dir</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_if_exists</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.file.Dir" title="redun.file.Dir"><span class="pre">redun.file.Dir</span></a></span></span><a class="headerlink" href="#redun.tools.copy_dir" title="Permalink to this definition">#</a></dt>
+<dd><p>Copy a Dir to a new path.</p>
+<p>File copies will be done in parallel.</p>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.tools.copy_file">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.tools.</span></span><span class="sig-name descname"><span class="pre">copy_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.file.File" title="redun.file.File"><span class="pre">redun.file.File</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_if_exists</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.file.File" title="redun.file.File"><span class="pre">redun.file.File</span></a></span></span><a class="headerlink" href="#redun.tools.copy_file" title="Permalink to this definition">#</a></dt>
+<dd><p>Copy a File to a new path.</p>
+<p>This task can help in parallelizing file copies and providing data
+provenance.</p>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.tools.copy_files">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.tools.</span></span><span class="sig-name descname"><span class="pre">copy_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.file.File" title="redun.file.File"><span class="pre">redun.file.File</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest_paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_if_exists</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.file.File" title="redun.file.File"><span class="pre">redun.file.File</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.tools.copy_files" title="Permalink to this definition">#</a></dt>
+<dd><p>Copy multiple Files to new paths.</p>
+<p>File copies will be done in parallel.</p>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.tools.debug_task">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.tools.</span></span><span class="sig-name descname"><span class="pre">debug_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.tools.debug_task" title="Permalink to this definition">#</a></dt>
+<dd><p>Launch pdb debugger during one point of the redun workflow.</p>
+<p>For example, to inspect the lazy value <cite>x</cite> in the workflow below
+we can pass it through <cite>debug_task()</cite>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">task1</span><span class="p">()</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">debug_task</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">task2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py task">
+<dt class="sig sig-object py" id="redun.tools.render_template">
+<em class="property"><span class="pre">(task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.tools.</span></span><span class="sig-name descname"><span class="pre">render_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.file.File" title="redun.file.File"><span class="pre">redun.file.File</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">template_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneType</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.file.File" title="redun.file.File"><span class="pre">redun.file.File</span></a></span></span><a class="headerlink" href="#redun.tools.render_template" title="Permalink to this definition">#</a></dt>
+<dd><p>Render a jinja2 template.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="module-redun.utils">
 <span id="redun-utils-module"></span><h2>redun.utils module<a class="headerlink" href="#module-redun.utils" title="Permalink to this heading">#</a></h2>
@@ -4398,6 +4975,13 @@ reference is no longer valid.</p>
 <li><a class="reference internal" href="#redun-pytest-module">redun.pytest module</a></li>
 <li><a class="reference internal" href="#module-redun.scheduler">redun.scheduler module</a></li>
 <li><a class="reference internal" href="#module-redun.scripting">redun.scripting module</a></li>
+<li><a class="reference internal" href="#module-redun.sphinx">redun.sphinx module</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a class="reference internal" href="#module-redun.tags">redun.tags module</a></li>
 <li><a class="reference internal" href="#module-redun.task">redun.task module</a></li>
 <li><a class="reference internal" href="#module-redun.tools">redun.tools module</a></li>
