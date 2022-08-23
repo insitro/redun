@@ -31,6 +31,7 @@ author = 'Matt Rasmussen'
 extensions = [
     'sphinx.ext.napoleon',
     'myst_parser',
+    'redun.sphinx',
 ]
 myst_heading_anchors = 4
 
