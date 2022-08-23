@@ -2,8 +2,7 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Changelog" href="CHANGELOG.html" /><link rel="prev" title="Developer guide" href="developing.html" />
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Changelog" href="CHANGELOG.html" /><link rel="prev" title="Developer guide" href="developing.html" />
 
     <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
         <title>Visualization - redun</title>
@@ -217,10 +216,10 @@
           </label>
         </div>
         <article role="main">
-          <section id="visualization">
+          <div class="section" id="visualization">
 <h1>Visualization<a class="headerlink" href="#visualization" title="Permalink to this heading">#</a></h1>
 <p>Visualizing the call graph of redun executions can help developers understand the evaluation and fan out/in patterns of redun programs, making them a useful debugging tool.</p>
-<section id="configuring-visualizations">
+<div class="section" id="configuring-visualizations">
 <h2>Configuring visualizations<a class="headerlink" href="#configuring-visualizations" title="Permalink to this heading">#</a></h2>
 <p>Similar to logging, we can visualize <code class="docutils literal notranslate"><span class="pre">Execution</span></code>, <code class="docutils literal notranslate"><span class="pre">Job</span></code>, <code class="docutils literal notranslate"><span class="pre">CallNode</span></code>, and <code class="docutils literal notranslate"><span class="pre">Value</span></code> objects by hash.
 The basic command to do so is <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">viz</span> <span class="pre">&lt;id_or_hash_prefix&gt;</span></code>.
@@ -228,7 +227,7 @@ Note that <code class="docutils literal notranslate"><span class="pre">Task</spa
 If in the future we support expression graph visualization, we can include explicit task visualization that is decoupled from jobs.</p>
 <p><code class="docutils literal notranslate"><span class="pre">Value</span></code> queries are treated slightly differently from the other objects, with a greater focus on their upstream lineage.
 We will cover each of these two visualization scenarios separately, along with each of their relevant flags.</p>
-<section id="visualizing-non-value-objects">
+<div class="section" id="visualizing-non-value-objects">
 <h3>Visualizing non-<code class="docutils literal notranslate"><span class="pre">Value</span></code> objects<a class="headerlink" href="#visualizing-non-value-objects" title="Permalink to this heading">#</a></h3>
 <p>The graphs discussed here will correspond to the example below.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
@@ -325,8 +324,8 @@ Both the aforementioned flags can be used together as well. Note that these grap
 <p><code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">viz</span> <span class="pre">&lt;job-id</span> <span class="pre">/</span> <span class="pre">call-node-id&gt;</span></code> <br />
 We can also plot jobs or CallNodes, which both will yield a CallNode and its immediate local context.</p>
 <img src="_static/make-call-node.png" width="50%"/>
-</section>
-<section id="visualizing-value-objects">
+</div>
+<div class="section" id="visualizing-value-objects">
 <h3>Visualizing <code class="docutils literal notranslate"><span class="pre">Value</span></code> objects<a class="headerlink" href="#visualizing-value-objects" title="Permalink to this heading">#</a></h3>
 <p>The graph for a value query depicts all the upstream calls and values that were required to generate the value.
 Note that the value object is taken as is and not deconstructed.
@@ -374,14 +373,14 @@ Note that this a direct visual analog of the equivalent <code class="docutils li
 Use this flag to condense the routing CallNodes.
 This flag makes routing calls more informative because it displays not only the fact that the given value is passed to some set of CallNodes, but also how these CallNodes themselves are nested relative to each other in the hierarchy of calls.</p>
 <img src="_static/make-subvalue-wrap.png" width="50%"/>
-</section>
-<section id="final-notes">
+</div>
+<div class="section" id="final-notes">
 <h3>Final Notes<a class="headerlink" href="#final-notes" title="Permalink to this heading">#</a></h3>
 <p>The image generated may vary between calls. If the graph generated is difficult to read, utilize the flags to remove job nodes, shift to a horizontal layout, or simply try rerunning again.</p>
 <p>For convenience, the flags are broken down by when they are appropriate to use.</p>
-</section>
-</section>
-</section>
+</div>
+</div>
+</div>
 
         </article>
       </div>

@@ -2,8 +2,7 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Spark" href="spark.html" /><link rel="prev" title="Configuration" href="config.html" />
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Spark" href="spark.html" /><link rel="prev" title="Configuration" href="config.html" />
 
     <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
         <title>Database repo - redun</title>
@@ -217,14 +216,14 @@
           </label>
         </div>
         <article role="main">
-          <section id="database-repo">
+          <div class="section" id="database-repo">
 <h1>Database repo<a class="headerlink" href="#database-repo" title="Permalink to this heading">#</a></h1>
 <p>redun stores data provenance and cached values in <em>repositories</em>, (repos for short), similar to how <a class="reference external" href="https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository">git stores commit graphs in repos</a>.
 redun repos are currently implemented using either sqlite (the default) or PostgreSQL.
 Additionally, users may specify an <a class="reference internal" href="#optional-value-store"><span class="std std-doc">external key-value store</span></a> to avoid bloating the primary repo with large binary objects.</p>
 <p>Once your workflows mature to the point where you want to share them or their results with collaborators, we recommend configuring a persistent database repo for provenance tracking.
 See the <a class="reference internal" href="config.html#backend"><span class="std std-doc">backend configuration</span></a> section for details.</p>
-<section id="database-migration">
+<div class="section" id="database-migration">
 <h2>Database migration<a class="headerlink" href="#database-migration" title="Permalink to this heading">#</a></h2>
 <p>The redun CLI will automatically initialize and upgrade the redun database in most cases, so users will oftentimes not need to manage database versioning themselves. However, there are certain situations where users may want or need to manage database upgrades explicitly, such as upgrading a central shared PostgreSQL database. Here, we review common commands for inspecting and managing database version upgrades.</p>
 <p>When the redun CLI is run for the first on a workflow script, by default a new sqlite database is created at <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code>.</p>
@@ -264,19 +263,19 @@ Final db version: 3.0
 </pre></div>
 </div>
 <p>Downgrades can be done with <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">db</span> <span class="pre">downgrade</span> <span class="pre">&lt;version&gt;</span></code>.</p>
-<section id="automatic-database-upgrading">
+<div class="section" id="automatic-database-upgrading">
 <h3>Automatic database upgrading<a class="headerlink" href="#automatic-database-upgrading" title="Permalink to this heading">#</a></h3>
 <p>For the most common use case, the redun CLI uses a local sqlite database file (e.g. <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code>).
 Since such a database is used by only one client, it is typically safe to automatically upgrade the database if needed.
 Such an upgrade will happen automatically on the next <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">run</span> <span class="pre">...</span></code> command.
 If you would like to disable automatic upgrades, it can be turned off with the <a class="reference internal" href="config.html#automigrate"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">automigrate</span></code></span></a> configuration option.
 Automigration is not used for non-sqlite databases, since a centrally used database will likely need more coordination to not disrupt clients.</p>
-</section>
-<section id="database-version-capabilities">
+</div>
+<div class="section" id="database-version-capabilities">
 <h3>Database version capabilities<a class="headerlink" href="#database-version-capabilities" title="Permalink to this heading">#</a></h3>
 <p>Each version of the redun library requires the redun database to be within a specific version range. To understand what database version is required for your library or database, consult the table below.</p>
 <div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
+<table class="colwidths-auto docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>redun lib version range</p></th>
 <th class="head"><p>required database version range</p></th>
@@ -298,8 +297,8 @@ Automigration is not used for non-sqlite databases, since a centrally used datab
 </tbody>
 </table>
 </div>
-</section>
-<section id="no-downtime-migrations">
+</div>
+<div class="section" id="no-downtime-migrations">
 <h3>No downtime migrations<a class="headerlink" href="#no-downtime-migrations" title="Permalink to this heading">#</a></h3>
 <p>The compatibility ranges between the library and database are designed to allow gradual upgrades, so that redun clients never need to fully stop access.</p>
 <ul class="simple">
@@ -307,16 +306,16 @@ Automigration is not used for non-sqlite databases, since a centrally used datab
 <li><p>Minor database versions (e.g <code class="docutils literal notranslate"><span class="pre">3.0</span> <span class="pre">--&gt;</span> <span class="pre">3.1</span></code>) can be upgraded to without disruption of current clients, because they typically contain non-breaking changes such as adding indexes or changing constraints.</p></li>
 <li><p>To upgrade to a major database version (e.g. <code class="docutils literal notranslate"><span class="pre">3.0</span> <span class="pre">--&gt;</span> <span class="pre">4.0</span></code>) without downtime, all clients need to allow the new major version (see table above for details) before the migration is applied.</p></li>
 </ul>
-</section>
-</section>
-<section id="optional-value-store">
+</div>
+</div>
+<div class="section" id="optional-value-store">
 <h2>Optional value store<a class="headerlink" href="#optional-value-store" title="Permalink to this heading">#</a></h2>
 <p>By default, values are stored in the database as BLOB columns.
 For most usage patterns, these BLOBs represent the fastest source of growth in the repo.
 Users can specify an external key-value store and a minimum size cutoff beyond which values are written to the value store instead of the primary repo.
 See <code class="docutils literal notranslate"><span class="pre">ValueStore</span></code> for implementation details.</p>
-</section>
-</section>
+</div>
+</div>
 
         </article>
       </div>

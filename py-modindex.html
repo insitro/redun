@@ -2,11 +2,10 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Developer guide" href="developing.html" /><link rel="prev" title="Type checking" href="typing.html" />
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
 
-    <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
-        <title>FAQ - redun</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/><title>Python Module Index - redun</title>
+<link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
@@ -133,7 +132,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -153,7 +152,7 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul class="current">
+  <ul>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tasks.html">Tasks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="executors.html">Executors</a></li>
@@ -161,7 +160,7 @@
 <li class="toctree-l1"><a class="reference internal" href="db.html">Database repo</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
@@ -210,96 +209,268 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          <div class="section" id="faq">
-<h1>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading">#</a></h1>
-<p>A collection of gotchas, how-to’s, and other common questions.</p>
-<div class="section" id="how-can-i-use-an-existing-jobdefinition-in-aws-batch-executor">
-<h2>How can I use an existing JobDefinition in AWS Batch Executor?<a class="headerlink" href="#how-can-i-use-an-existing-jobdefinition-in-aws-batch-executor" title="Permalink to this heading">#</a></h2>
-<p>New options and features are added to the JobDefintions in AWS Batch long before they make their way to boto3.
-Additionally, redun will not always be on the latest version of boto3.
-So, there can be a significant delay in the time an option is introduced for a JobDefinition in AWS Batch, and it becoming available to set in the version of boto3 used by redun(sharedMemory for example).</p>
-<p>Given that potential delay, redun allows the user to create the JobDefinition themselves in AWS and then use that existing JobDefinition when running their tasks.
-To do this, set <code class="docutils literal notranslate"><span class="pre">autocreate_job=False</span></code> as a task option <em>and</em> specify a <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> in the task options.
-You <em>must</em> set the <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> to the name of the JobDefintion you manually created in AWS Batch.
-When both the above options are set on a task, redun will look for an existing JobDefintion by name only and will raise an error if no matches are found.
-This is different from the default lookup which compares both the name and the container properties and will also create a definition if one does not exist.</p>
-</div>
-<div class="section" id="how-do-i-read-a-portion-of-a-file-without-downloading-reading-it-all">
-<h2>How do I read a portion of a file without downloading/reading it all?<a class="headerlink" href="#how-do-i-read-a-portion-of-a-file-without-downloading-reading-it-all" title="Permalink to this heading">#</a></h2>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun.file</span> <span class="kn">import</span> <span class="n">File</span>
-<span class="n">input_file</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="s2">&quot;&lt;path_to_file&gt;&quot;</span><span class="p">)</span>
-<span class="n">stream</span> <span class="o">=</span> <span class="n">input_file</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
-<span class="n">stream</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># Move to the 101st byte</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># Read the next 10 bytes</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="gotcha-when-modifying-file-passed-as-task-arg">
-<h2>Gotcha when modifying file passed as task arg<a class="headerlink" href="#gotcha-when-modifying-file-passed-as-task-arg" title="Permalink to this heading">#</a></h2>
-<p>Let’s say we had the following task which adds a string to the end of the input file:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun.file</span> <span class="kn">import</span> <span class="n">File</span>
-<span class="kn">from</span> <span class="nn">redun.task</span> <span class="kn">import</span> <span class="n">task</span>
-
-<span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">add_footer</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">File</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">File</span>
-   <span class="k">with</span> <span class="n">f</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
-       <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;EOF&quot;</span><span class="p">)</span>
-   <span class="k">return</span> <span class="n">f</span>
-</pre></div>
-</div>
-<p>The issue with the above is that by writing to the file, we have changed the file hash and thus invalidated the input of the task we just ran.
-If you called the task again, it would run again because the hash of the file has changed.
-In cases where you plan on modifying a file within a task, it often makes sense to pass a file path rather than a <code class="docutils literal notranslate"><span class="pre">File</span></code>.
-So, the above example could be rewritten as:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun.file</span> <span class="kn">import</span> <span class="n">File</span>
-<span class="kn">from</span> <span class="nn">redun.task</span> <span class="kn">import</span> <span class="n">task</span>
-
-<span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">add_footer</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">File</span>
-   <span class="n">f</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
-   <span class="k">with</span> <span class="n">f</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
-       <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;EOF&quot;</span><span class="p">)</span>
-   <span class="k">return</span> <span class="n">f</span>
-</pre></div>
-</div>
-<p>In the above example, we still end up with the same output.
-However, if we rerun the task, it will not rerun as the <code class="docutils literal notranslate"><span class="pre">file_path</span></code> is unchanged so redun will find the past run in the cache and will not rerun.</p>
-<p>In the case where your task is processing a file purely for reading (no writing), <code class="docutils literal notranslate"><span class="pre">File</span></code> is the ideal task argument type to use. By using <code class="docutils literal notranslate"><span class="pre">File</span></code> as a task argument type, the data provenance record the file hash, and the workflow will properly react (rerun) due to changes in the input file.</p>
-<p>In summary, input <code class="docutils literal notranslate"><span class="pre">File</span></code> should be arguments, and output <code class="docutils literal notranslate"><span class="pre">File</span></code> should be return results.</p>
-</div>
-</div>
+          
+<section class="domainindex-section">
+  <h1>Python Module Index</h1>
+  <div class="domainindex-jumpbox"><a href="#cap-r"><strong>r</strong></a></div>
+</section>
+<table class="domainindex-table">
+  <tr class="pcap">
+    <td></td><td>&#160;</td><td></td>
+  </tr>
+  <tr class="cap" id="cap-r">
+    <td></td><td><strong>r</strong></td><td></td>
+  </tr>
+  <tr>
+    <td><img src="_static/minus.png" class="toggler"
+              id="toggle-1" style="display: none" alt="-" /></td>
+    <td>
+        <a href="redun/redun.html#module-redun"><code class="xref">redun</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.backends.html#module-redun.backends"><code class="xref">redun.backends</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.backends.html#module-redun.backends.base"><code class="xref">redun.backends.base</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.backends.db.html#module-redun.backends.db"><code class="xref">redun.backends.db</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.backends.db.html#module-redun.backends.db.dataflow"><code class="xref">redun.backends.db.dataflow</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.backends.db.html#module-redun.backends.db.query"><code class="xref">redun.backends.db.query</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.backends.db.html#module-redun.backends.db.serializers"><code class="xref">redun.backends.db.serializers</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.backends.html#module-redun.backends.value_store"><code class="xref">redun.backends.value_store</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.bcoding"><code class="xref">redun.bcoding</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.cli"><code class="xref">redun.cli</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.config"><code class="xref">redun.config</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.db_utils"><code class="xref">redun.db_utils</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.executors.html#module-redun.executors"><code class="xref">redun.executors</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.executors.html#module-redun.executors.aws_batch"><code class="xref">redun.executors.aws_batch</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.executors.html#module-redun.executors.aws_glue"><code class="xref">redun.executors.aws_glue</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.executors.html#module-redun.executors.aws_utils"><code class="xref">redun.executors.aws_utils</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.executors.html#module-redun.executors.base"><code class="xref">redun.executors.base</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.executors.html#module-redun.executors.code_packaging"><code class="xref">redun.executors.code_packaging</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.executors.html#module-redun.executors.command"><code class="xref">redun.executors.command</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.executors.html#module-redun.executors.docker"><code class="xref">redun.executors.docker</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.executors.html#module-redun.executors.local"><code class="xref">redun.executors.local</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.executors.html#module-redun.executors.scratch"><code class="xref">redun.executors.scratch</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.expression"><code class="xref">redun.expression</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.file"><code class="xref">redun.file</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.functools"><code class="xref">redun.functools</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.glue"><code class="xref">redun.glue</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.handle"><code class="xref">redun.handle</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.hashing"><code class="xref">redun.hashing</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.job_array"><code class="xref">redun.job_array</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.logging"><code class="xref">redun.logging</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.namespace"><code class="xref">redun.namespace</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.promise"><code class="xref">redun.promise</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.scheduler"><code class="xref">redun.scheduler</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.scripting"><code class="xref">redun.scripting</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.tags"><code class="xref">redun.tags</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.task"><code class="xref">redun.task</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.tools"><code class="xref">redun.tools</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.utils"><code class="xref">redun.utils</code></a></td><td>
+    <em></em></td>
+  </tr>
+  <tr class="cg-1">
+    <td></td>
+    <td>&#160;&#160;&#160;
+        <a href="redun/redun.html#module-redun.value"><code class="xref">redun.value</code></a></td><td>
+    <em></em></td>
+  </tr>
+</table>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="developing.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">Developer guide</div>
-              </div>
-              <svg><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="typing.html">
-              <svg><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">Type checking</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -320,29 +491,8 @@ However, if we rerun the task, it will not rerun as the <code class="docutils li
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            Contents
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">FAQ</a><ul>
-<li><a class="reference internal" href="#how-can-i-use-an-existing-jobdefinition-in-aws-batch-executor">How can I use an existing JobDefinition in AWS Batch Executor?</a></li>
-<li><a class="reference internal" href="#how-do-i-read-a-portion-of-a-file-without-downloading-reading-it-all">How do I read a portion of a file without downloading/reading it all?</a></li>
-<li><a class="reference internal" href="#gotcha-when-modifying-file-passed-as-task-arg">Gotcha when modifying file passed as task arg</a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

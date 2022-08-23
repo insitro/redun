@@ -2,8 +2,7 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Type checking" href="typing.html" /><link rel="prev" title="Database repo" href="db.html" />
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Type checking" href="typing.html" /><link rel="prev" title="Database repo" href="db.html" />
 
     <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
         <title>Spark - redun</title>
@@ -217,15 +216,15 @@
           </label>
         </div>
         <article role="main">
-          <section id="spark">
+          <div class="section" id="spark">
 <h1>Spark<a class="headerlink" href="#spark" title="Permalink to this heading">#</a></h1>
 <p>Redun can now launch jobs using <a class="reference external" href="https://aws.amazon.com/glue">AWS Glue</a> to run
 <a class="reference external" href="https://spark.apache.org">Apache Spark</a> jobs on a managed cluster. Spark jobs run on many
 CPUs and are especially useful for working with large tabular datasets such as those
 represented in pandas.</p>
-<section id="usage">
+<div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">#</a></h2>
-<section id="data-i-o">
+<div class="section" id="data-i-o">
 <h3>Data I/O<a class="headerlink" href="#data-i-o" title="Permalink to this heading">#</a></h3>
 <p>Spark datasets are typically saved as multiple files (shards) on S3. The <span class="xref myst">ShardedS3Dataset</span> class represents these datasets in redun while tracking their provenance. Datasets may be
 in a variety of formats, including parquet, csv, and avro. The default is always parquet.</p>
@@ -250,8 +249,8 @@ in a variety of formats, including parquet, csv, and avro. The default is always
 </pre></div>
 </div>
 <p>Note that the number of shards and file names are determined by AWS Glue and not user configurable.</p>
-</section>
-<section id="imported-modules">
+</div>
+<div class="section" id="imported-modules">
 <h3>Imported modules<a class="headerlink" href="#imported-modules" title="Permalink to this heading">#</a></h3>
 <p>AWS Glue automates management, provisioning, and deployment of Spark clusters, but only with a <a class="reference external" href="https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-python-libraries.html#glue20-modules-provided">pre-determined set of Python modules</a>.
 Most functionality you may need is already available, including scipy, pandas, etc.</p>
@@ -259,7 +258,7 @@ Most functionality you may need is already available, including scipy, pandas, e
 installed with the <code class="docutils literal notranslate"><span class="pre">additional_libs</span></code> task option.  Redun is always available in
 the glue environment.  However, other modules, especially those using C/C++
 compiled extensions, are not really installable at this time.</p>
-<section id="rdkit">
+<div class="section" id="rdkit">
 <h4>Rdkit<a class="headerlink" href="#rdkit" title="Permalink to this heading">#</a></h4>
 <p>An exception to this is the <code class="docutils literal notranslate"><span class="pre">rdkit</span></code> module, which has been specially prepared to work in AWS Glue.
 To use <code class="docutils literal notranslate"><span class="pre">rdkit</span></code>, you must call <code class="docutils literal notranslate"><span class="pre">redun.contrib.spark_helpers.enable_rdkit</span></code> from your glue task before
@@ -275,8 +274,8 @@ importing it.</p>
     <span class="c1"># ... compute goes here ...</span>
 </pre></div>
 </div>
-</section>
-<section id="avoiding-import-errors">
+</div>
+<div class="section" id="avoiding-import-errors">
 <h4>Avoiding import errors<a class="headerlink" href="#avoiding-import-errors" title="Permalink to this heading">#</a></h4>
 <p>In a file with multiple redun tasks, packages are often imported at the top-level that are needed by non-glue tasks.
 However, when the glue task is launched, those top-level imports may cause the job to fail with ImportError.</p>
@@ -307,30 +306,30 @@ perform required imports for each task within the function body:</p>
     <span class="k">pass</span>
 </pre></div>
 </div>
-</section>
-</section>
-<section id="accessing-spark-contexts">
+</div>
+</div>
+<div class="section" id="accessing-spark-contexts">
 <h3>Accessing Spark contexts<a class="headerlink" href="#accessing-spark-contexts" title="Permalink to this heading">#</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">redun.glue</span></code> module contains helper functions to access the Spark Session and Context objects:
 <code class="docutils literal notranslate"><span class="pre">get_spark_context()</span></code> and <code class="docutils literal notranslate"><span class="pre">get_spark_session()</span></code>. <span class="xref myst">Full Documentation</span></p>
-</section>
-<section id="user-defined-functions">
+</div>
+<div class="section" id="user-defined-functions">
 <h3>User-defined functions<a class="headerlink" href="#user-defined-functions" title="Permalink to this heading">#</a></h3>
 <p>You might want to define your own functions to operate on a dataset. Typically, you’d use the <code class="docutils literal notranslate"><span class="pre">pyspark.sql.functions.udf</span></code> decorator
 on a function to make it a UDF, but when redun evaluates the decorator it will error out as there is no spark context available
 to register the function to.</p>
 <p>Instead, use the <code class="docutils literal notranslate"><span class="pre">redun.glue.udf</span></code> decorator. See the redun examples for a
 real-world use of UDFs and this decorator.</p>
-</section>
-<section id="monitoring-spark-jobs">
+</div>
+<div class="section" id="monitoring-spark-jobs">
 <h3>Monitoring Spark jobs<a class="headerlink" href="#monitoring-spark-jobs" title="Permalink to this heading">#</a></h3>
 <p>Glue/Spark jobs will log detailed progress information for visualization by a Spark History Server.
 Logs will be at the location specified by the config option <code class="docutils literal notranslate"><span class="pre">spark_history_dir</span></code>.</p>
-</section>
-</section>
-<section id="common-pitfalls">
+</div>
+</div>
+<div class="section" id="common-pitfalls">
 <h2>Common pitfalls<a class="headerlink" href="#common-pitfalls" title="Permalink to this heading">#</a></h2>
-<section id="some-workers-keep-dying-and-my-task-fails">
+<div class="section" id="some-workers-keep-dying-and-my-task-fails">
 <h3>Some workers keep dying and my task fails?<a class="headerlink" href="#some-workers-keep-dying-and-my-task-fails" title="Permalink to this heading">#</a></h3>
 <p>Repetitive failures can be caused by one worker getting overloaded with data and
 running out of memory. Signs of this include large numbers of executors failing as
@@ -343,9 +342,9 @@ To do this:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">spark_df</span> <span class="o">=</span> <span class="n">spark_df</span><span class="o">.</span><span class="n">repartition</span><span class="p">(</span><span class="mi">400</span><span class="p">)</span>
 </pre></div>
 </div>
-</section>
-</section>
-</section>
+</div>
+</div>
+</div>
 
         </article>
       </div>

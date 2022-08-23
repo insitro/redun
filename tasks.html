@@ -2,8 +2,7 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Executors" href="executors.html" /><link rel="prev" title="Design overview" href="design.html" />
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Executors" href="executors.html" /><link rel="prev" title="Design overview" href="design.html" />
 
     <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
         <title>Tasks - redun</title>
@@ -217,10 +216,10 @@
           </label>
         </div>
         <article role="main">
-          <section id="tasks">
+          <div class="section" id="tasks">
 <h1>Tasks<a class="headerlink" href="#tasks" title="Permalink to this heading">#</a></h1>
 <p>Tasks are the basic unit of work in a redun workflow. For a review of their basic features see <a class="reference internal" href="design.html#tasks-as-pure-functions"><span class="std std-doc">Tasks as pure functions</span></a>, <a class="reference internal" href="design.html#task-hashing"><span class="std std-doc">Task hashing</span></a>, and <a class="reference internal" href="design.html#task-naming"><span class="std std-doc">Task naming</span></a>.</p>
-<section id="task-options">
+<div class="section" id="task-options">
 <h2>Task options<a class="headerlink" href="#task-options" title="Permalink to this heading">#</a></h2>
 <p>Tasks can be configured in many ways to adjust how they are executed and cached. For example, the <a class="reference internal" href="#executor"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">executor</span></code></span></a> task option defines which <a class="reference internal" href="executors.html"><span class="doc std std-doc">executor</span></a> system (local, AWS Batch, etc) the task should execute on, and the <a class="reference internal" href="#cache"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">cache</span></code></span></a> task option defines whether the cache can be used to fast forward through the task.</p>
 <p>The most common way to configure a task is with the <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">&#64;task</span></code></span> decorator. For example, this task runs on AWS Batch with 4Gb of memory and without using caching:</p>
@@ -246,16 +245,16 @@
 </pre></div>
 </div>
 <p>Lastly, several task options, such as <a class="reference internal" href="config.html#image"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">image</span></code></span></a> or <a class="reference internal" href="config.html#memory"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">memory</span></code></span></a>, can be inherited by the <a class="reference internal" href="config.html#executors"><span class="std std-doc">executor configuration</span></a>.</p>
-<section id="cache">
+<div class="section" id="cache">
 <h3><code class="docutils literal notranslate"><span class="pre">cache</span></code><a class="headerlink" href="#cache" title="Permalink to this heading">#</a></h3>
 <p>A bool (default: true) that defines whether the cache can be used to fast forward through the task’s execution. If set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the task will run every time the task is called in a workflow.</p>
-</section>
-<section id="check-valid">
+</div>
+<div class="section" id="check-valid">
 <h3><code class="docutils literal notranslate"><span class="pre">check_valid</span></code><a class="headerlink" href="#check-valid" title="Permalink to this heading">#</a></h3>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code>) that defines whether cached results are checked for validity in the entire subtree
 beneath this task (<code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code>) or whether just this task’s results need to be valid (<code class="docutils literal notranslate"><span class="pre">&quot;shallow&quot;</span></code>). This can be used to dramatically speed up resuming large workflows.</p>
-</section>
-<section id="config-args">
+</div>
+<div class="section" id="config-args">
 <h3><code class="docutils literal notranslate"><span class="pre">config_args</span></code><a class="headerlink" href="#config-args" title="Permalink to this heading">#</a></h3>
 <p>A list of strings defining config args for this task.
 Config args will be ignored when hashing a task meaning that changes in config args’ values will not cause tasks to re-evaluate.
@@ -267,34 +266,34 @@ For example, consider:</p>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">memory</span></code> arg in <code class="docutils literal notranslate"><span class="pre">task1</span></code> will be ignored when hashing a task and changing that value will not trigger re-evaluation of the task.</p>
-</section>
-<section id="executor">
+</div>
+<div class="section" id="executor">
 <h3><code class="docutils literal notranslate"><span class="pre">executor</span></code><a class="headerlink" href="#executor" title="Permalink to this heading">#</a></h3>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">default</span></code>) that defines which executor the task executes on. See <a class="reference internal" href="executors.html"><span class="doc std std-doc">Executors</span></a> for more information.</p>
-</section>
-<section id="hash-includes">
+</div>
+<div class="section" id="hash-includes">
 <h3><code class="docutils literal notranslate"><span class="pre">hash_includes</span></code><a class="headerlink" href="#hash-includes" title="Permalink to this heading">#</a></h3>
 <p>A list of data to include in the task hash. Changing the hash will invalidate cached execution results.</p>
-</section>
-<section id="limits">
+</div>
+<div class="section" id="limits">
 <h3><code class="docutils literal notranslate"><span class="pre">limits</span></code><a class="headerlink" href="#limits" title="Permalink to this heading">#</a></h3>
 <p>A list or dict of resources needed for this task to execute. See the <a class="reference internal" href="config.html#limits"><span class="std std-doc">Limits</span></a> feature for more information.</p>
-</section>
-<section id="load-module">
+</div>
+<div class="section" id="load-module">
 <h3><code class="docutils literal notranslate"><span class="pre">load_module</span></code><a class="headerlink" href="#load-module" title="Permalink to this heading">#</a></h3>
 <p>The name of a python module that can be loaded to recreate this task. For example, this is part of how a remote worker is instructed to initialize itself, in preparation for running a task.</p>
-</section>
-<section id="name">
+</div>
+<div class="section" id="name">
 <h3><code class="docutils literal notranslate"><span class="pre">name</span></code><a class="headerlink" href="#name" title="Permalink to this heading">#</a></h3>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">func.__name__</span></code>) naming the task. Task name must use only alphanumeric characters and underscore ‘_’.</p>
 <p>Every task in a workflow needs a unique name. By default, this is automatically inferred from the function’s name (e.g. <code class="docutils literal notranslate"><span class="pre">func.__name__</span></code>). However, the user may use the <code class="docutils literal notranslate"><span class="pre">name</span></code> task option to explicitly set a task’s name. See <a class="reference internal" href="design.html#task-naming"><span class="std std-doc">Task naming</span></a> for more.</p>
-</section>
-<section id="namespace">
+</div>
+<div class="section" id="namespace">
 <h3><code class="docutils literal notranslate"><span class="pre">namespace</span></code><a class="headerlink" href="#namespace" title="Permalink to this heading">#</a></h3>
 <p>A string defining the namespace for a task. Task namespace must use only alphanumeric characters, underscore ‘_’, and dot ‘.’, and may not start with a dot.</p>
 <p>Ideally, tasks should be uniquely identified across workflows by their fullname, which is a combination of their namespace and name. Typically, the namespace is set for the entire python module using the <code class="docutils literal notranslate"><span class="pre">redun_namespace</span></code> global variable (See <a class="reference internal" href="design.html#task-naming"><span class="std std-doc">Task naming</span></a> for more). However, the namespace can also be configured explicitly using this task option.</p>
-</section>
-<section id="nout">
+</div>
+<div class="section" id="nout">
 <h3><code class="docutils literal notranslate"><span class="pre">nout</span></code><a class="headerlink" href="#nout" title="Permalink to this heading">#</a></h3>
 <p>An optional int (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>) that can be used for tasks that return a tuple or list of length <code class="docutils literal notranslate"><span class="pre">nout</span></code>. Typically, tasks return lazy results with unknown length (<code class="docutils literal notranslate"><span class="pre">nout=None</span></code>). This prevents users from iterating or destructuring results like they could with a normal tuple or list. Using <code class="docutils literal notranslate"><span class="pre">nout</span></code>, a user can iterate and destructure results.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">nout</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -314,18 +313,18 @@ For example, consider:</p>
     <span class="k">return</span> <span class="p">[</span><span class="n">name</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">results</span><span class="p">]</span>
 </pre></div>
 </div>
-</section>
-<section id="script">
+</div>
+<div class="section" id="script">
 <h3><code class="docutils literal notranslate"><span class="pre">script</span></code><a class="headerlink" href="#script" title="Permalink to this heading">#</a></h3>
 <p>A bool (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>) that defines whether this task is a <a class="reference internal" href="design.html#script-tasks"><span class="std std-doc">script task</span></a>.</p>
-</section>
-<section id="version">
+</div>
+<div class="section" id="version">
 <h3><code class="docutils literal notranslate"><span class="pre">version</span></code><a class="headerlink" href="#version" title="Permalink to this heading">#</a></h3>
 <p>An optional string (default: None) defining the version of the task. If defined, the task version helps to determine the hash for a task. When not given, the task hash will depend on the task’s source code. Therefore, an explicit version allows the user to safely refactor a task without causing unnecessary re-execution of their pipeline.</p>
 <p>See <a class="reference internal" href="design.html#task-hashing"><span class="std std-doc">Task hashing</span></a> for more.</p>
-</section>
-</section>
-</section>
+</div>
+</div>
+</div>
 
         </article>
       </div>

@@ -2,8 +2,7 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Visualization" href="visualization.html" /><link rel="prev" title="FAQ" href="FAQ.html" />
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Visualization" href="visualization.html" /><link rel="prev" title="FAQ" href="FAQ.html" />
 
     <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
         <title>Developer guide - redun</title>
@@ -217,9 +216,9 @@
           </label>
         </div>
         <article role="main">
-          <section id="developer-guide">
+          <div class="section" id="developer-guide">
 <h1>Developer guide<a class="headerlink" href="#developer-guide" title="Permalink to this heading">#</a></h1>
-<section id="development-installation">
+<div class="section" id="development-installation">
 <h2>Development installation<a class="headerlink" href="#development-installation" title="Permalink to this heading">#</a></h2>
 <p>If you have postgres available, (perhaps with <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">postgresql</span></code> on macOS), you can prepare
 an editable installation and run the tests:</p>
@@ -234,20 +233,20 @@ make lint
 make isort
 </pre></div>
 </div>
-</section>
-<section id="release">
+</div>
+<div class="section" id="release">
 <h2>Release<a class="headerlink" href="#release" title="Permalink to this heading">#</a></h2>
 <p>Redun releases are done via the <code class="docutils literal notranslate"><span class="pre">redun-release-auto</span></code> <a class="reference external" href="https://us-west-2.console.aws.amazon.com/codesuite/codebuild/projects/redun-release-auto/">codebuild pipeline</a>.</p>
-<section id="release-steps">
+<div class="section" id="release-steps">
 <h3>Release Steps<a class="headerlink" href="#release-steps" title="Permalink to this heading">#</a></h3>
 <ol class="arabic simple">
 <li><p>Prepare a release branch and make a PR from this branch with an updated <a class="reference external" href="https://github.com/insitro/redun/blob/db17e39a2efaf9b3be466c60bdfecbe6ce4ea054/redun/__init__.py#L14"><code class="docutils literal notranslate"><span class="pre">__version__</span></code></a> and <a class="reference external" href="https://github.com/insitro/redun/blob/master/docs/source/CHANGELOG.rst"><code class="docutils literal notranslate"><span class="pre">CHANGELOG</span></code></a>
 e.g. https://github.com/insitro/redun/pull/107. Use <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">release_notes.py</span></code></span> script to generate the release notes (see that script for usage).</p></li>
 <li><p>Merge the release branch to both branches <code class="docutils literal notranslate"><span class="pre">main</span></code> and <code class="docutils literal notranslate"><span class="pre">insitro-private</span></code>. The codebuild pipeline will trigger automatically based on the latter branch. If the version has been updated, it will initiate the release process. If the CHANGELOG is not updated to reflect the new version, the codebuild will terminate without releasing.</p></li>
 </ol>
-</section>
-</section>
-</section>
+</div>
+</div>
+</div>
 
         </article>
       </div>
