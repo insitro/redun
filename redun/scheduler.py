@@ -757,7 +757,9 @@ class Scheduler:
         # Tracking for expression cycles. We store pending expressions by their parent_job
         # because the parent_job's lifetime corresponds to the expression's lifetime.
         # This makes for straightforward deallocation.
-        self._pending_expr: Dict[Optional[Job], Dict[Expression, Promise]] = defaultdict(dict)
+        self._pending_expr: Dict[
+            Optional[Job], Dict[str, Tuple[Promise, Expression]]
+        ] = defaultdict(dict)
 
         # Tracking for Common Subexpression Elimination (CSE) for pending Jobs.
         self._pending_jobs: Dict[Optional[str], Job] = {}
@@ -1075,10 +1077,28 @@ class Scheduler:
 
         Returns a Promise that will resolve/reject when the evaluation is complete.
         """
-        # Detect cycles.
-        pending_promise = self._pending_expr[parent_job].get(expr)
-        if pending_promise:
-            return pending_promise
+        # Detect expression cycles. Specifically, we look for previous expressions
+        # being evaluated within the same parent_job. If we find one, we can
+        # reuse its Promise and then copy over the evaluation bookkeeping
+        # (call_hash, _upstreams) after its completion.
+        # Note: We use `expr.get_hash()` to compensate for an Expression serialization
+        # issue discussed in https://github.com/insitro/redun-private/pull/191
+        promise_expr = self._pending_expr[parent_job].get(expr.get_hash())
+        if promise_expr:
+            pending_promise, expr2 = promise_expr
+
+            def callback(result):
+                # Copy the evaluation bookkeeping from the completed expression `expr2`
+                # to our detected duplicate expression `expr`.
+                if isinstance(expr2, TaskExpression):
+                    expr.call_hash = expr2.call_hash
+                elif isinstance(expr2, SimpleExpression):
+                    expr._upstreams = expr2._upstreams
+                else:
+                    raise AssertionError(f"Unexpected expression: {expr2}")
+                return result
+
+            return pending_promise.then(callback)
 
         if isinstance(expr, SchedulerExpression):
             task = self.task_registry.get(expr.task_name)
@@ -1142,7 +1162,7 @@ class Scheduler:
             raise NotImplementedError("Unknown expression: {}".format(expr))
 
         # Recording pending expressions.
-        self._pending_expr[parent_job][expr] = promise
+        self._pending_expr[parent_job][expr.get_hash()] = (promise, expr)
         return promise
 
     def _is_job_within_limits(self, job_limits: dict) -> bool:

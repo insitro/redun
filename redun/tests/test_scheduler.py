@@ -1601,6 +1601,56 @@ def test_cycle_expression() -> None:
     assert calls == ["id"]
 
 
+def test_cycle_expression_cache(scheduler: Scheduler, session: Session) -> None:
+    """
+    Detecting expression cycles should work with cached expressions.
+    """
+
+    @task
+    def task1():
+        return 10
+
+    @task
+    def add(x, y):
+        return x + y
+
+    @task
+    def main():
+        x = task1()
+
+        # Use x twice so that we have a dimond in the Expression graph.
+        return {
+            "a": add(x, 1),
+            "b": add(x, 2),
+        }
+
+    original_collapse = Job.collapse
+
+    def collapse(self, other_job):
+        nonlocal calls
+        calls += 1
+        return original_collapse(self, other_job)
+
+    calls = 0
+    with patch.object(Job, "collapse", collapse):
+        assert scheduler.run(main()) == {"a": 11, "b": 12}
+
+    # We should not create extra Jobs needing collapsing.
+    assert calls == 0
+
+    # Update a task in the workflow.
+    @task(version="1")  # type: ignore[no-redef]
+    def add(x, y):
+        return x + y
+
+    # Even when using an Expression from the cache, we should avoid needing to use Job collapsing.
+    calls = 0
+    with patch.object(Job, "collapse", collapse):
+        assert scheduler.run(main()) == {"a": 11, "b": 12}
+
+    assert calls == 0
+
+
 def test_extend_run(scheduler: Scheduler, session: Session) -> None:
     """
     Scheduler should support extending an Execution.

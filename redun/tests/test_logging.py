@@ -57,15 +57,19 @@ def test_record_multicall(scheduler: Scheduler) -> None:
     not apply a distinct to call_node.children or call_node.parents.
     """
 
-    @task()
-    def task1():
-        return 10
+    @task
+    def id(x):
+        return x
 
-    @task()
+    @task
+    def task1(x):
+        return x
+
+    @task
     def workflow():
         return [
-            task1(),
-            task1(),
+            task1(10),
+            task1(id(10)),
         ]
 
     scheduler.run(workflow())
@@ -78,9 +82,9 @@ def test_record_multicall(scheduler: Scheduler) -> None:
     call_node = jobs[0].call_node
     assert call_node.task.name == "workflow"
 
-    # We should have two child CallNodes, even though its the same CallNode.
-    assert len(call_node.children) == 2
-    assert len(set(call_node.children)) == 1
+    # We should have three child CallNodes, even though two are the same CallNode.
+    assert len(call_node.children) == 3
+    assert len(set(call_node.children)) == 2
 
     child_node = call_node.children[0]
     assert len(child_node.parents) == 2
