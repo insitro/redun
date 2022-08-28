@@ -759,7 +759,7 @@ class AWSBatchExecutor(Executor):
         self.default_task_options: Dict[str, Any] = {
             "vcpus": config.getint("vcpus", fallback=1),
             "gpus": config.getint("gpus", fallback=0),
-            "memory": config.getint("memory", fallback=4),
+            "memory": config.getfloat("memory", fallback=4),
             "shared_memory": config.getint("shared_memory", fallback=None),
             "retries": config.getint("retries", fallback=1),
             "role": config.get("role"),

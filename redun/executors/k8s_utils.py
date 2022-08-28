@@ -47,8 +47,8 @@ class K8SClient:
         """
         self.load_config()
         version_info = client.VersionApi().get_code()
-        major = int(version_info.major)
-        minor = int(version_info.minor)
+        major = int(version_info.major.replace("+", ""))
+        minor = int(version_info.minor.replace("+", ""))
         return major, minor
 
     @property

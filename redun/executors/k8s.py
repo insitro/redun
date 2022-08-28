@@ -393,7 +393,7 @@ class K8SExecutor(Executor):
         # Default task options.
         self.default_task_options = {
             "vcpus": config.getint("vcpus", 1),
-            "memory": config.getint("memory", 4),
+            "memory": config.getfloat("memory", 4),
             "retries": config.getint("retries", 1),
             "service_account_name": config.get("service_account_name", "default"),
             "job_name_prefix": config.get("job_name_prefix", k8s_utils.DEFAULT_JOB_PREFIX),
@@ -998,10 +998,10 @@ class K8SExecutor(Executor):
 
         self.log(
             "submit {array_size} redun job(s) as {job_type} {k8s_job_id}:\n"
-            "  array_job_id    = {array_job_id}\n"
-            "  array_job_name  = {job_name}\n"
-            "  array_size      = {array_size}\n"
-            "  scratch_path    = {job_dir}".format(
+            "  array_job_id   = {array_job_id}\n"
+            "  array_job_name = {job_name}\n"
+            "  array_size     = {array_size}\n"
+            "  scratch_path   = {job_dir}".format(
                 array_job_id=array_job_id,
                 job_type=job_type,
                 array_size=array_size,
@@ -1057,9 +1057,9 @@ class K8SExecutor(Executor):
         job_name = k8s_resp.metadata.name
         self.log(
             "submit redun job {redun_job} as {job_type} {k8s_job_id}:\n"
-            "  job_id          = {k8s_job_id}\n"
-            "  job_name        = {job_name}\n"
-            "  scratch_path    = {job_dir}".format(
+            "  job_id       = {k8s_job_id}\n"
+            "  job_name     = {job_name}\n"
+            "  scratch_path = {job_dir}".format(
                 redun_job=job.id,
                 job_type=job_type,
                 k8s_job_id=k8s_job_id,
