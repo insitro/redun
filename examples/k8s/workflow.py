@@ -8,21 +8,6 @@ redun_namespace = "redun.examples.k8s"
 
 
 @task(executor="k8s")
-def waste_cpu(max_i=1000, max_j=1000):
-    """Script that wastes cpu (to test container CPU limits)"""
-    for j in range(max_i):
-        for i in range(max_j):
-            a = 5
-            a += 1
-
-
-@task(executor="k8s", memory=.5)
-def inc(x: int) -> int:
-    #raise ValueError("BOOM")
-    return x + 1
-
-
-@task(executor="k8s")
 def boom(message: str) -> None:
     raise ValueError(message)
 
@@ -83,10 +68,9 @@ def main(n: int = 10):
     """Main entrypoint for all tasks and scripts"""
     return [
         "main",
-        waste_cpu(1000, 1000),
         script_command("true"),
-        task_sleep(60),
-        script_sleep(60),
+        task_sleep(1),
+        script_sleep(10),
         task_io(),
         script_inside_task(),
         # The remainder of tasks abort redun oneshot inside the container.
