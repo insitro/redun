@@ -256,14 +256,16 @@ class Task(Value, Generic[Func]):
                 )
 
         if self.namespace:
-            if not re.match("^[A-Za-z_][A-Za-z_0-9.]+$", self.namespace):
+            if not re.match("^[A-Za-z_][A-Za-z_0-9.]*$", self.namespace):
                 raise ValueError(
-                    "Task namespace must use only alphanumeric characters, "
-                    "underscore '_', and dot '.', and may not start with a dot."
+                    f"Task namespace must use only alphanumeric characters, "
+                    f"underscore '_', and dot '.', and may not start with a dot: {self.namespace}"
                 )
 
-        if not re.match("^[A-Za-z_][A-Za-z_0-9]+$", self.name):
-            raise ValueError("Task name must use only alphanumeric characters and underscore '_'.")
+        if not re.match("^[A-Za-z_][A-Za-z_0-9]*$", self.name):
+            raise ValueError(
+                f"Task name must use only alphanumeric characters and underscore '_': {self.name}"
+            )
 
         # Validate nout.
         if self.nout is not None:

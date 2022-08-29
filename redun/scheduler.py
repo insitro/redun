@@ -842,6 +842,7 @@ class Scheduler:
         self._pending_expr.clear()
         self._pending_jobs.clear()
         self._jobs.clear()
+        self._finalized_jobs.clear()
         result = self.evaluate(expr, parent_job=parent_job)
         self.process_events(result)
 
