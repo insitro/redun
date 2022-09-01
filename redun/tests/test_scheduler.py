@@ -1,6 +1,7 @@
+import dataclasses
 import os
 from traceback import FrameSummary
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 from unittest.mock import Mock, patch
 
 import pytest
@@ -28,6 +29,12 @@ from redun.task import PartialTask, SchedulerTask
 from redun.tests.utils import assert_match_lines, use_tempdir
 from redun.utils import map_nested_value
 from redun.value import Value, get_type_registry
+
+
+@dataclasses.dataclass
+class Node:
+    value: str
+    next_: Optional["Node"]
 
 
 def test_simple(scheduler: Scheduler) -> None:
@@ -407,6 +414,21 @@ def test_nested_results(scheduler: Scheduler) -> None:
 
     result = scheduler.run(task2())
     assert result == [10]
+
+
+def test_nested_results2(scheduler: Scheduler) -> None:
+    @task()
+    def to_str(x: int) -> str:
+        return str(x)
+
+    def create_linked_list(y: List[int]) -> Optional[Node]:
+        if len(y) > 1:
+            return Node(value=to_str(y[0]), next_=create_linked_list(y[1:]))
+        else:
+            return Node(to_str(y[0]), next_=None) if y else None
+
+    assert scheduler.run(create_linked_list([1])) == Node("1", None)
+    assert scheduler.run(create_linked_list([1, 2])) == Node("1", Node("2", None))
 
 
 def test_higher_order(scheduler: Scheduler) -> None:

@@ -1,3 +1,4 @@
+import dataclasses
 import inspect
 import io
 import itertools
@@ -144,6 +145,13 @@ def with_pickle_preview(raise_error: bool = False) -> Iterator[None]:
     _local.num_pickle_preview_active -= 1
 
 
+def is_dataclass(val: Any) -> bool:
+    if (sys.version_info.major, sys.version_info.minor) == (3, 6):
+        return dataclasses.is_dataclass(type(val))
+    else:
+        return dataclasses.is_dataclass(val)
+
+
 def iter_nested_value_children(value: Any) -> Iterable[Tuple[bool, Any]]:
     """
     Helper function that iterates through the children of a possibly nested value.
@@ -162,6 +170,10 @@ def iter_nested_value_children(value: Any) -> Iterable[Tuple[bool, Any]]:
         for key in value.keys():
             yield False, key
         for val in value.values():
+            yield False, val
+
+    elif is_dataclass(value):
+        for val in value.__dict__.values():
             yield False, val
 
     else:
@@ -205,6 +217,11 @@ def map_nested_value(func: Callable, value: Any) -> Any:
         return {
             map_nested_value(func, key): map_nested_value(func, val) for key, val in value.items()
         }
+
+    elif is_dataclass(value):
+        return value_type(
+            **{key: map_nested_value(func, val) for key, val in value.__dict__.items()}
+        )
 
     else:
         return func(value)

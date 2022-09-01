@@ -1,4 +1,6 @@
 import os
+import platform
+
 from setuptools import setup, find_packages
 
 REQUIRE_POSTGRES = os.getenv("REQUIRE_POSTGRES") == "1"
@@ -9,7 +11,7 @@ requirements = [
     # a solution faster, since aiobotocore currently requires pinned dependencies of
     # boto3 and awscli.
     "aiobotocore[boto3,awscli]>=2.0.1",
-    "aiohttp>=3.7.4",
+    "aiohttp>=3.7.4,<4",
     "alembic>=1.4",
     "boto3>=1.16.63",
     "botocore>=1.22.8",
@@ -21,12 +23,17 @@ requirements = [
     # packages needed to run in the glue environment.
 ]
 
+python_36_backports = ["dataclasses>=0.8", "types-dataclasses>=0.6.6"]
+
 extras = {"glue": ["pandas", "pyarrow", "pyspark"], "viz": "pygraphviz"}
 
 if REQUIRE_POSTGRES:
     requirements.append(PSYCOPG2_VERSION)
 else:
     extras["postgres"] = [PSYCOPG2_VERSION]
+
+if "3.6" in platform.python_version():
+    requirements.append(python_36_backports)
 
 
 def get_version() -> str:
