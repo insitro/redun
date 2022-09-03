@@ -94,7 +94,6 @@ def test_map_nested_value() -> None:
         test_namedtuple,
         test_defaultdict,
         test_dataclass,
-        Foo,
     ]
 
     assert map_nested_value(func, value) == [
@@ -105,7 +104,6 @@ def test_map_nested_value() -> None:
         my_namedtuple(a="1a"),
         "defaultdict(<class 'int'>, {'a': 0})a",
         Foo(a="1a", b={"ca": "2a"}),
-        "<class 'redun.tests.test_utils.test_map_nested_value.<locals>.Foo'>a",
     ]
 
 

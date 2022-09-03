@@ -145,6 +145,13 @@ def with_pickle_preview(raise_error: bool = False) -> Iterator[None]:
     _local.num_pickle_preview_active -= 1
 
 
+def is_dataclass(val: Any) -> bool:
+    if (sys.version_info.major, sys.version_info.minor) == (3, 6):
+        return dataclasses.is_dataclass(type(val))
+    else:
+        return dataclasses.is_dataclass(val)
+
+
 def iter_nested_value_children(value: Any) -> Iterable[Tuple[bool, Any]]:
     """
     Helper function that iterates through the children of a possibly nested value.
@@ -165,7 +172,7 @@ def iter_nested_value_children(value: Any) -> Iterable[Tuple[bool, Any]]:
         for val in value.values():
             yield False, val
 
-    elif dataclasses.is_dataclass(value_type):
+    elif is_dataclass(value):
         for val in value.__dict__.values():
             yield False, val
 
@@ -201,7 +208,7 @@ def map_nested_value(func: Callable, value: Any) -> Any:
 
     elif isinstance(value, tuple) and hasattr(value, "_fields"):
         # Namedtuple.
-        return value_type(*[map_nested_value(func, item) for item in value])
+        return type(value)(*[map_nested_value(func, item) for item in value])
 
     elif value_type == set:
         return {map_nested_value(func, item) for item in value}
@@ -211,7 +218,7 @@ def map_nested_value(func: Callable, value: Any) -> Any:
             map_nested_value(func, key): map_nested_value(func, val) for key, val in value.items()
         }
 
-    elif dataclasses.is_dataclass(value_type):
+    elif is_dataclass(value):
         return value_type(
             **{key: map_nested_value(func, val) for key, val in value.__dict__.items()}
         )
