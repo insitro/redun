@@ -191,6 +191,15 @@ def get_or_create_job_definition(
 
     else:
         # Multi-node job type
+        # for multi-node jobs, increase ulimit for number of open file descriptors to
+        # allow for large number of open socket connections
+        container_props["ulimits"] = [
+            {
+                "name": "nofile",
+                "softLimit": 65535,
+                "hardLimit": 65535,
+            }
+        ]
         node_properties = {
             "mainNode": 0,
             "numNodes": num_nodes,

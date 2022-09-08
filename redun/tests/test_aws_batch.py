@@ -288,7 +288,13 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
                         "mountPoints": [],
                         "volumes": [],
                         "resourceRequirements": [],
-                        "ulimits": [],
+                        "ulimits": [
+                            {
+                                "name": "nofile",
+                                "softLimit": 65535,
+                                "hardLimit": 65535,
+                            }
+                        ],
                         "privileged": False,
                     },
                     "targetNodes": "0",
@@ -304,7 +310,13 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
                         "mountPoints": [],
                         "volumes": [],
                         "resourceRequirements": [],
-                        "ulimits": [],
+                        "ulimits": [
+                            {
+                                "name": "nofile",
+                                "softLimit": 65535,
+                                "hardLimit": 65535,
+                            }
+                        ],
                         "privileged": False,
                     },
                     "targetNodes": "1:",
