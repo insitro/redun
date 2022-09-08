@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.16
+September 08, 2022
+
+* `#194` - Increase default `ulimits` for `nofile` (number of open file descriptors) for multi-node aws batch jobs
+* `#193` - handle dataclass types correctly
+* `#189` - Support nested iteration and mapping for dataclasses
+* `#192` - A few small bug fixes
+* `#191` - DE-6030 Fix expression cycle detection for cached expressions
+* `#188` - DE-5961 Allow functions decoratored by @task and @scheduler_task to processed by autodoc
+
 ## 0.8.15
 August 18, 2022
 
