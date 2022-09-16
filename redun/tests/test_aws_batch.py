@@ -2,6 +2,7 @@ import json
 import os
 import pickle
 import time
+import unittest.mock
 import uuid
 from typing import cast
 from unittest.mock import Mock, patch
@@ -26,6 +27,7 @@ from redun.executors.aws_batch import (
     get_batch_job_name,
     get_hash_from_job_name,
     get_job_definition,
+    get_job_log_stream,
     get_or_create_job_definition,
     iter_batch_job_log_lines,
     iter_batch_job_logs,
@@ -2238,3 +2240,76 @@ def other_task(x, y):
             )
             error, _ = pickle.loads(cast(bytes, error_file.read("rb")))
             assert isinstance(error, ZeroDivisionError)
+
+
+@patch("redun.executors.aws_batch.aws_describe_jobs")
+def test_get_log_stream(aws_describe_jobs_mock) -> None:
+    """Test the log stream fetching utility, which handles the difference in behavior for
+    multi-node."""
+
+    aws_region = "fake_region"
+
+    # Heavily pruned `JobDetail` messages
+    single_node_status = {
+        "jobArn": "arn:aws:batch:us-west-2:298579124006:job/89ee416c",
+        "jobName": "redun-testing-c813121061b56b5934d5db78730ada2e2ae11e44",
+        "jobId": "single_node_id",
+        "status": "FAILED",
+        "container": {
+            "logStreamName": "log_stream_arn",
+        },
+        "nodeDetails": {"nodeIndex": 0, "isMainNode": True},
+    }
+
+    # This is the overall message for a multi-node job. There is no log stream, but there is
+    # a `nodeProperties` field.
+    multi_node_status = {
+        "jobArn": "arn:aws:batch:us-west-2:298579124006:job/89ee416c-1ab1-457c-b728-1f10318f61bb",
+        "jobName": "redun-testing-c813121061b56b5934d5db78730ada2e2ae11e44",
+        "jobId": "multi_node_id",
+        "attempts": [
+            {
+                "container": {
+                    "exitCode": 1,
+                    "logStreamName": "cannot_be_returned",
+                    "networkInterfaces": [],
+                },
+                "startedAt": 1663274825002,
+                "stoppedAt": 1663274840060,
+                "statusReason": "Essential container in task exited",
+            }
+        ],
+        "createdAt": 1663274377312,
+        "retryStrategy": {"attempts": 2, "evaluateOnExit": []},
+        "startedAt": 1663274957408,
+        "parameters": {},
+        "nodeProperties": {
+            "numNodes": 3,
+            "mainNode": 0,
+            "nodeRangeProperties": [
+                {
+                    "targetNodes": "0",
+                    "container": {
+                        "image": "image_arn",
+                    },
+                },
+                {
+                    "targetNodes": "1:",
+                    "container": {
+                        "image": "image_arn",
+                    },
+                },
+            ],
+        },
+    }
+
+    # No query is required for single node
+    aws_describe_jobs_mock.return_value = None
+    assert get_job_log_stream(single_node_status, aws_region) == "log_stream_arn"
+
+    # Multi node will query again and fetch from there.
+    aws_describe_jobs_mock.return_value = iter([single_node_status])
+    assert get_job_log_stream(multi_node_status, aws_region) == "log_stream_arn"
+    assert aws_describe_jobs_mock.call_args == unittest.mock.call(
+        ["multi_node_id#0"], aws_region=aws_region
+    )

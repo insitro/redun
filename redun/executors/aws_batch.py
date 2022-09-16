@@ -391,10 +391,6 @@ def batch_submit(
         **batch_job_args,
     )
 
-    # For multi-node jobs, the rank 0 job id is sufficient for monitoring.
-    if num_nodes is not None:
-        batch_run["jobId"] = f"{batch_run['jobId']}#0"
-
     return batch_run
 
 
@@ -618,6 +614,7 @@ def aws_describe_jobs(
     for i in range(0, len(job_ids), chunk_size):
         chunk_job_ids = job_ids[i : i + chunk_size]
         response = batch_client.describe_jobs(jobs=chunk_job_ids)
+
         for job in response["jobs"]:
             yield job
 
@@ -656,6 +653,28 @@ def iter_batch_job_status(
             break
 
 
+def get_job_log_stream(job: Optional[dict], aws_region: str) -> Optional[str]:
+    """Extract the log stream from a `JobDetail` status dictionary. For non-multi-node jobs,
+    (i.e., single node and array jobs), this is simply a field in the detail dictionary. But for
+    multi-node jobs, this requires another query to get the log stream for the main node."""
+    if job and "nodeProperties" in job:
+        # There isn't a log stream on the main job detail object. However, we can find the right
+        # node and query it:
+        main_node = job["nodeProperties"]["mainNode"]
+        job_id = job["jobId"]
+        # The docs indicate we can rely on this format for getting the per-worker jobs ids:
+        # `jobId#worker_id`.
+        jobs: Iterator[Optional[Dict[Any, Any]]] = aws_describe_jobs(
+            [f"{job_id}#{main_node}"], aws_region=aws_region
+        )
+        job = next(jobs, None)
+    if not job:
+        # Job is no longer present in AWS API. Return no logs.
+        return None
+
+    return job.get("container", {}).get("logStreamName")
+
+
 def format_log_stream_event(event: dict) -> str:
     """
     Format a logStream event as a line.
@@ -677,10 +696,8 @@ def iter_batch_job_logs(
     """
     # Get job's log stream.
     job = next(aws_describe_jobs([job_id], aws_region=aws_region), None)
-    if not job:
-        # Job is no longer present in AWS API. Return no logs.
-        return
-    log_stream = job.get("container", {}).get("logStreamName")
+
+    log_stream = get_job_log_stream(job, aws_region)
     if not log_stream:
         # No log stream is present. Return no logs.
         return
@@ -993,7 +1010,7 @@ class AWSBatchExecutor(Executor):
         redun_job = self.pending_batch_jobs.pop(job["jobId"])
         job_tags = []
         job_tags.append(("aws_batch_job", job["jobId"]))
-        log_stream = job.get("container", {}).get("logStreamName")
+        log_stream = get_job_log_stream(job, aws_region=self.aws_region)
         if log_stream:
             job_tags.append(("aws_log_stream", log_stream))
 
@@ -1216,7 +1233,7 @@ class AWSBatchExecutor(Executor):
             "  array_job_name  = {job_name}\n"
             "  array_size      = {array_size}\n"
             "  s3_scratch_path = {job_dir}\n"
-            "  retry_attempts  = {retries}\n".format(
+            "  submit_retry_attempts  = {retries}\n".format(
                 array_job_id=array_job_id,
                 array_size=array_size,
                 job_type=job_type,
@@ -1273,7 +1290,7 @@ class AWSBatchExecutor(Executor):
             "  job_id          = {batch_job}\n"
             "  job_name        = {job_name}\n"
             "  s3_scratch_path = {job_dir}\n"
-            "  retry_attempts  = {retries}\n".format(
+            "  submit_retry_attempts  = {retries}\n".format(
                 redun_job=job.id,
                 job_type=job_type,
                 batch_job=batch_resp["jobId"],
