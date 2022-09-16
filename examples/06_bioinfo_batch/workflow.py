@@ -298,7 +298,7 @@ def mark_dups(bam: File, output_path: str) -> Dict[str, File]:
             --java-options "-Xmx18G" \
             MarkDuplicates \
             --INPUT sample.bam \
-            --OUTPUT mark_dup.bam \
+            --OUTPUT markdup.bam \
             --METRICS_FILE markdup.metrics.txt \
             --VALIDATION_STRINGENCY SILENT \
             --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
@@ -311,7 +311,7 @@ def mark_dups(bam: File, output_path: str) -> Dict[str, File]:
             bam.stage("sample.bam"),
         ],
         outputs={
-            "bam": File(f"{output_path}.bam").stage("sample.bam"),
+            "bam": File(f"{output_path}.bam").stage("markdup.bam"),
             "dup_metrics": File(f"{output_path}.markdup.metrics.txt").stage("markdup.metrics.txt"),
         },
     )
