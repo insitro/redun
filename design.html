@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Tasks" href="tasks.html" /><link rel="prev" title="Install" href="index.html" />
 
-    <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
+    <meta name="generator" content="sphinx-5.1.1, furo 2022.09.15"/>
         <title>Design overview - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=9ec31e2665bf879c1d47d93a8ec4893870ee1e45" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -773,7 +773,7 @@ Hello, World!
 <p>Values is the general term redun uses to refer to task arguments and results. Below, we describe some of the special treatments redun uses to enable expressive value dataflow.</p>
 <div class="section" id="nested-values">
 <h3>Nested values<a class="headerlink" href="#nested-values" title="Permalink to this heading">#</a></h3>
-<p>It is common in workflow frameworks to allow a task to have multiple outputs. This is useful when different outputs need to be routed to their own downstream tasks. redun aims to be pythonic, and in Python functions return one value. However, return values can be container types such as lists, tuples, dict, etc. In that spirit, redun gives special treatment to the built-in Python containers (list, tuple, dict, namedtuple, set) in order to provide features like multiple outputs and inputs. In redun, we call a value built up from possibly multiple nested container types, a <em>nested value</em>. Take the following code for example:</p>
+<p>It is common in workflow frameworks to allow a task to have multiple outputs. This is useful when different outputs need to be routed to their own downstream tasks. redun aims to be pythonic, and in Python functions return one value. However, return values can be container types such as lists, tuples, dict, etc. In that spirit, redun gives special treatment to the built-in Python containers (list, tuple, dict, namedtuple, set, dataclass) in order to provide features like multiple outputs and inputs. In redun, we call a value built up from possibly multiple nested container types, a <em>nested value</em>. Take the following code for example:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">run_calculation</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
     <span class="c1"># Perform calculation...</span>
@@ -1750,7 +1750,7 @@ the cost of the extra powers we have.</p>
 <li><p>Data engineering workflow languages: <a class="reference external" href="https://airflow.apache.org/">Airflow</a>, <a class="reference external" href="https://github.com/spotify/luigi">Luigi</a>, <a class="reference external" href="https://www.prefect.io/">Prefect</a></p>
 <ul>
 <li><p>These workflow languages have had a more general focus beyond interacting with files. They are often used for ETLs (extract-transform-load) where data is exchanged with databases or web services. redun does not assume all dataflow is through files and so can used for interacting with databases and APIs as well.</p></li>
-<li><p>Airflow v2, Prefect, and <a class="reference external" href="https://docs.dask.org/en/latest/delayed.html">Dask delayed</a> have adopted defining tasks as decorated Python functions, which when invoked return a Promise / Future / Delayed that can be passed as an argument to another task call. The workflow engine can then inspect the presence of these lazy objects in task call arguments in order to infer the edges of the workflow DAG. This allows very natural looking workflow definitions. redun uses the same approach but returns Expressions instead, which differ from other lazy values in several ways. First, the evaluation of an Expression can change depending on what larger Expression it belongs to, such <code class="docutils literal notranslate"><span class="pre">cond()</span></code> or <code class="docutils literal notranslate"><span class="pre">catch()</span></code>. Second, Expressions are free to return more Expressions for evaluation. Third, redun will evaluate Expressions inside of Nested Values (list, dict, set, tuple, NamedTuple) by default.</p></li>
+<li><p>Airflow v2, Prefect, and <a class="reference external" href="https://docs.dask.org/en/latest/delayed.html">Dask delayed</a> have adopted defining tasks as decorated Python functions, which when invoked return a Promise / Future / Delayed that can be passed as an argument to another task call. The workflow engine can then inspect the presence of these lazy objects in task call arguments in order to infer the edges of the workflow DAG. This allows very natural looking workflow definitions. redun uses the same approach but returns Expressions instead, which differ from other lazy values in several ways. First, the evaluation of an Expression can change depending on what larger Expression it belongs to, such as <code class="docutils literal notranslate"><span class="pre">cond()</span></code> or <code class="docutils literal notranslate"><span class="pre">catch()</span></code>. Second, Expressions are free to return more Expressions for evaluation. Third, redun will evaluate Expressions inside of Nested Values (list, dict, set, tuple, namedtuple, dataclass) by default.</p></li>
 </ul>
 </li>
 <li><p>Expression hashing: <a class="reference external" href="https://www.unisonweb.org/">Unison</a>, <a class="reference external" href="https://github.com/StanfordSNR/gg">gg</a></p>
@@ -1818,10 +1818,10 @@ the cost of the extra powers we have.</p>
                 </div>
                 <div class="title">Tasks</div>
               </div>
-              <svg><use href="#svg-arrow-right"></use></svg>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
           <a class="prev-page" href="index.html">
-              <svg><use href="#svg-arrow-right"></use></svg>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
@@ -1857,7 +1857,7 @@ the cost of the extra powers we have.</p>
       <div class="toc-sticky toc-scroll">
         <div class="toc-title-container">
           <span class="toc-title">
-            Contents
+            On this page
           </span>
         </div>
         <div class="toc-tree-container">

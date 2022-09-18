@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="prev" title="redun.backends.db package" href="redun.backends.db.html" />
 
-    <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
+    <meta name="generator" content="sphinx-5.1.1, furo 2022.09.15"/>
         <title>redun.executors package - redun</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=9ec31e2665bf879c1d47d93a8ec4893870ee1e45" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -360,6 +360,14 @@ on Batch.</p>
 <dd><p>Returns a job definition with the supplied name or empty dict if no matches are found..</p>
 <p>The returned job definition will be the most recent, active revision if there are more than one
 returned from the API.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.executors.aws_batch.get_job_log_stream">
+<span class="sig-prename descclassname"><span class="pre">redun.executors.aws_batch.</span></span><span class="sig-name descname"><span class="pre">get_job_log_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aws_region</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.executors.aws_batch.get_job_log_stream" title="Permalink to this definition">#</a></dt>
+<dd><p>Extract the log stream from a <cite>JobDetail</cite> status dictionary. For non-multi-node jobs,
+(i.e., single node and array jobs), this is simply a field in the detail dictionary. But for
+multi-node jobs, this requires another query to get the log stream for the main node.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1063,7 +1071,7 @@ If False, None is returned for unknown executor name.</p></li>
         <div class="related-pages">
           
           <a class="prev-page" href="redun.backends.db.html">
-              <svg><use href="#svg-arrow-right"></use></svg>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
@@ -1099,7 +1107,7 @@ If False, None is returned for unknown executor name.</p></li>
       <div class="toc-sticky toc-scroll">
         <div class="toc-title-container">
           <span class="toc-title">
-            Contents
+            On this page
           </span>
         </div>
         <div class="toc-tree-container">
