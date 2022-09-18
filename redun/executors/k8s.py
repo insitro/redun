@@ -87,8 +87,6 @@ def k8s_submit(
     else:
         k8s_job.spec.backoff_limit = retries
     k8s_job.spec.restart_policy = "OnFailure"
-    # if batch_tags:
-    #    batch_job_args["tags"] = batch_tags
 
     return k8s_utils.create_job(k8s_client, k8s_job, namespace=namespace)
 

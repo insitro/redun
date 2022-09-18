@@ -112,6 +112,7 @@ def create_k8s_secret(
         if error.status == 409:
             # Secret already exists, just patch it.
             return k8s_client.core.replace_namespaced_secret(secret_name, namespace, body)
+        raise
 
 
 def create_resources(
@@ -205,13 +206,12 @@ def create_job_object(
         labels = {}
 
     # Instantiate the job object
-    job = client.V1Job(
+    return client.V1Job(
         api_version="batch/v1",
         kind="Job",
         metadata=client.V1ObjectMeta(annotations=annotations, name=name, labels=labels, uid=uid),
         spec=spec,
     )
-    return job
 
 
 def create_namespace(k8s_client: K8SClient, namespace: str) -> None:
@@ -237,8 +237,7 @@ def create_job(k8s_client: K8SClient, job: client.V1Job, namespace: str) -> clie
     except client.exceptions.ApiException as error:
         if error.status == 409 and error.reason == "Conflict":
             # Job already exsists, return it.
-            job = k8s_client.batch.read_namespaced_job(job.metadata.name, namespace=namespace)
-            return job
+            return k8s_client.batch.read_namespaced_job(job.metadata.name, namespace=namespace)
         else:
             logger.error("Error submitting k8s job:", error.body)
             raise
