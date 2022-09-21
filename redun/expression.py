@@ -1,4 +1,5 @@
 import operator
+from itertools import chain
 from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Tuple, TypeVar, Union
 
 from redun.hashing import hash_arguments, hash_bytes, hash_struct
@@ -98,6 +99,17 @@ class ApplyExpression(Expression[Result]):
         self._upstreams = [args, kwargs]
 
 
+def format_arguments(args, kwargs) -> str:
+    """
+    Format Task arguments.
+    """
+    kwargs_items = sorted(kwargs.items())
+    text = ", ".join(
+        chain((repr(arg) for arg in args), (f"{key}={repr(value)}" for key, value in kwargs_items))
+    )
+    return text
+
+
 class TaskExpression(ApplyExpression[Result]):
     """
     Lazy expression for applying a task to arguments.
@@ -118,9 +130,7 @@ class TaskExpression(ApplyExpression[Result]):
         self._length = length
 
     def __repr__(self) -> str:
-        return "TaskExpression('{task_name}', {args}, {kwargs})".format(
-            task_name=self.task_name, args=repr(self.args), kwargs=repr(self.kwargs)
-        )
+        return f"{self.task_name}({format_arguments(self.args, self.kwargs)})"
 
     def _calc_hash(self) -> str:
         registry = get_type_registry()
@@ -167,9 +177,27 @@ class SimpleExpression(ApplyExpression[Result]):
         self.func_name = func_name
 
     def __repr__(self) -> str:
-        return "SimpleExpression('{func_name}', {args}, {kwargs})".format(
-            func_name=self.func_name, args=repr(self.args), kwargs=repr(self.kwargs)
-        )
+        if self.func_name in _operator_name2symbol and len(self.args) == 2:
+            # Binary operator.
+            left, right = self.args
+            return f"({repr(left)} {_operator_name2symbol[self.func_name]} {repr(right)})"
+
+        elif self.func_name == "getitem" and len(self.args) == 2:
+            left, right = self.args
+            return f"{repr(left)}[{repr(right)}]"
+
+        elif self.func_name == "getattr" and len(self.args) == 2:
+            left, right = self.args
+            return f"{repr(left)}.{right}"
+
+        elif self.func_name == "call" and len(self.args) == 3:
+            this, args, kwargs = self.args
+            return f"{repr(this)}({format_arguments(args, kwargs)})"
+
+        else:
+            return "SimpleExpression('{func_name}', {args}, {kwargs})".format(
+                func_name=self.func_name, args=repr(self.args), kwargs=repr(self.kwargs)
+            )
 
     def _calc_hash(self) -> str:
         registry = get_type_registry()
@@ -199,11 +227,6 @@ class SchedulerExpression(TaskExpression[Result]):
     """
     Lazy expression that is evalulated within the scheduler for redun-specific operations.
     """
-
-    def __repr__(self) -> str:
-        return "SchedulerExpression('{task_name}', {args}, {kwargs})".format(
-            task_name=self.task_name, args=repr(self.args), kwargs=repr(self.kwargs)
-        )
 
     def _calc_hash(self) -> str:
         registry = get_type_registry()
@@ -322,6 +345,21 @@ lazy_operators: Dict[Callable, Dict[str, str]] = {
 }
 
 [lazy_operation(**kwargs)(func) for func, kwargs in lazy_operators.items()]
+
+_operator_name2symbol = {
+    "eq": "==",
+    "ne": "!=",
+    "lt": "<",
+    "le": "<=",
+    "gt": ">",
+    "ge": ">=",
+    "add": "+",
+    "sub": "-",
+    "mul": "*",
+    "div": "/",
+    "and": "&",
+    "or": "|",
+}
 
 
 def _lazy_call(self, args=(), kwargs={}):
