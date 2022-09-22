@@ -1,6 +1,6 @@
 from typing import Any, Optional, Tuple, Type
 
-from redun.hashing import hash_struct
+from redun.hashing import hash_kwargs, hash_positional_args, hash_struct
 from redun.value import Value, get_type_registry
 
 
@@ -76,7 +76,9 @@ class HandleInfo:
             return hash_struct(["Handle", self.fullname, "call_hash", self.key, self.call_hash])
         else:
             # Initial state.
-            return hash_struct(["Handle", self.fullname, "init", self.key, self.args, self.kwargs])
+            args_hash = hash_positional_args(get_type_registry(), self.args)
+            kwargs_hash = hash_kwargs(get_type_registry(), self.kwargs)
+            return hash_struct(["Handle", self.fullname, "init", self.key, args_hash, kwargs_hash])
 
     def update_hash(self) -> None:
         self.hash = self.get_hash()
