@@ -21,7 +21,7 @@ setup: venv
 
 .PHONY: test
 test: venv
-	$(WITH_VENV) tox
+	$(WITH_VENV) tox --parallel=auto
 	make test-postgres
 
 
