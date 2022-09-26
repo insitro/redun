@@ -8,8 +8,10 @@ import re
 import sys
 import threading
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from collections.abc import Iterable as IterableABC
 from contextlib import contextmanager
+from functools import lru_cache, wraps
 from pickle import Unpickler
 from pickle import dump as allowed_dump_func
 from pickle import dumps as allowed_dumps_func
@@ -27,6 +29,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 try:
@@ -229,6 +232,82 @@ def trim_string(text: str, max_length: int = 200, ellipsis: str = "...") -> str:
         return text[: max_length - len(ellipsis)] + ellipsis
     else:
         return text
+
+
+def merge_dicts(dicts: List[T]) -> T:
+    """
+    Merge a list of (nested) dicts into a single dict.
+    .. code-block:: python
+        assert merge_dicts([
+            {"a": 1, "b": 2},
+            {"b": 3, "c": 4},
+        ]) == {"a": 1, "b": 3, "c": 4}
+        assert merge_dicts([
+            {"a": {"a1": 1}},
+            {"a": {"a2": 2}}
+        ]) == {"a": {"a1": 1, "a2": 2}}
+    """
+    if len(dicts) == 1:
+        return dicts[0]
+
+    elif any(not isinstance(dct, dict) for dct in dicts):
+        # For non-dicts, last value takes precedence.
+        return dicts[-1]
+
+    else:
+        # Group by keys.
+        key2values = defaultdict(list)
+        for dct in dicts:
+            # At this point, we can safely assume dct has type dict, so use cast.
+            for key, value in cast(dict, dct).items():
+                key2values[key].append(value)
+
+        # Recursively merge values.
+        return cast(T, {key: merge_dicts(values) for key, values in key2values.items()})
+
+
+def json_cache_key(args: tuple, kwargs: dict) -> str:
+    """
+    Returns a cache key for arguments that are JSON compatible.
+    """
+    return json.dumps([args, kwargs], sort_keys=True)
+
+
+class CacheArgs:
+    """
+    Arguments for a cached function.
+    """
+
+    def __init__(self, cache_key, args, kwargs):
+        self.cache_key = cache_key
+        self.args = args
+        self.kwargs = kwargs
+
+    def __hash__(self):
+        """
+        The normal @lru_cache will call this to build a cache key, so we
+        can inject custom cache key (e.g. json_cache_key) here.
+        """
+        return hash(self.cache_key(self.args, self.kwargs))
+
+
+def lru_cache_custom(maxsize: int, cache_key=lambda x: x):
+    """
+    LRU cache with custom cache key.
+    """
+
+    @lru_cache(maxsize=maxsize)
+    def call_func(func: Callable[..., T], args: CacheArgs) -> T:
+        return func(*args.args, **args.kwargs)
+
+    def deco(func):
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            return call_func(func, CacheArgs(cache_key, args, kwargs))
+
+        return wrapped
+
+    return deco
 
 
 def get_func_source(func: Callable) -> str:

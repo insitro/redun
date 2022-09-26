@@ -21,6 +21,7 @@ type = aws_batch
 image = 123.abc.ecr.us-west-2.amazonaws.com/amazonlinux-python3
 queue = queue2
 s3_scratch = s3://example-bucket/redun/
+job_def_extra = {"a_json_key": {"a_json_nested_key": 42}}
 """
 
     config = Config()
@@ -31,6 +32,10 @@ s3_scratch = s3://example-bucket/redun/
     assert config["executors"]["batch"]["queue"] == "queue"
     assert config["executors"]["batch2"]["type"] == "aws_batch"
     assert config["executors"]["batch2"]["queue"] == "queue2"
+    # ensure json property is loaded as text
+    assert config["executors"]["batch2"]["job_def_extra"] == (
+        '{"a_json_key": {"a_json_nested_key": 42}}'
+    )
 
 
 @pytest.fixture

@@ -19,6 +19,7 @@ from redun.utils import (
     get_import_paths,
     iter_nested_value,
     map_nested_value,
+    merge_dicts,
     pickle_dumps,
     pickle_preview,
 )
@@ -107,6 +108,50 @@ def test_map_nested_value() -> None:
         Foo(a="1a", b={"ca": "2a"}),
         "<class 'redun.tests.test_utils.test_map_nested_value.<locals>.Foo'>a",
     ]
+
+
+@pytest.mark.parametrize(
+    "dicts,expected",
+    [
+        # Base cases.
+        ([], {}),
+        ([{}], {}),
+        ([{"a": 1}], {"a": 1}),
+        # Combine keys.
+        (
+            [
+                {"a": 1, "b": 2},
+                {"b": 3, "c": 4},
+            ],
+            {"a": 1, "b": 3, "c": 4},
+        ),
+        (
+            [{"a": 1, "b": 2}, {"b": 3, "c": 4}, {"d": 5}],
+            {"a": 1, "b": 3, "c": 4, "d": 5},
+        ),
+        (
+            [
+                {"a": {"a1": 1}},
+                {"a": {"a2": 2}},
+            ],
+            {"a": {"a1": 1, "a2": 2}},
+        ),
+        # Mix dict vs non-dict.
+        (
+            [
+                {"a": {"b": 1}},
+                {"a": 2},
+                {"a": 3},
+            ],
+            {"a": 3},
+        ),
+    ],
+)
+def test_merge_dicts(dicts, expected) -> None:
+    """
+    Should be able to merge nested dictionaries together.
+    """
+    assert merge_dicts(dicts) == expected
 
 
 def test_import_paths() -> None:
