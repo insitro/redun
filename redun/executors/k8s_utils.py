@@ -248,5 +248,7 @@ def delete_job(k8s_client: K8SClient, name: str, namespace: str) -> Any:
     Deletes an existing k8s job.
     """
     return k8s_client.batch.delete_namespaced_job(
-        name=name, namespace=namespace, body=client.V1DeleteOptions()
+        name=name,
+        namespace=namespace,
+        body=client.V1DeleteOptions(propagation_policy="Background"),
     )
