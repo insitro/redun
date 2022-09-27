@@ -1,7 +1,7 @@
 import csv
 import os
 from collections import defaultdict
-from typing import Callable, List, Optional, Sequence, Tuple, TypeVar
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, TypeVar
 from urllib.parse import urlparse, urlunparse, urljoin
 
 import requests
@@ -182,7 +182,7 @@ def main(
     url_prefix: str = "https://www.python.org",
     out_path: str = "./",
     depth: int = 2,
-):
+) -> Dict[str, File]:
     """
     Scrape a website, compute the word frequency, generate an HTML report.
     """

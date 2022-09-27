@@ -210,11 +210,11 @@ aws s3 cp s3://YOUR_BUCKET/redun/jobs/5a8c87a70457cb3fb6df6481359245d9ca303268/o
 ['task_on_batch',
  b'Linux ip-172-31-138-172.us-west-2.compute.internal 4.14.232-176.381.amzn2.x8'
  b'6_64 #1 SMP Wed May 19 00:31:54 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux\n',
- TaskExpression('redun.examples.aws_batch.task_on_default', (15,), {}),
+ redun.examples.aws_batch.task_on_default(15),
  10]
 ```
 
-You can see how the output is partially evaluated. That is there are some expressions, such as `TaskExpression('redun.examples.aws_batch.task_on_default', (15,), {})`, that will undergo further evaluation by the scheduler.
+You can see how the output is partially evaluated. That is there are some expressions, such as `redun.examples.aws_batch.task_on_default(15)`, that will undergo further evaluation by the scheduler.
 
 ## Code packaging
 

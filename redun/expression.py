@@ -245,9 +245,7 @@ class ValueExpression(Expression[Result]):
         self.value = value
 
     def __repr__(self) -> str:
-        return "ValueExpression({value})".format(
-            value=self.value,
-        )
+        return f"ValueExpression({repr(self.value)})"
 
     def _calc_hash(self) -> str:
         registry = get_type_registry()
@@ -276,6 +274,9 @@ class QuotedExpression(Generic[Result]):
 
     def __init__(self, expr: Result):
         self._expr = expr
+
+    def __repr__(self) -> str:
+        return f"QuotedExpression({repr(self._expr)})"
 
     def eval(self) -> Result:
         """

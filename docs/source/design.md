@@ -158,28 +158,32 @@ Tasks are executed in a lazy and asynchronous manner. When a task is called, it 
 from redun import task
 
 @task()
-def task1(x, y=2):
+def add(x, y=2):
     return x + y
 
-print(task1(10, y=3))
-# TaskExpression('task1', (10,), {'y': 3})
+result = add(10, y=3)
+print(type(result))
+# <class 'redun.expression.TaskExpression'>
+
+print(result)
+# add(10, y=3)
 ```
 
-This expression means, "apply Task 'task1' to arguments `10` and `y=3`". Expressions are evaluated to their concrete values by the redun scheduler:
+This expression means, "apply Task 'add' to arguments `10` and `y=3`". Expressions are evaluated to their concrete values by the redun scheduler:
 
 ```py
 from redun import Scheduler
 
 scheduler = Scheduler()
-print(scheduler.run(task1(10, y=3)))
+print(scheduler.run(add(10, y=3)))
 # 13
 ```
 
 To build up a larger program, these Expression objects can be used as arguments to other Tasks, such as:
 
 ```py
-print(task1(task1(10, y=3)))
-# TaskExpression('task1', (TaskExpression('task1', (10,), {'y': 3}),), {})
+print(add(add(1, 2), add(3, 4)))
+# add(add(1, 2), add(3, 4)) : type TaskExpresion
 ```
 
 This gives us a tree of expressions, and more generally they can be Directed Acyclic Graphs (DAGs).

@@ -26,4 +26,4 @@ Feel free to try other urls and depth of scrapping using the task arguments:
 redun run workflow.py main --url URL --depth DEPTH
 ```
 
-Also feel free to alter and the report template `templates/report.html`. It is passed the task `make_report()` as a `File` argument, so you should have automatic reactivity to changes in the template when rerun the workflow.
+Also feel free to alter the report template `templates/report.html`. It is passed to the task `make_report()` as a `File` argument, so you should have automatic reactivity to changes in the template when rerunning the workflow.
