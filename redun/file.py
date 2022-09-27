@@ -1159,6 +1159,9 @@ class ShardedS3Dataset(Value):
         self._path = value
         self._calc_hash()
 
+    def get_hash(self, data: Optional[bytes] = None) -> str:
+        return self.hash
+
     @property
     def hash(self) -> str:
         if not self._hash:

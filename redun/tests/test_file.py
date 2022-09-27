@@ -578,6 +578,9 @@ def test_sharded_dataset() -> None:
     assert dataset.hash == "3394197d206ea0ef46795131b98f86c52ab9a508"
     assert dataset2.hash == "f7cd6b0188ff900f0ca00ea0b937a91d70a3e67a"
 
+    # Check type registry uses the correct hash function.
+    assert dataset.hash == get_type_registry().get_hash(dataset)
+
     file3.remove()
     assert dataset.is_valid()
     assert not dataset2.is_valid()
