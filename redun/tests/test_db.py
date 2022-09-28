@@ -45,18 +45,6 @@ def test_cache_db() -> None:
     backend.record_value("myvalue") == value_hash1
 
 
-def test_serialized_exceeds_1Gb() -> None:
-    """
-    Test redun raises error with serialized values greater than 1Gb.
-    """
-    backend = RedunBackendDb(db_uri="sqlite:///:memory:")
-    backend.load()
-    large_object = "J" * 1000000000
-
-    with pytest.raises(RedunDatabaseError):
-        backend.record_value(large_object)
-
-
 def test_max_value_size() -> None:
     """
     Test max_value_size config variable changes the max size limit for caching.
