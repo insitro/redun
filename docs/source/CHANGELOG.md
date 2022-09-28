@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.0
+September 26, 2022
+
+* `#205` - Temporarily pin Python 3.10.6 to avoid mypy bug on 3.10.7
+* `#195` - Smarter job def
+* `#173` - Run tox in parallel(up to CPU count)
+* `#202` - Remove PR buildspec, codebuild was made redundant by GH actions
+* `#201` - DE-6221 - Make GH actions match codebuild
+* `#200` - fix-handle-arg-serialization
+* `#199` - implement an easier to read repr for Expressions
+* `#198` - Fix handling of multi-node job statuses and logs
+* `#197` - fix bug with mark_dup staging
+
 ## 0.8.16
 September 08, 2022
 
