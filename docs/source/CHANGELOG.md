@@ -1,8 +1,10 @@
 # Changelog
 
 ## 0.9.0
-September 26, 2022
+September 28, 2022
 
+* `#206` - Add missing get_hash to ShardedS3Dataset
+* `#203` - Update docs to match Expression __repr__ changes
 * `#205` - Temporarily pin Python 3.10.6 to avoid mypy bug on 3.10.7
 * `#195` - Smarter job def
 * `#173` - Run tox in parallel(up to CPU count)
