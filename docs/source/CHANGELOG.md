@@ -1,7 +1,7 @@
 # Changelog
 
-## 0.9.0
-September 28, 2022
+## 0.9.1
+September 30, 2022
 
 * `#206` - Add missing get_hash to ShardedS3Dataset
 * `#203` - Update docs to match Expression __repr__ changes
