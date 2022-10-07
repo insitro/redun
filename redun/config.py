@@ -1,7 +1,35 @@
-from configparser import ConfigParser, SectionProxy
+import os
+from configparser import ConfigParser, ExtendedInterpolation, SectionProxy
 from typing import Any, Dict, Iterable, Optional, Union
 
 from redun.file import File
+
+
+class RedunExtendedInterpolation(ExtendedInterpolation):
+    """
+    When performing variable interpolation fallback to environment variables.
+
+    For example, if the environment variable ROLE is defined, we can reference
+    it in the `redun.ini` file as follows:
+
+    .. code-block:: ini
+        [executors.batch]
+        role = ${ROLE}
+    """
+
+    def before_get(self, parser, section, option, value, defaults):
+        # Fallback to environment variables when interpolating variables.
+        defaults = {
+            **defaults,
+            **os.environ,
+        }
+        return super().before_get(parser, section, option, value, defaults)
+
+
+class RedunConfigParser(ConfigParser):
+    def optionxform(self, optionstr):
+        # Treat option names as case sensitive.
+        return optionstr
 
 
 class Config:
@@ -10,7 +38,7 @@ class Config:
     """
 
     def __init__(self, config_dict: Optional[dict] = None):
-        self.parser = ConfigParser()
+        self.parser = RedunConfigParser(interpolation=RedunExtendedInterpolation())
         self._sections: "Section" = {}
         if config_dict:
             self.read_dict(config_dict)

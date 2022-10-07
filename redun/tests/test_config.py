@@ -1,5 +1,6 @@
 import os
 from configparser import SectionProxy
+from unittest.mock import patch
 
 import pytest
 
@@ -129,3 +130,50 @@ def test_postprocess_config(sample_config):
     # Ensure that the auto-added sections are truly Section objects and not plain dicts.
     assert isinstance(config["repos"]["default"], SectionProxy)
     assert isinstance(config["backend"], SectionProxy)
+
+
+def test_config_env_vars():
+    """
+    Environment variables should be replaced in config values.
+    """
+    config_string = """
+[DEFAULT]
+default_scratch = s3://example-bucket/redun/
+queue = default-queue
+
+[executors.batch]
+type = aws_batch
+image = 123.abc.ecr.us-west-2.amazonaws.com/amazonlinux-python3
+queue = ${QUEUE}
+s3_scratch = ${default_scratch}
+role = ${ROLE}
+"""
+
+    with patch("os.environ", {"ROLE": "my-role", "QUEUE": "my-queue"}):
+        config = Config()
+        config.read_string(config_string)
+
+        assert config["executors"]["batch"]["role"] == "my-role"
+
+        # We should be able to reference default values.
+        assert config["executors"]["batch"]["s3_scratch"] == "s3://example-bucket/redun/"
+
+        # The environment variable should override the default value.
+        assert config["executors"]["batch"]["queue"] == "my-queue"
+
+
+def test_config_case_sensitive():
+    """
+    Config variables should be case sensitive.
+    """
+    config_string = """
+[section]
+key = foo
+KEY = bar
+"""
+
+    config = Config()
+    config.read_string(config_string)
+
+    assert config["section"]["key"] == "foo"
+    assert config["section"]["KEY"] == "bar"

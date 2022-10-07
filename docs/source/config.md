@@ -29,6 +29,9 @@ The configuration directory, `.redun/`, is specified by the following (in order 
 - Filesystem search: Find a directory named `.redun/` starting in the current working directory and proceeding to parent directories.
 - Lastly, automatically create a configuration directory, `.redun/`, in the current working directory.
 
+
+## Configuration options
+
 Currently, redun supports the following configuration sections and options.
 
 
@@ -422,3 +425,22 @@ A string (default: `**/*.py`) that specifies a pattern for which files should be
 
 A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 
+
+## Configuration variables
+
+The redun configuration file supports [variable interpolation](https://docs.python.org/3/library/configparser.html#configparser.ExtendedInterpolation). When using the `${var}` variable reference syntax, redun will replace the variable reference with the value of the variable `var` from one of these sources (in descreasing precedence):
+
+- variable in the same section.
+- variable in the `DEFAULT` section.
+- environment variable.
+
+For example, if one wanted to configure the AWS role used for an AWS Batch Job using an environment variable, `REDUN_ROLE`, it could be achieved with the following config file:
+
+```ini
+[executors.batch]
+type = aws_batch
+image = 123.abc.ecr.us-west-2.amazonaws.com/amazonlinux-python3
+queue = my-queue
+s3_scratch = s3://bucket/redun/
+role = ${REDUN_ROLE}
+```
