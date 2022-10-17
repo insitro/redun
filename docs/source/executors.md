@@ -52,6 +52,85 @@ def main(data):
 
 The **Local executor** executes tasks on the same machine as the scheduler using either multiple threads or processes (configured by the [`mode` option](config.md#mode)). By default, redun defines a Local executor named "default" that is used as the default executor for tasks. Users can configure the local executor using the [configuration file](config.md#local-executor).
 
+## Alias executor
+The `AliasExecutor` is a lazily-resolved alias for another executor, which allows 
+executors with distinct names to resolve to the same underlying implementation.
+
+For example, consider these tasks:
+
+```python
+
+@task(executor="foo_exec")
+def foo() -> str:
+    return f'Hello world'
+
+
+@task(executor="bar_exec")
+def bar(input) -> str:
+    return input'
+
+@task()
+def main(greet: str = 'Hello') -> str:
+    return foo(bar())
+```
+
+This example defined distinct executors for several tasks, perhaps because they need 
+different environments. However, sometimes we may need them to share underlying
+executors, for example, to share resources. Without aliases, consider a configuration 
+like this:
+
+```
+[executors.default]
+type = local
+mode = process
+max_workers = 1
+
+[executors.foo_exec]
+type = local
+mode = process
+max_workers = 1
+
+[executors.bar_exec]
+type = local
+mode = process
+max_workers = 1
+```
+
+Although it appears this would only use one worker at a time, it is actually creating
+three distinct process pools, each with one worker, and the executors are allowed to
+operate in parallel to one another. 
+
+Using aliases, we can solve this problem. This configuration file explicitly configures 
+the automatically-created `process` executor, and ensures that every task will use it. 
+Since there is only one underlying process pool, with only a single worker, this achieves
+the effect of running one task at a time. Note that `process` is overloaded; it is both the 
+name of the `mode` for the local executor, and also the name of one of the built-in executors.
+
+```
+; Create a single-worker executor in process mode (instead of thread)
+[executors.single_worker]
+type = local
+mode = process
+max_workers = 1
+
+; Redirect both built-in executors to use it
+[executors.process]
+type = alias
+target = single_worker
+
+[executors.default]
+type = alias
+target = single_worker
+
+; And redirect both task-specific executors to use it
+[executors.foo_exec]
+type = alias
+target = single_worker
+
+[executors.bar_exec]
+type = alias
+target = single_worker
+```
 
 ## AWS Batch executor
 
