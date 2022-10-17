@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0
+October 17, 2022
+
+* `#218` - Add alias executors
+* `#216` - DE-6353 Add env var parsing to config files
+* `#215` - Update package version to 0.9.1, skip 0.9.0 in changelog
+* `#213` - Backport fixes
+
 ## 0.9.1
 September 30, 2022
 
