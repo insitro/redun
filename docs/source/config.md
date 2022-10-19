@@ -52,7 +52,7 @@ A string that specifies the location of a user-defined function for setting up t
 The user function `setup_scheduler()` should take as its first argument `config` (see [Config](redun/redun.md#redun.config.Config)) and it should return an instantiated `scheduler` (see [Scheduler](redun/redun.md#redun.scheduler.Scheduler)).
 
 ```py
-from redun.config import config
+from redun.config import Config
 from redun import Scheduler
 
 def setup_scheduler(config: Config) -> Scheduler:
@@ -66,7 +66,7 @@ If `setup_scheduler()` has additional arguments, they are automatically parsed f
 
 ```py
 # workflow.py
-from redun.config import config
+from redun.config import Config
 from redun import Scheduler, task
 
 from my_workflow_lib.executors import ProdExecutor, DevExecutor
