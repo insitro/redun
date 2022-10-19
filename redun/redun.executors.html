@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="prev" title="redun.backends.db package" href="redun.backends.db.html" />
 
-    <meta name="generator" content="sphinx-5.1.1, furo 2022.09.15"/>
+    <meta name="generator" content="sphinx-5.3.0, furo 2022.09.29"/>
         <title>redun.executors package - redun</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=9ec31e2665bf879c1d47d93a8ec4893870ee1e45" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=d81277517bee4d6b0349d71bb2661d4890b5617c" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -202,7 +202,8 @@
           <span>Back to top</span>
         </a>
         <div class="content-icon-container">
-          <div class="theme-toggle-container theme-toggle-content">
+          
+<div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -1115,15 +1116,161 @@ If False, None is returned for unknown executor name.</p></li>
             <ul>
 <li><a class="reference internal" href="#">redun.executors package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-redun.executors.aws_batch">redun.executors.aws_batch module</a></li>
-<li><a class="reference internal" href="#module-redun.executors.aws_glue">redun.executors.aws_glue module</a></li>
-<li><a class="reference internal" href="#module-redun.executors.aws_utils">redun.executors.aws_utils module</a></li>
-<li><a class="reference internal" href="#module-redun.executors.base">redun.executors.base module</a></li>
-<li><a class="reference internal" href="#module-redun.executors.code_packaging">redun.executors.code_packaging module</a></li>
-<li><a class="reference internal" href="#module-redun.executors.command">redun.executors.command module</a></li>
-<li><a class="reference internal" href="#module-redun.executors.docker">redun.executors.docker module</a></li>
-<li><a class="reference internal" href="#module-redun.executors.local">redun.executors.local module</a></li>
-<li><a class="reference internal" href="#module-redun.executors.scratch">redun.executors.scratch module</a></li>
+<li><a class="reference internal" href="#module-redun.executors.aws_batch">redun.executors.aws_batch module</a><ul>
+<li><a class="reference internal" href="#redun.executors.aws_batch.AWSBatchExecutor"><code class="docutils literal notranslate"><span class="pre">AWSBatchExecutor</span></code></a><ul>
+<li><a class="reference internal" href="#redun.executors.aws_batch.AWSBatchExecutor.gather_inflight_jobs"><code class="docutils literal notranslate"><span class="pre">AWSBatchExecutor.gather_inflight_jobs()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.AWSBatchExecutor.get_array_child_jobs"><code class="docutils literal notranslate"><span class="pre">AWSBatchExecutor.get_array_child_jobs()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.AWSBatchExecutor.get_jobs"><code class="docutils literal notranslate"><span class="pre">AWSBatchExecutor.get_jobs()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.AWSBatchExecutor.kill_jobs"><code class="docutils literal notranslate"><span class="pre">AWSBatchExecutor.kill_jobs()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.AWSBatchExecutor.set_scheduler"><code class="docutils literal notranslate"><span class="pre">AWSBatchExecutor.set_scheduler()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.AWSBatchExecutor.stop"><code class="docutils literal notranslate"><span class="pre">AWSBatchExecutor.stop()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.AWSBatchExecutor.submit"><code class="docutils literal notranslate"><span class="pre">AWSBatchExecutor.submit()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.AWSBatchExecutor.submit_script"><code class="docutils literal notranslate"><span class="pre">AWSBatchExecutor.submit_script()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.AWSBatchJobTimeoutError"><code class="docutils literal notranslate"><span class="pre">AWSBatchJobTimeoutError</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.aws_describe_jobs"><code class="docutils literal notranslate"><span class="pre">aws_describe_jobs()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.batch_submit"><code class="docutils literal notranslate"><span class="pre">batch_submit()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.create_job_override_command"><code class="docutils literal notranslate"><span class="pre">create_job_override_command()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.ecr_push"><code class="docutils literal notranslate"><span class="pre">ecr_push()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.format_log_stream_event"><code class="docutils literal notranslate"><span class="pre">format_log_stream_event()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.get_batch_job_name"><code class="docutils literal notranslate"><span class="pre">get_batch_job_name()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.get_batch_job_options"><code class="docutils literal notranslate"><span class="pre">get_batch_job_options()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.get_default_registry"><code class="docutils literal notranslate"><span class="pre">get_default_registry()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.get_docker_executor_config"><code class="docutils literal notranslate"><span class="pre">get_docker_executor_config()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.get_hash_from_job_name"><code class="docutils literal notranslate"><span class="pre">get_hash_from_job_name()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.get_job_definition"><code class="docutils literal notranslate"><span class="pre">get_job_definition()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.get_job_log_stream"><code class="docutils literal notranslate"><span class="pre">get_job_log_stream()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.get_or_create_job_definition"><code class="docutils literal notranslate"><span class="pre">get_or_create_job_definition()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.get_or_create_repo"><code class="docutils literal notranslate"><span class="pre">get_or_create_repo()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.is_array_job_name"><code class="docutils literal notranslate"><span class="pre">is_array_job_name()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.iter_batch_job_log_lines"><code class="docutils literal notranslate"><span class="pre">iter_batch_job_log_lines()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.iter_batch_job_logs"><code class="docutils literal notranslate"><span class="pre">iter_batch_job_logs()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.iter_batch_job_status"><code class="docutils literal notranslate"><span class="pre">iter_batch_job_status()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.make_job_def_name"><code class="docutils literal notranslate"><span class="pre">make_job_def_name()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.parse_job_error"><code class="docutils literal notranslate"><span class="pre">parse_job_error()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.parse_job_logs"><code class="docutils literal notranslate"><span class="pre">parse_job_logs()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.submit_command"><code class="docutils literal notranslate"><span class="pre">submit_command()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_batch.submit_task"><code class="docutils literal notranslate"><span class="pre">submit_task()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.executors.aws_glue">redun.executors.aws_glue module</a><ul>
+<li><a class="reference internal" href="#redun.executors.aws_glue.AWSGlueError"><code class="docutils literal notranslate"><span class="pre">AWSGlueError</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.AWSGlueExecutor"><code class="docutils literal notranslate"><span class="pre">AWSGlueExecutor</span></code></a><ul>
+<li><a class="reference internal" href="#redun.executors.aws_glue.AWSGlueExecutor.gather_inflight_jobs"><code class="docutils literal notranslate"><span class="pre">AWSGlueExecutor.gather_inflight_jobs()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.AWSGlueExecutor.get_jobs"><code class="docutils literal notranslate"><span class="pre">AWSGlueExecutor.get_jobs()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.AWSGlueExecutor.get_or_create_job_definition"><code class="docutils literal notranslate"><span class="pre">AWSGlueExecutor.get_or_create_job_definition()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.AWSGlueExecutor.stop"><code class="docutils literal notranslate"><span class="pre">AWSGlueExecutor.stop()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.AWSGlueExecutor.submit"><code class="docutils literal notranslate"><span class="pre">AWSGlueExecutor.submit()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.AWSGlueExecutor.submit_pending_job"><code class="docutils literal notranslate"><span class="pre">AWSGlueExecutor.submit_pending_job()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.AWSGlueJobStoppedError"><code class="docutils literal notranslate"><span class="pre">AWSGlueJobStoppedError</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.AWSGlueJobTimeoutError"><code class="docutils literal notranslate"><span class="pre">AWSGlueJobTimeoutError</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.get_default_glue_service_role"><code class="docutils literal notranslate"><span class="pre">get_default_glue_service_role()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.get_glue_oneshot_scratch_file"><code class="docutils literal notranslate"><span class="pre">get_glue_oneshot_scratch_file()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.get_job_insight_traceback"><code class="docutils literal notranslate"><span class="pre">get_job_insight_traceback()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.get_or_create_glue_job_definition"><code class="docutils literal notranslate"><span class="pre">get_or_create_glue_job_definition()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.get_redun_lib_files"><code class="docutils literal notranslate"><span class="pre">get_redun_lib_files()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.get_redun_lib_scratch_file"><code class="docutils literal notranslate"><span class="pre">get_redun_lib_scratch_file()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.get_spark_history_dir"><code class="docutils literal notranslate"><span class="pre">get_spark_history_dir()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.glue_describe_jobs"><code class="docutils literal notranslate"><span class="pre">glue_describe_jobs()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.package_redun_lib"><code class="docutils literal notranslate"><span class="pre">package_redun_lib()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.parse_job_error"><code class="docutils literal notranslate"><span class="pre">parse_job_error()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_glue.submit_glue_job"><code class="docutils literal notranslate"><span class="pre">submit_glue_job()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.executors.aws_utils">redun.executors.aws_utils module</a><ul>
+<li><a class="reference internal" href="#redun.executors.aws_utils.JobStatus"><code class="docutils literal notranslate"><span class="pre">JobStatus</span></code></a><ul>
+<li><a class="reference internal" href="#redun.executors.aws_utils.JobStatus.all"><code class="docutils literal notranslate"><span class="pre">JobStatus.all</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.JobStatus.failure"><code class="docutils literal notranslate"><span class="pre">JobStatus.failure</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.JobStatus.inflight"><code class="docutils literal notranslate"><span class="pre">JobStatus.inflight</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.JobStatus.pending"><code class="docutils literal notranslate"><span class="pre">JobStatus.pending</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.JobStatus.stopped"><code class="docutils literal notranslate"><span class="pre">JobStatus.stopped</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.JobStatus.success"><code class="docutils literal notranslate"><span class="pre">JobStatus.success</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.JobStatus.timeout"><code class="docutils literal notranslate"><span class="pre">JobStatus.timeout</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.copy_to_s3"><code class="docutils literal notranslate"><span class="pre">copy_to_s3()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.get_aws_client"><code class="docutils literal notranslate"><span class="pre">get_aws_client()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.get_aws_env_vars"><code class="docutils literal notranslate"><span class="pre">get_aws_env_vars()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.get_aws_user"><code class="docutils literal notranslate"><span class="pre">get_aws_user()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.get_default_region"><code class="docutils literal notranslate"><span class="pre">get_default_region()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.is_ec2_instance"><code class="docutils literal notranslate"><span class="pre">is_ec2_instance()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.iter_log_stream"><code class="docutils literal notranslate"><span class="pre">iter_log_stream()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.executors.base">redun.executors.base module</a><ul>
+<li><a class="reference internal" href="#redun.executors.base.Executor"><code class="docutils literal notranslate"><span class="pre">Executor</span></code></a><ul>
+<li><a class="reference internal" href="#redun.executors.base.Executor.log"><code class="docutils literal notranslate"><span class="pre">Executor.log()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.base.Executor.set_scheduler"><code class="docutils literal notranslate"><span class="pre">Executor.set_scheduler()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.base.Executor.start"><code class="docutils literal notranslate"><span class="pre">Executor.start()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.base.Executor.stop"><code class="docutils literal notranslate"><span class="pre">Executor.stop()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.base.Executor.submit"><code class="docutils literal notranslate"><span class="pre">Executor.submit()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.base.Executor.submit_script"><code class="docutils literal notranslate"><span class="pre">Executor.submit_script()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.executors.base.ExecutorError"><code class="docutils literal notranslate"><span class="pre">ExecutorError</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.base.get_executor_class"><code class="docutils literal notranslate"><span class="pre">get_executor_class()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.base.get_executors_from_config"><code class="docutils literal notranslate"><span class="pre">get_executors_from_config()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.base.load_task_module"><code class="docutils literal notranslate"><span class="pre">load_task_module()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.base.register_executor"><code class="docutils literal notranslate"><span class="pre">register_executor()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.executors.code_packaging">redun.executors.code_packaging module</a><ul>
+<li><a class="reference internal" href="#redun.executors.code_packaging.create_tar"><code class="docutils literal notranslate"><span class="pre">create_tar()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.code_packaging.create_zip"><code class="docutils literal notranslate"><span class="pre">create_zip()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.code_packaging.extract_tar"><code class="docutils literal notranslate"><span class="pre">extract_tar()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.code_packaging.find_code_files"><code class="docutils literal notranslate"><span class="pre">find_code_files()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.code_packaging.package_code"><code class="docutils literal notranslate"><span class="pre">package_code()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.code_packaging.parse_code_package_config"><code class="docutils literal notranslate"><span class="pre">parse_code_package_config()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.executors.command">redun.executors.command module</a><ul>
+<li><a class="reference internal" href="#redun.executors.command.get_oneshot_command"><code class="docutils literal notranslate"><span class="pre">get_oneshot_command()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.command.get_script_task_command"><code class="docutils literal notranslate"><span class="pre">get_script_task_command()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.executors.docker">redun.executors.docker module</a><ul>
+<li><a class="reference internal" href="#redun.executors.docker.DockerError"><code class="docutils literal notranslate"><span class="pre">DockerError</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.docker.DockerExecutor"><code class="docutils literal notranslate"><span class="pre">DockerExecutor</span></code></a><ul>
+<li><a class="reference internal" href="#redun.executors.docker.DockerExecutor.stop"><code class="docutils literal notranslate"><span class="pre">DockerExecutor.stop()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.docker.DockerExecutor.submit"><code class="docutils literal notranslate"><span class="pre">DockerExecutor.submit()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.docker.DockerExecutor.submit_script"><code class="docutils literal notranslate"><span class="pre">DockerExecutor.submit_script()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.executors.docker.get_docker_job_options"><code class="docutils literal notranslate"><span class="pre">get_docker_job_options()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.docker.iter_job_status"><code class="docutils literal notranslate"><span class="pre">iter_job_status()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.docker.run_docker"><code class="docutils literal notranslate"><span class="pre">run_docker()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.docker.submit_command"><code class="docutils literal notranslate"><span class="pre">submit_command()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.docker.submit_task"><code class="docutils literal notranslate"><span class="pre">submit_task()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.executors.local">redun.executors.local module</a><ul>
+<li><a class="reference internal" href="#redun.executors.local.LocalExecutor"><code class="docutils literal notranslate"><span class="pre">LocalExecutor</span></code></a><ul>
+<li><a class="reference internal" href="#redun.executors.local.LocalExecutor.DEFAULT_START_METHOD"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.DEFAULT_START_METHOD</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.local.LocalExecutor.MODES"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.MODES</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.local.LocalExecutor.START_METHODS"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.START_METHODS</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.local.LocalExecutor.stop"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.stop()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.local.LocalExecutor.submit"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.submit()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.local.LocalExecutor.submit_script"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.submit_script()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.executors.local.exec_script_task"><code class="docutils literal notranslate"><span class="pre">exec_script_task()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.local.exec_task"><code class="docutils literal notranslate"><span class="pre">exec_task()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.executors.scratch">redun.executors.scratch module</a><ul>
+<li><a class="reference internal" href="#redun.executors.scratch.ExceptionNotFoundError"><code class="docutils literal notranslate"><span class="pre">ExceptionNotFoundError</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.ScratchError"><code class="docutils literal notranslate"><span class="pre">ScratchError</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.get_array_scratch_file"><code class="docutils literal notranslate"><span class="pre">get_array_scratch_file()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.get_code_scratch_file"><code class="docutils literal notranslate"><span class="pre">get_code_scratch_file()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.get_job_scratch_dir"><code class="docutils literal notranslate"><span class="pre">get_job_scratch_dir()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.get_job_scratch_file"><code class="docutils literal notranslate"><span class="pre">get_job_scratch_file()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.parse_job_error"><code class="docutils literal notranslate"><span class="pre">parse_job_error()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.parse_job_result"><code class="docutils literal notranslate"><span class="pre">parse_job_result()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#module-redun.executors">Module contents</a></li>
 </ul>
 </li>
@@ -1141,6 +1288,7 @@ If False, None is returned for unknown executor name.</p></li>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/scripts/furo.js"></script>
     </body>
 </html>

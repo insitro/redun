@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun.executors package" href="redun.executors.html" /><link rel="prev" title="redun.backends package" href="redun.backends.html" />
 
-    <meta name="generator" content="sphinx-5.1.1, furo 2022.09.15"/>
+    <meta name="generator" content="sphinx-5.3.0, furo 2022.09.29"/>
         <title>redun.backends.db package - redun</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=9ec31e2665bf879c1d47d93a8ec4893870ee1e45" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=d81277517bee4d6b0349d71bb2661d4890b5617c" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -202,7 +202,8 @@
           <span>Back to top</span>
         </a>
         <div class="content-icon-container">
-          <div class="theme-toggle-container theme-toggle-content">
+          
+<div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -909,7 +910,7 @@ like this:</p>
 <p>Query class for efficiently querying across all models in a CallGraph.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.ExecTag">
-<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7f171ca23d30;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7f422ac98c10;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2877,10 +2878,462 @@ This also implies <cite>new=True</cite>.</p></li>
             <ul>
 <li><a class="reference internal" href="#">redun.backends.db package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-redun.backends.db.dataflow">redun.backends.db.dataflow module</a></li>
-<li><a class="reference internal" href="#module-redun.backends.db.query">redun.backends.db.query module</a></li>
-<li><a class="reference internal" href="#module-redun.backends.db.serializers">redun.backends.db.serializers module</a></li>
-<li><a class="reference internal" href="#module-redun.backends.db">Module contents</a></li>
+<li><a class="reference internal" href="#module-redun.backends.db.dataflow">redun.backends.db.dataflow module</a><ul>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.ArgumentValue"><code class="docutils literal notranslate"><span class="pre">ArgumentValue</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.ArgumentValue.argument"><code class="docutils literal notranslate"><span class="pre">ArgumentValue.argument</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.ArgumentValue.value"><code class="docutils literal notranslate"><span class="pre">ArgumentValue.value</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.CallNodeValue"><code class="docutils literal notranslate"><span class="pre">CallNodeValue</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.CallNodeValue.call_node"><code class="docutils literal notranslate"><span class="pre">CallNodeValue.call_node</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.CallNodeValue.value"><code class="docutils literal notranslate"><span class="pre">CallNodeValue.value</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowArg"><code class="docutils literal notranslate"><span class="pre">DataflowArg</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowArg.value"><code class="docutils literal notranslate"><span class="pre">DataflowArg.value</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowArg.var_name"><code class="docutils literal notranslate"><span class="pre">DataflowArg.var_name</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowAssign"><code class="docutils literal notranslate"><span class="pre">DataflowAssign</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowAssign.node"><code class="docutils literal notranslate"><span class="pre">DataflowAssign.node</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowAssign.node_display"><code class="docutils literal notranslate"><span class="pre">DataflowAssign.node_display</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowAssign.prefix"><code class="docutils literal notranslate"><span class="pre">DataflowAssign.prefix</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowAssign.var_name"><code class="docutils literal notranslate"><span class="pre">DataflowAssign.var_name</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowEdge"><code class="docutils literal notranslate"><span class="pre">DataflowEdge</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowEdge.dest"><code class="docutils literal notranslate"><span class="pre">DataflowEdge.dest</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowEdge.src"><code class="docutils literal notranslate"><span class="pre">DataflowEdge.src</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowRouting"><code class="docutils literal notranslate"><span class="pre">DataflowRouting</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowRouting.node"><code class="docutils literal notranslate"><span class="pre">DataflowRouting.node</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowRouting.node_display"><code class="docutils literal notranslate"><span class="pre">DataflowRouting.node_display</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowRouting.prefix"><code class="docutils literal notranslate"><span class="pre">DataflowRouting.prefix</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowSectionDOM"><code class="docutils literal notranslate"><span class="pre">DataflowSectionDOM</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowSectionDOM.args"><code class="docutils literal notranslate"><span class="pre">DataflowSectionDOM.args</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowSectionDOM.assign"><code class="docutils literal notranslate"><span class="pre">DataflowSectionDOM.assign</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowSectionDOM.routing"><code class="docutils literal notranslate"><span class="pre">DataflowSectionDOM.routing</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowSectionKind"><code class="docutils literal notranslate"><span class="pre">DataflowSectionKind</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowSectionKind.CALL"><code class="docutils literal notranslate"><span class="pre">DataflowSectionKind.CALL</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowSectionKind.DATA"><code class="docutils literal notranslate"><span class="pre">DataflowSectionKind.DATA</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowVars"><code class="docutils literal notranslate"><span class="pre">DataflowVars</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowVars.get_task_args"><code class="docutils literal notranslate"><span class="pre">DataflowVars.get_task_args()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.DataflowVars.new_var_name"><code class="docutils literal notranslate"><span class="pre">DataflowVars.new_var_name()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.display_call_node"><code class="docutils literal notranslate"><span class="pre">display_call_node()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.display_dataflow"><code class="docutils literal notranslate"><span class="pre">display_dataflow()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.display_hash"><code class="docutils literal notranslate"><span class="pre">display_hash()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.display_node"><code class="docutils literal notranslate"><span class="pre">display_node()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.display_section"><code class="docutils literal notranslate"><span class="pre">display_section()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.display_value"><code class="docutils literal notranslate"><span class="pre">display_value()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.get_callnode_arguments"><code class="docutils literal notranslate"><span class="pre">get_callnode_arguments()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.get_dataflow_call_node"><code class="docutils literal notranslate"><span class="pre">get_dataflow_call_node()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.get_default_arg_name"><code class="docutils literal notranslate"><span class="pre">get_default_arg_name()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.get_node_hash"><code class="docutils literal notranslate"><span class="pre">get_node_hash()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.get_section_edge_type"><code class="docutils literal notranslate"><span class="pre">get_section_edge_type()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.get_task_args"><code class="docutils literal notranslate"><span class="pre">get_task_args()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.is_internal_task"><code class="docutils literal notranslate"><span class="pre">is_internal_task()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.iter_dataflow_sections"><code class="docutils literal notranslate"><span class="pre">iter_dataflow_sections()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.iter_subsections"><code class="docutils literal notranslate"><span class="pre">iter_subsections()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.iter_unique"><code class="docutils literal notranslate"><span class="pre">iter_unique()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.make_data_section_dom"><code class="docutils literal notranslate"><span class="pre">make_data_section_dom()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.make_dataflow_dom"><code class="docutils literal notranslate"><span class="pre">make_dataflow_dom()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.make_section_dom"><code class="docutils literal notranslate"><span class="pre">make_section_dom()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.make_var_name"><code class="docutils literal notranslate"><span class="pre">make_var_name()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.rewrite_call_node_merges"><code class="docutils literal notranslate"><span class="pre">rewrite_call_node_merges()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.serialize_dataflow"><code class="docutils literal notranslate"><span class="pre">serialize_dataflow()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.serialize_section"><code class="docutils literal notranslate"><span class="pre">serialize_section()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.toposort_edges"><code class="docutils literal notranslate"><span class="pre">toposort_edges()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.walk_dataflow"><code class="docutils literal notranslate"><span class="pre">walk_dataflow()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.walk_dataflow_argument_value"><code class="docutils literal notranslate"><span class="pre">walk_dataflow_argument_value()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.walk_dataflow_callnode"><code class="docutils literal notranslate"><span class="pre">walk_dataflow_callnode()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.walk_dataflow_callnode_value"><code class="docutils literal notranslate"><span class="pre">walk_dataflow_callnode_value()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.walk_dataflow_node"><code class="docutils literal notranslate"><span class="pre">walk_dataflow_node()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.dataflow.walk_dataflow_value"><code class="docutils literal notranslate"><span class="pre">walk_dataflow_value()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.backends.db.query">redun.backends.db.query module</a><ul>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.ExecTag"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.ExecTag</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.MODEL_NAMES"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.MODEL_NAMES</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.MODEL_PKS"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.MODEL_PKS</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.all"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.all()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.build"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.build()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.clone"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.clone()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.count"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.count()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.empty"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.empty()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_execution_ids"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_execution_ids()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_execution_statuses"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_execution_statuses()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_execution_tags"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_execution_tags()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_file_paths"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_file_paths()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_ids"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_ids()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_job_statuses"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_job_statuses()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_tags"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_tags()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_task_names"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_task_names()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_types"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_types()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_value_types"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_value_types()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.first"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.first()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.like_id"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.like_id()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.limit"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.limit()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.one"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.one()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.one_or_none"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.one_or_none()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.order_by"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.order_by()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.select"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.select()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.subqueries"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.subqueries</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.backends.db.serializers">redun.backends.db.serializers module</a><ul>
+<li><a class="reference internal" href="#redun.backends.db.serializers.CallNodeSerializer"><code class="docutils literal notranslate"><span class="pre">CallNodeSerializer</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.serializers.CallNodeSerializer.deserialize"><code class="docutils literal notranslate"><span class="pre">CallNodeSerializer.deserialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.CallNodeSerializer.pk_field"><code class="docutils literal notranslate"><span class="pre">CallNodeSerializer.pk_field</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.CallNodeSerializer.serialize"><code class="docutils literal notranslate"><span class="pre">CallNodeSerializer.serialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.CallNodeSerializer.serialize_query"><code class="docutils literal notranslate"><span class="pre">CallNodeSerializer.serialize_query()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.ExecutionSerializer"><code class="docutils literal notranslate"><span class="pre">ExecutionSerializer</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.serializers.ExecutionSerializer.deserialize"><code class="docutils literal notranslate"><span class="pre">ExecutionSerializer.deserialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.ExecutionSerializer.pk_field"><code class="docutils literal notranslate"><span class="pre">ExecutionSerializer.pk_field</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.ExecutionSerializer.serialize"><code class="docutils literal notranslate"><span class="pre">ExecutionSerializer.serialize()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.JobSerializer"><code class="docutils literal notranslate"><span class="pre">JobSerializer</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.serializers.JobSerializer.deserialize"><code class="docutils literal notranslate"><span class="pre">JobSerializer.deserialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.JobSerializer.pk_field"><code class="docutils literal notranslate"><span class="pre">JobSerializer.pk_field</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.JobSerializer.serialize"><code class="docutils literal notranslate"><span class="pre">JobSerializer.serialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.JobSerializer.serialize_query"><code class="docutils literal notranslate"><span class="pre">JobSerializer.serialize_query()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.RecordSerializer"><code class="docutils literal notranslate"><span class="pre">RecordSerializer</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.serializers.RecordSerializer.deserialize"><code class="docutils literal notranslate"><span class="pre">RecordSerializer.deserialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.RecordSerializer.get_pk"><code class="docutils literal notranslate"><span class="pre">RecordSerializer.get_pk()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.RecordSerializer.get_subserializer"><code class="docutils literal notranslate"><span class="pre">RecordSerializer.get_subserializer()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.RecordSerializer.serialize"><code class="docutils literal notranslate"><span class="pre">RecordSerializer.serialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.RecordSerializer.serialize_query"><code class="docutils literal notranslate"><span class="pre">RecordSerializer.serialize_query()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.Serializer"><code class="docutils literal notranslate"><span class="pre">Serializer</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.serializers.Serializer.deserialize"><code class="docutils literal notranslate"><span class="pre">Serializer.deserialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.Serializer.get_pk"><code class="docutils literal notranslate"><span class="pre">Serializer.get_pk()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.Serializer.pk_field"><code class="docutils literal notranslate"><span class="pre">Serializer.pk_field</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.Serializer.serialize"><code class="docutils literal notranslate"><span class="pre">Serializer.serialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.Serializer.serialize_query"><code class="docutils literal notranslate"><span class="pre">Serializer.serialize_query()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.TagSerializer"><code class="docutils literal notranslate"><span class="pre">TagSerializer</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.serializers.TagSerializer.deserialize"><code class="docutils literal notranslate"><span class="pre">TagSerializer.deserialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.TagSerializer.pk_field"><code class="docutils literal notranslate"><span class="pre">TagSerializer.pk_field</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.TagSerializer.serialize"><code class="docutils literal notranslate"><span class="pre">TagSerializer.serialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.TagSerializer.serialize_query"><code class="docutils literal notranslate"><span class="pre">TagSerializer.serialize_query()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.ValueSerializer"><code class="docutils literal notranslate"><span class="pre">ValueSerializer</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.serializers.ValueSerializer.deserialize"><code class="docutils literal notranslate"><span class="pre">ValueSerializer.deserialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.ValueSerializer.pk_field"><code class="docutils literal notranslate"><span class="pre">ValueSerializer.pk_field</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.ValueSerializer.serialize"><code class="docutils literal notranslate"><span class="pre">ValueSerializer.serialize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.ValueSerializer.serialize_query"><code class="docutils literal notranslate"><span class="pre">ValueSerializer.serialize_query()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.deserialize_timestamp"><code class="docutils literal notranslate"><span class="pre">deserialize_timestamp()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.serializers.serialize_timestamp"><code class="docutils literal notranslate"><span class="pre">serialize_timestamp()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-redun.backends.db">Module contents</a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Argument"><code class="docutils literal notranslate"><span class="pre">Argument</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Argument.arg_hash"><code class="docutils literal notranslate"><span class="pre">Argument.arg_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Argument.arg_key"><code class="docutils literal notranslate"><span class="pre">Argument.arg_key</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Argument.arg_position"><code class="docutils literal notranslate"><span class="pre">Argument.arg_position</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Argument.arg_results"><code class="docutils literal notranslate"><span class="pre">Argument.arg_results</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Argument.call_hash"><code class="docutils literal notranslate"><span class="pre">Argument.call_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Argument.call_node"><code class="docutils literal notranslate"><span class="pre">Argument.call_node</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Argument.upstream"><code class="docutils literal notranslate"><span class="pre">Argument.upstream</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Argument.value"><code class="docutils literal notranslate"><span class="pre">Argument.value</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Argument.value_hash"><code class="docutils literal notranslate"><span class="pre">Argument.value_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Argument.value_parsed"><code class="docutils literal notranslate"><span class="pre">Argument.value_parsed</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.ArgumentResult"><code class="docutils literal notranslate"><span class="pre">ArgumentResult</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.ArgumentResult.arg"><code class="docutils literal notranslate"><span class="pre">ArgumentResult.arg</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.ArgumentResult.arg_hash"><code class="docutils literal notranslate"><span class="pre">ArgumentResult.arg_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.ArgumentResult.result_call_hash"><code class="docutils literal notranslate"><span class="pre">ArgumentResult.result_call_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.ArgumentResult.result_call_node"><code class="docutils literal notranslate"><span class="pre">ArgumentResult.result_call_node</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.CallEdge"><code class="docutils literal notranslate"><span class="pre">CallEdge</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.CallEdge.call_order"><code class="docutils literal notranslate"><span class="pre">CallEdge.call_order</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallEdge.child_id"><code class="docutils literal notranslate"><span class="pre">CallEdge.child_id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallEdge.child_node"><code class="docutils literal notranslate"><span class="pre">CallEdge.child_node</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallEdge.parent_id"><code class="docutils literal notranslate"><span class="pre">CallEdge.parent_id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallEdge.parent_node"><code class="docutils literal notranslate"><span class="pre">CallEdge.parent_node</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode"><code class="docutils literal notranslate"><span class="pre">CallNode</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.arg_results"><code class="docutils literal notranslate"><span class="pre">CallNode.arg_results</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.args_display"><code class="docutils literal notranslate"><span class="pre">CallNode.args_display</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.args_hash"><code class="docutils literal notranslate"><span class="pre">CallNode.args_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.arguments"><code class="docutils literal notranslate"><span class="pre">CallNode.arguments</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.call_hash"><code class="docutils literal notranslate"><span class="pre">CallNode.call_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.call_hash_idx"><code class="docutils literal notranslate"><span class="pre">CallNode.call_hash_idx</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.child_edges"><code class="docutils literal notranslate"><span class="pre">CallNode.child_edges</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.children"><code class="docutils literal notranslate"><span class="pre">CallNode.children</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.downstream"><code class="docutils literal notranslate"><span class="pre">CallNode.downstream</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.jobs"><code class="docutils literal notranslate"><span class="pre">CallNode.jobs</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.parent_edges"><code class="docutils literal notranslate"><span class="pre">CallNode.parent_edges</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.parents"><code class="docutils literal notranslate"><span class="pre">CallNode.parents</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.tags"><code class="docutils literal notranslate"><span class="pre">CallNode.tags</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.task"><code class="docutils literal notranslate"><span class="pre">CallNode.task</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.task_hash"><code class="docutils literal notranslate"><span class="pre">CallNode.task_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.task_name"><code class="docutils literal notranslate"><span class="pre">CallNode.task_name</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.task_set"><code class="docutils literal notranslate"><span class="pre">CallNode.task_set</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.timestamp"><code class="docutils literal notranslate"><span class="pre">CallNode.timestamp</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.value"><code class="docutils literal notranslate"><span class="pre">CallNode.value</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.value_hash"><code class="docutils literal notranslate"><span class="pre">CallNode.value_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallNode.value_parsed"><code class="docutils literal notranslate"><span class="pre">CallNode.value_parsed</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.CallSubtreeTask"><code class="docutils literal notranslate"><span class="pre">CallSubtreeTask</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.CallSubtreeTask.call_hash"><code class="docutils literal notranslate"><span class="pre">CallSubtreeTask.call_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallSubtreeTask.call_node"><code class="docutils literal notranslate"><span class="pre">CallSubtreeTask.call_node</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallSubtreeTask.task_hash"><code class="docutils literal notranslate"><span class="pre">CallSubtreeTask.task_hash</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.Column"><code class="docutils literal notranslate"><span class="pre">Column</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Column.inherit_cache"><code class="docutils literal notranslate"><span class="pre">Column.inherit_cache</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.DBVersionInfo"><code class="docutils literal notranslate"><span class="pre">DBVersionInfo</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.DBVersionInfo.description"><code class="docutils literal notranslate"><span class="pre">DBVersionInfo.description</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.DBVersionInfo.major"><code class="docutils literal notranslate"><span class="pre">DBVersionInfo.major</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.DBVersionInfo.migration_id"><code class="docutils literal notranslate"><span class="pre">DBVersionInfo.migration_id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.DBVersionInfo.minor"><code class="docutils literal notranslate"><span class="pre">DBVersionInfo.minor</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.Evaluation"><code class="docutils literal notranslate"><span class="pre">Evaluation</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Evaluation.args_hash"><code class="docutils literal notranslate"><span class="pre">Evaluation.args_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Evaluation.eval_hash"><code class="docutils literal notranslate"><span class="pre">Evaluation.eval_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Evaluation.task"><code class="docutils literal notranslate"><span class="pre">Evaluation.task</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Evaluation.task_hash"><code class="docutils literal notranslate"><span class="pre">Evaluation.task_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Evaluation.value"><code class="docutils literal notranslate"><span class="pre">Evaluation.value</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Evaluation.value_hash"><code class="docutils literal notranslate"><span class="pre">Evaluation.value_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Evaluation.value_parsed"><code class="docutils literal notranslate"><span class="pre">Evaluation.value_parsed</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.Execution"><code class="docutils literal notranslate"><span class="pre">Execution</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Execution.args"><code class="docutils literal notranslate"><span class="pre">Execution.args</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Execution.call_node"><code class="docutils literal notranslate"><span class="pre">Execution.call_node</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Execution.id"><code class="docutils literal notranslate"><span class="pre">Execution.id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Execution.id_idx"><code class="docutils literal notranslate"><span class="pre">Execution.id_idx</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Execution.job"><code class="docutils literal notranslate"><span class="pre">Execution.job</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Execution.job_id"><code class="docutils literal notranslate"><span class="pre">Execution.job_id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Execution.jobs"><code class="docutils literal notranslate"><span class="pre">Execution.jobs</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Execution.status"><code class="docutils literal notranslate"><span class="pre">Execution.status</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Execution.tags"><code class="docutils literal notranslate"><span class="pre">Execution.tags</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Execution.task"><code class="docutils literal notranslate"><span class="pre">Execution.task</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.File"><code class="docutils literal notranslate"><span class="pre">File</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.File.parent_values"><code class="docutils literal notranslate"><span class="pre">File.parent_values</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.File.path"><code class="docutils literal notranslate"><span class="pre">File.path</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.File.value"><code class="docutils literal notranslate"><span class="pre">File.value</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.File.value_hash"><code class="docutils literal notranslate"><span class="pre">File.value_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.File.values"><code class="docutils literal notranslate"><span class="pre">File.values</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.Handle"><code class="docutils literal notranslate"><span class="pre">Handle</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Handle.children"><code class="docutils literal notranslate"><span class="pre">Handle.children</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Handle.fullname"><code class="docutils literal notranslate"><span class="pre">Handle.fullname</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Handle.hash"><code class="docutils literal notranslate"><span class="pre">Handle.hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Handle.is_valid"><code class="docutils literal notranslate"><span class="pre">Handle.is_valid</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Handle.key"><code class="docutils literal notranslate"><span class="pre">Handle.key</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Handle.parent_values"><code class="docutils literal notranslate"><span class="pre">Handle.parent_values</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Handle.parents"><code class="docutils literal notranslate"><span class="pre">Handle.parents</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Handle.value"><code class="docutils literal notranslate"><span class="pre">Handle.value</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Handle.value_hash"><code class="docutils literal notranslate"><span class="pre">Handle.value_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Handle.values"><code class="docutils literal notranslate"><span class="pre">Handle.values</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.HandleEdge"><code class="docutils literal notranslate"><span class="pre">HandleEdge</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.HandleEdge.child_id"><code class="docutils literal notranslate"><span class="pre">HandleEdge.child_id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.HandleEdge.parent_id"><code class="docutils literal notranslate"><span class="pre">HandleEdge.parent_id</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.JSON"><code class="docutils literal notranslate"><span class="pre">JSON</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.JSON.cache_ok"><code class="docutils literal notranslate"><span class="pre">JSON.cache_ok</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.JSON.impl"><code class="docutils literal notranslate"><span class="pre">JSON.impl</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.JSON.load_dialect_impl"><code class="docutils literal notranslate"><span class="pre">JSON.load_dialect_impl()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.JSON.process_bind_param"><code class="docutils literal notranslate"><span class="pre">JSON.process_bind_param()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.JSON.process_result_value"><code class="docutils literal notranslate"><span class="pre">JSON.process_result_value()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.Job"><code class="docutils literal notranslate"><span class="pre">Job</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Job.cached"><code class="docutils literal notranslate"><span class="pre">Job.cached</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.call_hash"><code class="docutils literal notranslate"><span class="pre">Job.call_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.call_node"><code class="docutils literal notranslate"><span class="pre">Job.call_node</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.child_jobs"><code class="docutils literal notranslate"><span class="pre">Job.child_jobs</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.duration"><code class="docutils literal notranslate"><span class="pre">Job.duration</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.end_time"><code class="docutils literal notranslate"><span class="pre">Job.end_time</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.execution"><code class="docutils literal notranslate"><span class="pre">Job.execution</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.execution_id"><code class="docutils literal notranslate"><span class="pre">Job.execution_id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.id"><code class="docutils literal notranslate"><span class="pre">Job.id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.id_idx"><code class="docutils literal notranslate"><span class="pre">Job.id_idx</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.parent_id"><code class="docutils literal notranslate"><span class="pre">Job.parent_id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.parent_job"><code class="docutils literal notranslate"><span class="pre">Job.parent_job</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.start_time"><code class="docutils literal notranslate"><span class="pre">Job.start_time</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.status"><code class="docutils literal notranslate"><span class="pre">Job.status</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.tags"><code class="docutils literal notranslate"><span class="pre">Job.tags</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.task"><code class="docutils literal notranslate"><span class="pre">Job.task</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Job.task_hash"><code class="docutils literal notranslate"><span class="pre">Job.task_hash</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.LargeValue"><code class="docutils literal notranslate"><span class="pre">LargeValue</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.advance_handle"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.advance_handle()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.calc_current_nodes"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.calc_current_nodes()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.clone"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.clone()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.create_engine"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.create_engine()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.delete_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.delete_tags()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.explain_cache_miss"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.explain_cache_miss()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_all_db_versions"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_all_db_versions()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_cache()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_call_hash"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_call_hash()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_child_record_ids"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_child_record_ids()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_db_version"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_db_version()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_db_version_required"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_db_version_required()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_eval_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_eval_cache()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_job"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_job()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_records"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_records()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_tags()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_value"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_value()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.has_records"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.has_records()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.is_db_compatible"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.is_db_compatible()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.is_valid_handle"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.is_valid_handle()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.iter_record_ids"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.iter_record_ids()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.load"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.load()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.migrate"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.migrate()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.put_records"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.put_records()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_args"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_args()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_call_node"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_call_node()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_execution"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_execution()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_job_end"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_job_end()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_job_start"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_job_start()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_tags()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_value"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_value()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.rollback_handle"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.rollback_handle()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.set_eval_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.set_eval_cache()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.update_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.update_tags()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.RedunDatabaseError"><code class="docutils literal notranslate"><span class="pre">RedunDatabaseError</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunMigration"><code class="docutils literal notranslate"><span class="pre">RedunMigration</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.RedunMigration.version_num"><code class="docutils literal notranslate"><span class="pre">RedunMigration.version_num</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.RedunSession"><code class="docutils literal notranslate"><span class="pre">RedunSession</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunVersion"><code class="docutils literal notranslate"><span class="pre">RedunVersion</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.RedunVersion.id"><code class="docutils literal notranslate"><span class="pre">RedunVersion.id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunVersion.timestamp"><code class="docutils literal notranslate"><span class="pre">RedunVersion.timestamp</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunVersion.version"><code class="docutils literal notranslate"><span class="pre">RedunVersion.version</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.RedunVersionError"><code class="docutils literal notranslate"><span class="pre">RedunVersionError</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Subvalue"><code class="docutils literal notranslate"><span class="pre">Subvalue</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Subvalue.child"><code class="docutils literal notranslate"><span class="pre">Subvalue.child</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Subvalue.parent"><code class="docutils literal notranslate"><span class="pre">Subvalue.parent</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Subvalue.parent_value_hash"><code class="docutils literal notranslate"><span class="pre">Subvalue.parent_value_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Subvalue.value_hash"><code class="docutils literal notranslate"><span class="pre">Subvalue.value_hash</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.Tag"><code class="docutils literal notranslate"><span class="pre">Tag</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Tag.base_key"><code class="docutils literal notranslate"><span class="pre">Tag.base_key</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.call_nodes"><code class="docutils literal notranslate"><span class="pre">Tag.call_nodes</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.child_edits"><code class="docutils literal notranslate"><span class="pre">Tag.child_edits</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.children"><code class="docutils literal notranslate"><span class="pre">Tag.children</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.entity"><code class="docutils literal notranslate"><span class="pre">Tag.entity</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.entity_id"><code class="docutils literal notranslate"><span class="pre">Tag.entity_id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.entity_type"><code class="docutils literal notranslate"><span class="pre">Tag.entity_type</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.executions"><code class="docutils literal notranslate"><span class="pre">Tag.executions</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.get_delete_tag"><code class="docutils literal notranslate"><span class="pre">Tag.get_delete_tag()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.is_current"><code class="docutils literal notranslate"><span class="pre">Tag.is_current</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.jobs"><code class="docutils literal notranslate"><span class="pre">Tag.jobs</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.key"><code class="docutils literal notranslate"><span class="pre">Tag.key</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.namespace"><code class="docutils literal notranslate"><span class="pre">Tag.namespace</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.parent_edits"><code class="docutils literal notranslate"><span class="pre">Tag.parent_edits</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.parents"><code class="docutils literal notranslate"><span class="pre">Tag.parents</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.tag_hash"><code class="docutils literal notranslate"><span class="pre">Tag.tag_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.tag_hash_idx"><code class="docutils literal notranslate"><span class="pre">Tag.tag_hash_idx</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.tasks"><code class="docutils literal notranslate"><span class="pre">Tag.tasks</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.value"><code class="docutils literal notranslate"><span class="pre">Tag.value</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Tag.values"><code class="docutils literal notranslate"><span class="pre">Tag.values</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.TagEdit"><code class="docutils literal notranslate"><span class="pre">TagEdit</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.TagEdit.child"><code class="docutils literal notranslate"><span class="pre">TagEdit.child</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.TagEdit.child_id"><code class="docutils literal notranslate"><span class="pre">TagEdit.child_id</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.TagEdit.parent"><code class="docutils literal notranslate"><span class="pre">TagEdit.parent</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.TagEdit.parent_id"><code class="docutils literal notranslate"><span class="pre">TagEdit.parent_id</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.Task"><code class="docutils literal notranslate"><span class="pre">Task</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Task.call_nodes"><code class="docutils literal notranslate"><span class="pre">Task.call_nodes</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.evals"><code class="docutils literal notranslate"><span class="pre">Task.evals</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.fullname"><code class="docutils literal notranslate"><span class="pre">Task.fullname</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.hash"><code class="docutils literal notranslate"><span class="pre">Task.hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.hash_idx"><code class="docutils literal notranslate"><span class="pre">Task.hash_idx</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.jobs"><code class="docutils literal notranslate"><span class="pre">Task.jobs</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.name"><code class="docutils literal notranslate"><span class="pre">Task.name</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.name_idx"><code class="docutils literal notranslate"><span class="pre">Task.name_idx</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.namespace"><code class="docutils literal notranslate"><span class="pre">Task.namespace</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.namespace_idx"><code class="docutils literal notranslate"><span class="pre">Task.namespace_idx</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.show_source"><code class="docutils literal notranslate"><span class="pre">Task.show_source()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.source"><code class="docutils literal notranslate"><span class="pre">Task.source</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.tags"><code class="docutils literal notranslate"><span class="pre">Task.tags</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Task.value"><code class="docutils literal notranslate"><span class="pre">Task.value</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.Value"><code class="docutils literal notranslate"><span class="pre">Value</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.Value.arguments"><code class="docutils literal notranslate"><span class="pre">Value.arguments</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.child_edges"><code class="docutils literal notranslate"><span class="pre">Value.child_edges</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.children"><code class="docutils literal notranslate"><span class="pre">Value.children</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.evals"><code class="docutils literal notranslate"><span class="pre">Value.evals</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.file"><code class="docutils literal notranslate"><span class="pre">Value.file</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.format"><code class="docutils literal notranslate"><span class="pre">Value.format</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.handle"><code class="docutils literal notranslate"><span class="pre">Value.handle</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.in_value_store"><code class="docutils literal notranslate"><span class="pre">Value.in_value_store</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.parent_edges"><code class="docutils literal notranslate"><span class="pre">Value.parent_edges</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.parents"><code class="docutils literal notranslate"><span class="pre">Value.parents</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.preview"><code class="docutils literal notranslate"><span class="pre">Value.preview</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.results"><code class="docutils literal notranslate"><span class="pre">Value.results</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.subfiles"><code class="docutils literal notranslate"><span class="pre">Value.subfiles</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.subhandles"><code class="docutils literal notranslate"><span class="pre">Value.subhandles</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.tags"><code class="docutils literal notranslate"><span class="pre">Value.tags</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.task"><code class="docutils literal notranslate"><span class="pre">Value.task</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.type"><code class="docutils literal notranslate"><span class="pre">Value.type</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.value"><code class="docutils literal notranslate"><span class="pre">Value.value</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.value_hash"><code class="docutils literal notranslate"><span class="pre">Value.value_hash</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.value_hash_idx"><code class="docutils literal notranslate"><span class="pre">Value.value_hash_idx</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Value.value_parsed"><code class="docutils literal notranslate"><span class="pre">Value.value_parsed</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun.backends.db.get_abs_path"><code class="docutils literal notranslate"><span class="pre">get_abs_path()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.get_call_node_child_edges"><code class="docutils literal notranslate"><span class="pre">get_call_node_child_edges()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.get_execution_child_edges"><code class="docutils literal notranslate"><span class="pre">get_execution_child_edges()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.get_job_child_edges"><code class="docutils literal notranslate"><span class="pre">get_job_child_edges()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.get_tag_child_edges"><code class="docutils literal notranslate"><span class="pre">get_tag_child_edges()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.get_tag_entity_child_edges"><code class="docutils literal notranslate"><span class="pre">get_tag_entity_child_edges()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.get_value_child_edges"><code class="docutils literal notranslate"><span class="pre">get_value_child_edges()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.init_db"><code class="docutils literal notranslate"><span class="pre">init_db()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.parse_db_version"><code class="docutils literal notranslate"><span class="pre">parse_db_version()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -2897,6 +3350,7 @@ This also implies <cite>new=True</cite>.</p></li>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/scripts/furo.js"></script>
     </body>
 </html>
