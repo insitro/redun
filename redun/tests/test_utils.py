@@ -5,7 +5,7 @@ from collections import defaultdict, namedtuple
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, DefaultDict, Dict, Generator, NamedTuple, Optional
+from typing import Any, DefaultDict, Dict, Generator, Generic, NamedTuple, Optional, TypeVar
 
 import pytest
 
@@ -24,15 +24,25 @@ from redun.utils import (
     pickle_preview,
 )
 
+T = TypeVar("T", int, float, str)
+
 
 @dataclass
-class Data:
-    x: float
-    y: Dict[int, Any]
+class Data(Generic[T]):
+    x: T
+    y: Dict[str, Any]
     z: Optional["Data"]  # noqa: F821
 
     def echo(self, string: str) -> str:
         return string
+
+
+@dataclass
+class CustomData1(Data[float]):
+    x: float
+
+
+CustomData2 = Data[int]
 
 
 def test_iter_nested_value() -> None:
@@ -40,7 +50,7 @@ def test_iter_nested_value() -> None:
         "a": [1, [2, 3]],
         "b": {4.0, True, None},
         "c": ("7", "888", 9),
-        "d": Data(x=1.0, y={3: {4: 5}}, z=Data(x=1.0, y={10: "foo"}, z=None)),
+        "d": CustomData1(x=1.0, y={"foo": "bar"}, z=CustomData2(x=42, y={}, z=None)),
     }
     assert set(iter_nested_value(value)) == {
         "a",
@@ -57,10 +67,9 @@ def test_iter_nested_value() -> None:
         "888",
         9,
         1.0,
-        4,
-        5,
-        10,
         "foo",
+        "bar",
+        42,
     }
 
 
@@ -75,17 +84,12 @@ def test_map_nested_value() -> None:
     def func(value) -> str:
         return str(value) + "a"
 
-    @dataclass
-    class Foo:
-        a: str
-        b: Dict[str, str]
-
     # Nested values are supported for namedtuple, but not defaultdict currently
     my_namedtuple = namedtuple("my_namedtuple", "a")
     test_defaultdict: DefaultDict[str, int] = defaultdict(int)
     test_defaultdict["a"]
     test_namedtuple = my_namedtuple(a=1)
-    test_dataclass = Foo("1", {"c": "2"})
+    test_dataclass = CustomData1(x=1.0, y={"foo": "bar"}, z=CustomData2(x=42, y={}, z=None))
 
     value = [
         [1, [2]],
@@ -95,7 +99,6 @@ def test_map_nested_value() -> None:
         test_namedtuple,
         test_defaultdict,
         test_dataclass,
-        Foo,
     ]
 
     assert map_nested_value(func, value) == [
@@ -105,8 +108,9 @@ def test_map_nested_value() -> None:
         {("2a",), "1a"},
         my_namedtuple(a="1a"),
         "defaultdict(<class 'int'>, {'a': 0})a",
-        Foo(a="1a", b={"ca": "2a"}),
-        "<class 'redun.tests.test_utils.test_map_nested_value.<locals>.Foo'>a",
+        CustomData1(
+            x="1.0a", y={"fooa": "bara"}, z=CustomData2(x="42a", y={}, z="Nonea")  # type: ignore
+        ),
     ]
 
 
@@ -221,27 +225,30 @@ def test_pickle_preview_class() -> None:
 def test_pickle_preview_dataclass() -> None:
     """Tests pickle preview when pickled dataclass is not imported"""
     x = 1
-    y = {2: {3: 4}}
-    z = Data(x, y, None)
-    obj = Data(x, y, z)
+    y = {"2": {"3": "4"}}
+    z = CustomData1(x, y, None)
+    obj = CustomData1(x, y, z)
 
     data = pickle_dumps(obj)
 
-    with hide_class("Data"):
+    with hide_class("CustomData1"):
         # AttributeError should raise since Data can't be found.
         with pytest.raises(AttributeError):
             pickle.loads(data)
 
         # However, pickle_preview() still works by using stub classes.
         obj2 = pickle_preview(data)
-    assert str(obj2) == "Data(x=1, y={2: {3: 4}}, z=Data(x=1, y={2: {3: 4}}, z=None))"
+    assert (
+        str(obj2)
+        == "CustomData1(x=1, y={'2': {'3': '4'}}, z=CustomData1(x=1, y={'2': {'3': '4'}}, z=None))"
+    )
 
     assert isinstance(obj2, PreviewClass)
     assert obj2.x == 1
-    assert obj2.y == {2: {3: 4}}
+    assert obj2.y == {"2": {"3": "4"}}
     assert isinstance(obj2.z, PreviewClass)
     assert obj2.z.x == 1
-    assert obj2.z.y == {2: {3: 4}}
+    assert obj2.z.y == {"2": {"3": "4"}}
     assert obj2.z.z is None
 
     with pytest.raises(AttributeError):
