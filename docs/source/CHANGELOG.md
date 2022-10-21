@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.1
+October 20, 2022
+
+* `#219` - Fix nested value iteration for dataclasses instantiated from subscripted generics
+
 ## 0.10.0
 October 17, 2022
 
