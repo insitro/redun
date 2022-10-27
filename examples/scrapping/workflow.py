@@ -1,14 +1,14 @@
 import csv
 import os
 from collections import defaultdict
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, TypeVar
-from urllib.parse import urlparse, urlunparse, urljoin
+from typing import Dict, List, Optional, Sequence, Tuple, TypeVar
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import requests
 from bs4 import BeautifulSoup
 
-from redun import File, Task, cond, task
-from redun.functools import flat_map, flatten, map_
+from redun import File, cond, task
+from redun.functools import flat_map, flatten
 from redun.tools import render_template
 
 redun_namesapce = "redun.examples.scrapper"
@@ -162,7 +162,9 @@ def count_words(files: List[File]) -> List[Tuple[str, int]]:
 
 
 @task()
-def make_report(report_path: str, url: str, files: List[File], word_counts: List[Tuple[str, int]]) -> File:
+def make_report(
+    report_path: str, url: str, files: List[File], word_counts: List[Tuple[str, int]]
+) -> File:
     """
     Make an HTML report for the web scrapping.
     """
@@ -189,7 +191,9 @@ def main(
     files = crawl(url, url, os.path.join(out_path, "crawl"), depth)
 
     word_counts = count_words(files)
-    word_counts_file = write_csv(os.path.join(out_path, "computed/word_counts.txt"), ["word", "count"], word_counts)
+    word_counts_file = write_csv(
+        os.path.join(out_path, "computed/word_counts.txt"), ["word", "count"], word_counts
+    )
 
     report_file = make_report(
         report_path=os.path.join(out_path, "reports/report.html"),

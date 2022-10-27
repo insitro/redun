@@ -2,7 +2,6 @@ import time
 
 from redun import task
 
-
 redun_namespace = "redun.examples.aws_batch"
 
 

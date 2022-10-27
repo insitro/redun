@@ -4,7 +4,6 @@ import time
 from redun import catch, cond, task
 from redun.functools import seq
 
-
 redun_namespace = "redun.examples.control_flow"
 
 

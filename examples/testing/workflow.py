@@ -1,7 +1,6 @@
 # Example workflow with a main task and subtasks (add).
 from redun import task
 
-
 redun_namespace = "redun.examples.testing"
 
 

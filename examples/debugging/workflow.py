@@ -10,7 +10,9 @@ def with_breakpoint(x: int) -> int:
 
     # Feel free to use break points inside of tasks that run within their own thread.
     # Use 'c' to continue.
-    import pdb; pdb.set_trace()
+    import pdb
+
+    pdb.set_trace()
     print("after")
     return x + 1
 

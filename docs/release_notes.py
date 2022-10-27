@@ -8,10 +8,9 @@ Example::
     python release_notes.py 0.4.10 0.4.11
 """
 import argparse
-
-from datetime import date
 import re
 import subprocess
+from datetime import date
 
 
 def main():

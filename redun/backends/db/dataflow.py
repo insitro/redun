@@ -259,7 +259,7 @@ def get_task_args(task: Task) -> List[str]:
 
     # Type ignore is needed since the AST lib does seem to use proper types
     # everywhere.
-    return [arg.arg for arg in code.body[0].args.args]  # type: ignore
+    return [arg.arg for arg in code.body[0].args.args]
 
 
 def make_var_name(var_name_base: str, name2var: Dict[str, DataflowNode], suffix: int = 2) -> str:

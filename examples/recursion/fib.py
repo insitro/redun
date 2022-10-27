@@ -1,6 +1,5 @@
 from redun import task
 
-
 redun_namespace = "redun.examples.recursion"
 
 

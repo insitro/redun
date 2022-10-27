@@ -1233,7 +1233,7 @@ class RedunBackendDb(RedunBackend):
 
         config = AConfig(alembic_config_file)
         config.set_main_option("script_location", alembic_script_location)
-        config.session = self.session  # type:ignore[attr-defined]
+        config.session = self.session
 
         # Determine version in db.
         version = self.get_db_version()
@@ -1969,7 +1969,7 @@ class RedunBackendDb(RedunBackend):
             # Record top-level job for the execution.
             assert self.current_execution
             assert self.current_execution.job_id is None
-            self.current_execution.job_id = job.id  # type: ignore
+            self.current_execution.job_id = job.id
             self.session.add(self.current_execution)
 
         if not now:

@@ -9,7 +9,6 @@ from pprint import pprint
 
 from redun.utils import pickle_preview
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true", help="Start debugger")
 parser.add_argument("pickle", nargs="?")

@@ -1,8 +1,16 @@
 from typing import Any, Callable
 
-from mypy_extensions import KwArg, VarArg
-
 from redun.task import Task, wraps_task
+
+
+def VarArg(type=Any):
+    """A *args-style variadic positional argument"""
+    return type
+
+
+def KwArg(type=Any):
+    """A **kwargs-style variadic keyword argument"""
+    return type
 
 
 def square_task():

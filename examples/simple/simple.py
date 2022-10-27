@@ -1,6 +1,5 @@
 from redun import task
 
-
 redun_namespace = "redun.examples.simple"
 
 
@@ -8,9 +7,11 @@ redun_namespace = "redun.examples.simple"
 def adder(a: int, b: int):
     return a + b
 
+
 @task()
 def multiplier(a: int, b: int):
     return a * b
+
 
 @task()
 def my_zip(my_task, pairs):
@@ -19,8 +20,9 @@ def my_zip(my_task, pairs):
         results.append(my_task(a, b))
     return results
 
+
 @task()
-def workflow(method: str="adder"):
+def workflow(method: str = "adder"):
     pairs = [
         (1, 2),
         (10, 11),

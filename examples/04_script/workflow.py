@@ -1,7 +1,7 @@
 import os
 from typing import Dict, List
 
-from redun import File, task, script
+from redun import File, script, task
 
 
 @task()
@@ -51,10 +51,7 @@ def count_colors(data: File, colors: List[str]) -> Dict[str, int]:
     Count how popular each color is.
     """
     # As we have seen previously, the color counting will be done in parallel.
-    return {
-        color: count_color(data, color)
-        for color in colors
-    }
+    return {color: count_color(data, color) for color in colors}
 
 
 @task()
@@ -79,20 +76,17 @@ def count_colors_by_script(data: File, output_path: str) -> Dict[str, File]:
     # staged_file: StagingFile = File(remote_path).stage(local_path)
 
     return script(
-        f"""
+        """
         echo 'sorting colors...' >> log.txt
         cut -f3 data | sort > colors.sorted
 
         echo 'counting colors...' >> log.txt
         uniq -c colors.sorted | sort -nr > color-counts.txt
         """,
-
         # Use a temporary directory for running the script.
         tempdir=True,
-
         # Stage the input file to a local file called `data`.
         inputs=[data.stage("data")],
-
         # Unstage the output files to our project directory.
         # Final return value of script() takes the shape of outputs, but with each StagingFile
         # replaced by `File(remote_path)`.

@@ -1,12 +1,10 @@
-import os
 import subprocess
 from typing import Dict
-
-from redun import File, script, task
 
 # This is an example of import redun tasks from a library.
 from task_lib.utils import lib_task_on_batch
 
+from redun import File, script, task
 
 redun_namespace = "redun.examples.aws_batch"
 
@@ -19,14 +17,10 @@ def task_on_default(x: int) -> list:
     # In this example, we run the command `uname -a` to get the OS and hostname
     # information in order to provde the task is running locally. For example, if
     # you are running this code on MacOSX, you would see the OS name 'Darwin'.
-    return [
-        'task_on_default',
-        subprocess.check_output(['uname', '-a']),
-        x
-    ]
+    return ["task_on_default", subprocess.check_output(["uname", "-a"]), x]
 
 
-@task(executor='batch', memory=.5, vcpus=1, batch_tags={"stage": "2", "level": "high"})
+@task(executor="batch", memory=0.5, vcpus=1, batch_tags={"stage": "2", "level": "high"})
 def task_on_batch(x: int) -> list:
     # As you can see in the task options, this task will run on the 'batch' executor.
     # We have configured .5Gb of memory and 1 vCPU.
@@ -45,25 +39,20 @@ def task_on_batch(x: int) -> list:
     # return value from the batch task, and the local scheduler will do a follow up evaluation
     # to run `task_on_default` locally.
 
-    return [
-        'task_on_batch',
-        subprocess.check_output(['uname', '-a']),
-        task_on_default(x + 5),
-        x
-    ]
+    return ["task_on_batch", subprocess.check_output(["uname", "-a"]), task_on_default(x + 5), x]
 
 
-@task(executor='batch_debug')
+@task(executor="batch_debug")
 def task_on_batch_debug(x: int) -> list:
     # This task will run within a local Docker container, but overall will follow
     # the same execution steps as a container running on AWS Batch. This can be
     # useful for debugging a workflow locally. For example, you should be able to
     # see the stdout in your terminal and start the Python debugger.
     return [
-        'task_on_batch_debug',
-        subprocess.check_output(['uname', '-a']),
+        "task_on_batch_debug",
+        subprocess.check_output(["uname", "-a"]),
         task_on_default(x + 5),
-        x
+        x,
     ]
 
 
@@ -78,7 +67,7 @@ def count_colors_by_script(data: File, output_path: str) -> Dict[str, File]:
     log_file = File(output_path + "color-counts.log")
 
     return script(
-        f"""
+        """
         echo 'sorting colors...' >> log.txt
         cut -f3 data | sort > colors.sorted
 
@@ -106,8 +95,8 @@ def main(output_path: str, y: int = 10) -> list:
     s3_data = data.copy_to(File(f"{output_path}/data.tsv"))
 
     return [
-        'main',
-        subprocess.check_output(['uname', '-a']),
+        "main",
+        subprocess.check_output(["uname", "-a"]),
         task_on_batch(y),
         lib_task_on_batch(y),
         task_on_batch_debug(y),

@@ -2,8 +2,7 @@ import os
 import socket
 from typing import List
 
-from redun import File, task
-
+from redun import task
 
 redun_namespace = "redun.examples.aws_batch_multinode"
 
@@ -66,5 +65,5 @@ def node_task(output_path) -> List[str]:
 
 
 @task
-def main(output_path: str, num_nodes: int=3):
+def main(output_path: str, num_nodes: int = 3):
     return node_task.options(num_nodex=num_nodes)(output_path)

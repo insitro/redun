@@ -9,10 +9,8 @@ connections.
 import csv
 import os
 import sqlite3
-from typing import List
 
-from redun import task, File, Handle
-
+from redun import File, Handle, task
 
 redun_namespace = "redun.examples.etl"
 

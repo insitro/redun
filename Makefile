@@ -17,6 +17,7 @@ $(VENV_ACTIVATE):
 
 .PHONY: setup
 setup: venv
+	$(WITH_VENV) pre-commit install
 
 
 .PHONY: test
@@ -31,32 +32,13 @@ test-postgres: venv
 
 
 .PHONY: lint
-lint: lint-python mypy black isort
-
-
-.PHONY: black
-black: venv
-	$(WITH_VENV) black --check $(PACKAGE_NAME)
-
-.PHONY: isort
-isort: venv
-	$(WITH_VENV) isort --check-only $(PACKAGE_NAME)
+lint: venv
+	$(WITH_VENV) pre-commit run --all-files
 
 .PHONY: format
 format: venv
-	$(WITH_VENV) isort $(PACKAGE_NAME)
-	$(WITH_VENV) black $(PACKAGE_NAME)
-
-
-.PHONY: lint-python
-lint-python: venv
-	$(WITH_VENV) flake8 $(PACKAGE_NAME)
-
-
-.PHONY: mypy
-mypy: venv
-	$(WITH_VENV) mypy --show-error-codes $(PACKAGE_NAME)
-
+	$(WITH_VENV) pre-commit run isort --all-files
+	$(WITH_VENV) pre-commit run black --all-files
 
 # Migrate example database to latest version.
 .PHONY: upgrade

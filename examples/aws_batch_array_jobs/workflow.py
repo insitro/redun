@@ -1,7 +1,7 @@
 import time
 from typing import List
 
-from redun import task, File
+from redun import task
 
 redun_namespace = "redun.examples.aws_batch_array_jobs"
 
@@ -16,6 +16,7 @@ def add(x: int, y: int) -> int:
 def mult(x: int, y: int) -> int:
     time.sleep(10)
     return x * y
+
 
 @task
 def main(n: int = 10) -> List[int]:

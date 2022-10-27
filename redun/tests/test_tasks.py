@@ -112,16 +112,16 @@ def test_task_hashing():  # typing: ignore
 
     # Hash includes are order invariant
     @task(hash_includes=["a", 2])
-    def task1():  # type: ignore
+    def task1():
         return 10
 
-    assert task1.get_hash() == "156d0a1a6fac078702c4796dcce77337a37af8ed"
+    assert task1.get_hash() == "36fc0f089161ea4142ef20272e581ae8fc0b1921"
 
     @task(hash_includes=[2, "a"])
-    def task1():  # type: ignore
+    def task1():
         return 10
 
-    assert task1.get_hash() == "156d0a1a6fac078702c4796dcce77337a37af8ed"
+    assert task1.get_hash() == "36fc0f089161ea4142ef20272e581ae8fc0b1921"
 
     # Testing that a change in helper source code will modify the task hash
     global helper
@@ -316,7 +316,7 @@ def test_hash_uses_source_instead_of_inspect() -> None:
     """For version=None tasks, the hash uses task.source instead of dynamic inspection."""
 
     # Use type ignore so we can redefine task3 multiple times
-    @task  # type: ignore
+    @task
     def task3():
         return 30
 

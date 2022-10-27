@@ -1,7 +1,7 @@
 import os
 import platform
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 REQUIRE_POSTGRES = os.getenv("REQUIRE_POSTGRES") == "1"
 PSYCOPG2_VERSION = "psycopg2>=2.8"
@@ -72,13 +72,18 @@ caching, and data provenance logging.
 
 redun's key features are:
 
-- Workflows are defined by lazy expressions that when evaluated emit dynamic directed acyclic graphs (DAGs), enabling complex data flows.
+- Workflows are defined by lazy expressions that when evaluated emit dynamic directed acyclic
+  graphs (DAGs), enabling complex data flows.
 - Incremental computation that is reactive to both data changes as well as code changes.
-- Workflow tasks can be executed on a variety of compute backend (threads, processes, AWS batch jobs, Spark jobs, etc).
-- Data changes are detected for in memory values as well as external data sources such as files and object stores using file hashing.
-- Code changes are detected by hashing individual Python functions and comparing against historical call graph recordings.
+- Workflow tasks can be executed on a variety of compute backend (threads, processes, AWS batch
+  jobs, Spark jobs, etc).
+- Data changes are detected for in memory values as well as external data sources such as files
+  and object stores using file hashing.
+- Code changes are detected by hashing individual Python functions and comparing against
+  historical call graph recordings.
 - Past intermediate results are cached centrally and reused across workflows.
-- Past call graphs can be used as a data lineage record and can be queried for debugging and auditing.
+- Past call graphs can be used as a data lineage record and can be queried for debugging and
+  auditing.
     """,
     scripts=["bin/redun"],
     include_package_data=True,

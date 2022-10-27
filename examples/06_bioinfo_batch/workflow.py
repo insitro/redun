@@ -3,14 +3,12 @@ import os
 import re
 import shutil
 from collections import defaultdict
-from itertools import chain
 from typing import Any, Dict, List, Optional, cast
 
-from redun import task, script, Dir, File
+from redun import Dir, File, script, task
 from redun.file import glob_file
 from redun.functools import const, eval_
-from redun.tools import copy_file, copy_dir
-
+from redun.tools import copy_dir, copy_file
 
 redun_namespace = "redun.examples.bioinfo_batch"
 
@@ -30,10 +28,10 @@ genome_ref_src = File("https://hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosom
 # Public known sites files.
 sites_src_files = [
     File(
-        "gs://genomics-public-data/resources/broad/hg38/v0/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
+        "gs://genomics-public-data/resources/broad/hg38/v0/1000G_phase1.snps.high_confidence.hg38.vcf.gz"  # noqa: E501
     ),
     File(
-        "gs://genomics-public-data/resources/broad/hg38/v0/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
+        "gs://genomics-public-data/resources/broad/hg38/v0/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"  # noqa: E501
     ),
 ]
 
@@ -197,7 +195,7 @@ def cut_adapters(
     adapter_arg = ""
     adapter_stages = []
     if adapter1_file and adapter2_file:
-        adapter_arg = f"-g file:adapter1 -G file:adapter2"
+        adapter_arg = "-g file:adapter1 -G file:adapter2"
         adapter_stages = [
             adapter1_file.stage("adapter1"),
             adapter2_file.stage("adapter2"),
@@ -293,7 +291,7 @@ def mark_dups(bam: File, output_path: str) -> Dict[str, File]:
     Mark duplicate reads in an alignment.
     """
     return script(
-        f"""
+        """
         gatk \
             --java-options "-Xmx18G" \
             MarkDuplicates \

@@ -1,6 +1,5 @@
 from redun import task
 
-
 redun_namespace = "redun.examples.startup.workflow_lib.utils"
 
 ANALYSIS_IMAGE = "YOUR_ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/redun_aws_batch_example"

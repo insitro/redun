@@ -20,7 +20,6 @@ from enum import Enum
 
 from redun import task
 
-
 redun_namespace = "redun.examples.enum"
 
 
@@ -31,7 +30,7 @@ class Color(Enum):
 
 
 @task()
-def main(color: Color=Color.blue):
+def main(color: Color = Color.blue):
     """
     Example of a task that can parse an enum from the command line.
     """

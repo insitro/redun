@@ -102,7 +102,7 @@ def is_debugger_active() -> bool:
 # Patch sys.settrace() in order to detect presence of debugger.
 _original_settrace = sys.settrace
 _is_debugger_active = False
-sys.settrace = settrace_patch  # type: ignore
+sys.settrace = settrace_patch
 
 
 class NoCurrentScheduler(Exception):
@@ -2430,7 +2430,7 @@ def subrun(
             # Create stub-job representing the job in the subscheduler.
             # The call_hash is needed to compute the right call_hash of parent_job.
             job = Job(
-                root_task(quote(None)),  # type: ignore
+                root_task(quote(None)),
                 id=subrun_result["job_id"],
                 parent_job=parent_job,
                 execution=scheduler._current_execution,
