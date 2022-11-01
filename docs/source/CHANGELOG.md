@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0
+November 01, 2022
+
+* `#227` - Add --wait option to redun launch
+* `#221` - Add launch to run to allow remote runs
+* `#207` - DE-6252 Upgrade mypy and remove python pin
+* `#217` - DE-6397 Add pre commit for all linting/formatting
+
 ## 0.10.1
 October 20, 2022
 
