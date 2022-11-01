@@ -2076,3 +2076,47 @@ def main() -> int:
     value = backend.session.query(Value).filter(Value.type != "redun.Task").one()
     assert value.value_parsed
     assert value.value_parsed != this_pid
+
+
+@pytest.mark.parametrize("executor", ["proc", "thread"])
+@use_tempdir
+def test_wait_launch(executor: str) -> None:
+    """
+    Launch with --wait which prints the value
+    """
+    config_string = """
+[executors.proc]
+type = local
+mode = process
+
+[executors.thread]
+type = local
+mode = thread
+"""
+    workflow = """
+import os
+import redun
+
+@redun.task
+def main() -> str:
+    return "hi"
+"""
+    File(".redun/redun.ini").write(config_string)
+    File("workflow.py").write(workflow)
+    client = RedunClient()
+    waited_display = run_command(
+        client,
+        [
+            "redun",
+            "launch",
+            "--wait",
+            "--executor",
+            executor,
+            "redun",
+            "run",
+            "workflow.py",
+            "main",
+        ],
+    )
+    lines = waited_display.split("\n")
+    assert lines[-2] == "b\"'hi'\\n\""

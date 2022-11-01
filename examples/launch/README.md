@@ -42,3 +42,14 @@ To run the redun scheduler from a AWS Batch job use the `batch` executor:
 ```shell
 redun launch --executor batch redun run workflow.py main --x 1 --y 2
 ```
+
+You can also pass additional options to the executor, such as `--option interactive=true`, as well as wait for the workflow to complete (e.g. `--wait`).
+This can be helpful for debugging a dockerized workflow locally:
+
+```sh
+redun launch \
+  --executor docker_headnode \
+  --option interactive=true \
+  --wait \
+  redun run workflow.py main --x 2 --y 3
+```

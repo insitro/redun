@@ -1177,6 +1177,9 @@ class RedunClient:
             action="append",
             help="Override executor options (format: key=value).",
         )
+        launch_parser.add_argument(
+            "--wait", action="store_true", help="Wait for workflow to complete."
+        )
         launch_parser.set_defaults(func=self.launch_command)
         launch_parser.set_defaults(show_help=False)
 
@@ -1723,21 +1726,31 @@ class RedunClient:
 
         # Parse task options.
         task_options = dict(map(parse_tag_key_value, args.option)) if args.option else {}
+        task_options["executor"] = executor_name
 
         # Setup job for inner run command.
         run_expr = cast(TaskExpression, script_task.options(**task_options)(remote_run_command))
-        job = redun.scheduler.Job(run_expr)
-        job.task = script_task
-        script_args = ()
-        script_kwargs = {"command": remote_run_command}
-        job.eval_hash, job.args_hash = scheduler.get_eval_hash(
-            script_task, script_args, script_kwargs
-        )
-        logger.info(f"Run within Executor {executor_name}: {remote_run_command}")
 
-        # Submit job to executor.
-        executor.submit_script(job, script_args, script_kwargs)
-        executor.stop()  # stop the monitor thread.
+        logger.info(f"Run within Executor {executor_name}: {remote_run_command}")
+        if args.wait:
+            # Run scheduler and wait for completion.
+            result = scheduler.run(run_expr)
+            if result is not None:
+                self.display(result, pretty=True)
+
+        else:
+            # Submit directly to executor and immediately exit.
+            job = redun.scheduler.Job(run_expr)
+            job.task = script_task
+            script_args = ()
+            script_kwargs = {"command": remote_run_command}
+            job.eval_hash, job.args_hash = scheduler.get_eval_hash(
+                script_task, script_args, script_kwargs
+            )
+
+            # Submit job to executor.
+            executor.submit_script(job, script_args, script_kwargs)
+            executor.stop()  # stop the monitor thread.
 
     def infer_file_path(self, path: str) -> Optional[Base]:
         """
