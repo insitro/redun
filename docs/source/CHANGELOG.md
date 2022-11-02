@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.1
+November 01, 2022
+
+* `#234` - Temporarily cap botocore version due to upstream bug
+
 ## 0.11.0
 November 01, 2022
 
