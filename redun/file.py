@@ -29,6 +29,7 @@ from botocore.exceptions import ClientError
 
 from redun import glue
 from redun.hashing import hash_struct
+from redun.logging import logger
 from redun.value import Value
 
 # Don't require pyspark to be installed locally except for type checking.
@@ -156,6 +157,45 @@ def get_filesystem(proto: Optional[str] = None, url: Optional[str] = None) -> "F
     return filesystem
 
 
+class RedunFileNotFoundError(FileNotFoundError):
+    """
+    Redun-specific FileNotFoundError.
+    """
+
+    def __init__(self, path: str, *args):
+        super().__init__(*args)
+        self.path = path
+
+    def __str__(self) -> str:
+        return f"[Errno {self.errno}] {self.strerror}. {self.path}"
+
+
+class RedunPermissionError(PermissionError):
+    """
+    Redun-specific PermissionError.
+    """
+
+    def __init__(self, path: str, *args):
+        super().__init__(*args)
+        self.path = path
+
+    def __str__(self) -> str:
+        return f"[Errno {self.errno}] {self.strerror}. {self.path}"
+
+
+class RedunOSError(OSError):
+    """
+    Redun-specific OSError.
+    """
+
+    def __init__(self, path: str, *args):
+        super().__init__(*args)
+        self.path = path
+
+    def __str__(self) -> str:
+        return f"[Errno {self.errno}] {self.strerror}. {self.path}"
+
+
 class FileSystem(abc.ABC):
     """
     Base class filesystem access.
@@ -183,7 +223,24 @@ class FileSystem(abc.ABC):
                 raise ValueError("Binary mode 'b' cannot be used with encoding.")
             mode += "b"
 
-        stream = self._open(path, mode, **kwargs)
+        try:
+            stream = self._open(path, mode, **kwargs)
+
+        except FileNotFoundError as error:
+            # Reraise expected errors with redun-specific subclases that include
+            # the path.
+            raise RedunFileNotFoundError(path, *error.args) from error
+
+        except PermissionError as error:
+            raise RedunPermissionError(path, *error.args) from error
+
+        except OSError as error:
+            raise RedunOSError(path, *error.args) from error
+
+        except Exception:
+            # Unknown error. Just log the path and reraise it.
+            logger.error(f"File.open error: {path}")
+            raise
 
         if encoding:
             # Perform encoding/decoding, if specified.

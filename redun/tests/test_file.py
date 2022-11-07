@@ -1,6 +1,7 @@
 import os
 import shlex
 import shutil
+from unittest.mock import patch
 
 import boto3
 import pytest
@@ -925,3 +926,29 @@ def test_copy_file_dir() -> None:
 
     redun.file.copy_file("src", dest_dir.path, recursive=True)
     assert {file.path for file in dest_dir} == {"dest/a.txt", "dest/b/b.txt"}
+
+
+@use_tempdir
+def test_file_error() -> None:
+    """
+    File.open should raise descriptive errors.
+    """
+
+    with pytest.raises(
+        FileNotFoundError, match=r"\[Errno 2\] No such file or directory\. not_exist_file"
+    ):
+        File("not_exist_file").open()
+
+    File("readonly_file").write("hi")
+    os.system("chmod 400 readonly_file")
+
+    with pytest.raises(PermissionError, match=r"\[Errno 13\] Permission denied\. readonly_file"):
+        File("readonly_file").open("w")
+
+    def file_open(*args):
+        raise OSError(100, "My OS error")
+
+    fs = get_filesystem(proto="local")
+    with patch.object(fs, "_open", file_open):
+        with pytest.raises(OSError, match=r"\[Errno 100\] My OS error\. bad_file"):
+            File("bad_file").open()
