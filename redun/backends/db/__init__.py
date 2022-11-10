@@ -1763,15 +1763,22 @@ class RedunBackendDb(RedunBackend):
                 eval_row.value_hash = value_hash
                 self.session.commit()
         else:
-            self.session.add(
-                Evaluation(
-                    eval_hash=eval_hash,
-                    task_hash=task_hash,
-                    args_hash=args_hash,
-                    value_hash=value_hash,
+            try:
+                self.session.add(
+                    Evaluation(
+                        eval_hash=eval_hash,
+                        task_hash=task_hash,
+                        args_hash=args_hash,
+                        value_hash=value_hash,
+                    )
                 )
-            )
-            self.session.commit()
+                self.session.commit()
+            except sa.exc.IntegrityError:
+                # If eval_hash has recently been added, do update instead.
+                self.session.rollback()
+                eval_row = self.session.query(Evaluation).get(eval_hash)
+                eval_row.value_hash = value_hash
+                self.session.commit()
 
     def explain_cache_miss(self, task: "BaseTask", args_hash: str) -> Optional[Dict[str, Any]]:
         """
