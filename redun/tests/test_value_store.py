@@ -4,7 +4,7 @@ from typing import cast
 import boto3
 
 from redun import task
-from redun.backends.db import MAX_VALUE_SIZE_PREVIEW, LargeValue, RedunBackendDb, Value
+from redun.backends.db import MAX_VALUE_SIZE_PREVIEW, PreviewValue, RedunBackendDb, Value
 from redun.config import Config
 from redun.file import Dir
 from redun.scheduler import Scheduler
@@ -119,9 +119,9 @@ def test_preview_value(tmpdir) -> None:
     value_row = backend.session.query(Value).filter(Value.value_hash == value_hash).one()
     assert value_row.preview == small_result
 
-    # Large value should preview as a LargeValue object.
+    # Large value should preview as a PreviewValue object.
     value_hash = scheduler.type_registry.get_hash(large_result)
     value_row = backend.session.query(Value).filter(Value.value_hash == value_hash).one()
     preview = value_row.preview
-    assert isinstance(preview, LargeValue)
+    assert isinstance(preview, PreviewValue)
     assert str(preview) == "builtins.str(hash=c901f470, size=1000020)"

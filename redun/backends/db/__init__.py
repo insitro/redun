@@ -3,6 +3,7 @@ import os
 import sys
 import typing
 import uuid
+import warnings
 from collections import defaultdict
 from copy import copy as shallowcopy
 from datetime import datetime, timedelta
@@ -64,12 +65,13 @@ from redun.utils import (
     MultiMap,
     iter_nested_value,
     json_dumps,
+    pickle_loads,
     pickle_preview,
     str2bool,
     trim_string,
     with_pickle_preview,
 )
-from redun.value import InvalidValueError
+from redun.value import MIME_TYPE_PICKLE, InvalidValueError
 
 if typing.TYPE_CHECKING:
     from redun.scheduler import Job as BaseJob
@@ -318,11 +320,29 @@ class Value(Base):
         size = backend._get_value_size(self)
 
         if size > MAX_VALUE_SIZE_PREVIEW:
-            return LargeValue(self, size)
+            # Use a preview if the value is too large to load efficiently.
+            return PreviewValue(self, size)
         else:
             with with_pickle_preview():
-                value, _ = backend._get_value(self)
-                return value
+                data, has_value = backend._get_value_data(self)
+                if not has_value:
+                    # Data is missing from value store, just show preview.
+                    warnings.warn(
+                        "Value data is missing from the value store. "
+                        "Does `value_store_path` need to be configured?"
+                    )
+                    return PreviewValue(self, size)
+
+                value, has_value = backend._deserialize_value(self.type, data)
+                if has_value:
+                    return value
+                elif self.format == MIME_TYPE_PICKLE:
+                    # Fallback to direct pickle preview loading.
+                    return pickle_loads(data)
+                else:
+                    # If deserialization failed and we don't know the format,
+                    # default to just a preview.
+                    return PreviewValue(self, size)
 
     @property
     def value_parsed(self) -> Optional[Any]:
@@ -350,9 +370,9 @@ class Value(Base):
         )
 
 
-class LargeValue:
+class PreviewValue:
     """
-    A Value too large to display.
+    A preview value if the value is too large or if there is an error.
     """
 
     def __init__(self, value: Value, size: int):
