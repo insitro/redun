@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.0
+November 29, 2022
+
+* `#241` - Remove length restriction on redun type names
+* `#242` - Use previews for value with no loaded class
+* `#243` - DE-6625 Catch and update eval_hash on race condition
+* `#240` - Specify user and password in example readme
+* `#232` - DE-6585 Raise a more informative error message for File errors
+
 ## 0.11.1
 November 01, 2022
 
