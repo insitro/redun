@@ -928,10 +928,9 @@ def test_copy_file_dir() -> None:
     assert {file.path for file in dest_dir} == {"dest/a.txt", "dest/b/b.txt"}
 
 
-@use_tempdir
-def test_file_error() -> None:
+def test_non_existent_file_error() -> None:
     """
-    File.open should raise descriptive errors.
+    File.open should raise descriptive error when path does not exist.
     """
 
     with pytest.raises(
@@ -939,11 +938,11 @@ def test_file_error() -> None:
     ):
         File("not_exist_file").open()
 
-    File("readonly_file").write("hi")
-    os.system("chmod 400 readonly_file")
 
-    with pytest.raises(PermissionError, match=r"\[Errno 13\] Permission denied\. readonly_file"):
-        File("readonly_file").open("w")
+def test_file_error() -> None:
+    """
+    File.open should raise descriptive error when there is a low-level error.
+    """
 
     def file_open(*args):
         raise OSError(100, "My OS error")
@@ -952,3 +951,17 @@ def test_file_error() -> None:
     with patch.object(fs, "_open", file_open):
         with pytest.raises(OSError, match=r"\[Errno 100\] My OS error\. bad_file"):
             File("bad_file").open()
+
+
+# Root user will still be able to write to a readonly file so skip this test if we are running
+# as root (which will be the case on codebuild runs).
+@use_tempdir
+@pytest.mark.skipif(os.getuid() == 0, reason="Running as root which can write to readonly files")
+def test_readonly_file_error() -> None:
+    """
+    File.open should raise descriptive error when trying to open a readonly file in write mode.
+    """
+    File("readonly_file").write("hi")
+    os.system("chmod 400 readonly_file")
+    with pytest.raises(PermissionError, match=r"\[Errno 13\] Permission denied\. readonly_file"):
+        File("readonly_file").open("w")

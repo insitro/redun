@@ -6,7 +6,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        # Pinned to ubuntu-20.04 as that is the last version to include Python 3.6 support.
+        os: [ubuntu-20.04]
         python: ['3.6', '3.7', '3.8', '3.9', '3.10']
     runs-on: ${{ matrix.os }}
     steps:
