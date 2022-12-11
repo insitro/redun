@@ -1,5 +1,5 @@
 freezegun
-moto==3.1.10
+moto[batch,glue,s3]==3.1.10
 numpydoc==1.1.0
 pandas
 pdbpp
