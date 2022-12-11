@@ -89,7 +89,6 @@ def run_docker(
             "-e",
             "AWS_DEFAULT_REGION"
         ]
-     )
     )
 
     # Volume mounting args.
