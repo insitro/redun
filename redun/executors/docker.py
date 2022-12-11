@@ -80,11 +80,16 @@ def run_docker(
     # Environment args.
     common_args.extend(
         [
-            "-e", "AWS_ACCESS_KEY_ID",
-            "-e", "AWS_SECRET_ACCESS_KEY",
-            "-e", "AWS_SESSION_TOKEN",
-            "-e", "AWS_DEFAULT_REGION"
+            "-e",
+            "AWS_ACCESS_KEY_ID",
+            "-e",
+            "AWS_SECRET_ACCESS_KEY",
+            "-e",
+            "AWS_SESSION_TOKEN",
+            "-e",
+            "AWS_DEFAULT_REGION"
         ]
+     )
     )
 
     # Volume mounting args.
