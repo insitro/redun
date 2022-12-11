@@ -87,7 +87,7 @@ def run_docker(
             "-e",
             "AWS_SESSION_TOKEN",
             "-e",
-            "AWS_DEFAULT_REGION"
+            "AWS_DEFAULT_REGION",
         ]
     )
 
