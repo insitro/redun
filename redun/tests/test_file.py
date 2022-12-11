@@ -9,7 +9,19 @@ import vcr
 
 import redun.file
 from redun import File, Scheduler, ShardedS3Dataset, task
-from redun.file import Dir, StagingDir, StagingFile, get_filesystem, glob_file
+from redun.file import (
+    ContentDir,
+    ContentFile,
+    ContentStagingFile,
+    Dir,
+    IDir,
+    IFile,
+    IStagingFile,
+    StagingDir,
+    StagingFile,
+    get_filesystem,
+    glob_file,
+)
 from redun.tests.utils import mock_s3, use_tempdir
 from redun.tools import copy_file
 from redun.value import get_type_registry
@@ -965,3 +977,87 @@ def test_readonly_file_error() -> None:
     os.system("chmod 400 readonly_file")
     with pytest.raises(PermissionError, match=r"\[Errno 13\] Permission denied\. readonly_file"):
         File("readonly_file").open("w")
+
+
+@use_tempdir
+def test_ifile() -> None:
+    """
+    IFile hash should only depend on path.
+    """
+
+    # First confirm that regular files update hash based on contents and timestamp.
+    file1 = File("file")
+    file1.write("1")
+
+    file2 = File("file")
+    file2.write("22")
+
+    assert file1.get_hash() != file2.get_hash()
+
+    # IFile hashes only depend on path.
+    file1 = IFile("ifile")
+    file1.write("1")
+
+    file2 = IFile("ifile")
+    file2.write("22")
+
+    assert file1.get_hash() == file2.get_hash()
+
+
+@use_tempdir
+def test_ifile_classes() -> None:
+    """
+    IFile methods should return related objects of the right type.
+    """
+    assert isinstance(IFile("file").stage("local"), IStagingFile)
+    assert isinstance(IDir("dir").file("file"), IFile)
+
+    IFile("dir/a").touch()
+    IFile("dir/b").touch()
+    assert all(isinstance(file, IFile) for file in IDir("dir"))
+
+
+@use_tempdir
+def test_content_file() -> None:
+    """
+    ContentFile hash should only depend on path and content (not timestamp).
+    """
+
+    # Hash should only depend on path.
+    file1 = ContentFile("file")
+    file1.write("hi")
+
+    file2 = ContentFile("file")
+    file2.write("hi")
+
+    assert file1.get_hash() == file2.get_hash()
+
+    # Hash should update with content.
+    file2.write("bye")
+    assert file1.get_hash() != file2.get_hash()
+
+    # Hash should go back after update.
+    file2.write("hi")
+    assert file1.get_hash() == file2.get_hash()
+
+    # Different content should change the hash.
+    file1 = ContentFile("file")
+    file1.write("hi")
+
+    file2 = ContentFile("file")
+    file2.write("bye")
+
+    assert file1.get_hash() != file2.get_hash()
+
+
+@use_tempdir
+def test_content_file_classes() -> None:
+    """
+    ContentFile methods should return related objects of the right type.
+    """
+    assert isinstance(ContentFile("file").stage("local"), ContentStagingFile)
+    assert isinstance(ContentDir("dir").file("file"), ContentFile)
+
+    ContentFile("dir/a").touch()
+    ContentFile("dir/b").touch()
+    assert all(isinstance(file, ContentFile) for file in ContentDir("dir"))

@@ -40,7 +40,7 @@ def copy_file(src_file: File, dest_path: str, skip_if_exists: bool = False) -> F
         # If dest_path is a directory, use the same basename as the src_file.
         dest_path = dest_path + src_file.basename()
 
-    return src_file.copy_to(File(dest_path), skip_if_exists=skip_if_exists)
+    return src_file.copy_to(src_file.classes.File(dest_path), skip_if_exists=skip_if_exists)
 
 
 @task(namespace="redun", version="1", config_args=["skip_if_exists", "copy_options"])
@@ -71,7 +71,7 @@ def copy_dir(
     File copies will be done in parallel.
     """
     src_files = list(src_dir)
-    dest_dir = Dir(dest_path)
+    dest_dir = src_dir.classes.Dir(dest_path)
     dest_paths = [dest_dir.file(src_dir.rel_path(src_file.path)).path for src_file in src_files]
     return seq(
         [
