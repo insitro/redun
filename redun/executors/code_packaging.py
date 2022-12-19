@@ -51,7 +51,26 @@ def extract_tar(tar_file: File, dest_dir: str = ".") -> None:
     """
     with tar_file.open("rb") as infile:
         with tarfile.open(fileobj=infile, mode="r|gz") as tar:
-            tar.extractall(dest_dir)
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(tar, dest_dir)
 
 
 def create_zip(zip_path: str, base_path: str, file_paths: Iterable[str]) -> File:
