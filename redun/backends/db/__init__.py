@@ -3,6 +3,7 @@ import os
 import sys
 import typing
 import uuid
+import warnings
 from collections import defaultdict
 from copy import copy as shallowcopy
 from datetime import datetime, timedelta
@@ -64,12 +65,13 @@ from redun.utils import (
     MultiMap,
     iter_nested_value,
     json_dumps,
+    pickle_loads,
     pickle_preview,
     str2bool,
     trim_string,
     with_pickle_preview,
 )
-from redun.value import InvalidValueError
+from redun.value import MIME_TYPE_PICKLE, InvalidValueError
 
 if typing.TYPE_CHECKING:
     from redun.scheduler import Job as BaseJob
@@ -140,6 +142,7 @@ REDUN_DB_VERSIONS = [
     DBVersionInfo("d4af139b6f53", 2, 3, "Add job.execution_id"),
     DBVersionInfo("cd2d53191748", 3, 0, "Make job.execution_id non-nullable"),
     DBVersionInfo("cc4f663817b6", 3, 1, "Add Tag schemas."),
+    DBVersionInfo("eb7b95e4e8bf", 3, 2, "Remove length restriction on value type names."),
 ]
 REDUN_DB_MIN_VERSION = DBVersionInfo("", 3, 1, "")  # Min db version needed by redun library.
 REDUN_DB_MAX_VERSION = DBVersionInfo("", 3, 99, "")  # Max db version needed by redun library.
@@ -279,7 +282,7 @@ class Value(Base):
     __tablename__ = "value"
 
     value_hash = Column(String(HASH_LEN), primary_key=True)
-    type = Column(String(100))
+    type = Column(String(length=None))
     format = Column(String(100))
     value = Column(LargeBinary())
 
@@ -318,11 +321,29 @@ class Value(Base):
         size = backend._get_value_size(self)
 
         if size > MAX_VALUE_SIZE_PREVIEW:
-            return LargeValue(self, size)
+            # Use a preview if the value is too large to load efficiently.
+            return PreviewValue(self, size)
         else:
             with with_pickle_preview():
-                value, _ = backend._get_value(self)
-                return value
+                data, has_value = backend._get_value_data(self)
+                if not has_value:
+                    # Data is missing from value store, just show preview.
+                    warnings.warn(
+                        "Value data is missing from the value store. "
+                        "Does `value_store_path` need to be configured?"
+                    )
+                    return PreviewValue(self, size)
+
+                value, has_value = backend._deserialize_value(self.type, data)
+                if has_value:
+                    return value
+                elif self.format == MIME_TYPE_PICKLE:
+                    # Fallback to direct pickle preview loading.
+                    return pickle_loads(data)
+                else:
+                    # If deserialization failed and we don't know the format,
+                    # default to just a preview.
+                    return PreviewValue(self, size)
 
     @property
     def value_parsed(self) -> Optional[Any]:
@@ -350,9 +371,9 @@ class Value(Base):
         )
 
 
-class LargeValue:
+class PreviewValue:
     """
-    A Value too large to display.
+    A preview value if the value is too large or if there is an error.
     """
 
     def __init__(self, value: Value, size: int):
@@ -1233,7 +1254,7 @@ class RedunBackendDb(RedunBackend):
 
         config = AConfig(alembic_config_file)
         config.set_main_option("script_location", alembic_script_location)
-        config.session = self.session  # type:ignore[attr-defined]
+        config.session = self.session
 
         # Determine version in db.
         version = self.get_db_version()
@@ -1763,15 +1784,22 @@ class RedunBackendDb(RedunBackend):
                 eval_row.value_hash = value_hash
                 self.session.commit()
         else:
-            self.session.add(
-                Evaluation(
-                    eval_hash=eval_hash,
-                    task_hash=task_hash,
-                    args_hash=args_hash,
-                    value_hash=value_hash,
+            try:
+                self.session.add(
+                    Evaluation(
+                        eval_hash=eval_hash,
+                        task_hash=task_hash,
+                        args_hash=args_hash,
+                        value_hash=value_hash,
+                    )
                 )
-            )
-            self.session.commit()
+                self.session.commit()
+            except sa.exc.IntegrityError:
+                # If eval_hash has recently been added, do update instead.
+                self.session.rollback()
+                eval_row = self.session.query(Evaluation).get(eval_hash)
+                eval_row.value_hash = value_hash
+                self.session.commit()
 
     def explain_cache_miss(self, task: "BaseTask", args_hash: str) -> Optional[Dict[str, Any]]:
         """
@@ -1969,7 +1997,7 @@ class RedunBackendDb(RedunBackend):
             # Record top-level job for the execution.
             assert self.current_execution
             assert self.current_execution.job_id is None
-            self.current_execution.job_id = job.id  # type: ignore
+            self.current_execution.job_id = job.id
             self.session.add(self.current_execution)
 
         if not now:

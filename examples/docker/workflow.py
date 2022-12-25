@@ -4,7 +4,6 @@ from typing import Dict
 
 from redun import File, script, task
 
-
 redun_namespace = "redun.examples.docker"
 
 # Path used for Docker volume mounts. We will copy data into and out of this
@@ -20,14 +19,10 @@ def task_on_default(x: int) -> list:
     # In this example, we run the command `uname -a` to get the OS and hostname
     # information in order to provde the task is running locally. For example, if
     # you are running this code on MacOSX, you would see the OS name 'Darwin'.
-    return [
-        'task_on_default',
-        subprocess.check_output(['uname', '-a']),
-        x
-    ]
+    return ["task_on_default", subprocess.check_output(["uname", "-a"]), x]
 
 
-@task(executor="docker", memory=.5, vcpus=1, volumes=[(DATA_DIR, DATA_DIR)])
+@task(executor="docker", memory=0.5, vcpus=1, volumes=[(DATA_DIR, DATA_DIR)])
 def task_on_docker(x: int) -> list:
     # As you can see in the task options, this task will run on the 'docker' executor.
     # We have configured .5Gb of memory and 1 vCPU.
@@ -40,12 +35,7 @@ def task_on_docker(x: int) -> list:
     # One other thing to point out in this example, we are free to call other tasks that
     # don't run in docker, such as `task_on_default`.
 
-    return [
-        'task_on_docker',
-        subprocess.check_output(['uname', '-a']),
-        task_on_default(x + 5),
-        x
-    ]
+    return ["task_on_docker", subprocess.check_output(["uname", "-a"]), task_on_default(x + 5), x]
 
 
 @task()
@@ -59,7 +49,7 @@ def count_colors_by_script(data: File, output_path: str) -> Dict[str, File]:
     log_file = File(os.path.join(output_path, "color-counts.log"))
 
     return script(
-        f"""
+        """
         echo 'sorting colors...' >> log.txt
         cut -f3 data | sort > colors.sorted
 
@@ -90,8 +80,8 @@ def main(output_path: str = DATA_DIR, y: int = 10) -> list:
     s3_data = data.copy_to(File(f"{output_path}/data.tsv"))
 
     return [
-        'main',
-        subprocess.check_output(['uname', '-a']),
+        "main",
+        subprocess.check_output(["uname", "-a"]),
         task_on_docker(y),
         count_colors_by_script(s3_data, output_path),
     ]

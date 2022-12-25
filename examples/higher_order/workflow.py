@@ -3,7 +3,6 @@ from typing import List
 from redun import task
 from redun.task import Task
 
-
 redun_namespace = "redun.examples.higher_order"
 
 

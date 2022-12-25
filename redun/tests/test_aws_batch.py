@@ -2,6 +2,7 @@ import json
 import os
 import pickle
 import time
+import unittest.mock
 import uuid
 from typing import cast
 from unittest.mock import Mock, patch
@@ -26,6 +27,7 @@ from redun.executors.aws_batch import (
     get_batch_job_name,
     get_hash_from_job_name,
     get_job_definition,
+    get_job_log_stream,
     get_or_create_job_definition,
     iter_batch_job_log_lines,
     iter_batch_job_logs,
@@ -119,22 +121,27 @@ def test_get_hash_from_job_name(array, suffix) -> None:
 
 
 @patch("redun.executors.aws_utils.get_aws_client")
-@patch("redun.executors.aws_batch.get_job_definition")
-def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mock) -> None:
+def test_get_or_create_job_definition(get_aws_client_mock) -> None:
     """
     Confirm that jobs are correctly fetched or created.
     """
 
-    get_aws_client_mock.return_value.register_job_definition.return_value = {"jobId": "new-job"}
+    # Get mocks.
+    describe_job_definitions = get_aws_client_mock.return_value.describe_job_definitions
+    register_job_definition = get_aws_client_mock.return_value.register_job_definition
+
+    # Let's skip the LRU cache for this test.
+    _get_or_create_job_definition = get_or_create_job_definition.__wrapped__
 
     # 1. Jobs get created
-    get_job_definition_mock.return_value = {}
-    result = get_or_create_job_definition(
+    describe_job_definitions.return_value = {"jobDefinitions": []}
+    register_job_definition.return_value = {"jobId": "new-job"}
+    result = _get_or_create_job_definition(
         job_def_name="test-jd", image="an-image:latest", role="aRole"
     )
 
     assert result == {"jobId": "new-job"}
-    get_aws_client_mock.return_value.register_job_definition.assert_called_with(
+    job_def = dict(
         jobDefinitionName="test-jd",
         type="container",
         containerProperties={
@@ -151,86 +158,79 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
             "privileged": False,
         },
     )
+    register_job_definition.assert_called_with(**job_def)
 
     # 2a. Identical jobs are not recreated
-    get_aws_client_mock.return_value.register_job_definition.reset_mock()
-    get_job_definition_mock.return_value = {
-        "jobDefinitionName": "test-jd2",
-        "type": "container",
-        "containerProperties": {
-            "command": ["ls"],
-            "image": "an-image:latest",
-            "vcpus": 1,
-            "memory": 4,
-            "jobRoleArn": "aRole",
-            "environment": [],
-            "mountPoints": [],
-            "volumes": [],
-            "resourceRequirements": [],
-            "ulimits": [],
-            "privileged": False,
-        },
-    }
-    get_or_create_job_definition(job_def_name="test-jd2", image="an-image:latest", role="aRole")
-    get_aws_client_mock.return_value.register_job_definition.assert_not_called()
+    describe_job_definitions.return_value = {"jobDefinitions": [job_def]}
+    register_job_definition.reset_mock()
+    _get_or_create_job_definition(job_def_name="test-jd", image="an-image:latest", role="aRole")
+    register_job_definition.assert_not_called()
 
     # 2.b. resource differences are ignored on single node
-    get_aws_client_mock.return_value.register_job_definition.reset_mock()
-    get_or_create_job_definition(
-        job_def_name="test-jd2b",
+    _get_or_create_job_definition(
+        job_def_name="test-jd",
         image="an-image:latest",
         role="aRole",
         vcpus=2,
         memory=8,
     )
-    get_aws_client_mock.return_value.register_job_definition.assert_not_called()
+    register_job_definition.assert_not_called()
+
+    # 2.c. The newer revision is preferred.
+    describe_job_definitions.return_value = {
+        "jobDefinitions": [
+            {**job_def, "jobDefinitionName": "test-jd:3"},
+            {**job_def, "jobDefinitionName": "test-jd:10"},
+            {**job_def, "jobDefinitionName": "test-jd:1"},
+            {**job_def, "jobDefinitionName": "test-jd:2"},
+        ]
+    }
+    register_job_definition.reset_mock()
+    result = _get_or_create_job_definition(
+        job_def_name="test-jd",
+        image="an-image:latest",
+        role="aRole",
+    )
+    assert result["jobDefinitionName"] == "test-jd:10"
+    register_job_definition.assert_not_called()
 
     # 3. Extra keys are ignored
-    get_aws_client_mock.return_value.register_job_definition.reset_mock()
-    get_job_definition_mock.return_value = {
-        "extraneous_key": "ignored",
-        "jobDefinitionName": "test-jd3",
-        "type": "container",
-        "containerProperties": {
-            "command": ["ls"],
-            "image": "an-image:latest",
-            "vcpus": 1,
-            "memory": 4,
-            "jobRoleArn": "aRole",
-            "environment": [],
-            "mountPoints": [],
-            "volumes": [],
-            "resourceRequirements": [],
-            "ulimits": [],
-            "privileged": False,
-        },
+    describe_job_definitions.return_value = {
+        "jobDefinitions": [{"extraKey": "ignored", **job_def}]
     }
-    get_or_create_job_definition(job_def_name="test-jd3", image="an-image:latest", role="aRole")
-    get_aws_client_mock.return_value.register_job_definition.assert_not_called()
+    register_job_definition.reset_mock()
+    _get_or_create_job_definition(job_def_name="test-jd3", image="an-image:latest", role="aRole")
+    register_job_definition.assert_not_called()
 
     # 4. Important differences trigger recreation
     # 4.a. job type
-    get_aws_client_mock.return_value.register_job_definition.reset_mock()
-    get_job_definition_mock.return_value = {
-        "jobDefinitionName": "test-jd4a",
-        "type": "other",
-        "containerProperties": {
-            "command": ["ls"],
-            "image": "an-image:latest",
-            "vcpus": 2,
-            "memory": 4,
-            "jobRoleArn": "aRole",
-            "environment": [],
-            "mountPoints": [],
-            "volumes": [],
-            "resourceRequirements": [],
-            "ulimits": [],
-            "privileged": False,
-        },
+    describe_job_definitions.return_value = {
+        "jobDefinitions": [
+            {
+                "jobDefinitionName": "test-jd4a",
+                "type": "other",
+                "containerProperties": {
+                    "command": ["ls"],
+                    "image": "an-image:latest",
+                    "vcpus": 2,
+                    "memory": 4,
+                    "jobRoleArn": "aRole",
+                    "environment": [],
+                    "mountPoints": [],
+                    "volumes": [],
+                    "resourceRequirements": [],
+                    "ulimits": [],
+                    "privileged": False,
+                },
+            }
+        ]
     }
-    get_or_create_job_definition(job_def_name="test-jd4a", image="an-image:latest", role="aRole")
+    register_job_definition.reset_mock()
+    result = _get_or_create_job_definition(
+        job_def_name="test-jd4a", image="an-image:latest", role="aRole"
+    )
     assert result == {"jobId": "new-job"}
-    get_aws_client_mock.return_value.register_job_definition.assert_called_with(
+    register_job_definition.assert_called_with(
         jobDefinitionName="test-jd4a",
         type="container",
         containerProperties={
@@ -249,25 +249,29 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
     )
 
     # 4.b. num_nodes
-    get_aws_client_mock.return_value.register_job_definition.reset_mock()
-    get_job_definition_mock.return_value = {
-        "jobDefinitionName": "test-jd4b",
-        "type": "container",
-        "containerProperties": {
-            "command": ["ls"],
-            "image": "an-image:latest",
-            "vcpus": 2,
-            "memory": 4,
-            "jobRoleArn": "aRole",
-            "environment": [],
-            "mountPoints": [],
-            "volumes": [],
-            "resourceRequirements": [],
-            "ulimits": [],
-            "privileged": False,
-        },
+    describe_job_definitions.return_value = {
+        "jobDefinitions": [
+            {
+                "jobDefinitionName": "test-jd4b",
+                "type": "container",
+                "containerProperties": {
+                    "command": ["ls"],
+                    "image": "an-image:latest",
+                    "vcpus": 2,
+                    "memory": 4,
+                    "jobRoleArn": "aRole",
+                    "environment": [],
+                    "mountPoints": [],
+                    "volumes": [],
+                    "resourceRequirements": [],
+                    "ulimits": [],
+                    "privileged": False,
+                },
+            }
+        ]
     }
-    get_or_create_job_definition(
+    register_job_definition.reset_mock()
+    _get_or_create_job_definition(
         job_def_name="test-jd4b", image="an-image:latest", role="aRole", num_nodes=3
     )
     multinode_job = {
@@ -288,7 +292,13 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
                         "mountPoints": [],
                         "volumes": [],
                         "resourceRequirements": [],
-                        "ulimits": [],
+                        "ulimits": [
+                            {
+                                "name": "nofile",
+                                "softLimit": 65535,
+                                "hardLimit": 65535,
+                            }
+                        ],
                         "privileged": False,
                     },
                     "targetNodes": "0",
@@ -304,7 +314,13 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
                         "mountPoints": [],
                         "volumes": [],
                         "resourceRequirements": [],
-                        "ulimits": [],
+                        "ulimits": [
+                            {
+                                "name": "nofile",
+                                "softLimit": 65535,
+                                "hardLimit": 65535,
+                            }
+                        ],
                         "privileged": False,
                     },
                     "targetNodes": "1:",
@@ -312,12 +328,12 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
             ],
         },
     }
-    get_aws_client_mock.return_value.register_job_definition.assert_called_with(**multinode_job)
+    register_job_definition.assert_called_with(**multinode_job)
 
     # 4c. Multinode resource definitions do not trigger changes
-    get_aws_client_mock.return_value.register_job_definition.reset_mock()
-    get_job_definition_mock.return_value = multinode_job
-    get_or_create_job_definition(
+    describe_job_definitions.return_value = {"jobDefinitions": [multinode_job]}
+    register_job_definition.reset_mock()
+    _get_or_create_job_definition(
         job_def_name="test-jd4b",
         image="an-image:latest",
         role="aRole",
@@ -325,30 +341,36 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
         vcpus=2,
         memory=8,
     )
-    get_aws_client_mock.return_value.register_job_definition.assert_not_called()
+    register_job_definition.assert_not_called()
 
     # 4.e. image
-    get_aws_client_mock.return_value.register_job_definition.reset_mock()
-    get_job_definition_mock.return_value = {
-        "jobDefinitionName": "test-jd4a",
-        "type": "other",
-        "containerProperties": {
-            "command": ["ls"],
-            "image": "an-image:latest",
-            "vcpus": 2,
-            "memory": 4,
-            "jobRoleArn": "aRole",
-            "environment": [],
-            "mountPoints": [],
-            "volumes": [],
-            "resourceRequirements": [],
-            "ulimits": [],
-            "privileged": False,
-        },
+    describe_job_definitions.return_value = {
+        "jobDefinitions": [
+            {
+                "jobDefinitionName": "test-jd4a",
+                "type": "other",
+                "containerProperties": {
+                    "command": ["ls"],
+                    "image": "an-image:latest",
+                    "vcpus": 2,
+                    "memory": 4,
+                    "jobRoleArn": "aRole",
+                    "environment": [],
+                    "mountPoints": [],
+                    "volumes": [],
+                    "resourceRequirements": [],
+                    "ulimits": [],
+                    "privileged": False,
+                },
+            }
+        ]
     }
-    get_or_create_job_definition(job_def_name="test-jd4a", image="an-image:custom", role="aRole")
+    register_job_definition.reset_mock()
+    result = _get_or_create_job_definition(
+        job_def_name="test-jd4a", image="an-image:custom", role="aRole"
+    )
     assert result == {"jobId": "new-job"}
-    get_aws_client_mock.return_value.register_job_definition.assert_called_with(
+    register_job_definition.assert_called_with(
         jobDefinitionName="test-jd4a",
         type="container",
         containerProperties={
@@ -362,6 +384,48 @@ def test_get_or_create_job_definition(get_job_definition_mock, get_aws_client_mo
             "volumes": [],
             "resourceRequirements": [],
             "ulimits": [],
+            "privileged": False,
+        },
+    )
+
+    # 5. Passing extra job configuration options
+    ulimit_option = {
+        "containerProperties": {
+            "ulimits": [
+                {
+                    "name": "nofile",
+                    "softLimit": 2048,
+                    "hardLimit": 2048,
+                }
+            ]
+        }
+    }
+
+    describe_job_definitions.return_value = {"jobDefinitions": [job_def]}
+    register_job_definition.reset_mock()
+    _get_or_create_job_definition(
+        job_def_name="test-jd", image="an-image:latest", role="aRole", job_def_extra=ulimit_option
+    )
+    register_job_definition.assert_called_with(
+        jobDefinitionName="test-jd",
+        type="container",
+        containerProperties={
+            "command": ["ls"],
+            "image": "an-image:latest",
+            "vcpus": 1,
+            "memory": 4,
+            "jobRoleArn": "aRole",
+            "environment": [],
+            "mountPoints": [],
+            "volumes": [],
+            "resourceRequirements": [],
+            "ulimits": [
+                {
+                    "name": "nofile",
+                    "softLimit": 2048,
+                    "hardLimit": 2048,
+                }
+            ],
             "privileged": False,
         },
     )
@@ -544,6 +608,7 @@ def test_executor_config(scheduler: Scheduler) -> None:
                 "queue": "queue",
                 "s3_scratch": "s3_scratch_prefix",
                 "code_includes": "*.txt",
+                "job_def_extra": '{"a_json_key": {"a_json_nested_key": 42}}',
             }
         }
     )
@@ -555,6 +620,9 @@ def test_executor_config(scheduler: Scheduler) -> None:
     assert isinstance(executor.code_package, dict)
     assert executor.code_package["includes"] == ["*.txt"]
     assert executor.debug is False
+    assert executor.default_task_options["job_def_extra"] == {
+        "a_json_key": {"a_json_nested_key": 42}
+    }
 
 
 @task()
@@ -1179,6 +1247,7 @@ def test_executor(
             "retries": 1,
             "aws_region": "us-west-2",
             "num_nodes": None,
+            "job_def_extra": None,
             "batch_tags": {
                 "redun_aws_user": "alice",
                 "redun_execution_id": "",
@@ -1216,6 +1285,7 @@ def test_executor(
             "retries": 1,
             "aws_region": "us-west-2",
             "num_nodes": None,
+            "job_def_extra": None,
             "batch_tags": {
                 "redun_aws_user": "alice",
                 "redun_execution_id": "",
@@ -1311,6 +1381,7 @@ def test_executor_multinode(
             "retries": 1,
             "aws_region": "us-west-2",
             "num_nodes": 4,
+            "job_def_extra": None,
             "batch_tags": {
                 "redun_aws_user": "alice",
                 "redun_execution_id": "",
@@ -2226,3 +2297,76 @@ def other_task(x, y):
             )
             error, _ = pickle.loads(cast(bytes, error_file.read("rb")))
             assert isinstance(error, ZeroDivisionError)
+
+
+@patch("redun.executors.aws_batch.aws_describe_jobs")
+def test_get_log_stream(aws_describe_jobs_mock) -> None:
+    """Test the log stream fetching utility, which handles the difference in behavior for
+    multi-node."""
+
+    aws_region = "fake_region"
+
+    # Heavily pruned `JobDetail` messages
+    single_node_status = {
+        "jobArn": "arn:aws:batch:us-west-2:298579124006:job/89ee416c",
+        "jobName": "redun-testing-c813121061b56b5934d5db78730ada2e2ae11e44",
+        "jobId": "single_node_id",
+        "status": "FAILED",
+        "container": {
+            "logStreamName": "log_stream_arn",
+        },
+        "nodeDetails": {"nodeIndex": 0, "isMainNode": True},
+    }
+
+    # This is the overall message for a multi-node job. There is no log stream, but there is
+    # a `nodeProperties` field.
+    multi_node_status = {
+        "jobArn": "arn:aws:batch:us-west-2:298579124006:job/89ee416c-1ab1-457c-b728-1f10318f61bb",
+        "jobName": "redun-testing-c813121061b56b5934d5db78730ada2e2ae11e44",
+        "jobId": "multi_node_id",
+        "attempts": [
+            {
+                "container": {
+                    "exitCode": 1,
+                    "logStreamName": "cannot_be_returned",
+                    "networkInterfaces": [],
+                },
+                "startedAt": 1663274825002,
+                "stoppedAt": 1663274840060,
+                "statusReason": "Essential container in task exited",
+            }
+        ],
+        "createdAt": 1663274377312,
+        "retryStrategy": {"attempts": 2, "evaluateOnExit": []},
+        "startedAt": 1663274957408,
+        "parameters": {},
+        "nodeProperties": {
+            "numNodes": 3,
+            "mainNode": 0,
+            "nodeRangeProperties": [
+                {
+                    "targetNodes": "0",
+                    "container": {
+                        "image": "image_arn",
+                    },
+                },
+                {
+                    "targetNodes": "1:",
+                    "container": {
+                        "image": "image_arn",
+                    },
+                },
+            ],
+        },
+    }
+
+    # No query is required for single node
+    aws_describe_jobs_mock.return_value = None
+    assert get_job_log_stream(single_node_status, aws_region) == "log_stream_arn"
+
+    # Multi node will query again and fetch from there.
+    aws_describe_jobs_mock.return_value = iter([single_node_status])
+    assert get_job_log_stream(multi_node_status, aws_region) == "log_stream_arn"
+    assert aws_describe_jobs_mock.call_args == unittest.mock.call(
+        ["multi_node_id#0"], aws_region=aws_region
+    )

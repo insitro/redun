@@ -1,6 +1,6 @@
 import os
-import time
 import threading
+import time
 from typing import Dict, List, Tuple
 
 from redun import task

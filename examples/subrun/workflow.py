@@ -19,7 +19,7 @@ def process_record(record) -> dict:
     time.sleep(10)
     return {
         "name": "process_record",
-        "uname": subprocess.check_output(['uname', '-a']),
+        "uname": subprocess.check_output(["uname", "-a"]),
         "pid": os.getpid(),
         "value": record + 2,
     }
@@ -33,9 +33,9 @@ def process_group(record_group: List[int]) -> dict:
     values = [process_record(record) for record in record_group]
     return {
         "name": "root_on_batch",
-        "uname": subprocess.check_output(['uname', '-a']),
+        "uname": subprocess.check_output(["uname", "-a"]),
         "pid": os.getpid(),
-        "value": values
+        "value": values,
     }
 
 
@@ -51,31 +51,30 @@ def main() -> dict:
     results = []
 
     for record_group in record_groups:
-        results.append(subrun(
-            process_group(record_group),
-
-            # Run the subscheduler on a the 'batch' executor. We can also
-            # specify executor options here.
-            executor="batch",
-            vcpus=4,
-            memory=4,
-
-            # Start a new Execution for subscheduler.
-            new_execution=True,
-
-            # Use the following config for the subscheduler.
-            # Here, db_uri is a sqlite file within the container (which will be
-            # discarded). If you want to retain the cache of the subscheduler
-            # use a db_uri for a central db such as postgres in RDS.
-            config={
-                "backend": {
-                    "db_uri": "sqlite:///redun.db",
+        results.append(
+            subrun(
+                process_group(record_group),
+                # Run the subscheduler on a the 'batch' executor. We can also
+                # specify executor options here.
+                executor="batch",
+                vcpus=4,
+                memory=4,
+                # Start a new Execution for subscheduler.
+                new_execution=True,
+                # Use the following config for the subscheduler.
+                # Here, db_uri is a sqlite file within the container (which will be
+                # discarded). If you want to retain the cache of the subscheduler
+                # use a db_uri for a central db such as postgres in RDS.
+                config={
+                    "backend": {
+                        "db_uri": "sqlite:///redun.db",
+                    },
                 },
-            },
-        ))
+            )
+        )
 
     return {
         "name": "main",
-        "uname": subprocess.check_output(['uname', '-a']),
+        "uname": subprocess.check_output(["uname", "-a"]),
         "results": results,
     }

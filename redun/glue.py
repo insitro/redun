@@ -58,7 +58,7 @@ def get_spark_context() -> "SparkContext":
 
     # Raise an error if no context is defined, as Spark should already be
     # instantiated. We don't want to create a new one locally on accident.
-    if SparkContext._active_spark_context is None:  # type: ignore
+    if SparkContext._active_spark_context is None:
         raise ValueError("Spark has not been initialized.")
 
     # Let Spark validate the available context for us.

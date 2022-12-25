@@ -28,13 +28,16 @@ import s3fs
 from botocore.exceptions import ClientError
 
 from redun import glue
-from redun.hashing import hash_struct
+from redun.hashing import hash_stream, hash_struct
+from redun.logging import logger
 from redun.value import Value
 
 # Don't require pyspark to be installed locally except for type checking.
 if TYPE_CHECKING:
     import pandas
     import pyspark
+
+T = TypeVar("T")
 
 # Thread-local storage is used for thread-specific s3 clients.
 _local = threading.local()
@@ -156,6 +159,45 @@ def get_filesystem(proto: Optional[str] = None, url: Optional[str] = None) -> "F
     return filesystem
 
 
+class RedunFileNotFoundError(FileNotFoundError):
+    """
+    Redun-specific FileNotFoundError.
+    """
+
+    def __init__(self, path: str, *args):
+        super().__init__(*args)
+        self.path = path
+
+    def __str__(self) -> str:
+        return f"[Errno {self.errno}] {self.strerror}. {self.path}"
+
+
+class RedunPermissionError(PermissionError):
+    """
+    Redun-specific PermissionError.
+    """
+
+    def __init__(self, path: str, *args):
+        super().__init__(*args)
+        self.path = path
+
+    def __str__(self) -> str:
+        return f"[Errno {self.errno}] {self.strerror}. {self.path}"
+
+
+class RedunOSError(OSError):
+    """
+    Redun-specific OSError.
+    """
+
+    def __init__(self, path: str, *args):
+        super().__init__(*args)
+        self.path = path
+
+    def __str__(self) -> str:
+        return f"[Errno {self.errno}] {self.strerror}. {self.path}"
+
+
 class FileSystem(abc.ABC):
     """
     Base class filesystem access.
@@ -183,7 +225,24 @@ class FileSystem(abc.ABC):
                 raise ValueError("Binary mode 'b' cannot be used with encoding.")
             mode += "b"
 
-        stream = self._open(path, mode, **kwargs)
+        try:
+            stream = self._open(path, mode, **kwargs)
+
+        except FileNotFoundError as error:
+            # Reraise expected errors with redun-specific subclases that include
+            # the path.
+            raise RedunFileNotFoundError(path, *error.args) from error
+
+        except PermissionError as error:
+            raise RedunPermissionError(path, *error.args) from error
+
+        except OSError as error:
+            raise RedunOSError(path, *error.args) from error
+
+        except Exception:
+            # Unknown error. Just log the path and reraise it.
+            logger.error(f"File.open error: {path}")
+            raise
 
         if encoding:
             # Perform encoding/decoding, if specified.
@@ -804,6 +863,33 @@ class S3FileSystem(FileSystem):
         return response["ContentLength"]
 
 
+class FileClasses:
+    """
+    A grouping of related File classes.
+    """
+
+    File: "Type[File]"
+    FileSet: "Type[FileSet]"
+    Dir: "Type[Dir]"
+    StagingFile: "Type[StagingFile]"
+    StagingDir: "Type[StagingDir]"
+
+    def __getattr__(self, attr: str) -> type:
+        # We use this getattr in order to support forward references.
+        if attr == "File":
+            return File
+        elif attr == "FileSet":
+            return FileSet
+        elif attr == "Dir":
+            return Dir
+        elif attr == "StagingFile":
+            return StagingFile
+        elif attr == "StagingDir":
+            return StagingDir
+        else:
+            raise AttributeError(attr)
+
+
 class File(Value):
     """
     Class for assisting file IO in redun tasks.
@@ -812,7 +898,9 @@ class File(Value):
     backends such as local disk or cloud object storage.
     """
 
+    type_basename = "File"
     type_name = "redun.File"
+    classes = FileClasses()
 
     def __init__(self, path: str):
         self.filesystem: FileSystem = get_filesystem(url=path)
@@ -821,7 +909,7 @@ class File(Value):
         self._hash: Optional[str] = None
 
     def __repr__(self) -> str:
-        return "File(path={path}, hash={hash})".format(path=self.path, hash=self.hash[:8])
+        return f"{self.type_basename}(path={self.path}, hash={self.hash[:8]})"
 
     def __getstate__(self) -> dict:
         return {"path": self.path, "hash": self.hash}
@@ -939,7 +1027,7 @@ class File(Value):
         elif local.endswith("/"):
             # Assume same basename for local file within given directory.
             local = os.path.join(local, os.path.basename(self.path))
-        return StagingFile(local, self)
+        return self.classes.StagingFile(local, self)
 
     def basename(self) -> str:
         return os.path.basename(self.path)
@@ -952,7 +1040,9 @@ class File(Value):
 
 
 class FileSet(Value):
+    type_basename = "FileSet"
     type_name = "redun.FileSet"
+    classes = FileClasses()
 
     def __init__(self, pattern: str):
         self.pattern = pattern
@@ -975,7 +1065,7 @@ class FileSet(Value):
     def _calc_hash(self, files: Optional[List[File]] = None) -> str:
         if files is None:
             files = list(self)
-        return hash_struct(["FileSet"] + sorted(file.hash for file in files))
+        return hash_struct([self.type_basename] + sorted(file.hash for file in files))
 
     def get_hash(self, data: Optional[bytes] = None) -> str:
         return self.hash
@@ -996,7 +1086,7 @@ class FileSet(Value):
     def __iter__(self) -> Iterator[File]:
         for path in glob_file(self.pattern):
             if self.filesystem.isfile(path):
-                yield File(path)
+                yield self.classes.File(path)
 
     def files(self) -> List[File]:
         return list(self)
@@ -1019,7 +1109,9 @@ class FileSet(Value):
 
 
 class Dir(FileSet):
+    type_basename = "Dir"
     type_name = "redun.Dir"
+    classes = FileClasses()
 
     def __init__(self, path: str):
         path = path.rstrip("/")
@@ -1028,7 +1120,7 @@ class Dir(FileSet):
         super().__init__(pattern)
 
     def __repr__(self) -> str:
-        return "Dir(path={path}, hash={hash})".format(path=self.path, hash=self.hash)
+        return f"{self.type_basename}(path={self.path}, hash={self.hash[:8]})"
 
     def __getstate__(self) -> dict:
         return {"path": self.path, "hash": self.hash}
@@ -1040,7 +1132,7 @@ class Dir(FileSet):
     def _calc_hash(self, files: Optional[List[File]] = None) -> str:
         if files is None:
             files = list(self)
-        return hash_struct(["Dir"] + sorted(file.hash for file in files))
+        return hash_struct([self.type_basename] + sorted(file.hash for file in files))
 
     def exists(self) -> bool:
         return self.filesystem.exists(self.path)
@@ -1054,7 +1146,7 @@ class Dir(FileSet):
         self.update_hash()
 
     def file(self, rel_path: str) -> File:
-        return File(os.path.join(self.path, rel_path))
+        return self.classes.File(os.path.join(self.path, rel_path))
 
     def rel_path(self, path: str) -> str:
         return os.path.relpath(path, self.path)
@@ -1080,7 +1172,294 @@ class Dir(FileSet):
     def stage(self, local: Optional[str] = None) -> "StagingDir":
         if not local:
             local = os.path.basename(self.path)
-        return StagingDir(local, self)
+        return self.classes.StagingDir(local, self)
+
+
+class Staging(Value, Generic[T]):
+    def __init__(self, local: Union[T, str], remote: Union[T, str]):
+        self.local: Any = None
+        self.remote: Any = None
+
+    def stage(self) -> T:
+        pass
+
+    def unstage(self) -> T:
+        pass
+
+    def render_unstage(self) -> str:
+        pass
+
+    def render_stage(self) -> str:
+        pass
+
+    @classmethod
+    def parse_arg(cls, raw_type: type, arg: str) -> Any:
+        raise NotImplementedError("Argument parsing is implemented for Staging Files and Dirs")
+
+
+class StagingFile(Staging[File]):
+    type_basename = "StagingFile"
+    type_name = "redun.StagingFile"
+    classes = FileClasses()
+
+    def __init__(self, local: Union[File, str], remote: Union[File, str]):
+        if isinstance(local, str):
+            self.local = self.classes.File(local)
+        else:
+            self.local = local
+
+        if isinstance(remote, str):
+            self.remote = self.classes.File(remote)
+        else:
+            self.remote = remote
+
+    def __repr__(self) -> str:
+        return f"{self.type_basename}(local={self.local}, remote={self.remote})"
+
+    def __getstate__(self) -> dict:
+        return {"local": self.local, "remote": self.remote}
+
+    def __setstate__(self, state: dict) -> None:
+        self.local = state["local"]
+        self.remote = state["remote"]
+
+    def get_hash(self, data: Optional[bytes] = None) -> str:
+        return hash_struct([self.type_name, self.local.path, self.remote.path])
+
+    def stage(self) -> File:
+        if self.local.path == self.remote.path:
+            # No staging is needed.
+            return self.local
+
+        return self.remote.copy_to(self.local)
+
+    def unstage(self) -> File:
+        if self.local.path == self.remote.path:
+            # No staging is needed.
+            return self.remote
+
+        return self.local.copy_to(self.remote)
+
+    def render_unstage(self) -> str:
+        """
+        Returns a shell command for unstaging a file.
+        """
+        if self.local.path == self.remote.path:
+            # No staging is needed.
+            return ""
+
+        return self.local.shell_copy_to(self.remote.path)
+
+    def render_stage(self) -> str:
+        """
+        Returns a shell command for staging a file.
+        """
+        if self.local.path == self.remote.path:
+            # No staging is needed.
+            return ""
+
+        return self.remote.shell_copy_to(self.local.path)
+
+
+class StagingDir(Staging[Dir]):
+    type_basename = "StagingDir"
+    type_name = "redun.StagingDir"
+    classes = FileClasses()
+
+    def __init__(self, local: Union[Dir, str], remote: Union[Dir, str]):
+        if isinstance(local, str):
+            self.local = self.classes.Dir(local)
+        else:
+            self.local = local
+
+        if isinstance(remote, str):
+            self.remote = self.classes.Dir(remote)
+        else:
+            self.remote = remote
+
+    def __repr__(self) -> str:
+        return f"{self.type_basename}(local={self.local}, remote={self.remote})"
+
+    def __getstate__(self) -> dict:
+        return {"local": self.local, "remote": self.remote}
+
+    def __setstate__(self, state: dict) -> None:
+        self.local = state["local"]
+        self.remote = state["remote"]
+
+    def get_hash(self, data: Optional[bytes] = None) -> str:
+        return hash_struct([self.type_name, self.local.path, self.remote.path])
+
+    def stage(self) -> Dir:
+        if self.local.path == self.remote.path:
+            # No staging is needed.
+            return self.local
+
+        return self.remote.copy_to(self.local)
+
+    def unstage(self) -> Dir:
+        if self.local.path == self.remote.path:
+            # No staging is needed.
+            return self.remote
+
+        return self.local.copy_to(self.remote)
+
+    def render_unstage(self) -> str:
+        """
+        Returns a shell command for unstaging a directory.
+        """
+        if self.local.path == self.remote.path:
+            # No staging is needed.
+            return ""
+
+        return self.local.shell_copy_to(self.remote.path)
+
+    def render_stage(self) -> str:
+        """
+        Returns a shell command for staging a directory.
+        """
+        if self.local.path == self.remote.path:
+            # No staging is needed.
+            return ""
+
+        return self.remote.shell_copy_to(self.local.path)
+
+
+class IFileClasses(FileClasses):
+    """
+    A grouping of related IFile classes.
+    """
+
+    def __getattr__(self, attr: str) -> type:
+        # We use this getattr in order to support forward references.
+        if attr == "File":
+            return IFile
+        elif attr == "FileSet":
+            return IFileSet
+        elif attr == "Dir":
+            return IDir
+        elif attr == "StagingFile":
+            return IStagingFile
+        elif attr == "StagingDir":
+            return IStagingDir
+        else:
+            raise AttributeError(attr)
+
+
+class IFile(File):
+    """
+    Immutable file.
+
+    This class should be used for files that are write once and then immutable.
+    """
+
+    type_basename = "IFile"
+    type_name = "redun.IFile"
+    classes = IFileClasses()
+
+    def _calc_hash(self) -> str:
+        # The hash only depends on the path.
+        return hash_struct([self.type_basename, self.path])
+
+    def is_valid(self) -> bool:
+        # IFiles are always valid.
+        return True
+
+
+class IFileSet(FileSet):
+    type_basename = "IFileSet"
+    type_name = "redun.IFileSet"
+    classes = IFileClasses()
+
+    def _calc_hash(self, files: Optional[List[File]] = None) -> str:
+        return hash_struct([self.type_basename, self.pattern])
+
+    def is_valid(self) -> bool:
+        # IFileSets are always valid.
+        return True
+
+
+class IDir(Dir):
+    type_basename = "IDir"
+    type_name = "redun.IDir"
+    classes = IFileClasses()
+
+    def _calc_hash(self, files: Optional[List[File]] = None) -> str:
+        # IDir hash only depends on the path.
+        return hash_struct([self.type_basename, self.path])
+
+
+class IStagingFile(StagingFile):
+    type_basename = "IStagingFile"
+    type_name = "redun.IStagingFile"
+    classes = IFileClasses()
+
+
+class IStagingDir(Staging[Dir]):
+    type_basename = "IStagingDir"
+    type_name = "redun.IStagingDir"
+    classes = IFileClasses()
+
+
+class ContentFileClasses(FileClasses):
+    """
+    A grouping of related ContentFile classes.
+    """
+
+    def __getattr__(self, attr: str) -> type:
+        # We use this getattr in order to support forward references.
+        if attr == "File":
+            return ContentFile
+        elif attr == "FileSet":
+            return ContentFileSet
+        elif attr == "Dir":
+            return ContentDir
+        elif attr == "StagingFile":
+            return ContentStagingFile
+        elif attr == "StagingDir":
+            return ContentStagingDir
+        else:
+            raise AttributeError(attr)
+
+
+class ContentFile(File):
+    """
+    Content-based file hashing.
+    """
+
+    type_basename = "ContentFile"
+    type_name = "redun.ConentFile"
+    classes = ContentFileClasses()
+
+    def _calc_hash(self) -> str:
+        # Use filesystem.open() to avoid triggering a recursive hash update.
+        with self.filesystem.open(self.path, mode="rb") as infile:
+            content_hash = hash_stream(infile)
+        return hash_struct([self.type_basename, self.path, content_hash])
+
+
+class ContentFileSet(FileSet):
+    type_basename = "ContentFileSet"
+    type_name = "redun.CnotentFileSet"
+    classes = ContentFileClasses()
+
+
+class ContentDir(Dir):
+    type_basename = "ContentDir"
+    type_name = "redun.ContentDir"
+    classes = ContentFileClasses()
+
+
+class ContentStagingFile(StagingFile):
+    type_basename = "ContentStagingFile"
+    type_name = "redun.ContentStagingFile"
+    classes = ContentFileClasses()
+
+
+class ContentStagingDir(Staging[Dir]):
+    type_basename = "ContentStagingDir"
+    type_name = "redun.ContentStagingDir"
+    classes = ContentFileClasses()
 
 
 class ShardedS3Dataset(Value):
@@ -1161,6 +1540,9 @@ class ShardedS3Dataset(Value):
     def path(self, value):
         self._path = value
         self._calc_hash()
+
+    def get_hash(self, data: Optional[bytes] = None) -> str:
+        return self.hash
 
     @property
     def hash(self) -> str:
@@ -1559,152 +1941,3 @@ class ShardedS3Dataset(Value):
             format_options=format_options,
         )
         return result
-
-
-T = TypeVar("T")
-
-
-class Staging(Value, Generic[T]):
-    def __init__(self, local: Union[T, str], remote: Union[T, str]):
-        self.local: Any = None
-        self.remote: Any = None
-
-    def stage(self) -> T:
-        pass
-
-    def unstage(self) -> T:
-        pass
-
-    def render_unstage(self) -> str:
-        pass
-
-    def render_stage(self) -> str:
-        pass
-
-    @classmethod
-    def parse_arg(cls, raw_type: type, arg: str) -> Any:
-        raise NotImplementedError("Argument parsing is implemented for Staging Files and Dirs")
-
-
-class StagingFile(Staging[File]):
-    type_name = "redun.StagingFile"
-
-    def __init__(self, local: Union[File, str], remote: Union[File, str]):
-        if isinstance(local, str):
-            self.local = File(local)
-        else:
-            self.local = local
-
-        if isinstance(remote, str):
-            self.remote = File(remote)
-        else:
-            self.remote = remote
-
-    def __repr__(self) -> str:
-        return f"StagingFile(local={self.local}, remote={self.remote})"
-
-    def __getstate__(self) -> dict:
-        return {"local": self.local, "remote": self.remote}
-
-    def __setstate__(self, state: dict) -> None:
-        self.local = state["local"]
-        self.remote = state["remote"]
-
-    def get_hash(self, data: Optional[bytes] = None) -> str:
-        return hash_struct(["redun.StagingFile", self.local.path, self.remote.path])
-
-    def stage(self) -> File:
-        if self.local.path == self.remote.path:
-            # No staging is needed.
-            return self.local
-
-        return self.remote.copy_to(self.local)
-
-    def unstage(self) -> File:
-        if self.local.path == self.remote.path:
-            # No staging is needed.
-            return self.remote
-
-        return self.local.copy_to(self.remote)
-
-    def render_unstage(self) -> str:
-        """
-        Returns a shell command for unstaging a file.
-        """
-        if self.local.path == self.remote.path:
-            # No staging is needed.
-            return ""
-
-        return self.local.shell_copy_to(self.remote.path)
-
-    def render_stage(self) -> str:
-        """
-        Returns a shell command for staging a file.
-        """
-        if self.local.path == self.remote.path:
-            # No staging is needed.
-            return ""
-
-        return self.remote.shell_copy_to(self.local.path)
-
-
-class StagingDir(Staging[Dir]):
-    type_name = "redun.StagingDir"
-
-    def __init__(self, local: Union[Dir, str], remote: Union[Dir, str]):
-        if isinstance(local, str):
-            self.local = Dir(local)
-        else:
-            self.local = local
-
-        if isinstance(remote, str):
-            self.remote = Dir(remote)
-        else:
-            self.remote = remote
-
-    def __repr__(self) -> str:
-        return f"StagingDir(local={self.local}, remote={self.remote})"
-
-    def __getstate__(self) -> dict:
-        return {"local": self.local, "remote": self.remote}
-
-    def __setstate__(self, state: dict) -> None:
-        self.local = state["local"]
-        self.remote = state["remote"]
-
-    def get_hash(self, data: Optional[bytes] = None) -> str:
-        return hash_struct(["redun.StagingDir", self.local.path, self.remote.path])
-
-    def stage(self) -> Dir:
-        if self.local.path == self.remote.path:
-            # No staging is needed.
-            return self.local
-
-        return self.remote.copy_to(self.local)
-
-    def unstage(self) -> Dir:
-        if self.local.path == self.remote.path:
-            # No staging is needed.
-            return self.remote
-
-        return self.local.copy_to(self.remote)
-
-    def render_unstage(self) -> str:
-        """
-        Returns a shell command for unstaging a directory.
-        """
-        if self.local.path == self.remote.path:
-            # No staging is needed.
-            return ""
-
-        return self.local.shell_copy_to(self.remote.path)
-
-    def render_stage(self) -> str:
-        """
-        Returns a shell command for staging a directory.
-        """
-        if self.local.path == self.remote.path:
-            # No staging is needed.
-            return ""
-
-        return self.remote.shell_copy_to(self.local.path)

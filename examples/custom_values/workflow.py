@@ -1,18 +1,17 @@
 import hashlib
 from typing import Optional
 
-from redun import task
-from redun.value import ProxyValue
-
 from pydantic import BaseModel
 
+from redun import task
+from redun.value import ProxyValue
 
 redun_namespace = "redun.examples.custom_values"
 
 
 class User(BaseModel):
     id: int
-    name = 'Jane Doe'
+    name = "Jane Doe"
 
 
 class UserValue(ProxyValue):

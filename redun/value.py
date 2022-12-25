@@ -65,7 +65,7 @@ class TypeRegistry:
         try:
             module_name, raw_type_name = type_name.rsplit(".", 1)
             return importlib.import_module(module_name).__dict__[raw_type_name]
-        except (ValueError, ModuleNotFoundError):
+        except (ValueError, ModuleNotFoundError, KeyError):
             raise TypeError('Unable to import type "{}"'.format(type_name))
 
     def register(self, value_type: Type["Value"]) -> None:

@@ -3,6 +3,7 @@ import pytest
 from redun import Scheduler, task
 from redun.expression import SimpleExpression, TaskExpression, ValueExpression
 from redun.functools import identity
+from redun.task import scheduler_task
 
 
 def test_value_expression(scheduler: Scheduler) -> None:
@@ -212,3 +213,43 @@ def test_ban_iter() -> None:
 
     with pytest.raises(TypeError):
         _ = iter(expr)
+
+
+def test_repr() -> None:
+    """
+    Test the repr of an Expression matches the expected syntax.
+    """
+
+    @task
+    def add(a, b):
+        pass
+
+    @scheduler_task()
+    def cond(scheduler, parent_job, sexpr, pred, then, else_):
+        pass
+
+    # Common task calls.
+    assert repr(add(1, 2)) == "add(1, 2)"
+    assert repr(add(1, b=2)) == "add(1, b=2)"
+    assert repr(add(a=True, b="2")) == "add(a=True, b='2')"
+    assert repr(add([1, 2, 3], [4])) == "add([1, 2, 3], [4])"
+
+    # Recursive task calls.
+    assert repr(add(add(1, 2), add(3, 4))) == "add(add(1, 2), add(3, 4))"
+
+    # SchedulerTask calls.
+    assert repr(cond(True, add(1, 2), add(3, 4))) == "cond(True, add(1, 2), add(3, 4))"
+
+    # Simple expression operators.
+    assert repr(add(1, 2) + 3) == "(add(1, 2) + 3)"
+    assert repr(add(1, 2) + 3 + 4) == "((add(1, 2) + 3) + 4)"
+    assert repr(add(1, 2) == 3) == "(add(1, 2) == 3)"
+    assert repr(add(1, 2) & add(3, 4)) == "(add(1, 2) & add(3, 4))"
+
+    # Simple expressions: getitem, getattr, call.
+    assert repr(add(1, 2)["key"]) == "add(1, 2)['key']"
+    assert repr(add(1, 2)[1]) == "add(1, 2)[1]"
+    assert repr(add(1, 2)[1:3]) == "[add(1, 2)[1], add(1, 2)[2]]"
+    assert repr(add(1, 2)[:2]) == "[add(1, 2)[0], add(1, 2)[1]]"
+    assert repr(add(1, 2).attr) == "add(1, 2).attr"
+    assert repr(add(1, 2).func(1, 2)) == "add(1, 2).func(1, 2)"

@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.12.0
+November 29, 2022
+
+* `#241` - Remove length restriction on redun type names
+* `#242` - Use previews for value with no loaded class
+* `#243` - DE-6625 Catch and update eval_hash on race condition
+* `#240` - Specify user and password in example readme
+* `#232` - DE-6585 Raise a more informative error message for File errors
+
+## 0.11.1
+November 01, 2022
+
+* `#234` - Temporarily cap botocore version due to upstream bug
+
+## 0.11.0
+November 01, 2022
+
+* `#227` - Add --wait option to redun launch
+* `#221` - Add launch to run to allow remote runs
+* `#207` - DE-6252 Upgrade mypy and remove python pin
+* `#217` - DE-6397 Add pre commit for all linting/formatting
+
+## 0.10.1
+October 20, 2022
+
+* `#219` - Fix nested value iteration for dataclasses instantiated from subscripted generics
+
+## 0.10.0
+October 17, 2022
+
+* `#218` - Add alias executors
+* `#216` - DE-6353 Add env var parsing to config files
+* `#215` - Update package version to 0.9.1, skip 0.9.0 in changelog
+* `#213` - Backport fixes
+
+## 0.9.1
+September 30, 2022
+
+* `#206` - Add missing get_hash to ShardedS3Dataset
+* `#203` - Update docs to match Expression __repr__ changes
+* `#205` - Temporarily pin Python 3.10.6 to avoid mypy bug on 3.10.7
+* `#195` - Smarter job def
+* `#173` - Run tox in parallel(up to CPU count)
+* `#202` - Remove PR buildspec, codebuild was made redundant by GH actions
+* `#201` - DE-6221 - Make GH actions match codebuild
+* `#200` - fix-handle-arg-serialization
+* `#199` - implement an easier to read repr for Expressions
+* `#198` - Fix handling of multi-node job statuses and logs
+* `#197` - fix bug with mark_dup staging
+
+## 0.8.16
+September 08, 2022
+
+* `#194` - Increase default `ulimits` for `nofile` (number of open file descriptors) for multi-node aws batch jobs
+* `#193` - handle dataclass types correctly
+* `#189` - Support nested iteration and mapping for dataclasses
+* `#192` - A few small bug fixes
+* `#191` - DE-6030 Fix expression cycle detection for cached expressions
+* `#188` - DE-5961 Allow functions decoratored by @task and @scheduler_task to processed by autodoc
+
 ## 0.8.15
 August 18, 2022
 

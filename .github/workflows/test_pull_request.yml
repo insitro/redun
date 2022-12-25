@@ -6,8 +6,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        python: ['3.6', '3.8', '3.9', '3.10']
+        # Pinned to ubuntu-20.04 as that is the last version to include Python 3.6 support.
+        os: [ubuntu-20.04]
+        python: ['3.6', '3.7', '3.8', '3.9', '3.10']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -18,6 +19,16 @@ jobs:
       - run: sudo apt-get install graphviz graphviz-dev
       - run: pip install tox
       - run: tox -e py
+  test-postgres:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - run: sudo apt-get install graphviz graphviz-dev
+      - run: make test-postgres
   lint:
     timeout-minutes: 5
     runs-on: ubuntu-latest

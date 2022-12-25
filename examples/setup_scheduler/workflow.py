@@ -1,13 +1,12 @@
-from redun import task, Scheduler
-from redun.config import Config
-from redun.executors.base import Executor
+# Frequently used configurations could be provided through libraries.
+from workflow_lib.executors import Account1Executor, Account2Executor
 
 # Import a task from a workflow library.
 from workflow_lib.utils import analysis, postprocess_data
 
-# Frequently used configurations could be provided through libraries.
-from workflow_lib.executors import Account1Executor, Account2Executor
-
+from redun import Scheduler, task
+from redun.config import Config
+from redun.executors.base import Executor
 
 redun_namespace = "redun.examples.setup"
 

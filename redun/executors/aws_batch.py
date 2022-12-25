@@ -39,7 +39,7 @@ from redun.job_array import JobArrayer
 from redun.scheduler import Job, Scheduler, Traceback
 from redun.scripting import get_task_command
 from redun.task import Task
-from redun.utils import pickle_dump
+from redun.utils import json_cache_key, lru_cache_custom, merge_dicts, pickle_dump
 
 SUBMITTED = "SUBMITTED"
 PENDING = "PENDING"
@@ -136,11 +136,9 @@ def get_job_definition(
     return {}
 
 
-@lru_cache(maxsize=200)
-def get_or_create_job_definition(
-    job_def_name: str,
+def get_job_details(
     image: str,
-    command: List[str] = ["ls"],
+    command: Optional[List[str]] = None,
     memory: int = 4,
     vcpus: int = 1,
     num_nodes: Optional[int] = None,
@@ -150,23 +148,17 @@ def get_or_create_job_definition(
     privileged: bool = False,
 ) -> dict:
     """
-    Returns a job definition with the specified requirements. Although the resource requirements
-    provided are used when creating a job, they are specifically excluded from creating new
-    job definitions.
-
-    Either an existing active job definition is used or a new one is created.
-
-    num_nodes - if present, create a multi-node batch job.
+    Returns a JSON that can be used for creating a job definition.
     """
-    batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
-
     # Get default IAM role.
     if role is None:
         caller_id = aws_utils.get_aws_client("sts", aws_region=aws_region).get_caller_identity()
         account_num = caller_id["Account"]
         role = "arn:aws:iam::%d:role/ecsTaskExecutionRole" % int(account_num)
 
-    existing_job_def = get_job_definition(job_def_name, batch_client=batch_client)
+    # If command is not provided, use "ls" as default
+    if not command:
+        command = ["ls"]
 
     container_props = {
         "command": command,
@@ -186,32 +178,49 @@ def get_or_create_job_definition(
 
     if num_nodes is None:
         # Single-node job type
-
-        job_details = {"type": "container", "containerProperties": container_props}
+        return {"type": "container", "containerProperties": container_props}
 
     else:
         # Multi-node job type
-        node_properties = {
-            "mainNode": 0,
-            "numNodes": num_nodes,
-            "nodeRangeProperties": [
-                # Create two identical node groups, so we can tell only the main node to provide
-                # outputs.
-                {
-                    "container": container_props,
-                    "targetNodes": "0",
-                },
-                {
-                    "container": container_props,
-                    "targetNodes": "1:",
-                },
-            ],
+
+        # for multi-node jobs, increase ulimit for number of open file descriptors to
+        # allow for large number of open socket connections
+        container_props["ulimits"] = [
+            {
+                "name": "nofile",
+                "softLimit": 65535,
+                "hardLimit": 65535,
+            }
+        ]
+        return {
+            "type": "multinode",
+            "nodeProperties": {
+                "mainNode": 0,
+                "numNodes": num_nodes,
+                "nodeRangeProperties": [
+                    # Create two identical node groups, so we can tell only the main node to
+                    # provide outputs.
+                    {
+                        "container": container_props,
+                        "targetNodes": "0",
+                    },
+                    {
+                        "container": container_props,
+                        "targetNodes": "1:",
+                    },
+                ],
+            },
         }
 
-        job_details = {"type": "multinode", "nodeProperties": node_properties}
 
-    # We override resource properties, so create sanitized versions of both job definitions to
-    # compare them
+def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
+    """
+    Returns True if two job definition are equivalent.
+
+    Limit equality to the keys of job_def1.
+    """
+    # At submission-time we override resource properties, so ignore them when
+    # looking for an equivalent job def.
     no_resource_container_properties = {
         "vcpus": "any_vcpus",
         "memory": "any_memory",
@@ -221,6 +230,10 @@ def get_or_create_job_definition(
     def sanitize_job_def(job_def: Dict) -> Dict:
         """Overwrite the resource properties with redactions."""
         result = copy.deepcopy(job_def)
+
+        # Ignore job definition name.
+        result.pop("jobDefinitionName", None)
+
         result.setdefault("containerProperties", {}).update(no_resource_container_properties)
         node_range = result.setdefault("nodeProperties", {}).setdefault(
             "nodeRangeProperties", [{}, {}]
@@ -229,19 +242,74 @@ def get_or_create_job_definition(
             node.setdefault("container", {}).update(no_resource_container_properties)
         return result
 
-    if existing_job_def:
-        # If there's an existing job with no interesting variations, we can use it.
-        sanitized_existing_job_def = sanitize_job_def(existing_job_def)
-        sanitized_job_details = sanitize_job_def(job_details)
+    # Limit equality to the keys of job_def1.
+    job_def1 = sanitize_job_def(job_def1)
+    job_def2 = sanitize_job_def(job_def2)
+    return all(job_def1[key] == job_def2[key] for key in job_def1.keys())
 
-        if all(
-            [sanitized_existing_job_def.get(k, {}) == v for k, v in sanitized_job_details.items()]
-        ):
+
+def get_job_def_revision(job_def_name: str) -> int:
+    """
+    Returns the job definition revision from a job definition name.
+    """
+    return int(job_def_name.rsplit(":", 1)[1]) if ":" in job_def_name else 0
+
+
+@lru_cache_custom(maxsize=200, cache_key=json_cache_key)
+def get_or_create_job_definition(
+    job_def_name: str,
+    image: str,
+    command: Optional[List[str]] = None,
+    memory: int = 4,
+    vcpus: int = 1,
+    num_nodes: Optional[int] = None,
+    shared_memory: Optional[int] = None,
+    role: Optional[str] = None,
+    aws_region: str = aws_utils.DEFAULT_AWS_REGION,
+    privileged: bool = False,
+    job_def_extra: Optional[dict] = None,
+) -> dict:
+    """
+    Returns a job definition with the specified requirements. Although the resource requirements
+    provided are used when creating a job, they are specifically excluded from creating new
+    job definitions.
+
+    Either an existing active job definition is used or a new one is created.
+
+    num_nodes - if present, create a multi-node batch job.
+    """
+    batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
+
+    # Propose a new job definition.
+    job_details = get_job_details(
+        image,
+        command=command,
+        memory=memory,
+        vcpus=vcpus,
+        num_nodes=num_nodes,
+        shared_memory=shared_memory,
+        role=role,
+        aws_region=aws_region,
+        privileged=privileged,
+    )
+    if job_def_extra:
+        job_details = merge_dicts([job_details, job_def_extra])
+
+    # Look for an equivalent existing job defintiion.
+    # Give preference for newer job defs.
+    existing_job_defs = sorted(
+        batch_client.describe_job_definitions(jobDefinitionName=job_def_name, status="ACTIVE").get(
+            "jobDefinitions", []
+        ),
+        key=lambda job_def: get_job_def_revision(job_def["jobDefinitionName"]),
+        reverse=True,
+    )
+    for existing_job_def in existing_job_defs:
+        if equiv_job_def(job_details, existing_job_def):
             return existing_job_def
 
-    job_def = batch_client.register_job_definition(jobDefinitionName=job_def_name, **job_details)
-
-    return job_def
+    # No equivalent job defs exist, so create a new one.
+    return batch_client.register_job_definition(jobDefinitionName=job_def_name, **job_details)
 
 
 def make_job_def_name(image_name: str, job_def_suffix: str = "-jd") -> str:
@@ -308,6 +376,7 @@ def batch_submit(
     shared_memory: Optional[int] = None,
     retries: int = 1,
     role: Optional[str] = None,
+    job_def_extra: Optional[dict] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
     privileged: bool = False,
     autocreate_job: bool = True,
@@ -344,6 +413,7 @@ def batch_submit(
             privileged=privileged,
             num_nodes=num_nodes,
             shared_memory=shared_memory,
+            job_def_extra=job_def_extra,
         )
 
     def apply_resources(container_properties: Dict) -> None:
@@ -381,10 +451,6 @@ def batch_submit(
         retryStrategy={"attempts": retries},
         **batch_job_args,
     )
-
-    # For multi-node jobs, the rank 0 job id is sufficient for monitoring.
-    if num_nodes is not None:
-        batch_run["jobId"] = f"{batch_run['jobId']}#0"
 
     return batch_run
 
@@ -439,6 +505,7 @@ def get_batch_job_options(job_options: dict) -> dict:
         "timeout",
         "batch_tags",
         "num_nodes",
+        "job_def_extra",
     ]
     return {key: job_options[key] for key in keys if key in job_options}
 
@@ -609,6 +676,7 @@ def aws_describe_jobs(
     for i in range(0, len(job_ids), chunk_size):
         chunk_job_ids = job_ids[i : i + chunk_size]
         response = batch_client.describe_jobs(jobs=chunk_job_ids)
+
         for job in response["jobs"]:
             yield job
 
@@ -647,6 +715,28 @@ def iter_batch_job_status(
             break
 
 
+def get_job_log_stream(job: Optional[dict], aws_region: str) -> Optional[str]:
+    """Extract the log stream from a `JobDetail` status dictionary. For non-multi-node jobs,
+    (i.e., single node and array jobs), this is simply a field in the detail dictionary. But for
+    multi-node jobs, this requires another query to get the log stream for the main node."""
+    if job and "nodeProperties" in job:
+        # There isn't a log stream on the main job detail object. However, we can find the right
+        # node and query it:
+        main_node = job["nodeProperties"]["mainNode"]
+        job_id = job["jobId"]
+        # The docs indicate we can rely on this format for getting the per-worker jobs ids:
+        # `jobId#worker_id`.
+        jobs: Iterator[Optional[Dict[Any, Any]]] = aws_describe_jobs(
+            [f"{job_id}#{main_node}"], aws_region=aws_region
+        )
+        job = next(jobs, None)
+    if not job:
+        # Job is no longer present in AWS API. Return no logs.
+        return None
+
+    return job.get("container", {}).get("logStreamName")
+
+
 def format_log_stream_event(event: dict) -> str:
     """
     Format a logStream event as a line.
@@ -668,10 +758,8 @@ def iter_batch_job_logs(
     """
     # Get job's log stream.
     job = next(aws_describe_jobs([job_id], aws_region=aws_region), None)
-    if not job:
-        # Job is no longer present in AWS API. Return no logs.
-        return
-    log_stream = job.get("container", {}).get("logStreamName")
+
+    log_stream = get_job_log_stream(job, aws_region)
     if not log_stream:
         # No log stream is present. Return no logs.
         return
@@ -722,6 +810,13 @@ def get_docker_executor_config(config: SectionProxy) -> SectionProxy:
     return create_config_section({key: config[key] for key in keys if key in config})
 
 
+def parse_nullable_json(text: Optional[str]) -> Any:
+    if text is None:
+        return None
+    else:
+        return json.loads(text)
+
+
 @register_executor("aws_batch")
 class AWSBatchExecutor(Executor):
     """
@@ -765,6 +860,7 @@ class AWSBatchExecutor(Executor):
             "role": config.get("role"),
             "job_name_prefix": config.get("job_name_prefix", fallback="redun-job"),
             "num_nodes": config.getint("num_nodes", fallback=None),
+            "job_def_extra": parse_nullable_json(config.get("job_def_extra", fallback=None)),
         }
         if config.get("batch_tags"):
             self.default_task_options["batch_tags"] = json.loads(config.get("batch_tags"))
@@ -984,7 +1080,7 @@ class AWSBatchExecutor(Executor):
         redun_job = self.pending_batch_jobs.pop(job["jobId"])
         job_tags = []
         job_tags.append(("aws_batch_job", job["jobId"]))
-        log_stream = job.get("container", {}).get("logStreamName")
+        log_stream = get_job_log_stream(job, aws_region=self.aws_region)
         if log_stream:
             job_tags.append(("aws_log_stream", log_stream))
 
@@ -1207,7 +1303,7 @@ class AWSBatchExecutor(Executor):
             "  array_job_name  = {job_name}\n"
             "  array_size      = {array_size}\n"
             "  s3_scratch_path = {job_dir}\n"
-            "  retry_attempts  = {retries}\n".format(
+            "  submit_retry_attempts  = {retries}\n".format(
                 array_job_id=array_job_id,
                 array_size=array_size,
                 job_type=job_type,
@@ -1264,7 +1360,7 @@ class AWSBatchExecutor(Executor):
             "  job_id          = {batch_job}\n"
             "  job_name        = {job_name}\n"
             "  s3_scratch_path = {job_dir}\n"
-            "  retry_attempts  = {retries}\n".format(
+            "  submit_retry_attempts  = {retries}\n".format(
                 redun_job=job.id,
                 job_type=job_type,
                 batch_job=batch_resp["jobId"],

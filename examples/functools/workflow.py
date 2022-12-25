@@ -1,7 +1,6 @@
 from typing import Any, Dict, List
 
 from redun import task
-from redun.task import Task
 from redun.functools import (
     apply_func,
     as_task,
@@ -9,12 +8,13 @@ from redun.functools import (
     const,
     delay,
     eval_,
-    flatten,
     flat_map,
+    flatten,
     force,
     map_,
     starmap,
 )
+from redun.task import Task
 
 redun_namespace = "redun.examples.functools"
 

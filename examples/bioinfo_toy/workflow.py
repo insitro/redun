@@ -28,7 +28,6 @@ from typing import List
 
 from redun import task
 
-
 redun_namespace = "redun.examples.bioinfo"
 
 

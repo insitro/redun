@@ -1,12 +1,10 @@
 import csv
 from collections import defaultdict
-from typing import Dict, List
-
-from redun import File, task
-from redun.functools import map_
+from typing import List
 
 from bs4 import BeautifulSoup
 
+from redun import File, task
 
 redun_namespace = "redun.examples.word_count"
 
@@ -25,9 +23,7 @@ def download(urls: List[str], data_path: str) -> List[File]:
     """
     Download (in parallel) a list of URLs to local files.
     """
-    return [
-        download_file(url, data_path) for url in urls
-    ]
+    return [download_file(url, data_path) for url in urls]
 
 
 @task()
@@ -46,9 +42,7 @@ def extract_texts(html_files: List[File]) -> List[File]:
     """
     Extract text (in parallel) from a list of HTML files.
     """
-    return [
-        extract_text(html_file) for html_file in html_files
-    ]
+    return [extract_text(html_file) for html_file in html_files]
 
 
 @task()
@@ -74,7 +68,6 @@ def count_words(text_files: List[File], data_path: str) -> File:
     return file
 
 
-
 @task()
 def main(urls_file: File = File("urls.txt"), data_path: str = "data") -> File:
     """
@@ -88,7 +81,7 @@ def main(urls_file: File = File("urls.txt"), data_path: str = "data") -> File:
     text_files = extract_texts(html_files)
 
     # Alternatively, we can do:
-    #text_files = map_(extract_text, html_files)
+    # text_files = map_(extract_text, html_files)
 
     counts_file = count_words(text_files, data_path)
 

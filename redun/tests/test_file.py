@@ -1,6 +1,7 @@
 import os
 import shlex
 import shutil
+from unittest.mock import patch
 
 import boto3
 import pytest
@@ -8,7 +9,19 @@ import vcr
 
 import redun.file
 from redun import File, Scheduler, ShardedS3Dataset, task
-from redun.file import Dir, StagingDir, StagingFile, get_filesystem, glob_file
+from redun.file import (
+    ContentDir,
+    ContentFile,
+    ContentStagingFile,
+    Dir,
+    IDir,
+    IFile,
+    IStagingFile,
+    StagingDir,
+    StagingFile,
+    get_filesystem,
+    glob_file,
+)
 from redun.tests.utils import mock_s3, use_tempdir
 from redun.tools import copy_file
 from redun.value import get_type_registry
@@ -578,6 +591,9 @@ def test_sharded_dataset() -> None:
     assert dataset.hash == "3394197d206ea0ef46795131b98f86c52ab9a508"
     assert dataset2.hash == "f7cd6b0188ff900f0ca00ea0b937a91d70a3e67a"
 
+    # Check type registry uses the correct hash function.
+    assert dataset.hash == get_type_registry().get_hash(dataset)
+
     file3.remove()
     assert dataset.is_valid()
     assert not dataset2.is_valid()
@@ -922,3 +938,126 @@ def test_copy_file_dir() -> None:
 
     redun.file.copy_file("src", dest_dir.path, recursive=True)
     assert {file.path for file in dest_dir} == {"dest/a.txt", "dest/b/b.txt"}
+
+
+def test_non_existent_file_error() -> None:
+    """
+    File.open should raise descriptive error when path does not exist.
+    """
+
+    with pytest.raises(
+        FileNotFoundError, match=r"\[Errno 2\] No such file or directory\. not_exist_file"
+    ):
+        File("not_exist_file").open()
+
+
+def test_file_error() -> None:
+    """
+    File.open should raise descriptive error when there is a low-level error.
+    """
+
+    def file_open(*args):
+        raise OSError(100, "My OS error")
+
+    fs = get_filesystem(proto="local")
+    with patch.object(fs, "_open", file_open):
+        with pytest.raises(OSError, match=r"\[Errno 100\] My OS error\. bad_file"):
+            File("bad_file").open()
+
+
+# Root user will still be able to write to a readonly file so skip this test if we are running
+# as root (which will be the case on codebuild runs).
+@use_tempdir
+@pytest.mark.skipif(os.getuid() == 0, reason="Running as root which can write to readonly files")
+def test_readonly_file_error() -> None:
+    """
+    File.open should raise descriptive error when trying to open a readonly file in write mode.
+    """
+    File("readonly_file").write("hi")
+    os.system("chmod 400 readonly_file")
+    with pytest.raises(PermissionError, match=r"\[Errno 13\] Permission denied\. readonly_file"):
+        File("readonly_file").open("w")
+
+
+@use_tempdir
+def test_ifile() -> None:
+    """
+    IFile hash should only depend on path.
+    """
+
+    # First confirm that regular files update hash based on contents and timestamp.
+    file1 = File("file")
+    file1.write("1")
+
+    file2 = File("file")
+    file2.write("22")
+
+    assert file1.get_hash() != file2.get_hash()
+
+    # IFile hashes only depend on path.
+    file1 = IFile("ifile")
+    file1.write("1")
+
+    file2 = IFile("ifile")
+    file2.write("22")
+
+    assert file1.get_hash() == file2.get_hash()
+
+
+@use_tempdir
+def test_ifile_classes() -> None:
+    """
+    IFile methods should return related objects of the right type.
+    """
+    assert isinstance(IFile("file").stage("local"), IStagingFile)
+    assert isinstance(IDir("dir").file("file"), IFile)
+
+    IFile("dir/a").touch()
+    IFile("dir/b").touch()
+    assert all(isinstance(file, IFile) for file in IDir("dir"))
+
+
+@use_tempdir
+def test_content_file() -> None:
+    """
+    ContentFile hash should only depend on path and content (not timestamp).
+    """
+
+    # Hash should only depend on path.
+    file1 = ContentFile("file")
+    file1.write("hi")
+
+    file2 = ContentFile("file")
+    file2.write("hi")
+
+    assert file1.get_hash() == file2.get_hash()
+
+    # Hash should update with content.
+    file2.write("bye")
+    assert file1.get_hash() != file2.get_hash()
+
+    # Hash should go back after update.
+    file2.write("hi")
+    assert file1.get_hash() == file2.get_hash()
+
+    # Different content should change the hash.
+    file1 = ContentFile("file")
+    file1.write("hi")
+
+    file2 = ContentFile("file")
+    file2.write("bye")
+
+    assert file1.get_hash() != file2.get_hash()
+
+
+@use_tempdir
+def test_content_file_classes() -> None:
+    """
+    ContentFile methods should return related objects of the right type.
+    """
+    assert isinstance(ContentFile("file").stage("local"), ContentStagingFile)
+    assert isinstance(ContentDir("dir").file("file"), ContentFile)
+
+    ContentFile("dir/a").touch()
+    ContentFile("dir/b").touch()
+    assert all(isinstance(file, ContentFile) for file in ContentDir("dir"))

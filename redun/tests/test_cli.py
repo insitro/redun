@@ -2,6 +2,7 @@ import io
 import json
 import os
 import pickle
+import sys
 import time
 from socket import socket
 from typing import Any, List, cast
@@ -15,7 +16,7 @@ from sqlalchemy.orm import Session
 
 import redun
 from redun import File, Scheduler, task
-from redun.backends.db import CallNode, Execution, Job, RedunBackendDb
+from redun.backends.db import CallNode, Execution, Job, RedunBackendDb, Value
 from redun.cli import (
     REDUN_CONFIG_ENV,
     CallGraphQuery,
@@ -2030,3 +2031,92 @@ def main(x: int):
     execution = backend.session.query(Execution).first()
     result = client.execute(["redun", "run", "--rerun", "workflow.py", execution.id])
     assert result == 12
+
+
+@pytest.mark.parametrize("executor", ["proc", "thread"])
+@use_tempdir
+def test_launch(executor: str) -> None:
+    """
+    Launch subcommand should run a workflow within an executor.
+    """
+    config_string = """
+[executors.proc]
+type = local
+mode = process
+
+[executors.thread]
+type = local
+mode = thread
+"""
+    workflow = """
+import os
+import redun
+
+@redun.task
+def main() -> int:
+    return os.getpid()
+"""
+    File(".redun/redun.ini").write(config_string)
+    File("workflow.py").write(workflow)
+    this_pid = os.getpid()
+    client = RedunClient()
+    client.execute(
+        ["redun", "launch", "--executor", executor, "redun", "run", "workflow.py", "main"]
+    )
+
+    if (sys.version_info.major, sys.version_info.minor) == (3, 8) and executor == "proc":
+        # Process executors are not shut down in py3.8, so it may still be running.
+        # This is expected but we skip the test rather than try to wait it out
+        return
+    assert client.scheduler
+    scheduler = client.scheduler
+    assert scheduler.backend
+    backend = cast(RedunBackendDb, scheduler.backend)
+    assert backend.session
+    value = backend.session.query(Value).filter(Value.type != "redun.Task").one()
+    assert value.value_parsed
+    assert value.value_parsed != this_pid
+
+
+@pytest.mark.parametrize("executor", ["proc", "thread"])
+@use_tempdir
+def test_wait_launch(executor: str) -> None:
+    """
+    Launch with --wait which prints the value
+    """
+    config_string = """
+[executors.proc]
+type = local
+mode = process
+
+[executors.thread]
+type = local
+mode = thread
+"""
+    workflow = """
+import os
+import redun
+
+@redun.task
+def main() -> str:
+    return "hi"
+"""
+    File(".redun/redun.ini").write(config_string)
+    File("workflow.py").write(workflow)
+    client = RedunClient()
+    waited_display = run_command(
+        client,
+        [
+            "redun",
+            "launch",
+            "--wait",
+            "--executor",
+            executor,
+            "redun",
+            "run",
+            "workflow.py",
+            "main",
+        ],
+    )
+    lines = waited_display.split("\n")
+    assert lines[-2] == "b\"'hi'\\n\""

@@ -17,9 +17,8 @@ redun run map_reduce.py main
 
 """
 from typing import List
-from redun import task, File
-from redun import functools
 
+from redun import File, functools, task
 
 redun_namespace = "redun.examples.memoization_patterns"
 
@@ -81,7 +80,7 @@ def use_c(c_val: str) -> str:
     return c_val
 
 
-@task(check_valid='shallow')
+@task(check_valid="shallow")
 def map_reduce_no_caching(a_values: List[str]) -> str:
 
     # Maps the values of A to a list of file promises that will be evaluated later

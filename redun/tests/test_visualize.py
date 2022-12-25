@@ -462,7 +462,7 @@ def main(x=[File("hi"), File("bye")]):
     produced_edge_hashes = extract_edge_hashes(graph.edges())
     assert len(produced_edge_hashes) == 8
     expected_edge_hashes.update(produced_edge_hashes)
-    assert len(expected_edge_hashes) == 8
+    assert len(expected_edge_hashes) == 9
 
     viz_argv = [
         "redun",

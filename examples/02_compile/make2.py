@@ -1,9 +1,8 @@
 import os
 from typing import List, Optional
 
-from redun import task, File
+from redun import File, task
 from redun.functools import const
-
 
 redun_namespace = "redun.examples.compile2"
 
@@ -60,10 +59,7 @@ def make(target: str = "all", rules: dict = rules) -> Optional[File]:
         return file
 
     # Recursively make dependencies.
-    inputs = [
-        make(dep, rules=rules)
-        for dep in rule.get("deps", [])
-    ]
+    inputs = [make(dep, rules=rules) for dep in rule.get("deps", [])]
 
     # Run command, if needed.
     if "command" in rule:

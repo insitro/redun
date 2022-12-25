@@ -1,6 +1,6 @@
 import hashlib
 import typing
-from typing import IO, Any, List, Sequence, Tuple
+from typing import IO, Any, Dict, List, Sequence, Tuple
 
 from redun.bcoding import bencode
 from redun.utils import json_dumps
@@ -76,13 +76,31 @@ def hash_text(text: str) -> str:
     return m.hexdigest()
 
 
+def hash_positional_args(type_registry: "TypeRegistry", args: Sequence) -> List[str]:
+    """
+    Hash a list of arguments.
+    """
+    return [type_registry.get_hash(arg) for arg in args]
+
+
+def hash_kwargs(type_registry: "TypeRegistry", kwargs: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Hash a list of arguments.
+    """
+    return {key: type_registry.get_hash(arg) for key, arg in kwargs.items()}
+
+
 def hash_arguments(type_registry: "TypeRegistry", args: Sequence, kwargs: dict):
     """
     Hash the arguments for a Task call.
     """
-    arg_hashes = [type_registry.get_hash(arg) for arg in args]
-    kwarg_hashes = {key: type_registry.get_hash(arg) for key, arg in kwargs.items()}
-    return hash_struct(["TaskArguments", arg_hashes, kwarg_hashes])
+    return hash_struct(
+        [
+            "TaskArguments",
+            hash_positional_args(type_registry, args),
+            hash_kwargs(type_registry, kwargs),
+        ]
+    )
 
 
 def hash_eval(

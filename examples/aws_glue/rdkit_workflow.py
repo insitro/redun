@@ -2,11 +2,14 @@
 Adds the inchi field to a DataFrame, using rdkit.
 
 Usage:
-    redun run rdkit_workflow.py calculate_inchi --input-dir <s3_path> --output-dir <s3_path> --smiles-col "smiles"
+    redun run rdkit_workflow.py calculate_inchi \
+        --input-dir <s3_path> \
+        --output-dir <s3_path> \
+        --smiles-col "smiles"
 """
 import logging
-from redun import glue, task, ShardedS3Dataset
 
+from redun import ShardedS3Dataset, glue, task
 from redun.contrib.spark_helpers import enable_rdkit
 
 

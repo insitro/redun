@@ -73,7 +73,9 @@ from redun.executors.aws_batch import (
     format_log_stream_event,
 )
 from redun.executors.aws_utils import iter_log_stream
+from redun.executors.base import Executor, get_executors_from_config
 from redun.executors.code_packaging import extract_tar
+from redun.expression import TaskExpression
 from redun.file import File as BaseFile
 from redun.file import copy_file, list_filesystems
 from redun.job_array import AWS_ARRAY_VAR, K8S_ARRAY_VAR
@@ -86,6 +88,7 @@ from redun.scheduler import (
     format_job_statuses,
     get_task_registry,
 )
+from redun.scripting import script_task
 from redun.tags import (
     ANY_VALUE,
     DOC_KEY,
@@ -1161,6 +1164,25 @@ class RedunClient:
         run_parser.set_defaults(func=self.run_command)
         run_parser.set_defaults(show_help=False)
 
+        # Launch command.
+        launch_parser = subparsers.add_parser(
+            "launch",
+            allow_abbrev=False,
+            help="Launch a workflow within an executor (e.g. docker, batch).",
+        )
+        launch_parser.add_argument("--executor", help="Executor to run Scheduler within.")
+        launch_parser.add_argument(
+            "-o",
+            "--option",
+            action="append",
+            help="Override executor options (format: key=value).",
+        )
+        launch_parser.add_argument(
+            "--wait", action="store_true", help="Wait for workflow to complete."
+        )
+        launch_parser.set_defaults(func=self.launch_command)
+        launch_parser.set_defaults(show_help=False)
+
         # Log command.
         log_parser = subparsers.add_parser("log", help="Show information on historical runs.")
         log_parser.add_argument(
@@ -1537,11 +1559,11 @@ class RedunClient:
         """
         Performs the run command.
         """
-        # Get main task.
-        module: Any = import_script(args.script)
-
         logger.info(f"redun :: version {redun.__version__}")
         logger.info(f"config dir: {get_config_dir(args.config)}")
+
+        # Get main task.
+        module: Any = import_script(args.script)
 
         scheduler = self.get_scheduler(args, migrate_if_local=True)
 
@@ -1674,6 +1696,61 @@ class RedunClient:
             self.display(result, pretty=True)
 
         return result
+
+    def launch_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+        """
+        Run a workflow within an Executor (e.g. docker or batch).
+        """
+        logger.info(f"redun :: version {redun.__version__}")
+        logger.info(f"config dir: {get_config_dir(args.config)}")
+
+        # Determine executor.
+        executor_name = args.executor
+        if not executor_name:
+            raise RedunClientError("--executor is required.")
+        config = setup_config(args.config)
+        executors = {
+            executor.name: executor
+            for executor in get_executors_from_config(config.get("executors", {}))
+        }
+        executor: Optional[Executor] = executors.get(executor_name)
+        if not executor:
+            raise RedunClientError(f"Unknown Executor {executor_name}.")
+
+        # Perpare command to execute within Executor.
+        remote_run_command = " ".join(quote(arg) for arg in extra_args)
+
+        # Setup Scheduler.
+        scheduler = self.get_scheduler(args, migrate_if_local=True)
+        executor.set_scheduler(scheduler)
+
+        # Parse task options.
+        task_options = dict(map(parse_tag_key_value, args.option)) if args.option else {}
+        task_options["executor"] = executor_name
+
+        # Setup job for inner run command.
+        run_expr = cast(TaskExpression, script_task.options(**task_options)(remote_run_command))
+
+        logger.info(f"Run within Executor {executor_name}: {remote_run_command}")
+        if args.wait:
+            # Run scheduler and wait for completion.
+            result = scheduler.run(run_expr)
+            if result is not None:
+                self.display(result, pretty=True)
+
+        else:
+            # Submit directly to executor and immediately exit.
+            job = redun.scheduler.Job(run_expr)
+            job.task = script_task
+            script_args = ()
+            script_kwargs = {"command": remote_run_command}
+            job.eval_hash, job.args_hash = scheduler.get_eval_hash(
+                script_task, script_args, script_kwargs
+            )
+
+            # Submit job to executor.
+            executor.submit_script(job, script_args, script_kwargs)
+            executor.stop()  # stop the monitor thread.
 
     def infer_file_path(self, path: str) -> Optional[Base]:
         """

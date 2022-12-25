@@ -5,11 +5,10 @@ pytest test_workflow.py
 """
 
 import pytest
-
-from redun.pytest import scheduler, Scheduler
-from redun.executors.local import LocalExecutor
-
 from workflow import add, add4, batch_task, divide, main
+
+from redun.executors.local import LocalExecutor
+from redun.pytest import Scheduler
 
 
 def test_main(scheduler: Scheduler) -> None:

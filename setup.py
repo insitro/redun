@@ -1,5 +1,7 @@
 import os
-from setuptools import setup, find_packages
+import platform
+
+from setuptools import find_packages, setup
 
 REQUIRE_POSTGRES = os.getenv("REQUIRE_POSTGRES") == "1"
 PSYCOPG2_VERSION = "psycopg2-binary>=2.8"
@@ -9,10 +11,12 @@ requirements = [
     # a solution faster, since aiobotocore currently requires pinned dependencies of
     # boto3 and awscli.
     "aiobotocore[boto3,awscli]>=2.0.1",
-    "aiohttp>=3.7.4",
+    "aiohttp>=3.7.4,<4",
     "alembic>=1.4",
     "boto3>=1.16.63",
-    "botocore>=1.22.8",
+    # Temporarily cap botocore version until bug is fixed
+    # https://github.com/iterative/dvc/issues/8513#issuecomment-1298761683
+    "botocore>=1.22.8,<1.28.0",
     "gcsfs>=2021.4.0",
     "s3fs>=2021.11.1",
     "sqlalchemy>=1.3.17,<2",
@@ -20,6 +24,8 @@ requirements = [
     # If updating this list, check executors/aws_glue.py stays up to date with
     # packages needed to run in the glue environment.
 ]
+
+python_36_backports = ["dataclasses>=0.8", "types-dataclasses>=0.6.6"]
 
 extras = {
     "glue": ["pandas", "pyarrow", "pyspark"],
@@ -31,6 +37,9 @@ if REQUIRE_POSTGRES:
     requirements.append(PSYCOPG2_VERSION)
 else:
     extras["postgres"] = [PSYCOPG2_VERSION]
+
+if "3.6" in platform.python_version():
+    requirements.append(python_36_backports)
 
 
 def get_version() -> str:
@@ -69,13 +78,18 @@ caching, and data provenance logging.
 
 redun's key features are:
 
-- Workflows are defined by lazy expressions that when evaluated emit dynamic directed acyclic graphs (DAGs), enabling complex data flows.
+- Workflows are defined by lazy expressions that when evaluated emit dynamic directed acyclic
+  graphs (DAGs), enabling complex data flows.
 - Incremental computation that is reactive to both data changes as well as code changes.
-- Workflow tasks can be executed on a variety of compute backend (threads, processes, AWS batch jobs, Spark jobs, etc).
-- Data changes are detected for in memory values as well as external data sources such as files and object stores using file hashing.
-- Code changes are detected by hashing individual Python functions and comparing against historical call graph recordings.
+- Workflow tasks can be executed on a variety of compute backend (threads, processes, AWS batch
+  jobs, Spark jobs, etc).
+- Data changes are detected for in memory values as well as external data sources such as files
+  and object stores using file hashing.
+- Code changes are detected by hashing individual Python functions and comparing against
+  historical call graph recordings.
 - Past intermediate results are cached centrally and reused across workflows.
-- Past call graphs can be used as a data lineage record and can be queried for debugging and auditing.
+- Past call graphs can be used as a data lineage record and can be queried for debugging and
+  auditing.
     """,
     scripts=["bin/redun"],
     include_package_data=True,

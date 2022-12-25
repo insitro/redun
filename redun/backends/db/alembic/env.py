@@ -4,7 +4,7 @@ from redun.backends import db
 
 # This is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-config = context.config  # type:ignore[attr-defined]  # https://stackoverflow.com/a/52575218
+config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

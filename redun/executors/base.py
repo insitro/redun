@@ -11,6 +11,9 @@ class ExecutorError(Exception):
 
 
 class Executor:
+    """Note that most Executors should Register themselves with the method `register_executor`,
+    below."""
+
     def __init__(
         self,
         name: str,
@@ -84,6 +87,10 @@ def _register_executor(executor_name: str, executor_class: Type[Executor]) -> No
 def register_executor(executor_name: str) -> Callable:
     """
     Register an Executor class to be used by the scheduler.
+
+    Note that registered classes are responsible for ensuring their modules get loaded, so this
+    decorator is actually run. For example, this can be done by adding them to the redun
+    module `__init__.py`.
     """
 
     def deco(executor_class: Type[Executor]):

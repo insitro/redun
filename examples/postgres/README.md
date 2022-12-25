@@ -11,13 +11,13 @@ This uses the `docker-compose.yml` file to start a postgres database inside a do
 Let's initialize that database with the schema expected by your version of `redun`:
 
 ```sh
-redun init
+PGUSER=postgres PGPASSWORD=postgres redun init
 ```
 
 You can now connect to this database directly using `psql`:
 
 ```
-psql postgresql://postgres@localhost:5432/redun
+PGUSER=postgres PGPASSWORD=postgres psql postgresql://localhost:5432/redun
 
 psql (11.5, server 9.6.16)
 Type "help" for help.

@@ -13,6 +13,7 @@ from redun.backends.db import Handle as DbHandle
 from redun.backends.db import (
     HandleEdge,
     Job,
+    PreviewValue,
     RedunBackendDb,
     RedunDatabaseError,
     RedunMigration,
@@ -20,12 +21,14 @@ from redun.backends.db import (
     RedunVersionError,
     Tag,
     TagEntityType,
+    Value,
     parse_db_version,
 )
 from redun.config import Config, create_config_section
 from redun.file import Dir, File
 from redun.functools import seq
 from redun.tests.utils import use_tempdir
+from redun.utils import PreviewClass
 
 
 def test_cache_db() -> None:
@@ -43,18 +46,6 @@ def test_cache_db() -> None:
 
     # Reinserting should be a no-op.
     backend.record_value("myvalue") == value_hash1
-
-
-def test_serialized_exceeds_1Gb() -> None:
-    """
-    Test redun raises error with serialized values greater than 1Gb.
-    """
-    backend = RedunBackendDb(db_uri="sqlite:///:memory:")
-    backend.load()
-    large_object = "J" * 1000000000
-
-    with pytest.raises(RedunDatabaseError):
-        backend.record_value(large_object)
 
 
 def test_max_value_size() -> None:
@@ -1063,3 +1054,39 @@ def test_json_field(scheduler: Scheduler, session: Session) -> None:
         "a": 1,
         "b": 2,
     }
+
+
+class Data:
+    def __init__(self, x: int):
+        self.x = x
+
+
+def test_value_no_class(scheduler: Scheduler, backend: RedunBackendDb, session: Session) -> None:
+    """
+    When loading a value without a importable class, use a preview.
+    """
+
+    # Store a value using a custom class, Data.
+    value = Data(10)
+    value_hash = backend.record_value(value)
+
+    value_row = session.query(Value).filter(Value.value_hash == value_hash).one()
+
+    # If data is not available, a PreviewValue should be returned.
+    with patch.object(backend, "_get_value_data", lambda _: (None, False)):
+        with pytest.warns(UserWarning, match="value_store_path"):
+            value2 = value_row.preview
+        assert isinstance(value2, PreviewValue)
+        assert str(value2) == "redun.tests.test_db.Data(hash=2ad3f921, size=50)"
+
+    # Remove custom class.
+    original_Data = Data
+    del globals()["Data"]
+
+    # If class is not available, a PreviewClass should be returned.
+    value3 = value_row.preview
+    assert isinstance(value3, PreviewClass)
+    assert str(value3) == "Data(x=10)"
+
+    # Restore custom class.
+    globals()["Data"] = original_Data

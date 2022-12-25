@@ -102,7 +102,7 @@ def is_debugger_active() -> bool:
 # Patch sys.settrace() in order to detect presence of debugger.
 _original_settrace = sys.settrace
 _is_debugger_active = False
-sys.settrace = settrace_patch  # type: ignore
+sys.settrace = settrace_patch
 
 
 class NoCurrentScheduler(Exception):
@@ -757,7 +757,9 @@ class Scheduler:
         # Tracking for expression cycles. We store pending expressions by their parent_job
         # because the parent_job's lifetime corresponds to the expression's lifetime.
         # This makes for straightforward deallocation.
-        self._pending_expr: Dict[Optional[Job], Dict[Expression, Promise]] = defaultdict(dict)
+        self._pending_expr: Dict[
+            Optional[Job], Dict[str, Tuple[Promise, Expression]]
+        ] = defaultdict(dict)
 
         # Tracking for Common Subexpression Elimination (CSE) for pending Jobs.
         self._pending_jobs: Dict[Optional[str], Job] = {}
@@ -840,6 +842,7 @@ class Scheduler:
         self._pending_expr.clear()
         self._pending_jobs.clear()
         self._jobs.clear()
+        self._finalized_jobs.clear()
         result = self.evaluate(expr, parent_job=parent_job)
         self.process_events(result)
 
@@ -1075,10 +1078,28 @@ class Scheduler:
 
         Returns a Promise that will resolve/reject when the evaluation is complete.
         """
-        # Detect cycles.
-        pending_promise = self._pending_expr[parent_job].get(expr)
-        if pending_promise:
-            return pending_promise
+        # Detect expression cycles. Specifically, we look for previous expressions
+        # being evaluated within the same parent_job. If we find one, we can
+        # reuse its Promise and then copy over the evaluation bookkeeping
+        # (call_hash, _upstreams) after its completion.
+        # Note: We use `expr.get_hash()` to compensate for an Expression serialization
+        # issue discussed in https://github.com/insitro/redun-private/pull/191
+        promise_expr = self._pending_expr[parent_job].get(expr.get_hash())
+        if promise_expr:
+            pending_promise, expr2 = promise_expr
+
+            def callback(result):
+                # Copy the evaluation bookkeeping from the completed expression `expr2`
+                # to our detected duplicate expression `expr`.
+                if isinstance(expr2, TaskExpression):
+                    expr.call_hash = expr2.call_hash
+                elif isinstance(expr2, SimpleExpression):
+                    expr._upstreams = expr2._upstreams
+                else:
+                    raise AssertionError(f"Unexpected expression: {expr2}")
+                return result
+
+            return pending_promise.then(callback)
 
         if isinstance(expr, SchedulerExpression):
             task = self.task_registry.get(expr.task_name)
@@ -1142,7 +1163,7 @@ class Scheduler:
             raise NotImplementedError("Unknown expression: {}".format(expr))
 
         # Recording pending expressions.
-        self._pending_expr[parent_job][expr] = promise
+        self._pending_expr[parent_job][expr.get_hash()] = (promise, expr)
         return promise
 
     def _is_job_within_limits(self, job_limits: dict) -> bool:
@@ -2320,12 +2341,7 @@ def subrun(
     **task_options: dict,
 ) -> Promise:
     """
-    Evaluate an expression `expr` in a sub-scheduler.
-
-    subrun() is a scheduler_task that evaluates a `_subrun_root_task`, which in turn launches the
-    sub-scheduler.
-
-    `expr` is the TaskExpression that the sub-scheduler will evaluate.
+    Evaluates an expression `expr` in a sub-scheduler running within Executor `executor`.
 
     `executor` and optional `task_options` are used to configure the special redun task (
     _subrun_root_task) that starts the sub-scheduler. For example, you can configure the task
@@ -2333,17 +2349,13 @@ def subrun(
 
     `config`: To ease configuration management of the sub-scheduler, you can pass a `config`
     dict which contains configuration that would otherwise require a redun.ini file in the
-    sub-scheduler environment.
-        WARNING: Do not include database credentials in this config as they will be
-    logged as clear text in the redun call graph.  You should instead specify a database secret
-    (see `db_aws_secret_name`).
-        If you do not pass a config, the local scheduler's config will be forwarded to the
-    sub-scheduler (replacing the local `config_dir` with "."). In practice, the sub-scheduler's
-    `config_dir` should be less important as you probably want to log both local and sub-scheduler
-    call graphs to a common database.
-        You can also obtain a copy of the local scheduler's config and customize it as needed.
-    Instantiate the scheduler directly instead of calling `redun run`.  Then access its
-    connfig via `scheduler.py::get_scheduler_config_dict()`.
+    sub-scheduler environment. If you do not pass a config, the local scheduler's config will be
+    forwarded to the sub-scheduler (replacing the local `config_dir` with "."). In practice,
+    the sub-scheduler's `config_dir` should be less important as you probably want to log both
+    local and sub-scheduler call graphs to a common database. You can also obtain a copy of the
+    local scheduler's config and customize it as needed. Instantiate the scheduler directly instead
+    of calling `redun run`.  Then access its config via
+    `scheduler.py::get_scheduler_config_dict()`.
 
     Note on code packaging: The user is responsible for ensuring that the chosen Executor for
     invoking the sub-scheduler copies over all user-task scripts.  E.g. the local scheduler may
@@ -2361,7 +2373,7 @@ def subrun(
         that this is a config key in the  *local* scheduler's config.
     config : dict
         Optional sub-scheduler config dict. Must be a two-level dict that can be used to
-        initialize a :class:`Config` object [see :method:`Config.get_config_dict()`.  If None or
+        initialize a :class:`Config` object (see :method:`Config.get_config_dict()`).  If None or
         empty, the local Scheduler's config will be passed to the sub-scheduler and any values
         with local config_dir will be replaced with ".".  Do not include database credentials as
         they will be logged as clear text in the call graph.
@@ -2418,7 +2430,7 @@ def subrun(
             # Create stub-job representing the job in the subscheduler.
             # The call_hash is needed to compute the right call_hash of parent_job.
             job = Job(
-                root_task(quote(None)),  # type: ignore
+                root_task(quote(None)),
                 id=subrun_result["job_id"],
                 parent_job=parent_job,
                 execution=scheduler._current_execution,

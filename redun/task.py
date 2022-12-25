@@ -99,7 +99,7 @@ class Task(Value, Generic[Func]):
         def my_task(x: int) -> int:
             return x + 1
 
-    Similar to pickling of functions, `Task`s specify the work to execute by reference, not by
+    Similar to pickling of functions, Tasks specify the work to execute by reference, not by
     value. This is important for serialization and caching, since a task is always reattached
     to the latest implementation and task options just-in-time.
 
@@ -256,14 +256,16 @@ class Task(Value, Generic[Func]):
                 )
 
         if self.namespace:
-            if not re.match("^[A-Za-z_][A-Za-z_0-9.]+$", self.namespace):
+            if not re.match("^[A-Za-z_][A-Za-z_0-9.]*$", self.namespace):
                 raise ValueError(
-                    "Task namespace must use only alphanumeric characters, "
-                    "underscore '_', and dot '.', and may not start with a dot."
+                    f"Task namespace must use only alphanumeric characters, "
+                    f"underscore '_', and dot '.', and may not start with a dot: {self.namespace}"
                 )
 
-        if not re.match("^[A-Za-z_][A-Za-z_0-9]+$", self.name):
-            raise ValueError("Task name must use only alphanumeric characters and underscore '_'.")
+        if not re.match("^[A-Za-z_][A-Za-z_0-9]*$", self.name):
+            raise ValueError(
+                f"Task name must use only alphanumeric characters and underscore '_': {self.name}"
+            )
 
         # Validate nout.
         if self.nout is not None:
@@ -632,15 +634,14 @@ def task(
     source : Optional[str]
         If provided, task.source will be set to this string. It is the caller's responsibility
         to ensure that `source` matches the provided `func` for proper hashing.
-    **task_options_base
+    **task_options_base : Any
         Additional options for configuring a task or specifying behaviors of tasks. Since
         these are provided at task construction time (this is typically at Python module-load
-        time), they are the "base" set. Known keys:
-        load_module : Optional[str]
-            The module to load to import this task. (Default: infer from function
-            `func.__module__`)
-        wrapped_task : Optional[Task]
-            If present, a reference to the task wrapped by this one.
+        time), they are the "base" set. Example keys:
+            load_module : Optional[str]
+                The module to load to import this task. (Default: infer from `func.__module__`)
+            wrapped_task : Optional[Task]
+                If present, a reference to the task wrapped by this one.
     """
 
     def deco(func: Func) -> Task[Func]:
@@ -680,7 +681,8 @@ def scheduler_task(
     scheduler tasks.
 
     When evaluated, scheduler tasks are called with a reference to the
-    :class:`Scheduler` and the parent :class:`Job` as it's first two arguments.
+    :class:`Scheduler`, the parent :class:`Job`, and the full :class:`SchedulerExpression`
+    as it's first three arguments.
     It's remaining arguments are the same as those passed from the user, however,
     they are not evaluated and may contain :class:`Expression`s. It is the
     responsibility of the scheduler task to explicitly evaluate arguments
@@ -688,8 +690,7 @@ def scheduler_task(
     task to implement custom evaluation semantics. Lastly, the scheduler task
     must return a :class:`Promise` that resolves to the result of the task.
 
-    This concept corresponds to fexpr in Lisp:
-    - https://en.wikipedia.org/wiki/Fexpr
+    This concept corresponds to fexpr in Lisp: https://en.wikipedia.org/wiki/Fexpr
 
     For example, one could implement a lazy if-statement called `cond` using
     this scheduler task:
@@ -697,7 +698,8 @@ def scheduler_task(
     .. code-block:: python
 
         @scheduler_task()
-        def cond(scheduler, parent_job, pred_expr, then_expr, else_expr):
+        def cond(scheduler: Scheduler, parent_job: Job, scheduler_expr: SchedulerExpression,
+                 pred_expr: Any, then_expr: Any, else_expr: Any) -> Promise:
             def then(pred):
                 if pred:
                     return scheduler.evaluate(then_expr, parent_job=parent_job)

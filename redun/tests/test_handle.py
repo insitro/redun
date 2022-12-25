@@ -7,7 +7,7 @@ import pytest
 from redun import Handle, Scheduler, merge_handles, namespace, task
 from redun.backends.db import Handle as HandleRow
 from redun.backends.db import RedunBackendDb
-from redun.handle import create_handle
+from redun.handle import HandleInfo, create_handle
 from redun.utils import pickle_dumps
 from redun.value import get_type_registry
 
@@ -71,7 +71,7 @@ def test_handle_init() -> None:
         "class_name": "redun.tests.test_handle.DbHandle",
         "call_hash": "",
         "key": "",
-        "hash": "1810d6454a2f9706c3adb6cc2ac0c5b317c0757d",
+        "hash": "07fc03e706cf914c352e2cf22d4947447e91d797",
     }
     assert conn.__getstate__() == state
 
@@ -86,6 +86,15 @@ def test_handle_init() -> None:
     conn3.__setstate__(state)
     assert conn3.db_file == "data.db"
     assert isinstance(conn3.conn, DBConn)
+
+
+def test_handle_info_get_hash() -> None:
+    # Regression test to ensure that non-string handle args and kwargs are properly serialized when
+    # getting hash
+    handle_info = HandleInfo(
+        name="foo", class_name="bar", args=(22, 23), kwargs={"not_a_string": True}
+    )
+    handle_info.get_hash()
 
 
 def test_create_handle() -> None:
