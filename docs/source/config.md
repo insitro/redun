@@ -422,3 +422,91 @@ A string (default: `**/*.py`) that specifies a pattern for which files should be
 
 A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 
+
+### Kubernetes (k8s) executor
+
+The [Kubernetes executor](executors.md#kubernetes-k8s-executor) (`type = k8s`) executes tasks on a Kubernetes cluster.
+
+#### `image`
+
+A string that specifies the default Docker image. This can be overridden on a per task basis using task options.
+
+#### `scratch`
+
+A string that specifies the [scratch space](executors.md#s3-scratch-space) used to communicate with k8s jobs. This can be a path on any accessible object storage system (e.g. S3, GCS, etc).
+
+#### `namespace`
+
+A string (default: `default`) that specifies the k8s namespace to use for all resources.
+
+#### `secret_name`
+
+An optional string that specifies the name of a k8s secret to use for passing AWS secrets.
+
+#### `import_aws_secrets`
+
+A bool (default: True) that specifies whether to import the local AWS environment variable secrets into the k8s jobs via a k8s secret (see `secret_name`).
+
+#### `secret_env_vars`
+
+A whitespace separated list of environment variables to import into the k8s jobs via a k8s secret (see `secret_name`).
+
+#### `vcpus`
+
+An integer (default: 1) that specifies the default number of virtual CPUs required for each task. This can be overridden on a per task basis using task options.
+
+#### `memory`
+
+A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.
+
+#### `retries`
+
+An integer (default: 1) that specifies the default number of retries to use for submitting a job to the AWS Batch queue. This can be overridden on a per task basis using task options.
+
+#### `job_name_prefix`
+
+A string (default: `batch-job`) that specifies the prefix to use for AWS Batch job names. This can make it easier for users to distinguish which AWS Batch jobs correspond to their workflow.
+
+#### `service_account_name`
+
+A string (default: `default`) that specifices the k8s [service account](https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/) to use.
+
+#### `annotations`
+
+An optional JSON object that specifies k8s annotations to apply to each job.
+
+#### `k8s_labels`
+
+An optional JSON object that specifies k8s labels to apply to each job.
+
+#### `default_k8s_labels`
+
+A bool (default: True) that specifies whether to add default k8s labels to jobs, such as `redun_job_id`, `redun_task_name`, etc.
+
+#### `code_package`
+
+A bool (default: True) that specifies whether to perform [code packaging](executors.md#code-packaging).
+
+#### `code_includes`
+
+A string (default: `**/*.py`) that specifies a pattern for which files should be included in a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
+
+#### `code_excludes`
+
+A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
+
+#### `job_monitor_interval`
+
+A float (default: 5.0) that specifies how often, in seconds, the k8s API is queried to monitor running jobs.
+
+#### `min_array_size`
+
+Minimum number (default: 5) of equivalent tasks that will be submitted together as an [array job](https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/). "Equivalent" means the same task and execution requirements (CPU, memory, etc), but with possibly different arguments. Set to 0 to disable array job submission.
+
+#### `max_array_size`
+
+Maximum number (default: 1000) of equivalent tasks that will be submitted together as an array job. Must be greater than or equal to `min_array_size`.
+
+#### `job_stale_time`
+
+A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wait before submission to be possibly bundled into an array job.
