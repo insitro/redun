@@ -1,8 +1,8 @@
-import time
-import sys
 import random
-from redun import File, script, task
+import sys
+import time
 
+from redun import File, script, task
 
 redun_namespace = "redun.examples.k8s"
 
