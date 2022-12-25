@@ -7,27 +7,10 @@ from redun import File, script, task
 redun_namespace = "redun.examples.k8s"
 
 
-@task(executor="k8s")
-def boom(message: str) -> None:
-    raise ValueError(message)
-
-
 @task(script=True, executor="k8s")
 def script_command(command):
     """Script that runs  command"""
     return command
-
-
-@task(executor="k8s")
-def sysexit1(exit_code):
-    """Task that calls sys.exit(code).  This aborts redun oneshot inside the container, causing the job to fail with no useful logging info."""
-    sys.exit(code)
-
-
-@task(executor="k8s")
-def task_raises_exception() -> list:
-    """Test task that raises exception.  This aborts redun oneshot inside the container, causing the job to fail with no useful logging info."""
-    raise RuntimeError
 
 
 @task(executor="k8s")
@@ -52,7 +35,7 @@ def task_io() -> list:
     ]
 
 
-@task()
+@task
 def script_inside_task() -> File:
     """Test script embedded in task"""
     # The outer task is just for preparing the script and its arguments.
@@ -73,9 +56,4 @@ def main(n: int = 10):
         script_sleep(10),
         task_io(),
         script_inside_task(),
-        # The remainder of tasks abort redun oneshot inside the container.
-        # script_false(),
-        # sysexit1(),
-        # sysexit0(),
-        # task_raises_exception(),
     ]
