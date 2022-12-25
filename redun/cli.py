@@ -2706,8 +2706,6 @@ class RedunClient:
         """
         array_job_index: int = -1
         if args.array_job:
-            logger.info("redun :: DEK VERSION")
-            print("Env: ", os.environ)
             if AWS_ARRAY_VAR in os.environ:
                 array_job_index = int(os.environ[AWS_ARRAY_VAR])
             elif K8S_ARRAY_VAR in os.environ:

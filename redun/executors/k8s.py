@@ -728,10 +728,6 @@ class K8SExecutor(Executor):
 
             # Determine redun Job and job_labels.
             redun_job: Job = cast(Job, self.pending_k8s_jobs.pop(job.metadata.name))
-            # TODO: Do we need this case?
-            # if isinstance(redun_job, dict):
-            #    redun_job = redun_job[0]
-            #    assert isinstance(redun_job, Job)
 
             k8s_labels = [("k8s_job", job.metadata.uid)]
             self._process_redun_job(redun_job, pod, job_status, status_reason, k8s_labels)
