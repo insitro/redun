@@ -1,1 +1,1 @@
-redun/
+redun/[k8s]
