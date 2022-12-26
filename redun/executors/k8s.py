@@ -555,16 +555,15 @@ class K8SExecutor(Executor):
 
         try:
             while self.is_running and (self.pending_k8s_jobs or self.arrayer.num_pending):
-                if self._scheduler.logger.level >= logging.DEBUG:
-                    self.log(
-                        f"Preparing {self.arrayer.num_pending} job(s) for Job Arrays.",
-                        level=logging.DEBUG,
-                    )
-                    self.log(
-                        f"Waiting on {len(self.pending_k8s_jobs)} K8S job(s): "
-                        + " ".join(sorted(self.pending_k8s_jobs.keys())),
-                        level=logging.DEBUG,
-                    )
+                self.log(
+                    f"Preparing {self.arrayer.num_pending} job(s) for Job Arrays.",
+                    level=logging.DEBUG,
+                )
+                self.log(
+                    f"Waiting on {len(self.pending_k8s_jobs)} K8S job(s): "
+                    + " ".join(sorted(self.pending_k8s_jobs.keys())),
+                    level=logging.DEBUG,
+                )
 
                 # Copy pending_k8s_jobs.keys() since it can change due to new
                 # submissions.

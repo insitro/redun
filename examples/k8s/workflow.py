@@ -1,4 +1,3 @@
-import random
 import sys
 import time
 
@@ -40,7 +39,7 @@ def script_inside_task() -> File:
     """Test script embedded in task"""
     # The outer task is just for preparing the script and its arguments.
     return script(  # This inner task will run as a bash script inside the container.
-        f"ls /",
+        "ls /",
         executor="k8s",
         outputs=File("-"),
     )
