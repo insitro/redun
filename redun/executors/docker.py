@@ -351,12 +351,13 @@ class DockerExecutor(Executor):
             error_traceback.logs = [line + "\n" for line in job["logs"].split("\n")]
             self._scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
 
-    def _submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def _submit(self, job: Job) -> None:
         """
         Submit Job to executor.
         """
         assert self._scheduler
-        assert job.task
+        assert job.args
+        args, kwargs = job.args
 
         # Package code if necessary and we have not already done so. If code_package is False,
         # then we can skip this step. Additionally, if we have already packaged and set code_file,
@@ -412,14 +413,14 @@ class DockerExecutor(Executor):
         self._pending_jobs[docker_resp["jobId"]] = job
         self._start()
 
-    def submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def submit(self, job: Job) -> None:
         """
         Submit Job to executor.
         """
-        return self._submit(job, args, kwargs)
+        return self._submit(job)
 
-    def submit_script(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def submit_script(self, job: Job) -> None:
         """
         Submit Job for script task to executor.
         """
-        return self._submit(job, args, kwargs)
+        return self._submit(job)

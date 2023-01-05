@@ -664,7 +664,7 @@ def test_job_options() -> None:
         return 10
 
     expr = task1.options(option2="ccc")()
-    job = Job(expr)
+    job = Job(task1, expr)
     job.task = task1
     assert job.get_options() == {
         "option1": "aaa",
@@ -681,7 +681,7 @@ def test_job_status() -> None:
     def task1():
         return 10
 
-    job = Job(task1())
+    job = Job(task1, task1())
     assert job.status == "PENDING"
 
     job.eval_args = ((), {})
@@ -690,7 +690,7 @@ def test_job_status() -> None:
     job.resolve(10)
     assert job.status == "DONE"
 
-    job = Job(task1())
+    job = Job(task1, task1())
     job.eval_args = ((), {})
     job.reject(ValueError())
     assert job.status == "FAILED"
@@ -866,8 +866,8 @@ def test_traceback_trim_frames() -> None:
         [
             FrameSummary(basedir + "/__init__.py", 5, "func0"),
             FrameSummary(basedir + "/executors/local.py", 5, "func0"),
-            Frame("myfile.py", 10, "func", {}, job=Job(task1())),
-            Frame("myfile2.py", 20, "func2", {}, job=Job(task1())),
+            Frame("myfile.py", 10, "func", {}, job=Job(task1, task1())),
+            Frame("myfile2.py", 20, "func2", {}, job=Job(task1, task1())),
         ]
     )
     assert [frame.filename for frame in frames] == ["myfile.py", "myfile2.py"]
@@ -875,8 +875,8 @@ def test_traceback_trim_frames() -> None:
     frames = Traceback.trim_frames(
         [
             FrameSummary(basedir + "/cli.py", 5, "func0"),
-            Frame("myfile.py", 10, "func", {}, job=Job(task1())),
-            Frame("myfile2.py", 20, "func2", {}, job=Job(task1())),
+            Frame("myfile.py", 10, "func", {}, job=Job(task1, task1())),
+            Frame("myfile2.py", 20, "func2", {}, job=Job(task1, task1())),
         ]
     )
     assert [frame.filename for frame in frames] == ["myfile.py", "myfile2.py"]
@@ -897,8 +897,8 @@ def test_traceback_serialize() -> None:
         frames=[
             FrameSummary(basedir + "/__init__.py", 5, "func0"),
             FrameSummary(basedir + "/executors/local.py", 5, "func0"),
-            Frame("myfile.py", 10, "func", {}, job=Job(task1())),
-            Frame("myfile2.py", 20, "func2", {}, job=Job(task1())),
+            Frame("myfile.py", 10, "func", {}, job=Job(task1, task1())),
+            Frame("myfile2.py", 20, "func2", {}, job=Job(task1, task1())),
         ],
         logs=[
             "line1",

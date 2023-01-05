@@ -457,8 +457,8 @@ def test_subrun_cached():
         assert 25 == scheduler.run(local_main(5))
         assert task_calls == []
         assert get_cache.call_count == 2
-        assert get_cache.call_args_list[0][0][0].task_name == "test_subrun.local_main"
-        assert get_cache.call_args_list[1][0][0].task_name == "redun.subrun_root_task"
+        assert get_cache.call_args_list[0][0][0].task.fullname == "test_subrun.local_main"
+        assert get_cache.call_args_list[1][0][0].task.fullname == "redun.subrun_root_task"
 
 
 def test_subrun_root_task_cached():
@@ -486,7 +486,7 @@ def test_subrun_root_task_cached():
         # Since _subrun_root_task was cached, foo isn't called
         assert task_calls == ["local_main"]
         assert get_cache.call_count == 1
-        assert get_cache.call_args_list[0][0][0].task_name == "redun.subrun_root_task"
+        assert get_cache.call_args_list[0][0][0].task.fullname == "redun.subrun_root_task"
 
 
 def test_subrun_root_task_disabled_cached():

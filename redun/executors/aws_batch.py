@@ -628,8 +628,6 @@ def parse_job_error(
     """
     Parse task error from s3 scratch path.
     """
-    assert job.task
-
     error, error_traceback = _parse_job_error(s3_scratch_prefix, job)
 
     # Handle AWS Batch-specific errors.
@@ -874,13 +872,31 @@ class AWSBatchExecutor(Executor):
 
         self._thread: Optional[threading.Thread] = None
         self.arrayer = JobArrayer(
-            executor=self,
+            self._submit_jobs,
+            self._on_error,
             submit_interval=self.interval,
             stale_time=config.getfloat("job_stale_time", fallback=3.0),
             min_array_size=config.getint("min_array_size", fallback=5),
             max_array_size=config.getint("max_array_size", fallback=1000),
         )
         self._aws_user: Optional[str] = None
+
+    def _submit_jobs(self, jobs: List[Job]) -> None:
+        """
+        Callback for JobArrayer to return arrays of Jobs.
+        """
+        if len(jobs) == 1:
+            # Singleton jobs are given as single element lists.
+            self._submit_single_job(jobs[0])
+        else:
+            self._submit_array_job(jobs)
+
+    def _on_error(self, error: Exception) -> None:
+        """
+        Callback for JobArrayer to report scheduler-level errors.
+        """
+        assert self._scheduler
+        self._scheduler.reject_job(None, error)
 
     def set_scheduler(self, scheduler: Scheduler) -> None:
         super().set_scheduler(scheduler)
@@ -1036,7 +1052,6 @@ class AWSBatchExecutor(Executor):
 
         if DOCKER_INSPECT_ERROR in container_reason:
             redun_job = self.pending_batch_jobs[job["jobId"]]
-            assert redun_job.task
             if redun_job.task.script:
                 # Script tasks will report their status in a status file.
                 status_file = File(
@@ -1126,8 +1141,6 @@ class AWSBatchExecutor(Executor):
         Task options can be specified at the job-level have precedence over
         the executor-level (within `redun.ini`):
         """
-        assert job.task
-
         job_options = job.get_options()
 
         task_options = {
@@ -1164,12 +1177,11 @@ class AWSBatchExecutor(Executor):
 
         return task_options
 
-    def _submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def _submit(self, job: Job) -> None:
         """
         Submit Job to executor.
         """
         assert self._scheduler
-        assert job.task
         assert not self.debug
 
         # If we are not in debug mode and this is the first submission gather inflight jobs. In
@@ -1227,20 +1239,22 @@ class AWSBatchExecutor(Executor):
         # Job arrayer will handle actual submission after bunching to an array
         # job, if necessary.
         if batch_job_id is None:
-            self.arrayer.add_job(job, args, kwargs)
+            self.arrayer.add_job(job)
 
         self._start()
 
-    def _submit_array_job(
-        self, jobs: List[Job], all_args: List[Tuple], all_kwargs: List[Dict]
-    ) -> str:
+    def _submit_array_job(self, jobs: List[Job]) -> str:
         """Submits an array job, returning job name uuid"""
         array_size = len(jobs)
-        assert array_size == len(all_args) == len(all_kwargs)
+        all_args = []
+        all_kwargs = []
+        for job in jobs:
+            assert job.args
+            all_args.append(job.args[0])
+            all_kwargs.append(job.args[1])
 
         # All jobs identical so just grab the first one
         job = jobs[0]
-        assert job.task
         if job.task.script:
             raise NotImplementedError("Array jobs not supported for scripts")
 
@@ -1316,12 +1330,14 @@ class AWSBatchExecutor(Executor):
 
         return array_uuid
 
-    def _submit_single_job(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def _submit_single_job(self, job) -> None:
         """
         Actually submits a job. Caching detects if it should be part
         of an array job
         """
-        assert job.task
+        assert job.args
+        args, kwargs = job.args
+
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
         queue = task_options.pop("queue", self.queue)
@@ -1378,23 +1394,23 @@ class AWSBatchExecutor(Executor):
         """
         return self.debug or job.get_option("debug", False)
 
-    def submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def submit(self, job: Job) -> None:
         """
         Submit Job to executor.
         """
         if self._is_debug_job(job):
-            return self._docker_executor.submit(job, args, kwargs)
+            return self._docker_executor.submit(job)
         else:
-            return self._submit(job, args, kwargs)
+            return self._submit(job)
 
-    def submit_script(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def submit_script(self, job: Job) -> None:
         """
         Submit Job for script task to executor.
         """
         if self._is_debug_job(job):
-            return self._docker_executor.submit_script(job, args, kwargs)
+            return self._docker_executor.submit_script(job)
         else:
-            return self._submit(job, args, kwargs)
+            return self._submit(job)
 
     def get_jobs(self, statuses: Optional[List[str]] = None) -> Iterator[dict]:
         """

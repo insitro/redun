@@ -1,5 +1,5 @@
 from configparser import SectionProxy
-from typing import Optional, Tuple
+from typing import Optional
 
 from redun.executors.base import Executor, ExecutorError, register_executor
 from redun.scheduler import Job, Scheduler
@@ -59,11 +59,11 @@ class AliasExecutor(Executor):
             )
         return self._scheduler.executors[self.target_name]
 
-    def submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
-        self._get_target_executor().submit(job=job, args=args, kwargs=kwargs)
+    def submit(self, job: Job) -> None:
+        self._get_target_executor().submit(job)
 
-    def submit_script(self, job: Job, args: Tuple, kwargs: dict) -> None:
-        self._get_target_executor().submit_script(job=job, args=args, kwargs=kwargs)
+    def submit_script(self, job: Job) -> None:
+        self._get_target_executor().submit_script(job)
 
     def start(self) -> None:
         # Do not invoke the aliased method, since the underlying scheduler is responsible for

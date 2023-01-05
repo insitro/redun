@@ -121,7 +121,7 @@ class LocalExecutor(Executor):
                 self._process_executor.shutdown()
             self._process_executor = None
 
-    def _submit(self, exec_func: Callable, job: "Job", args: Tuple, kwargs: dict) -> None:
+    def _submit(self, exec_func: Callable, job: "Job") -> None:
         mode = job.get_option("mode", self.mode)
         if mode not in (THREAD_MODE, PROCESS_MODE):
             raise ValueError(f"Unknown mode: {mode}")
@@ -141,7 +141,6 @@ class LocalExecutor(Executor):
             raise ValueError('Unknown LocalExecutor.mode "{}"'.format(mode))
 
         # Run job in a new thread or process.
-        assert job.task
 
         def on_done(future):
             try:
@@ -149,16 +148,16 @@ class LocalExecutor(Executor):
             except Exception as error:
                 self._scheduler.reject_job(job, error)
 
+        assert job.args
+        args, kwargs = job.args
         executor.submit(
             exec_func, mode, job.task.load_module, job.task.fullname, args, kwargs
         ).add_done_callback(on_done)
 
-    def submit(self, job: "Job", args: Tuple, kwargs: dict) -> None:
-        assert job.task
+    def submit(self, job: "Job") -> None:
         assert not job.task.script
-        self._submit(exec_task, job, args, kwargs)
+        self._submit(exec_task, job)
 
-    def submit_script(self, job: "Job", args: Tuple, kwargs: dict) -> None:
-        assert job.task
+    def submit_script(self, job: "Job") -> None:
         assert job.task.script
-        self._submit(exec_script_task, job, args, kwargs)
+        self._submit(exec_script_task, job)

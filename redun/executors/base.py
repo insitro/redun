@@ -1,6 +1,6 @@
 import importlib
 import typing
-from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, cast
+from typing import Any, Callable, Dict, Iterator, Optional, Type, cast
 
 if typing.TYPE_CHECKING:
     from redun.scheduler import Job, Scheduler
@@ -33,13 +33,13 @@ class Executor:
         assert self._scheduler
         self._scheduler.log(f"Executor[{self.name}]:", *messages, **kwargs)
 
-    def submit(self, job: "Job", args: Tuple, kwargs: dict) -> None:
+    def submit(self, job: "Job") -> None:
         assert self._scheduler
         self._scheduler.reject_job(
             job, ExecutorError("Executor {} does not support submitting tasks.".format(type(self)))
         )
 
-    def submit_script(self, job: "Job", args: Tuple, kwargs: dict) -> None:
+    def submit_script(self, job: "Job") -> None:
         assert self._scheduler
         self._scheduler.reject_job(
             job,
