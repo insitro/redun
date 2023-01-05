@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 from functools import wraps
@@ -18,8 +19,10 @@ from redun.executors.k8s import K8SExecutor, get_hash_from_job_name, get_k8s_job
 from redun.executors.k8s_utils import DEFAULT_JOB_PREFIX, K8SClient, create_job_object
 from redun.executors.scratch import (
     SCRATCH_ERROR,
+    SCRATCH_HASHES,
     SCRATCH_INPUT,
     SCRATCH_OUTPUT,
+    get_array_scratch_file,
     get_job_scratch_file,
 )
 from redun.file import Dir
@@ -724,94 +727,72 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
     executor.stop()
 
 
-# @mock_s3
-# @use_tempdir
-# @patch("redun.executors.k8s.k8s_submit")
-# def test_array_job_s3_setup(k8s_submit_mock):
-#     """
-#     Tests that args, kwargs, and output file paths end up
-#     in the correct locations in S3 as the right data structure
-#     """
-#     scheduler = mock_scheduler()
-#     executor = mock_executor(scheduler)
-#     executor.scratch_prefix = "./evil\ndirectory"
+@mock_s3
+@mock_k8s
+@use_tempdir
+@patch("redun.executors.k8s.k8s_submit")
+def test_array_job_scratch_setup(k8s_submit_mock: Mock) -> None:
+    """
+    Tests that args, kwargs, and output file paths end up
+    in the correct scratch locations as the right data structure.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+    executor.scratch_prefix = "./evil\ndirectory"
 
-#     redun.executors.k8s.k8s_submit.return_value = create_job_object(uid=job_id)
+    k8s_job_id = "k8s-job-id"
+    jo = create_job_object(name=DEFAULT_JOB_PREFIX + "-eval_hash", uid=k8s_job_id)
+    jo.spec.parallelism = 3
+    jo.spec.completions = 3
+    jo.spec.completion_mode = "Indexed"
+    k8s_submit_mock.return_value = jo
 
-#     # redun.executors.k8s.k8s_submit.return_value = {
-#     #     "jobId": "array-job-id",
-#     #     "arrayProperties": {"size": "10"},
-#     # }
+    test_jobs = []
+    for i in range(10):
+        job = Job(other_task, other_task(i, y=2 * i))
+        job.id = f"task_{i}"
+        job.eval_hash = f"hash_{i}"
+        job.args = ((i,), {"y": 2 * i})
+        test_jobs.append(job)
 
-#     test_jobs = []
-#     for i in range(10):
-#         job = Job(other_task(i, y=2 * i))
-#         job.id = f"task_{i}"
-#         job.task = other_task
-#         job.eval_hash = f"hash_{i}"
-#         test_jobs.append(job)
+    array_uuid = executor._submit_array_job(test_jobs)
 
-#     pending_jobs = [job_array.PendingJob(test_jobs[i], (i), {"y": 2 * i}) for i in range(10)]
-#     array_uuid = executor.arrayer.submit_array_job(pending_jobs)
+    # Check input file is on S3 and contains list of (args, kwargs) tuples
+    input_file = File(get_array_scratch_file(executor.scratch_prefix, array_uuid, SCRATCH_INPUT))
+    assert input_file.exists()
 
-#     # Check input file is on S3 and contains list of (args, kwargs) tuples
-#     input_file = File(
-#         get_array_scratch_file(
-#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_INPUT
-#         )
-#     )
-#     assert input_file.exists()
+    with input_file.open("rb") as infile:
+        arglist, kwarglist = pickle.load(infile)
+    assert arglist == [(i,) for i in range(10)]
+    assert kwarglist == [{"y": 2 * i} for i in range(10)]
 
-#     with input_file.open("rb") as infile:
-#         arglist, kwarglist = pickle.load(infile)
-#     assert arglist == [(i) for i in range(10)]
-#     assert kwarglist == [{"y": 2 * i} for i in range(10)]
+    # Check output paths file is on S3 and contains correct output paths
+    output_file = File(get_array_scratch_file(executor.scratch_prefix, array_uuid, SCRATCH_OUTPUT))
+    assert output_file.exists()
+    ofiles = json.loads(output_file.read())
 
-#     # Check output paths file is on S3 and contains correct output paths
-#     output_file = File(
-#         get_array_scratch_file(
-#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
-#         )
-#     )
-#     assert output_file.exists()
-#     ofiles = json.load(output_file)
+    assert ofiles == [
+        get_job_scratch_file(executor.scratch_prefix, j, SCRATCH_OUTPUT) for j in test_jobs
+    ]
 
-#     assert ofiles == [
-#         get_job_scratch_file(
-#             executor.s3_scratch_prefix, j, redun.executors.aws_utils.S3_SCRATCH_OUTPUT
-#         )
-#         for j in test_jobs
-#     ]
+    # Error paths are the same as output, basically
+    error_file = File(get_array_scratch_file(executor.scratch_prefix, array_uuid, SCRATCH_ERROR))
+    assert error_file.exists()
+    efiles = json.loads(error_file.read())
 
-#     # Error paths are the same as output, basically
-#     error_file = File(
-#         get_array_scratch_file(
-#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_ERROR
-#         )
-#     )
-#     assert error_file.exists()
-#     efiles = json.load(error_file)
+    assert efiles == [
+        get_job_scratch_file(executor.scratch_prefix, j, SCRATCH_ERROR) for j in test_jobs
+    ]
 
-#     assert efiles == [
-#         get_job_scratch_file(
-#             executor.s3_scratch_prefix, j, redun.executors.aws_utils.S3_SCRATCH_ERROR
-#         )
-#         for j in test_jobs
-#     ]
+    # Child job eval hashes should be present as well.
+    eval_file = File(get_array_scratch_file(executor.scratch_prefix, array_uuid, SCRATCH_HASHES))
+    with eval_file.open("r") as evfile:
+        hashes = evfile.read().splitlines()
 
-#     # Child job eval hashes should be present as well.
-#     eval_file = File(
-#         get_array_scratch_file(
-#             executor.s3_scratch_prefix, array_uuid, redun.executors.aws_utils.S3_SCRATCH_HASHES
-#         )
-#     )
-#     with eval_file.open("r") as evfile:
-#         hashes = evfile.read().splitlines()
+    assert hashes == [job.eval_hash for job in test_jobs]
 
-#     assert hashes == [job.eval_hash for job in test_jobs]
-
-#     # Make monitor thread exit correctly
-#     executor.stop()
+    # Make monitor thread exit correctly
+    executor.stop()
 
 
 @mock_s3
