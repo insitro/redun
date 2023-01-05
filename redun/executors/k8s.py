@@ -427,12 +427,30 @@ class K8SExecutor(Executor):
             max_array_size = 0
 
         self.arrayer = JobArrayer(
-            executor=self,
+            self._submit_jobs,
+            self._on_error,
             submit_interval=self.interval,
             stale_time=config.getfloat("job_stale_time", 3.0),
             min_array_size=min_array_size,
             max_array_size=max_array_size,
         )
+
+    def _submit_jobs(self, jobs: List[Job]) -> None:
+        """
+        Callback for JobArrayer to return arrays of Jobs.
+        """
+        if len(jobs) == 1:
+            # Singleton jobs are given as single element lists.
+            self._submit_single_job(jobs[0])
+        else:
+            self._submit_array_job(jobs)
+
+    def _on_error(self, error: Exception) -> None:
+        """
+        Callback for JobArrayer to report scheduler-level errors.
+        """
+        assert self._scheduler
+        self._scheduler.reject_job(None, error)
 
     def gather_inflight_jobs(self) -> None:
         """Collect existing k8s jobs and match them up to redun jobs"""
@@ -820,12 +838,13 @@ class K8SExecutor(Executor):
 
         return task_options
 
-    def _submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def _submit(self, job: Job) -> None:
         """
         Submit Job to executor.
         """
         assert self._scheduler
-        assert job.task
+        assert job.args
+        args, kargs = job.args
 
         # If this is the first submission gather inflight jobs. We also check
         # is_running here as a way of determining whether this is the first
@@ -914,16 +933,19 @@ class K8SExecutor(Executor):
         # Job arrayer will handle actual submission after bunching to an array
         # job, if necessary.
         if k8s_job_id is None:
-            self.arrayer.add_job(job, args, kwargs)
+            self.arrayer.add_job(job)
 
         self._start()
 
-    def _submit_array_job(
-        self, jobs: List[Job], all_args: List[Tuple], all_kwargs: List[Dict]
-    ) -> str:
+    def _submit_array_job(self, jobs: List[Job]) -> str:
         """Submits an array job, returning job name uuid"""
         array_size = len(jobs)
-        assert array_size == len(all_args) == len(all_kwargs)
+        all_args = []
+        all_kwargs = []
+        for job in jobs:
+            assert job.args
+            all_args.append(job.args[0])
+            all_kwargs.append(job.args[1])
 
         # All jobs identical so just grab the first one
         job = jobs[0]
@@ -1005,12 +1027,12 @@ class K8SExecutor(Executor):
         )
         return array_uuid
 
-    def _submit_single_job(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def _submit_single_job(self, job: Job) -> None:
         """
-                Actually submits a job.  Caching detects if it should be part
-        +        of an array job
+        Actually submits a job.  Caching detects if it should be part of an array job.
         """
-        assert job.task
+        assert job.args
+        args, kwargs = job.args
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
         namespace = task_options.pop("namespace", self.namespace)
@@ -1062,17 +1084,17 @@ class K8SExecutor(Executor):
         )
         self.pending_k8s_jobs[job_name] = job
 
-    def submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def submit(self, job: Job) -> None:
         """
         Submit Job to executor.
         """
-        return self._submit(job, args, kwargs)
+        return self._submit(job)
 
-    def submit_script(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def submit_script(self, job: Job) -> None:
         """
         Submit Job for script task to executor.
         """
-        return self._submit(job, args, kwargs)
+        return self._submit(job)
 
     def get_jobs(self) -> Iterator[V1Job]:
         """

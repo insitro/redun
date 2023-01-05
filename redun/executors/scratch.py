@@ -74,8 +74,6 @@ def parse_job_result(
 
     Returns a tuple of (result, exists).
     """
-    assert job.task
-
     output_file = File(get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT))
     if output_file.exists():
         if not job.task.script:
@@ -93,8 +91,6 @@ def parse_job_error(scratch_prefix: str, job: Job) -> Tuple[Exception, Traceback
     """
     Returns job error from scratch directory.
     """
-    assert job.task
-
     error_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR)
     error_file = File(error_path)
 

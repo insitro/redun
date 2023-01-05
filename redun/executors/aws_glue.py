@@ -244,7 +244,7 @@ class AWSGlueExecutor(Executor):
         self.is_running = False
         self._monitor_thread = threading.Thread(target=self._monitor, daemon=False)
         self._submit_thread = threading.Thread(target=self._submission_thread, daemon=False)
-        self.pending_glue_jobs: Deque[Tuple["Job", Tuple, Dict]] = deque()
+        self.pending_glue_jobs: Deque["Job"] = deque()
         self.running_glue_jobs: Dict[str, "Job"] = OrderedDict()
         self.preexisting_glue_jobs: Dict[str, str] = {}  # Job hash -> Job ID
         self._oneshot_path: Optional[str] = None
@@ -353,12 +353,12 @@ class AWSGlueExecutor(Executor):
             while self.is_running and self.pending_glue_jobs:
                 fail_counter = 0
                 while fail_counter < 5 and self.pending_glue_jobs:
-                    job, args, kwargs = self.pending_glue_jobs.popleft()
+                    job = self.pending_glue_jobs.popleft()
                     job_id = self.submit_pending_job(job)
 
                     if job_id is None:
                         fail_counter += 1
-                        self.pending_glue_jobs.append((job, args, kwargs))
+                        self.pending_glue_jobs.append(job)
                     else:
                         self.running_glue_jobs[job_id] = job
                         fail_counter = 0
@@ -430,18 +430,16 @@ class AWSGlueExecutor(Executor):
         """
         Determines task options for a job.
         """
-        assert job.task
-
         task_options = dict(self.default_task_options)
         task_options.update(job.get_options())
         return task_options
 
-    def submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
+    def submit(self, job: Job) -> None:
         """
         Submit job to executor.
         """
         assert self._scheduler
-        assert job.task
+        assert job.args
 
         # Check glue job definition exists. Otherwise, create it.
         if not self.glue_job_name:
@@ -495,9 +493,9 @@ class AWSGlueExecutor(Executor):
             input_path = get_job_scratch_file(self.s3_scratch_prefix, job, SCRATCH_INPUT)
             input_file = File(input_path)
             with input_file.open("wb") as out:
-                pickle_dump([args, kwargs], out)
+                pickle_dump(job.args, out)
 
-            self.pending_glue_jobs.append((job, args, kwargs))
+            self.pending_glue_jobs.append(job)
 
         self._start()
 
@@ -505,7 +503,6 @@ class AWSGlueExecutor(Executor):
         """
         Returns true if job submission was successful
         """
-        assert job.task
         assert self.glue_job_name
         assert self.redun_zip_location
         assert self.code_file
@@ -683,8 +680,6 @@ def parse_job_error(
     """
     Parse job error from s3 scratch path.
     """
-    assert job.task
-
     error, error_traceback = _parse_job_error(s3_scratch_prefix, job)
 
     # Handle AWS Batch-specific errors.

@@ -1740,16 +1740,16 @@ class RedunClient:
 
         else:
             # Submit directly to executor and immediately exit.
-            job = redun.scheduler.Job(run_expr)
-            job.task = script_task
+            job = redun.scheduler.Job(script_task, run_expr)
             script_args = ()
             script_kwargs = {"command": remote_run_command}
             job.eval_hash, job.args_hash = scheduler.get_eval_hash(
                 script_task, script_args, script_kwargs
             )
+            job.args = script_args, script_kwargs
 
             # Submit job to executor.
-            executor.submit_script(job, script_args, script_kwargs)
+            executor.submit_script(job)
             executor.stop()  # stop the monitor thread.
 
     def infer_file_path(self, path: str) -> Optional[Base]:

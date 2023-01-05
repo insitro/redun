@@ -18,7 +18,7 @@ def test_get_oneshot_command() -> None:
     """
 
     expr = task1(10)
-    job = Job(expr)
+    job = Job(task1, expr)
     job.eval_hash = "eval_hash"
     code_file = File("scratch/code.tar.gz")
 
@@ -55,7 +55,7 @@ def test_get_script_task_command_local() -> None:
     Should be able to generate a shell command for a redun script task.
     """
     expr = task1(10)
-    job = Job(expr)
+    job = Job(task1, expr)
     job.eval_hash = "eval_hash"
 
     command = get_script_task_command("scratch", job, "myprog -x 1 input.txt")
@@ -92,7 +92,7 @@ def test_get_script_task_command_s3() -> None:
     s3_client.create_bucket(Bucket="bucket")
 
     expr = task1(10)
-    job = Job(expr)
+    job = Job(task1, expr)
     job.eval_hash = "eval_hash"
 
     command = get_script_task_command("s3://bucket/scratch", job, "myprog -x 1 input.txt")

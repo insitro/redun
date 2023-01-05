@@ -269,11 +269,11 @@ def test_executor_inflight_glue_job(submit_job_mock, describe_jobs_mock) -> None
     assert executor.preexisting_glue_jobs == {"hashbrowns": "carrots"}
 
     # Submit a job with same hash and ensure it isn't actually submitted
-    rjob = Job(task1(10))
+    rjob = Job(task1, task1(10))
     rjob.id = "123"
-    rjob.task = task1
     rjob.eval_hash = "hashbrowns"
-    executor.submit(rjob, [10], {})
+    rjob.args = ((10,), {})
+    executor.submit(rjob)
     executor.stop()
     executor._monitor_thread.join()
     executor._submit_thread.join()
@@ -334,15 +334,15 @@ def test_glue_submission_retry(describe_jobs_mock) -> None:
     executor.submit_pending_job.side_effect = get_retval
 
     # Submit a job and make sure it is in pending queue.
-    rjob = Job(task1(10))
+    rjob = Job(task1, task1(10))
     rjob.id = "123"
-    rjob.task = task1
     rjob.eval_hash = "hashbrowns"
+    rjob.args = ((10,), {})
 
-    executor.submit(rjob, [10], {})
+    executor.submit(rjob)
 
     wait_until(lambda: executor.submit_pending_job.call_count > 0)
-    assert list(executor.pending_glue_jobs) == [(rjob, [10], {})]
+    assert list(executor.pending_glue_jobs) == [rjob]
     assert len(executor.running_glue_jobs) == 0
 
     # Now when job submission works, it should be removed from pending queue
@@ -382,12 +382,12 @@ def test_glue_submit_job(submit_job_mock) -> None:
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler, code_package=True)
 
-    job = Job(task1(10))
+    job = Job(task1, task1(10))
     job.id = "123"
-    job.task = task1
     job.eval_hash = "eval_hash"
+    job.args = ((10,), {})
 
-    executor.submit(job, [10], {})
+    executor.submit(job)
     assert executor.is_running
     assert File("s3://example-bucket/redun/jobs/eval_hash/input").exists()
 

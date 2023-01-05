@@ -1,8 +1,7 @@
 import threading
 import time
-import weakref
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Tuple
+from typing import Any, Callable, Dict, List
 
 from redun.scheduler import Job
 
@@ -14,15 +13,9 @@ AWS_ARRAY_VAR = "AWS_BATCH_JOB_ARRAY_INDEX"
 # https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/
 K8S_ARRAY_VAR = "JOB_COMPLETION_INDEX"
 
-# Needed to avoid circular import since AWSBatchExecutor has a JobArrayer.
-if TYPE_CHECKING:
-    from redun.executors.aws_batch import AWSBatchExecutor
-
 
 class JobDescription:
     def __init__(self, job: Job):
-        assert job.task
-
         self.task_name = job.task.name
         self.options = job.get_options()
         self.key = self.task_name + " " + str(sorted(self.options.items()))
@@ -35,12 +28,6 @@ class JobDescription:
 
     def __repr__(self) -> str:
         return f"NAME:{self.task_name}\tOPTIONS: {self.options}"
-
-
-class PendingJob(NamedTuple):
-    job: Job
-    args: tuple
-    kwargs: Dict[str, Any]
 
 
 class JobArrayer:
@@ -56,9 +43,11 @@ class JobArrayer:
 
     Parameters
     ----------
-    executor: AWSBatchExecutor
-        The executor that will be used to submit jobs. Currently only
-        AWSBatchExecutor is supported.
+    submit_jobs: Callable[[List[Job]], None]
+        Callback called when a group of jobs are ready to be submitted as an array.
+
+    on_error: Callable[[Exception], None]
+        Callback called when there is a top-level error.
 
     submit_interval: float
         How frequently the monitor thread will check for submittable stale
@@ -80,7 +69,8 @@ class JobArrayer:
 
     def __init__(
         self,
-        executor: Any,
+        submit_jobs: Callable[[List[Job]], None],
+        on_error: Callable[[Exception], None],
         submit_interval: float,
         stale_time: float,
         min_array_size: int,
@@ -92,13 +82,12 @@ class JobArrayer:
         if self.max_array_size < self.min_array_size:
             raise ValueError("Maximum array size cannot be less than minimum.")
 
-        self.pending: Dict[JobDescription, List[PendingJob]] = defaultdict(list)
+        self.pending: Dict[JobDescription, List[Job]] = defaultdict(list)
         self.pending_timestamps: Dict[JobDescription, float] = {}
         self._lock = threading.Lock()
 
-        # Weak reference to executor since executor has an arrayer in it
-        # and I don't like circular references.
-        self._executor = weakref.ref(executor)
+        self._submit_jobs = submit_jobs
+        self._on_error = on_error
         self.interval = submit_interval
         self.stale_time = stale_time
 
@@ -107,16 +96,8 @@ class JobArrayer:
         self._exit_flag = threading.Event()
         self.num_pending = 0
 
-    @property
-    def executor(self) -> "AWSBatchExecutor":
-        exec = self._executor()
-        if exec is None:
-            raise ValueError("Executor was deleted?")
-        return exec
-
     def _monitor_stale_jobs(self) -> None:
         """Monitoring thread batches up stale jobs"""
-        assert self.executor._scheduler
         try:
             while not self._exit_flag.wait(timeout=self.interval):
                 stales = self.get_stale_descrs()
@@ -127,7 +108,7 @@ class JobArrayer:
             # Since we run this method at the top level of a thread, we need to
             # catch all exceptions so we can properly report them to the
             # scheduler.
-            self.executor._scheduler.reject_job(None, error)
+            self._on_error(error)
 
     def start(self) -> None:
         # Do not have a monitor thread when arraying is disabled.
@@ -148,19 +129,18 @@ class JobArrayer:
         if self._monitor_thread.is_alive():
             self._monitor_thread.join()
 
-    def add_job(self, job: Job, args: Tuple, kwargs: Dict[str, Any]) -> None:
+    def add_job(self, job: Job) -> None:
         """Adds a new job"""
-        assert job.task
 
         # If arraying is turned off, just submit the job.
         # Script jobs are also not handled yet.
         if job.task.script or not self.min_array_size:
-            self.executor._submit_single_job(job, args, kwargs)
+            self._submit_jobs([job])
             return
 
         descr = JobDescription(job)
         with self._lock:
-            self.pending[descr].append(PendingJob(job, args, kwargs))
+            self.pending[descr].append(job)
             self.pending_timestamps[descr] = time.time()
             self.num_pending += 1
 
@@ -187,7 +167,7 @@ class JobArrayer:
         if len(jobs) > self.max_array_size:
             remainder = jobs[self.max_array_size :]
             jobs = jobs[: self.max_array_size]
-            self.submit_array_job(jobs)
+            self._submit_jobs(jobs)
 
             with self._lock:
                 self.pending[descr].extend(remainder)
@@ -195,19 +175,8 @@ class JobArrayer:
 
         elif len(jobs) < self.min_array_size:
             for job in jobs:
-                self.submit_single_job(job)
+                self._submit_jobs([job])
         else:
-            self.submit_array_job(jobs)
+            self._submit_jobs(jobs)
 
         self.num_pending -= len(jobs)
-
-    def submit_array_job(self, jobs: List[PendingJob]) -> str:
-        all_jobs = [job.job for job in jobs]
-        all_args = [job.args for job in jobs]
-        all_kwargs = [job.kwargs for job in jobs]
-
-        array_uuid = self.executor._submit_array_job(all_jobs, all_args, all_kwargs)
-        return array_uuid
-
-    def submit_single_job(self, job: PendingJob) -> None:
-        self.executor._submit_single_job(job.job, job.args, job.kwargs)

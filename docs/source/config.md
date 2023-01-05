@@ -286,7 +286,9 @@ A string that specifies the AWS region containing the user's AWS Batch service.
 
 ##### `role`
 
-A string that specifies the IAM role that AWS Batch jobs should adopt while executing. This may be needed for jobs to have proper access to resources (S3 data, other services, etc). This can be overridden on a per task basis using task options.
+A string that specifies the ARN of the IAM role that AWS Batch jobs should adopt while executing. This may be needed for jobs to have proper access to resources (S3 data, other services, etc). This can be overridden on a per task basis using task options.
+
+This key is mapped to the [`jobRoleArn` property](https://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html#containerProperties) of the Batch API.
 
 ##### `vcpus`
 
@@ -397,7 +399,10 @@ A string that specifies the AWS region containing the user's AWS Glue service.
 
 ##### `role`
 
-A string (default: your account's `AWSGlueServiceRole`) that specifies the IAM role that AWS Glue jobs should adopt while executing. AWS provides a [managed policy](https://docs.aws.amazon.com/glue/latest/dg/create-service-policy.html), `AWSGlueServiceRole` that has the minimal permissions to run glue jobs, but you may need to provide access to S3 or other resources.
+A string (default: your account's `AWSGlueServiceRole`) that specifies the ARN of the IAM role that AWS Glue jobs should adopt while executing. AWS provides a [managed policy](https://docs.aws.amazon.com/glue/latest/dg/create-service-policy.html), `AWSGlueServiceRole` that has the minimal permissions to run glue jobs, but you may need to provide access to S3 or other resources.
+
+This key is mapped to the [`Role` property](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-jobs-job.html) of the Glue API.
+
 
 ##### `glue_job_prefix`
 

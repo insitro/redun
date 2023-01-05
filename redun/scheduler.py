@@ -238,36 +238,69 @@ class Job:
 
     def __init__(
         self,
+        task: Task,
         expr: TaskExpression,
         id: Optional[str] = None,
         parent_job: Optional["Job"] = None,
         execution: Optional[Execution] = None,
     ):
         self.id = id or str(uuid.uuid4())
+
+        # The Task used in expr.
+        self.task = task
+
+        # TaskExpression for which this job was created to evaluate.
         self.expr = expr
-        self.args = expr.args
-        self.kwargs = expr.kwargs
+
+        # Execution representing the entire running workflow.
+        self.execution: Optional[Execution] = execution
+
+        # Execution state.
 
         # Job-level task option overrides.
         self.task_options: Dict[str, Any] = {}
 
-        # Execution state.
-        self.execution: Optional[Execution] = execution
-        self.task_name: str = self.expr.task_name
-        self.task: Optional[Task] = None
-        self.args_hash: Optional[str] = None
+        # The evaluated version of (self.expr.args, self.expr.kwargs)
         self.eval_args: Optional[Tuple[Tuple, Dict]] = None
+
+        # The evaluated and preprocessed arguments.
+        # These are the arguments (args, kwargs) submitted to executors.
+        self.args: Optional[Tuple[Tuple, Dict]] = None
+
+        # The hash of the evaluated and preprocessed arguments.
+        self.args_hash: Optional[str] = None
+
+        # The hash of (self.task.hash, self.arg_hash). This is used as the cache key.
         self.eval_hash: Optional[str] = None
+
+        # This is true if we fetched the result from the cache.
         self.was_cached: bool = False
+
+        # Hash of the CallNode associated with running this job.
         self.call_hash: Optional[str] = None
+
+        # Promise for evaluating self.expr.
         self.result_promise: Promise = Promise()
-        self.result: Any = None
+
+        # The child jobs created for task calls within self.expr.
         self.child_jobs: List[Job] = []
+
+        # The parent job or None if this is the root job of the execution.
         self.parent_job: Optional[Job] = parent_job
+
+        # Bookkeeping for handles created during this job.
         self.handle_forks: Dict[str, int] = defaultdict(int)
+
+        # Tags (key-value pairs) that should be added to this job.
         self.job_tags: List[Tuple[str, Any]] = []
+
+        # Tags (key-value pairs) that should be added to the execution.
         self.execution_tags: List[Tuple[str, Any]] = []
+
+        # Tags (value_hash and key-value pairs) that should be added to values.
         self.value_tags: List[Tuple[str, List[Tuple[str, Any]]]] = []
+
+        # A cached status of the job (PENDING, RUNNING, CACHED, DONE, FAILED).
         self._status: Optional[str] = None
 
         if parent_job:
@@ -276,7 +309,7 @@ class Job:
             execution.add_job(self)
 
     def __repr__(self) -> str:
-        return f"Job(id={self.id}, task_name={self.task_name})"
+        return f"Job(id={self.id}, task_name={self.task.fullname})"
 
     @property
     def status(self) -> str:
@@ -403,11 +436,9 @@ class Job:
         self._status = self.status
 
         self.expr = None
-        self.args = None
-        self.kwargs = None
         self.eval_args = None
+        self.args = None
         self.result_promise = None
-        self.result = None
         self.job_tags.clear()
         self.execution_tags.clear()
         self.value_tags.clear()
@@ -959,11 +990,11 @@ class Scheduler:
         # - Any expression will do, so we use a minimal root task.
         # - We also mimic the task and eval_args being set like they are in exec_job().
         parent_job = Job(
+            root_task,
             root_task(quote(None)),  # type: ignore
             id=parent_job_id,
             execution=self._current_execution,
         )
-        parent_job.task = root_task
         parent_job.eval_args = ((quote(None),), {})
 
         result: Promise[Result] = self._run(
@@ -1023,8 +1054,8 @@ class Scheduler:
         # Gather job status information.
         status_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
         for job in self._jobs:
-            status_counts[job.task_name][job.status] += 1
-            status_counts[job.task_name]["TOTAL"] += 1
+            status_counts[job.task.fullname][job.status] += 1
+            status_counts[job.task.fullname]["TOTAL"] += 1
         for task_name, task_status_counts in self._finalized_jobs.items():
             for status, count in task_status_counts.items():
                 status_counts[task_name][status] += count
@@ -1117,23 +1148,25 @@ class Scheduler:
             promise = task.func(self, parent_job, expr, *expr.args, **expr.kwargs)
 
         elif isinstance(expr, TaskExpression):
-            # TaskExpressions need to be executed in a new Job.
-            job = Job(expr, parent_job=parent_job, execution=self._current_execution)
-            self._jobs.add(job)
-
             # Evaluate task_name to specific task.
             # TaskRegistry is like an environment.
-            job.task = self.task_registry.get(expr.task_name)
-            if not job.task:
-                raise AssertionError(
-                    f"Task not found in registry: {expr.task_name}.  This can occur if the "
-                    "script that defines a user task wasn't loaded or, in the case of redun "
-                    "tasks, if an executor is loading a different version of redun that fails to "
-                    "define the task"
+            task = self.task_registry.get(expr.task_name)
+            if not task:
+                return Promise(
+                    lambda resolve, reject: reject(
+                        f"Task not found in registry: {expr.task_name}.  This can occur if the "
+                        "script that defines a user task wasn't loaded or, in the case of redun "
+                        "tasks, if an executor is loading a different version of redun that "
+                        "fails to define the task."
+                    )
                 )
 
+            # TaskExpressions need to be executed in a new Job.
+            job = Job(task, expr, parent_job=parent_job, execution=self._current_execution)
+            self._jobs.add(job)
+
             # Make default arguments explicit in case they need to be evaluated.
-            expr_args = set_arg_defaults(job.task, expr.args, expr.kwargs)
+            expr_args = set_arg_defaults(task, expr.args, expr.kwargs)
 
             # Evaluate args then execute job.
             args_promise = self.evaluate(expr_args, parent_job=parent_job)
@@ -1264,7 +1297,6 @@ class Scheduler:
 
         # Ensure we are on main scheduler thread.
         assert self.thread_id == threading.get_ident()
-        assert job.task
 
         # Make sure the job can "fit" within the available resource limits.
         job_limits = job.get_limits()
@@ -1282,7 +1314,7 @@ class Scheduler:
 
         # Preprocess arguments before sending them to task function.
         args, kwargs = job.eval_args
-        args, kwargs = self.preprocess_args(job, args, kwargs)
+        args, kwargs = job.args = self.preprocess_args(job, args, kwargs)
 
         # Check cache using eval_hash as key.
         job.eval_hash, job.args_hash = self.get_eval_hash(job.task, args, kwargs)
@@ -1296,7 +1328,7 @@ class Scheduler:
         # HACK: This is a workaround introduced by DE-4761. See the ticket for
         # notes on how script_task could be redesigned to remove the need for
         # this special-casing.
-        is_script_task = job.task_name == "redun.script_task"
+        is_script_task = job.task.fullname == "redun.script_task"
 
         call_hash: Optional[str]
         if self.use_cache and job.get_option("cache", True) and not is_script_task:
@@ -1354,9 +1386,9 @@ class Scheduler:
 
         # Submit job.
         if not job.task.script:
-            executor.submit(job, args, kwargs)
+            executor.submit(job)
         else:
-            executor.submit_script(job, args, kwargs)
+            executor.submit_script(job)
 
     def done_job(self, job: Job, result: Any, job_tags: List[Tuple[str, Any]] = []) -> None:
         """
@@ -1380,7 +1412,6 @@ class Scheduler:
         self._release_resources(job.get_limits())
         self._check_jobs_pending_limits()
 
-        assert job.task
         assert job.eval_hash
         assert job.eval_args
         assert job.args_hash
@@ -1417,7 +1448,6 @@ class Scheduler:
         # Ensure we are on main scheduler thread.
         assert self.thread_id == threading.get_ident()
 
-        assert job.task
         assert job.args_hash
         assert job.eval_args
 
@@ -1456,7 +1486,7 @@ class Scheduler:
         Clean up finalized job.
         """
         self._jobs.remove(job)
-        self._finalized_jobs[job.task_name][job.status] += 1
+        self._finalized_jobs[job.task.fullname][job.status] += 1
 
         # By poping the job, we free up all expressions that we created within
         # the job. They no longer can be part of any more cycles.
@@ -1469,7 +1499,6 @@ class Scheduler:
         """
         Record tags acquired during Job.
         """
-        assert job.task
         assert job.execution
 
         # Record value tags.
@@ -1537,7 +1566,6 @@ class Scheduler:
         error.redun_traceback = error_traceback
 
         if job:
-            assert job.task
             assert job.args_hash
             assert job.eval_args
 
@@ -2430,6 +2458,7 @@ def subrun(
             # Create stub-job representing the job in the subscheduler.
             # The call_hash is needed to compute the right call_hash of parent_job.
             job = Job(
+                root_task,
                 root_task(quote(None)),
                 id=subrun_result["job_id"],
                 parent_job=parent_job,

@@ -156,7 +156,7 @@ def task1(x):
     """
     )
 
-    job = Job(a_task())
+    job = Job(a_task, a_task())
     job.id = job_id
     job.eval_hash = "eval_hash"
     code_file = package_code(scratch_prefix)
@@ -237,7 +237,7 @@ def task1(x):
 
     module = import_script("path/to/workflow.py")
 
-    job = Job(module.task1())
+    job = Job(module.task1, module.task1())
     job.id = job_id
     job.eval_hash = "eval_hash"
     code_file = package_code(scratch_prefix)
@@ -320,10 +320,10 @@ def test_executor(
     )
     # Submit redun job that will succeed.
     expr = task1(10)
-    job = Job(expr)
-    job.task = task1
+    job = Job(task1, expr)
     job.eval_hash = "eval_hash"
-    executor.submit(job, (10,), {})
+    job.args = ((10,), {})
+    executor.submit(job)
 
     # Wait until job arrayer actually submits it.
     wait_until(lambda: executor.arrayer.num_pending == 0)
@@ -355,10 +355,10 @@ def test_executor(
 
     # Submit redun job that will fail.
     expr2 = task1.options(memory=8)(11)
-    job2 = Job(expr2)
-    job2.task = task1
+    job2 = Job(task1, expr2)
     job2.eval_hash = "eval_hash2"
-    executor.submit(job2, (11,), {})
+    job2.args = ((11,), {})
+    executor.submit(job2)
 
     # Let job get stale so job arrayer actually submits it.
     wait_until(lambda: executor.arrayer.num_pending == 0)
@@ -480,23 +480,23 @@ def test_code_packaging(package_code_mock: Mock) -> None:
     assert package_code_mock.call_count == 0
 
     # Hand create jobs.
-    job1 = Job(task1(10))
+    job1 = Job(task1, task1(10))
     job1.id = "1"
-    job1.task = task1
     job1.eval_hash = "eval_hash"
+    job1.args = ((10,), {})
 
-    job2 = Job(task1(20))
+    job2 = Job(task1, task1(20))
     job2.id = "2"
-    job2.task = task1
     job2.eval_hash = "eval_hash"
+    job2.args = ((20,), {})
 
     # Submit a job and ensure that the code was packaged.
-    executor.submit(job1, (10,), {})
+    executor.submit(job1)
     assert executor.code_file
     assert package_code_mock.call_count == 1
 
     # Submit another job and ensure that code was not packaged again.
-    executor.submit(job2, (20,), {})
+    executor.submit(job2)
     assert package_code_mock.call_count == 1
 
     executor.stop()
@@ -516,24 +516,22 @@ def test_inflight_join_only_on_first_submission(k8s_describe_jobs_mock: Mock) ->
     executor.start()
 
     # Hand create jobs.
-    job1 = Job(task1(10))
+    job1 = Job(task1, task1(10))
     job1.id = "1"
-    job1.task = task1
     job1.eval_hash = "eval_hash"
 
-    job2 = Job(task1(20))
+    job2 = Job(task1, task1(20))
     job2.id = "2"
-    job2.task = task1
     job2.eval_hash = "eval_hash"
 
     # Submit redun job.
-    executor.submit(job1, (10,), {})
+    executor.submit(job1)
 
     # # Ensure that inflight jobs were gathered.
     assert executor.get_jobs.call_count == 1  # type: ignore
 
     # # Submit the second job and confirm that job reuniting was not done again.
-    executor.submit(job2, (20,), {})
+    executor.submit(job2)
     assert executor.get_jobs.call_count == 1  # type: ignore
 
     executor.stop()
@@ -567,13 +565,12 @@ def test_executor_inflight_job(
     executor.start()
 
     # Hand create job.
-    job = Job(task1(10))
+    job = Job(task1, task1(10))
     job.id = "123"
-    job.task = task1
     job.eval_hash = "eval_hash"
 
     # Submit redun job.
-    executor.submit(job, (10,), {})
+    executor.submit(job)
 
     # Ensure no k8s jobs were submitted.
     assert k8s_submit_mock.call_count == 0
@@ -604,31 +601,6 @@ def array_task(x):
 @task()
 def other_task(x, y):
     return x - y
-
-
-# Tests begin here
-def test_job_descrs() -> None:
-    """Tests the JobDescription class used to determine if Jobs are equivalent"""
-    j1 = Job(array_task(1))
-    j1.task = array_task
-
-    j2 = Job(array_task(2))
-    j2.task = array_task
-
-    a = job_array.JobDescription(j1)
-    b = job_array.JobDescription(j2)
-
-    assert hash(a) == hash(b)
-    assert a == b
-
-    # JobDescription should validate that Job has a task set.
-    j3 = Job(other_task(1, y=2))
-    with pytest.raises(AssertionError):
-        c = job_array.JobDescription(j3)
-    j3.task = other_task
-    c = job_array.JobDescription(j3)
-
-    assert a != c
 
 
 @mock_s3
@@ -672,11 +644,10 @@ def test_jobs_are_arrayed(
 
     test_jobs = []
     for i in range(10):
-        job = Job(array_task(i))
+        job = Job(array_task, array_task(i))
         job.id = f"task_{i}"
-        job.task = array_task
         job.eval_hash = f"eval_hash_{i}"
-        executor.submit(job, (i,), {})
+        executor.submit(job)
         test_jobs.append(job)
 
     # Wait for jobs to get submitted from arrayer to executor.
@@ -698,11 +669,10 @@ def test_jobs_are_arrayed(
     assert submit_task_mock.call_count == 2
 
     # Submit a different kind of job now.
-    j = Job(other_task(3, 5))
+    j = Job(other_task, other_task(3, 5))
     j.id = "other_task"
-    j.task = other_task
     j.eval_hash = "hashbrowns"
-    executor.submit(j, (3, 5), {})
+    executor.submit(j)
 
     assert len(executor.arrayer.pending) == 1
     pending_correct["single-job"] = j
@@ -739,15 +709,15 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
     executor.get_jobs.return_value = []
 
     # Submit one test job.
-    job = Job(other_task(5, 3))
+    job = Job(other_task, other_task(5, 3))
     job.id = "carrots"
-    job.task = other_task
     job.eval_hash = "why do i always say carrots in test cases idk"
-    executor.submit(job, (5, 3), {})
+    job.args = ((5, 3), {})
+    executor.submit(job)
 
     # Job should be submitted immediately.
     assert submit_single_mock.call_args
-    assert submit_single_mock.call_args[0] == (job, (5, 3), {})
+    assert submit_single_mock.call_args[0] == (job,)
 
     # Monitor thread should not run.
     assert not executor.arrayer._monitor_thread.is_alive()
@@ -880,14 +850,13 @@ def other_task(x, y):
 
     test_jobs = []
     for i in range(3):
-        job = Job(other_task(i, y=2 * i))
+        job = Job(other_task, other_task(i, y=2 * i))
         job.id = f"task_{i}"
-        job.task = other_task
         job.eval_hash = f"hash_{i}"
+        job.args = ((i,), {"y": 2 * i})
         test_jobs.append(job)
 
-    pending_jobs = [job_array.PendingJob(test_jobs[i], (i,), {"y": 2 * i}) for i in range(3)]
-    array_uuid = executor.arrayer.submit_array_job(pending_jobs)
+    array_uuid = executor._submit_array_job(test_jobs)
 
     # Now run 2 of those jobs and make sure they work ok
     client = RedunClient()

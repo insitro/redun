@@ -1,4 +1,4 @@
-from typing import Dict, cast
+from typing import cast
 from unittest.mock import Mock, patch
 
 from redun import File, task
@@ -52,12 +52,10 @@ def test_executor_docker(
 
     # Create and submit a job.
     expr = cast(TaskExpression[int], task1(10))
-    job = Job(expr)
-    job.task = task1
+    job = Job(task1, expr)
     job.eval_hash = "eval_hash"
-    args = (10,)
-    kwargs: Dict = {}
-    executor.submit(job, args, kwargs)
+    job.args = ((10,), {})
+    executor.submit(job)
 
     # Ensure job options were passed correctly to docker.
     scratch_dir = executor._scratch_prefix
@@ -110,11 +108,10 @@ def test_executor_docker(
 
     # Create and submit a job.
     expr = cast(TaskExpression[int], task1(11))
-    job = Job(expr)
-    job.task = task1
+    job = Job(task1, expr)
     job.eval_hash = "eval_hash2"
-    args, kwargs = (11,), {}
-    executor.submit(job, args, kwargs)
+    job.args = ((11,), {})
+    executor.submit(job)
 
     # Simulate the container job failing.
     error = ValueError("Boom")

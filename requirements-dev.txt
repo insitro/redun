@@ -1,6 +1,7 @@
 freezegun
 moto[batch,glue,s3]==3.1.10
-numpydoc==1.1.0
+numpydoc
+sphinx<6 # awscli requires docutils <0.17, and sphinx 6 requires >=0.18
 pandas
 pdbpp
 pre-commit
