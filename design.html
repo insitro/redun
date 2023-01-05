@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Tasks" href="tasks.html" /><link rel="prev" title="Install" href="index.html" />
 
-    <meta name="generator" content="sphinx-5.3.0, furo 2022.09.29"/>
+    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
         <title>Design overview - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=d81277517bee4d6b0349d71bb2661d4890b5617c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -148,7 +148,7 @@
   <span class="sidebar-brand-text">redun</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
-  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
@@ -265,19 +265,19 @@
 </pre></div>
 </div>
 <p>It could be executed as a regular Python script:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python hello_world.py
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>hello_world.py
 <span class="c1"># Which prints:</span>
-Hello, World!
+Hello,<span class="w"> </span>World!
 </pre></div>
 </div>
 <p>Or it can be executed with the <code class="docutils literal notranslate"><span class="pre">redun</span></code> command-line program:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun run hello_world.py main
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>hello_world.py<span class="w"> </span>main
 <span class="c1"># Which prints:</span>
 <span class="s1">&#39;Hello, World!&#39;</span>
 </pre></div>
 </div>
 <p>There is nothing special about the <code class="docutils literal notranslate"><span class="pre">main()</span></code> task, we could call any task from the command line:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun run hello_world.py greeter --greet Hello --thing <span class="s2">&quot;Mars&quot;</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>hello_world.py<span class="w"> </span>greeter<span class="w"> </span>--greet<span class="w"> </span>Hello<span class="w"> </span>--thing<span class="w"> </span><span class="s2">&quot;Mars&quot;</span>
 <span class="c1"># Which prints:</span>
 <span class="s1">&#39;Hello, Mars!&#39;</span>
 </pre></div>
@@ -346,24 +346,28 @@ Hello, World!
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">task1</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="n">task1</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
-<span class="c1"># TaskExpression(&#39;task1&#39;, (10,), {&#39;y&#39;: 3})</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+<span class="c1"># &lt;class &#39;redun.expression.TaskExpression&#39;&gt;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="c1"># add(10, y=3)</span>
 </pre></div>
 </div>
-<p>This expression means, “apply Task ‘task1’ to arguments <code class="docutils literal notranslate"><span class="pre">10</span></code> and <code class="docutils literal notranslate"><span class="pre">y=3</span></code>”. Expressions are evaluated to their concrete values by the redun scheduler:</p>
+<p>This expression means, “apply Task ‘add’ to arguments <code class="docutils literal notranslate"><span class="pre">10</span></code> and <code class="docutils literal notranslate"><span class="pre">y=3</span></code>”. Expressions are evaluated to their concrete values by the redun scheduler:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">Scheduler</span>
 
 <span class="n">scheduler</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">scheduler</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">task1</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">scheduler</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">add</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">)))</span>
 <span class="c1"># 13</span>
 </pre></div>
 </div>
 <p>To build up a larger program, these Expression objects can be used as arguments to other Tasks, such as:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">task1</span><span class="p">(</span><span class="n">task1</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">)))</span>
-<span class="c1"># TaskExpression(&#39;task1&#39;, (TaskExpression(&#39;task1&#39;, (10,), {&#39;y&#39;: 3}),), {})</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">add</span><span class="p">(</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">add</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+<span class="c1"># add(add(1, 2), add(3, 4)) : type TaskExpresion</span>
 </pre></div>
 </div>
 <p>This gives us a tree of expressions, and more generally they can be Directed Acyclic Graphs (DAGs).</p>
@@ -405,16 +409,16 @@ Hello, World!
 </pre></div>
 </div>
 <p>For those who are familiar with <a class="reference external" href="https://en.wikipedia.org/wiki/Futures_and_promises">Promises</a> from other languages such as javascript, redun tasks perform the equivalent Promise manipulations:</p>
-<div class="highlight-js notranslate"><div class="highlight"><pre><span></span><span class="c1">// This call</span><span class="w"></span>
-<span class="nx">result2a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">step2a</span><span class="p">(</span><span class="nx">result1</span><span class="p">,</span><span class="w"> </span><span class="mf">10</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;red&#39;</span><span class="p">)</span><span class="w"></span>
-<span class="c1">// is equivalent to</span><span class="w"></span>
-<span class="nx">result2a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">result1</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">result1</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">step2a</span><span class="p">(</span><span class="nx">result1</span><span class="p">,</span><span class="w"> </span><span class="mf">10</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;red&#39;</span><span class="p">))</span><span class="w"></span>
+<div class="highlight-js notranslate"><div class="highlight"><pre><span></span><span class="c1">// This call</span>
+<span class="nx">result2a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">step2a</span><span class="p">(</span><span class="nx">result1</span><span class="p">,</span><span class="w"> </span><span class="mf">10</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+<span class="c1">// is equivalent to</span>
+<span class="nx">result2a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">result1</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">result1</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">step2a</span><span class="p">(</span><span class="nx">result1</span><span class="p">,</span><span class="w"> </span><span class="mf">10</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;red&#39;</span><span class="p">))</span>
 </pre></div>
 </div>
-<div class="highlight-js notranslate"><div class="highlight"><pre><span></span><span class="c1">// This call</span><span class="w"></span>
-<span class="nx">result3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">step3</span><span class="p">(</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">)</span><span class="w"></span>
-<span class="c1">// is equivalent to</span><span class="w"></span>
-<span class="nx">result3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">([</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">]).</span><span class="nx">then</span><span class="p">(([</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">])</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">step3</span><span class="p">(</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">))</span><span class="w"></span>
+<div class="highlight-js notranslate"><div class="highlight"><pre><span></span><span class="c1">// This call</span>
+<span class="nx">result3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">step3</span><span class="p">(</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">)</span>
+<span class="c1">// is equivalent to</span>
+<span class="nx">result3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">([</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">]).</span><span class="nx">then</span><span class="p">(([</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">])</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">step3</span><span class="p">(</span><span class="nx">result2a</span><span class="p">,</span><span class="w"> </span><span class="nx">result2b</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>Our use of Expressions to build up Task dependency is also similar to <a class="reference external" href="https://docs.python.org/dev/library/concurrent.futures.html">Concurrent Futures in Python</a> and <a class="reference external" href="https://docs.dask.org/en/latest/delayed.html">Dask Delayed</a>.</p>
@@ -493,11 +497,11 @@ Hello, World!
 </pre></div>
 </div>
 <p>the task <code class="docutils literal notranslate"><span class="pre">my_task()</span></code> has name <code class="docutils literal notranslate"><span class="pre">my_task</span></code> and namespace <code class="docutils literal notranslate"><span class="pre">my_workflow</span></code>. From the command line, you can run <code class="docutils literal notranslate"><span class="pre">my_task</span></code> as</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun run workflow.py my_task
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>workflow.py<span class="w"> </span>my_task
 </pre></div>
 </div>
 <p>or with its fully qualified name:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun run workflow.py my_workflow.my_task
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>workflow.py<span class="w"> </span>my_workflow.my_task
 </pre></div>
 </div>
 <p>If needed, task name and workflow can be defined directly in the <code class="docutils literal notranslate"><span class="pre">&#64;task</span></code> decorator:</p>
@@ -606,7 +610,7 @@ Hello, World!
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">    mkdir dir</span>
 <span class="s2">    cd dir</span>
-<span class="s2">    my-prog </span><span class="si">{</span><span class="n">arg1</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">arg2</span><span class="si">}</span><span class="s2"></span>
+<span class="s2">    my-prog </span><span class="si">{</span><span class="n">arg1</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">arg2</span><span class="si">}</span>
 <span class="s2">    &quot;&quot;&quot;</span>
 </pre></div>
 </div>
@@ -616,7 +620,7 @@ Hello, World!
 <span class="k">def</span> <span class="nf">grep</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
     <span class="c1"># Calls grep to find pattern in a file.</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">    grep </span><span class="si">{</span><span class="n">pattern</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2"></span>
+<span class="s2">    grep </span><span class="si">{</span><span class="n">pattern</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">path</span><span class="si">}</span>
 <span class="s2">    &quot;&quot;&quot;</span>
 
 <span class="nd">@task</span><span class="p">()</span>
@@ -660,7 +664,7 @@ Hello, World!
 <span class="s2">            reads.fastq.gz</span>
 
 <span class="s2">        # Unstage output file back to cloud storage.       </span>
-<span class="s2">        aws s3 cp sample.aln.bam </span><span class="si">{</span><span class="n">output_align_path</span><span class="si">}</span><span class="s2"></span>
+<span class="s2">        aws s3 cp sample.aln.bam </span><span class="si">{</span><span class="n">output_align_path</span><span class="si">}</span>
 <span class="s2">    &quot;&quot;&quot;</span>
 
 <span class="nd">@task</span><span class="p">()</span>
@@ -944,7 +948,7 @@ Hello, World!
 
 <span class="nd">@task</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">compile</span><span class="p">(</span><span class="n">c_file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compile one C file into an object file.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s2">&quot;gcc -c </span><span class="si">{c_file}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c_file</span><span class="o">=</span><span class="n">c_file</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>
@@ -953,7 +957,7 @@ Hello, World!
 
 <span class="nd">@task</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Link several object files together into one program.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s2">&quot;gcc -o </span><span class="si">{prog_path}</span><span class="s2"> </span><span class="si">{o_files}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -965,7 +969,7 @@ Hello, World!
 
 <span class="nd">@task</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">make_prog</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">c_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compile one program from its source C files.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">o_files</span> <span class="o">=</span> <span class="p">[</span>
@@ -991,7 +995,7 @@ Hello, World!
 
 <span class="nd">@task</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">make</span><span class="p">(</span><span class="n">files</span> <span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]]</span><span class="o">=</span><span class="n">files</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Top-level task for compiling all the programs in the project.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">progs</span> <span class="o">=</span> <span class="p">[</span>
@@ -1003,29 +1007,29 @@ Hello, World!
 </div>
 <p>For reference, these source files have the following contents:</p>
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="c1">// lib.c</span>
-<span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="nf">get_message</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;Hello, World!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="nf">get_message</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;Hello, World!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
 
 
 <span class="c1">// prog.c</span>
-<span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="nf">get_message</span><span class="p">();</span><span class="w"></span>
+<span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="nf">get_message</span><span class="p">();</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">**</span><span class="w"> </span><span class="n">argv</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">msg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_message</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;prog1: %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">**</span><span class="w"> </span><span class="n">argv</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">msg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_message</span><span class="p">();</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;prog1: %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
 
 
 <span class="c1">// prog2.c</span>
-<span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="nf">get_message</span><span class="p">();</span><span class="w"></span>
+<span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="nf">get_message</span><span class="p">();</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">**</span><span class="w"> </span><span class="n">argv</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">msg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_message</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;prog2: %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">**</span><span class="w"> </span><span class="n">argv</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">msg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_message</span><span class="p">();</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;prog2: %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Let’s execute this workflow using <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">run</span></code>:</p>
@@ -1058,13 +1062,13 @@ prog1: Hello, World!
 </pre></div>
 </div>
 <p>Now, let’s edit one of the C files to have more exclamation marks!!!!!!</p>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/examples/compile/lib.c</span><span class="w"></span>
-<span class="gi">+++ b/examples/compile/lib.c</span><span class="w"></span>
-<span class="gu">@@ -1,3 +1,3 @@</span><span class="w"></span>
-<span class="w"> </span>char *get_message() {<span class="w"></span>
-<span class="gd">-    return &quot;Hello, World!\n&quot;;</span><span class="w"></span>
-<span class="gi">+    return &quot;Hello, World!!!!!!!!\n&quot;;</span><span class="w"></span>
-<span class="w"> </span>}<span class="w"></span>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/examples/compile/lib.c</span>
+<span class="gi">+++ b/examples/compile/lib.c</span>
+<span class="gu">@@ -1,3 +1,3 @@</span>
+<span class="w"> </span>char *get_message() {
+<span class="gd">-    return &quot;Hello, World!\n&quot;;</span>
+<span class="gi">+    return &quot;Hello, World!!!!!!!!\n&quot;;</span>
+<span class="w"> </span>}
 </pre></div>
 </div>
 <p>We rerun our workflow and redun will automatically detect that some (but not all) of the tasks need to re-execute because an input file (lib.c) has changed:</p>
@@ -1095,11 +1099,11 @@ prog1: Hello, World!!!!!!!!
 </pre></div>
 </div>
 <p>Now, let’s look at the call graphs recorded so far. We can list past executions like so:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun log
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>log
 
-Recent executions:
-  Exec a5583da5-3787-4324-86c9-ad988753cd2e <span class="m">2020</span>-06-26 <span class="m">22</span>:21:32:  <span class="nv">args</span><span class="o">=</span>run make.py make
-  Exec 3bd1e113-d88f-4671-a996-4b2feb5aa58b <span class="m">2020</span>-06-26 <span class="m">22</span>:15:03:  <span class="nv">args</span><span class="o">=</span>run make.py make
+Recent<span class="w"> </span>executions:
+<span class="w">  </span>Exec<span class="w"> </span>a5583da5-3787-4324-86c9-ad988753cd2e<span class="w"> </span><span class="m">2020</span>-06-26<span class="w"> </span><span class="m">22</span>:21:32:<span class="w">  </span><span class="nv">args</span><span class="o">=</span>run<span class="w"> </span>make.py<span class="w"> </span>make
+<span class="w">  </span>Exec<span class="w"> </span>3bd1e113-d88f-4671-a996-4b2feb5aa58b<span class="w"> </span><span class="m">2020</span>-06-26<span class="w"> </span><span class="m">22</span>:15:03:<span class="w">  </span><span class="nv">args</span><span class="o">=</span>run<span class="w"> </span>make.py<span class="w"> </span>make
 </pre></div>
 </div>
 <p>Each execution is given a unique id (UUID). To list more information about a specific execution, simply supply it to the <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">log</span></code> command:</p>
@@ -1123,7 +1127,7 @@ Recent executions:
     <span class="n">First</span> <span class="n">job</span> <span class="mi">88</span><span class="n">eb9fd6</span> <span class="mi">2020</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">26</span> <span class="mi">22</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mf">07.424194</span>
 
     <span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Link several object files together into one program.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s2">&quot;gcc -o </span><span class="si">{prog_path}</span><span class="s2"> </span><span class="si">{o_files}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -1151,7 +1155,7 @@ Recent executions:
 
   <span class="n">Task</span> <span class="n">link</span> <span class="n">e73b3cd20246b559ac2b9c2933efe953612cc3ab</span>
       <span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
-          <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">          </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">          Link several object files together into one program.</span>
 <span class="sd">          &quot;&quot;&quot;</span>
           <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s2">&quot;gcc -o </span><span class="si">{prog_path}</span><span class="s2"> </span><span class="si">{o_files}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -1170,7 +1174,7 @@ Recent executions:
 
   <span class="n">Task</span> <span class="nb">compile</span> <span class="n">d2b031e48e7f491a3d05a12f243f967517b25236</span>
       <span class="k">def</span> <span class="nf">compile</span><span class="p">(</span><span class="n">c_file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
-          <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">          </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">          Compile one C file into an object file.</span>
 <span class="sd">          &quot;&quot;&quot;</span>
           <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s2">&quot;gcc -c </span><span class="si">{c_file}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c_file</span><span class="o">=</span><span class="n">c_file</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>
@@ -1198,7 +1202,7 @@ Recent executions:
 
 <span class="p">(</span><span class="n">redun</span><span class="p">)</span> <span class="nb">print</span><span class="p">(</span><span class="n">call_node</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Link several object files together into one program.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s2">&quot;gcc -o </span><span class="si">{prog_path}</span><span class="s2"> </span><span class="si">{o_files}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -1212,7 +1216,7 @@ Recent executions:
 
 <span class="p">(</span><span class="n">redun</span><span class="p">)</span> <span class="nb">print</span><span class="p">(</span><span class="n">call_node</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">make_prog</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">c_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compile one program from its source C files.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">o_files</span> <span class="o">=</span> <span class="p">[</span>
@@ -1280,17 +1284,17 @@ Recent executions:
 <p>The import command is <a class="reference external" href="https://en.wikipedia.org/wiki/Idempotence">idempotent</a>, so you can safely import log files that might contain records that already exist in the database, and redun will correctly only import the new records and avoid double insertions. Since records are immutable, there is no need to perform any updates or deletes, only inserts. Every record has a unique id that is either a hash or UUID, and therefore reconciling matching records is trivial.</p>
 <p>redun can also efficiently sync new records using the <code class="docutils literal notranslate"><span class="pre">push</span></code> command, which works similar to <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span></code>:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># Push to another repo.</span>
-redun repo add other_repo redun2
-redun push other_repo
+redun<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>other_repo<span class="w"> </span>redun2
+redun<span class="w"> </span>push<span class="w"> </span>other_repo
 </pre></div>
 </div>
 <p>This efficient sync is done by performing a graph walk of the redun database, similar to the <a class="reference external" href="https://matthew-brett.github.io/curious-git/git_push_algorithm.html">approach used by git</a>.</p>
 <p>It is envisioned that the <code class="docutils literal notranslate"><span class="pre">push</span></code> command can be used in a data science workflow, where a data scientist could complete their analysis by pushing both their code provenance (version control) and their data provenance to central databases to share with their team.</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># Share your code provenance.</span>
-git push origin main
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>main
 
 <span class="c1"># Share your data provenance.</span>
-redun push prod
+redun<span class="w"> </span>push<span class="w"> </span>prod
 </pre></div>
 </div>
 </div>
@@ -1515,7 +1519,7 @@ the cost of the extra powers we have.</p>
 <span class="n">evaluate</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
-   <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">   </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">   Evaluate an expression.</span>
 <span class="sd">   &quot;&quot;&quot;</span>
    <span class="k">if</span> <span class="n">expr</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">TaskExpression</span><span class="p">:</span>
@@ -1529,7 +1533,7 @@ the cost of the extra powers we have.</p>
        <span class="k">return</span> <span class="n">expr</span>
 
 <span class="k">def</span> <span class="nf">evaluate_task</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Evaluate a Task.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Evaluate arguments.</span>
@@ -1566,7 +1570,7 @@ the cost of the extra powers we have.</p>
     <span class="k">return</span> <span class="n">result</span>
 
 <span class="k">def</span> <span class="nf">get_cache</span><span class="p">(</span><span class="n">eval_hash</span><span class="p">,</span> <span class="n">task_hash</span><span class="p">,</span> <span class="n">args_hash</span><span class="p">,</span> <span class="n">check_valid</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Consult key-value store for cached results.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">check_valid</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">:</span>
@@ -1844,9 +1848,7 @@ the cost of the extra powers we have.</p>
             
           </div>
           <div class="right-details">
-            <div class="icons">
-              
-            </div>
+            
           </div>
         </div>
         

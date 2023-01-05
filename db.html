@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Spark" href="spark.html" /><link rel="prev" title="Configuration" href="config.html" />
 
-    <meta name="generator" content="sphinx-5.3.0, furo 2022.09.29"/>
+    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
         <title>Database repo - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=d81277517bee4d6b0349d71bb2661d4890b5617c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -148,7 +148,7 @@
   <span class="sidebar-brand-text">redun</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
-  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
@@ -228,18 +228,18 @@ See the <a class="reference internal" href="config.html#backend"><span class="st
 <h2>Database migration<a class="headerlink" href="#database-migration" title="Permalink to this heading">#</a></h2>
 <p>The redun CLI will automatically initialize and upgrade the redun database in most cases, so users will oftentimes not need to manage database versioning themselves. However, there are certain situations where users may want or need to manage database upgrades explicitly, such as upgrading a central shared PostgreSQL database. Here, we review common commands for inspecting and managing database version upgrades.</p>
 <p>When the redun CLI is run for the first on a workflow script, by default a new sqlite database is created at <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code>.</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun run workflow.py main
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>workflow.py<span class="w"> </span>main
 
 <span class="c1"># .redun/redun.db sqlite database is created and upgraded to latest version known to the CLI.</span>
 </pre></div>
 </div>
 <p>The version of the database can be queried using <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">db</span> <span class="pre">info</span></code>, which should produce output something like:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun :: version <span class="m">0</span>.4.11
-config dir: /Users/rasmus/projects/redun/.redun
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>::<span class="w"> </span>version<span class="w"> </span><span class="m">0</span>.4.11
+config<span class="w"> </span>dir:<span class="w"> </span>/Users/rasmus/projects/redun/.redun
 
-db version: <span class="m">2</span>.0
-CLI requires db versions: &gt;<span class="o">=</span><span class="m">2</span>,&lt;<span class="m">3</span>
-CLI compatible with db: True
+db<span class="w"> </span>version:<span class="w"> </span><span class="m">2</span>.0
+CLI<span class="w"> </span>requires<span class="w"> </span>db<span class="w"> </span>versions:<span class="w"> </span>&gt;<span class="o">=</span><span class="m">2</span>,&lt;<span class="m">3</span>
+CLI<span class="w"> </span>compatible<span class="w"> </span>with<span class="w"> </span>db:<span class="w"> </span>True
 </pre></div>
 </div>
 <p>The line <code class="docutils literal notranslate"><span class="pre">CLI</span> <span class="pre">requires</span> <span class="pre">db</span> <span class="pre">versions:</span> <span class="pre">&gt;=2,&lt;3</span></code> specifies what range of database versions the currently install CLI can work with. If the CLI requires a newer database version, the database will need to be upgraded before use.</p>
@@ -355,9 +355,7 @@ See <code class="docutils literal notranslate"><span class="pre">ValueStore</spa
             
           </div>
           <div class="right-details">
-            <div class="icons">
-              
-            </div>
+            
           </div>
         </div>
         

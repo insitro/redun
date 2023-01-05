@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Visualization" href="visualization.html" /><link rel="prev" title="FAQ" href="FAQ.html" />
 
-    <meta name="generator" content="sphinx-5.3.0, furo 2022.09.29"/>
+    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
         <title>Developer guide - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=d81277517bee4d6b0349d71bb2661d4890b5617c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -148,7 +148,7 @@
   <span class="sidebar-brand-text">redun</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
-  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
@@ -223,15 +223,15 @@
 <h2>Development installation<a class="headerlink" href="#development-installation" title="Permalink to this heading">#</a></h2>
 <p>If you have postgres available, (perhaps with <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">postgresql</span></code> on macOS), you can prepare
 an editable installation and run the tests:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>make setup
-. .venv/bin/activate
-pytest redun
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>setup
+.<span class="w"> </span>.venv/bin/activate
+pytest<span class="w"> </span>redun
 
 <span class="c1"># Other targets</span>
-make black
-make mypy
-make lint
-make isort
+make<span class="w"> </span>black
+make<span class="w"> </span>mypy
+make<span class="w"> </span>lint
+make<span class="w"> </span>isort
 </pre></div>
 </div>
 </div>
@@ -241,8 +241,12 @@ make isort
 <div class="section" id="release-steps">
 <h3>Release Steps<a class="headerlink" href="#release-steps" title="Permalink to this heading">#</a></h3>
 <ol class="arabic simple">
-<li><p>Prepare a release branch and make a PR from this branch with an updated <a class="reference external" href="https://github.com/insitro/redun/blob/db17e39a2efaf9b3be466c60bdfecbe6ce4ea054/redun/__init__.py#L14"><code class="docutils literal notranslate"><span class="pre">__version__</span></code></a> and <a class="reference external" href="https://github.com/insitro/redun/blob/master/docs/source/CHANGELOG.rst"><code class="docutils literal notranslate"><span class="pre">CHANGELOG</span></code></a>
-e.g. https://github.com/insitro/redun/pull/107. Use <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">release_notes.py</span></code></span> script to generate the release notes (see that script for usage).</p></li>
+<li><p>Prepare a release branch and make a PR from this branch with an updated:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/insitro/redun/blob/0cd06c8147700f67b777b5a43a6d3e3925274bff/redun/__init__.py#L21"><code class="docutils literal notranslate"><span class="pre">__version__</span></code></a> - new version number should follow semantic versioning rules (see <a class="reference external" href="https://semver.org/">semver.org</a> for details)</p></li>
+<li><p>and <a class="reference external" href="https://github.com/insitro/redun/blob/main/docs/source/CHANGELOG.md"><code class="docutils literal notranslate"><span class="pre">CHANGELOG</span></code></a> e.g. https://github.com/insitro/redun/pull/107. Use <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">release_notes.py</span></code></span> script to generate the release notes (see that script for usage).</p></li>
+</ul>
+</li>
 <li><p>Merge the release branch to both branches <code class="docutils literal notranslate"><span class="pre">main</span></code> and <code class="docutils literal notranslate"><span class="pre">insitro-private</span></code>. The codebuild pipeline will trigger automatically based on the latter branch. If the version has been updated, it will initiate the release process. If the CHANGELOG is not updated to reflect the new version, the codebuild will terminate without releasing.</p></li>
 </ol>
 </div>
@@ -286,9 +290,7 @@ e.g. https://github.com/insitro/redun/pull/107. Use <span class="xref myst"><cod
             
           </div>
           <div class="right-details">
-            <div class="icons">
-              
-            </div>
+            
           </div>
         </div>
         

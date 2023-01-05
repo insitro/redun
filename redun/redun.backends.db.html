@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun.executors package" href="redun.executors.html" /><link rel="prev" title="redun.backends package" href="redun.backends.html" />
 
-    <meta name="generator" content="sphinx-5.3.0, furo 2022.09.29"/>
+    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
         <title>redun.backends.db package - redun</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=d81277517bee4d6b0349d71bb2661d4890b5617c" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -148,7 +148,7 @@
   <span class="sidebar-brand-text">redun</span>
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
-  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
@@ -344,7 +344,7 @@ format, or serialized into JSON for the web frontend.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.ArgumentValue">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.dataflow.</span></span><span class="sig-name descname"><span class="pre">ArgumentValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argument</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.db.Argument" title="redun.backends.db.Argument"><span class="pre">Argument</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.db.Value" title="redun.backends.db.Value"><span class="pre">Value</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.dataflow.ArgumentValue" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
 <p>A DataflowNode used for tracing one subvalue in an argument.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.ArgumentValue.argument">
@@ -363,7 +363,7 @@ format, or serialized into JSON for the web frontend.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.CallNodeValue">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.dataflow.</span></span><span class="sig-name descname"><span class="pre">CallNodeValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call_node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.db.CallNode" title="redun.backends.db.CallNode"><span class="pre">CallNode</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.db.Value" title="redun.backends.db.Value"><span class="pre">Value</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.dataflow.CallNodeValue" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
 <p>A DataflowNode used for tracing one subvalue of a CallNode result.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.CallNodeValue.call_node">
@@ -382,7 +382,7 @@ format, or serialized into JSON for the web frontend.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.DataflowArg">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.dataflow.</span></span><span class="sig-name descname"><span class="pre">DataflowArg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.db.Value" title="redun.backends.db.Value"><span class="pre">Value</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.dataflow.DataflowArg" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
 <p>An argument clause in a Dataflow DOM.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.DataflowArg.value">
@@ -401,7 +401,7 @@ format, or serialized into JSON for the web frontend.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.DataflowAssign">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.dataflow.</span></span><span class="sig-name descname"><span class="pre">DataflowAssign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_display</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.backends.db.dataflow.ArgumentValue" title="redun.backends.db.dataflow.ArgumentValue"><span class="pre">ArgumentValue</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.dataflow.CallNodeValue" title="redun.backends.db.dataflow.CallNodeValue"><span class="pre">CallNodeValue</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.CallNode" title="redun.backends.db.CallNode"><span class="pre">CallNode</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.Value" title="redun.backends.db.Value"><span class="pre">Value</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.dataflow.DataflowAssign" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
 <p>The assignment clause in a Dataflow DOM.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.DataflowAssign.node">
@@ -432,7 +432,7 @@ format, or serialized into JSON for the web frontend.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.DataflowEdge">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.dataflow.</span></span><span class="sig-name descname"><span class="pre">DataflowEdge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.backends.db.dataflow.ArgumentValue" title="redun.backends.db.dataflow.ArgumentValue"><span class="pre">ArgumentValue</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.dataflow.CallNodeValue" title="redun.backends.db.dataflow.CallNodeValue"><span class="pre">CallNodeValue</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.CallNode" title="redun.backends.db.CallNode"><span class="pre">CallNode</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.Value" title="redun.backends.db.Value"><span class="pre">Value</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.backends.db.dataflow.ArgumentValue" title="redun.backends.db.dataflow.ArgumentValue"><span class="pre">ArgumentValue</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.dataflow.CallNodeValue" title="redun.backends.db.dataflow.CallNodeValue"><span class="pre">CallNodeValue</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.CallNode" title="redun.backends.db.CallNode"><span class="pre">CallNode</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.Value" title="redun.backends.db.Value"><span class="pre">Value</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.dataflow.DataflowEdge" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
 <p>An edge in a Dataflow graph.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.DataflowEdge.dest">
@@ -451,7 +451,7 @@ format, or serialized into JSON for the web frontend.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.DataflowRouting">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.dataflow.</span></span><span class="sig-name descname"><span class="pre">DataflowRouting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_display</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.backends.db.dataflow.ArgumentValue" title="redun.backends.db.dataflow.ArgumentValue"><span class="pre">ArgumentValue</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.dataflow.CallNodeValue" title="redun.backends.db.dataflow.CallNodeValue"><span class="pre">CallNodeValue</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.CallNode" title="redun.backends.db.CallNode"><span class="pre">CallNode</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.Value" title="redun.backends.db.Value"><span class="pre">Value</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.dataflow.DataflowRouting" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
 <p>A routing clause in a Dataflow DOM.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.DataflowRouting.node">
@@ -476,7 +476,7 @@ format, or serialized into JSON for the web frontend.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.DataflowSectionDOM">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.dataflow.</span></span><span class="sig-name descname"><span class="pre">DataflowSectionDOM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">assign</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.db.dataflow.DataflowAssign" title="redun.backends.db.dataflow.DataflowAssign"><span class="pre">DataflowAssign</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">routing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.backends.db.dataflow.DataflowRouting" title="redun.backends.db.dataflow.DataflowRouting"><span class="pre">DataflowRouting</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.backends.db.dataflow.DataflowArg" title="redun.backends.db.dataflow.DataflowArg"><span class="pre">DataflowArg</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.dataflow.DataflowSectionDOM" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
 <p>A section in Dataflow DOM.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.dataflow.DataflowSectionDOM.args">
@@ -910,7 +910,7 @@ like this:</p>
 <p>Query class for efficiently querying across all models in a CallGraph.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.ExecTag">
-<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7f422ac98c10;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7fc9c98b57e0;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1559,7 +1559,7 @@ defined SQL constructs.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.db.DBVersionInfo">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.</span></span><span class="sig-name descname"><span class="pre">DBVersionInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">migration_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">major</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.DBVersionInfo" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
 <p>A redun repo database version and migration id.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.DBVersionInfo.description">
@@ -1840,7 +1840,7 @@ correspond with the names of the arguments.  For example, a datatype
 which accepts a dictionary of lookup values may publish this as a sorted
 series of tuples.   Given a previously un-cacheable type as:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
 
 <span class="sd">    this is the non-cacheable version, as &quot;self.lookup&quot; is not</span>
 <span class="sd">    hashable.</span>
@@ -1890,7 +1890,7 @@ statement cache, since Python dictionaries aren’t hashable:</p>
 <p>The type may be made cacheable by assigning a sorted tuple of tuples
 to the “.lookup” attribute:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
 
 <span class="sd">    The dictionary is stored both as itself in a private variable,</span>
 <span class="sd">    and published in a public variable as a sorted tuple of tuples,</span>
@@ -2111,10 +2111,10 @@ record end_times for FAILED Jobs as well.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="redun.backends.db.LargeValue">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.</span></span><span class="sig-name descname"><span class="pre">LargeValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.db.Value" title="redun.backends.db.Value"><span class="pre">Value</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.LargeValue" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="redun.backends.db.PreviewValue">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.</span></span><span class="sig-name descname"><span class="pre">PreviewValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.db.Value" title="redun.backends.db.Value"><span class="pre">Value</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.PreviewValue" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>A Value too large to display.</p>
+<p>A preview value if the value is too large or if there is an error.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -2856,9 +2856,7 @@ This also implies <cite>new=True</cite>.</p></li>
             
           </div>
           <div class="right-details">
-            <div class="icons">
-              
-            </div>
+            
           </div>
         </div>
         
@@ -3194,7 +3192,7 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.Job.task_hash"><code class="docutils literal notranslate"><span class="pre">Job.task_hash</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#redun.backends.db.LargeValue"><code class="docutils literal notranslate"><span class="pre">LargeValue</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.PreviewValue"><code class="docutils literal notranslate"><span class="pre">PreviewValue</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb</span></code></a><ul>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.advance_handle"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.advance_handle()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.calc_current_nodes"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.calc_current_nodes()</span></code></a></li>

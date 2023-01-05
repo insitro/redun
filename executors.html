@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Configuration" href="config.html" /><link rel="prev" title="Tasks" href="tasks.html" />
 
-    <meta name="generator" content="sphinx-5.3.0, furo 2022.09.29"/>
+    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
         <title>Executors - redun</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=d81277517bee4d6b0349d71bb2661d4890b5617c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -148,7 +148,7 @@
   <span class="sidebar-brand-text">redun</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
-  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
@@ -255,7 +255,81 @@
 </div>
 <div class="section" id="local-executor">
 <h2>Local executor<a class="headerlink" href="#local-executor" title="Permalink to this heading">#</a></h2>
-<p>The <strong>Local executor</strong> executes tasks on the same machine as the scheduler using either multiple threads or processes (configured by the <a class="reference internal" href="config.html#mode"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">mode</span></code> option</span></a>). By default, redun defines a Local executor named “default” that is used as the default executor for tasks. Users can configure the local executor using the <a class="reference internal" href="config.html#local-executor"><span class="std std-doc">configuration file</span></a>.</p>
+<p>The <strong>Local executor</strong> executes tasks on the same machine as the scheduler using either multiple threads or processes (configured by the <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">mode</span></code> option</span>). By default, redun defines a Local executor named “default” that is used as the default executor for tasks. Users can configure the local executor using the <a class="reference internal" href="config.html#local-executor"><span class="std std-doc">configuration file</span></a>.</p>
+</div>
+<div class="section" id="alias-executor">
+<h2>Alias executor<a class="headerlink" href="#alias-executor" title="Permalink to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">AliasExecutor</span></code> is a lazily-resolved alias for another executor, which allows
+executors with distinct names to resolve to the same underlying implementation.</p>
+<p>For example, consider these tasks:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;foo_exec&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Hello world&#39;</span>
+
+
+<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;bar_exec&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">bar</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">input</span><span class="s1">&#39;</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">greet</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Hello&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">foo</span><span class="p">(</span><span class="n">bar</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>This example defined distinct executors for several tasks, perhaps because they need
+different environments. However, sometimes we may need them to share underlying
+executors, for example, to share resources. Without aliases, consider a configuration
+like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">executors</span><span class="o">.</span><span class="n">default</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">local</span>
+<span class="n">mode</span> <span class="o">=</span> <span class="n">process</span>
+<span class="n">max_workers</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="p">[</span><span class="n">executors</span><span class="o">.</span><span class="n">foo_exec</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">local</span>
+<span class="n">mode</span> <span class="o">=</span> <span class="n">process</span>
+<span class="n">max_workers</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="p">[</span><span class="n">executors</span><span class="o">.</span><span class="n">bar_exec</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">local</span>
+<span class="n">mode</span> <span class="o">=</span> <span class="n">process</span>
+<span class="n">max_workers</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>Although it appears this would only use one worker at a time, it is actually creating
+three distinct process pools, each with one worker, and the executors are allowed to
+operate in parallel to one another.</p>
+<p>Using aliases, we can solve this problem. This configuration file explicitly configures
+the automatically-created <code class="docutils literal notranslate"><span class="pre">process</span></code> executor, and ensures that every task will use it.
+Since there is only one underlying process pool, with only a single worker, this achieves
+the effect of running one task at a time. Note that <code class="docutils literal notranslate"><span class="pre">process</span></code> is overloaded; it is both the
+name of the <code class="docutils literal notranslate"><span class="pre">mode</span></code> for the local executor, and also the name of one of the built-in executors.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">;</span> <span class="n">Create</span> <span class="n">a</span> <span class="n">single</span><span class="o">-</span><span class="n">worker</span> <span class="n">executor</span> <span class="ow">in</span> <span class="n">process</span> <span class="n">mode</span> <span class="p">(</span><span class="n">instead</span> <span class="n">of</span> <span class="n">thread</span><span class="p">)</span>
+<span class="p">[</span><span class="n">executors</span><span class="o">.</span><span class="n">single_worker</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">local</span>
+<span class="n">mode</span> <span class="o">=</span> <span class="n">process</span>
+<span class="n">max_workers</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="p">;</span> <span class="n">Redirect</span> <span class="n">both</span> <span class="n">built</span><span class="o">-</span><span class="ow">in</span> <span class="n">executors</span> <span class="n">to</span> <span class="n">use</span> <span class="n">it</span>
+<span class="p">[</span><span class="n">executors</span><span class="o">.</span><span class="n">process</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">alias</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">single_worker</span>
+
+<span class="p">[</span><span class="n">executors</span><span class="o">.</span><span class="n">default</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">alias</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">single_worker</span>
+
+<span class="p">;</span> <span class="n">And</span> <span class="n">redirect</span> <span class="n">both</span> <span class="n">task</span><span class="o">-</span><span class="n">specific</span> <span class="n">executors</span> <span class="n">to</span> <span class="n">use</span> <span class="n">it</span>
+<span class="p">[</span><span class="n">executors</span><span class="o">.</span><span class="n">foo_exec</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">alias</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">single_worker</span>
+
+<span class="p">[</span><span class="n">executors</span><span class="o">.</span><span class="n">bar_exec</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">alias</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">single_worker</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="aws-batch-executor">
 <h2>AWS Batch executor<a class="headerlink" href="#aws-batch-executor" title="Permalink to this heading">#</a></h2>
@@ -266,7 +340,7 @@
 </div>
 <div class="section" id="configuration">
 <h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h3>
-<p>To use AWS Batch, at a minimum three options must be <a class="reference internal" href="config.html#aws-batch-executor"><span class="std std-doc">configured</span></a>, a Docker image for the job (<a class="reference internal" href="config.html#image"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">image</span></code></span></a>), a AWS Batch queue to submit to (<a class="reference internal" href="config.html#queue"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">queue</span></code></span></a>), and a S3 path to store temporary files for communication between the scheduler and jobs (<span class="xref myst"><code class="docutils literal notranslate"><span class="pre">s3_scratch</span></code></span>).</p>
+<p>To use AWS Batch, at a minimum three options must be <a class="reference internal" href="config.html#aws-batch-executor"><span class="std std-doc">configured</span></a>, a Docker image for the job (<span class="xref myst"><code class="docutils literal notranslate"><span class="pre">image</span></code></span>), a AWS Batch queue to submit to (<span class="xref myst"><code class="docutils literal notranslate"><span class="pre">queue</span></code></span>), and a S3 path to store temporary files for communication between the scheduler and jobs (<span class="xref myst"><code class="docutils literal notranslate"><span class="pre">s3_scratch</span></code></span>).</p>
 </div>
 <div class="section" id="s3-scratch-space">
 <h3>S3 scratch space<a class="headerlink" href="#s3-scratch-space" title="Permalink to this heading">#</a></h3>
@@ -283,7 +357,7 @@
 </div>
 <div class="section" id="local-debugging">
 <h3>Local debugging<a class="headerlink" href="#local-debugging" title="Permalink to this heading">#</a></h3>
-<p>During development, it may be easier to run the Docker image locally in order to debug and interactively inspect a job. Local execution of Docker-base jobs can be achieved by using the <a class="reference internal" href="config.html#debug"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">debug=True</span></code> option</span></a>. The S3 scratch space will still be used to transfer input and output with the Docker container.</p>
+<p>During development, it may be easier to run the Docker image locally in order to debug and interactively inspect a job. Local execution of Docker-base jobs can be achieved by using the <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">debug=True</span></code> option</span>. The S3 scratch space will still be used to transfer input and output with the Docker container.</p>
 <p>The docker container will run in interactive mode (e.g. <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--interactive</span> <span class="pre">...</span></code>), allowing users to place debugging breakpoints within tasks or see task output on stdout. The task option <code class="docutils literal notranslate"><span class="pre">interactive=False</span></code> can also be used to run the Docker container without interactive mode.</p>
 <p>The task option <code class="docutils literal notranslate"><span class="pre">volume</span></code> can also be used to define volume mounts for the Docker container during debugging. Format is <code class="docutils literal notranslate"><span class="pre">volume</span> <span class="pre">=</span> <span class="pre">[(host,</span> <span class="pre">container),</span> <span class="pre">...]</span></code>, where <code class="docutils literal notranslate"><span class="pre">host</span></code> defines a source path on the host machine, and <code class="docutils literal notranslate"><span class="pre">container</span></code> defines a destination path within the container to perform the mount.</p>
 </div>
@@ -407,9 +481,7 @@ as expensive as the others.</p></li>
             
           </div>
           <div class="right-details">
-            <div class="icons">
-              
-            </div>
+            
           </div>
         </div>
         
@@ -429,6 +501,7 @@ as expensive as the others.</p></li>
             <ul>
 <li><a class="reference internal" href="#">Executors</a><ul>
 <li><a class="reference internal" href="#local-executor">Local executor</a></li>
+<li><a class="reference internal" href="#alias-executor">Alias executor</a></li>
 <li><a class="reference internal" href="#aws-batch-executor">AWS Batch executor</a><ul>
 <li><a class="reference internal" href="#docker-image">Docker image</a></li>
 <li><a class="reference internal" href="#configuration">Configuration</a></li>

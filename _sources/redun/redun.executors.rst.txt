@@ -4,6 +4,14 @@ redun.executors package
 Submodules
 ----------
 
+redun.executors.alias module
+----------------------------
+
+.. automodule:: redun.executors.alias
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.executors.aws\_batch module
 ---------------------------------
 

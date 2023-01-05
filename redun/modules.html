@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun package" href="redun.html" /><link rel="prev" title="Changelog" href="../CHANGELOG.html" />
 
-    <meta name="generator" content="sphinx-5.3.0, furo 2022.09.29"/>
+    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
         <title>redun - redun</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=d81277517bee4d6b0349d71bb2661d4890b5617c" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -148,7 +148,7 @@
   <span class="sidebar-brand-text">redun</span>
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
-  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
@@ -233,6 +233,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.executors.html">redun.executors package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.executors.html#module-redun.executors.alias">redun.executors.alias module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#module-redun.executors.aws_batch">redun.executors.aws_batch module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#module-redun.executors.aws_glue">redun.executors.aws_glue module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#module-redun.executors.aws_utils">redun.executors.aws_utils module</a></li>
@@ -285,6 +286,7 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.infer_id"><code class="docutils literal notranslate"><span class="pre">RedunClient.infer_id()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.infer_specialty_id"><code class="docutils literal notranslate"><span class="pre">RedunClient.infer_specialty_id()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.init_command"><code class="docutils literal notranslate"><span class="pre">RedunClient.init_command()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.launch_command"><code class="docutils literal notranslate"><span class="pre">RedunClient.launch_command()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.log_call_node"><code class="docutils literal notranslate"><span class="pre">RedunClient.log_call_node()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.log_command"><code class="docutils literal notranslate"><span class="pre">RedunClient.log_command()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.log_dataflow"><code class="docutils literal notranslate"><span class="pre">RedunClient.log_dataflow()</span></code></a></li>
@@ -364,6 +366,14 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.config.Config.read_string"><code class="docutils literal notranslate"><span class="pre">Config.read_string()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.config.RedunConfigParser"><code class="docutils literal notranslate"><span class="pre">RedunConfigParser</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.config.RedunConfigParser.optionxform"><code class="docutils literal notranslate"><span class="pre">RedunConfigParser.optionxform()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.config.RedunExtendedInterpolation"><code class="docutils literal notranslate"><span class="pre">RedunExtendedInterpolation</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.config.RedunExtendedInterpolation.before_get"><code class="docutils literal notranslate"><span class="pre">RedunExtendedInterpolation.before_get()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.config.create_config_section"><code class="docutils literal notranslate"><span class="pre">create_config_section()</span></code></a></li>
 </ul>
 </li>
@@ -405,13 +415,46 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.expression.derive_expression"><code class="docutils literal notranslate"><span class="pre">derive_expression()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.expression.format_arguments"><code class="docutils literal notranslate"><span class="pre">format_arguments()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.expression.get_lazy_operation"><code class="docutils literal notranslate"><span class="pre">get_lazy_operation()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.expression.lazy_operation"><code class="docutils literal notranslate"><span class="pre">lazy_operation()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.expression.quote"><code class="docutils literal notranslate"><span class="pre">quote()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.file">redun.file module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.ContentDir"><code class="docutils literal notranslate"><span class="pre">ContentDir</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentDir.classes"><code class="docutils literal notranslate"><span class="pre">ContentDir.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentDir.type_basename"><code class="docutils literal notranslate"><span class="pre">ContentDir.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentDir.type_name"><code class="docutils literal notranslate"><span class="pre">ContentDir.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.ContentFile"><code class="docutils literal notranslate"><span class="pre">ContentFile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentFile.classes"><code class="docutils literal notranslate"><span class="pre">ContentFile.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentFile.type_basename"><code class="docutils literal notranslate"><span class="pre">ContentFile.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentFile.type_name"><code class="docutils literal notranslate"><span class="pre">ContentFile.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.ContentFileClasses"><code class="docutils literal notranslate"><span class="pre">ContentFileClasses</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.ContentFileSet"><code class="docutils literal notranslate"><span class="pre">ContentFileSet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentFileSet.classes"><code class="docutils literal notranslate"><span class="pre">ContentFileSet.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentFileSet.type_basename"><code class="docutils literal notranslate"><span class="pre">ContentFileSet.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentFileSet.type_name"><code class="docutils literal notranslate"><span class="pre">ContentFileSet.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.ContentStagingDir"><code class="docutils literal notranslate"><span class="pre">ContentStagingDir</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentStagingDir.classes"><code class="docutils literal notranslate"><span class="pre">ContentStagingDir.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentStagingDir.type_basename"><code class="docutils literal notranslate"><span class="pre">ContentStagingDir.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentStagingDir.type_name"><code class="docutils literal notranslate"><span class="pre">ContentStagingDir.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.ContentStagingFile"><code class="docutils literal notranslate"><span class="pre">ContentStagingFile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentStagingFile.classes"><code class="docutils literal notranslate"><span class="pre">ContentStagingFile.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentStagingFile.type_basename"><code class="docutils literal notranslate"><span class="pre">ContentStagingFile.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentStagingFile.type_name"><code class="docutils literal notranslate"><span class="pre">ContentStagingFile.type_name</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.Dir"><code class="docutils literal notranslate"><span class="pre">Dir</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.Dir.classes"><code class="docutils literal notranslate"><span class="pre">Dir.classes</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.Dir.copy_to"><code class="docutils literal notranslate"><span class="pre">Dir.copy_to()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.Dir.exists"><code class="docutils literal notranslate"><span class="pre">Dir.exists()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.Dir.file"><code class="docutils literal notranslate"><span class="pre">Dir.file()</span></code></a></li>
@@ -420,6 +463,7 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.Dir.rmdir"><code class="docutils literal notranslate"><span class="pre">Dir.rmdir()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.Dir.shell_copy_to"><code class="docutils literal notranslate"><span class="pre">Dir.shell_copy_to()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.Dir.stage"><code class="docutils literal notranslate"><span class="pre">Dir.stage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.Dir.type_basename"><code class="docutils literal notranslate"><span class="pre">Dir.type_basename</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.Dir.type_name"><code class="docutils literal notranslate"><span class="pre">Dir.type_name</span></code></a></li>
 </ul>
 </li>
@@ -429,6 +473,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.File"><code class="docutils literal notranslate"><span class="pre">File</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.basename"><code class="docutils literal notranslate"><span class="pre">File.basename()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.classes"><code class="docutils literal notranslate"><span class="pre">File.classes</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.copy_to"><code class="docutils literal notranslate"><span class="pre">File.copy_to()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.dirname"><code class="docutils literal notranslate"><span class="pre">File.dirname()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.exists"><code class="docutils literal notranslate"><span class="pre">File.exists()</span></code></a></li>
@@ -445,17 +490,28 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.size"><code class="docutils literal notranslate"><span class="pre">File.size()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.stage"><code class="docutils literal notranslate"><span class="pre">File.stage()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.touch"><code class="docutils literal notranslate"><span class="pre">File.touch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.type_basename"><code class="docutils literal notranslate"><span class="pre">File.type_basename</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.type_name"><code class="docutils literal notranslate"><span class="pre">File.type_name</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.update_hash"><code class="docutils literal notranslate"><span class="pre">File.update_hash()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.File.write"><code class="docutils literal notranslate"><span class="pre">File.write()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.FileClasses"><code class="docutils literal notranslate"><span class="pre">FileClasses</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileClasses.Dir"><code class="docutils literal notranslate"><span class="pre">FileClasses.Dir</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileClasses.File"><code class="docutils literal notranslate"><span class="pre">FileClasses.File</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileClasses.FileSet"><code class="docutils literal notranslate"><span class="pre">FileClasses.FileSet</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileClasses.StagingDir"><code class="docutils literal notranslate"><span class="pre">FileClasses.StagingDir</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileClasses.StagingFile"><code class="docutils literal notranslate"><span class="pre">FileClasses.StagingFile</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.FileSet"><code class="docutils literal notranslate"><span class="pre">FileSet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileSet.classes"><code class="docutils literal notranslate"><span class="pre">FileSet.classes</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileSet.files"><code class="docutils literal notranslate"><span class="pre">FileSet.files()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileSet.get_hash"><code class="docutils literal notranslate"><span class="pre">FileSet.get_hash()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileSet.hash"><code class="docutils literal notranslate"><span class="pre">FileSet.hash</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileSet.is_valid"><code class="docutils literal notranslate"><span class="pre">FileSet.is_valid()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileSet.iter_subvalues"><code class="docutils literal notranslate"><span class="pre">FileSet.iter_subvalues()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileSet.type_basename"><code class="docutils literal notranslate"><span class="pre">FileSet.type_basename</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileSet.type_name"><code class="docutils literal notranslate"><span class="pre">FileSet.type_name</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.FileSet.update_hash"><code class="docutils literal notranslate"><span class="pre">FileSet.update_hash()</span></code></a></li>
 </ul>
@@ -506,6 +562,39 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.HTTPSFileSystem.name"><code class="docutils literal notranslate"><span class="pre">HTTPSFileSystem.name</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.IDir"><code class="docutils literal notranslate"><span class="pre">IDir</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IDir.classes"><code class="docutils literal notranslate"><span class="pre">IDir.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IDir.type_basename"><code class="docutils literal notranslate"><span class="pre">IDir.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IDir.type_name"><code class="docutils literal notranslate"><span class="pre">IDir.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.IFile"><code class="docutils literal notranslate"><span class="pre">IFile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IFile.classes"><code class="docutils literal notranslate"><span class="pre">IFile.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IFile.is_valid"><code class="docutils literal notranslate"><span class="pre">IFile.is_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IFile.type_basename"><code class="docutils literal notranslate"><span class="pre">IFile.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IFile.type_name"><code class="docutils literal notranslate"><span class="pre">IFile.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.IFileClasses"><code class="docutils literal notranslate"><span class="pre">IFileClasses</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.IFileSet"><code class="docutils literal notranslate"><span class="pre">IFileSet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IFileSet.classes"><code class="docutils literal notranslate"><span class="pre">IFileSet.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IFileSet.is_valid"><code class="docutils literal notranslate"><span class="pre">IFileSet.is_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IFileSet.type_basename"><code class="docutils literal notranslate"><span class="pre">IFileSet.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IFileSet.type_name"><code class="docutils literal notranslate"><span class="pre">IFileSet.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.IStagingDir"><code class="docutils literal notranslate"><span class="pre">IStagingDir</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IStagingDir.classes"><code class="docutils literal notranslate"><span class="pre">IStagingDir.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IStagingDir.type_basename"><code class="docutils literal notranslate"><span class="pre">IStagingDir.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IStagingDir.type_name"><code class="docutils literal notranslate"><span class="pre">IStagingDir.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.IStagingFile"><code class="docutils literal notranslate"><span class="pre">IStagingFile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IStagingFile.classes"><code class="docutils literal notranslate"><span class="pre">IStagingFile.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IStagingFile.type_basename"><code class="docutils literal notranslate"><span class="pre">IStagingFile.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.IStagingFile.type_name"><code class="docutils literal notranslate"><span class="pre">IStagingFile.type_name</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.LocalFileSystem"><code class="docutils literal notranslate"><span class="pre">LocalFileSystem</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.LocalFileSystem.copy"><code class="docutils literal notranslate"><span class="pre">LocalFileSystem.copy()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.LocalFileSystem.exists"><code class="docutils literal notranslate"><span class="pre">LocalFileSystem.exists()</span></code></a></li>
@@ -522,6 +611,9 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.LocalFileSystem.touch"><code class="docutils literal notranslate"><span class="pre">LocalFileSystem.touch()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.RedunFileNotFoundError"><code class="docutils literal notranslate"><span class="pre">RedunFileNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.RedunOSError"><code class="docutils literal notranslate"><span class="pre">RedunOSError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.RedunPermissionError"><code class="docutils literal notranslate"><span class="pre">RedunPermissionError</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.S3FileSystem"><code class="docutils literal notranslate"><span class="pre">S3FileSystem</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.S3FileSystem.copy"><code class="docutils literal notranslate"><span class="pre">S3FileSystem.copy()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.S3FileSystem.exists"><code class="docutils literal notranslate"><span class="pre">S3FileSystem.exists()</span></code></a></li>
@@ -544,6 +636,7 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ShardedS3Dataset.format"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.format</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ShardedS3Dataset.from_data"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.from_data()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ShardedS3Dataset.from_files"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.from_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ShardedS3Dataset.get_hash"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.get_hash()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ShardedS3Dataset.hash"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.hash</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ShardedS3Dataset.is_valid"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.is_valid()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ShardedS3Dataset.iter_subvalues"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.iter_subvalues()</span></code></a></li>
@@ -569,23 +662,23 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.StagingDir"><code class="docutils literal notranslate"><span class="pre">StagingDir</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingDir.classes"><code class="docutils literal notranslate"><span class="pre">StagingDir.classes</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingDir.get_hash"><code class="docutils literal notranslate"><span class="pre">StagingDir.get_hash()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingDir.local"><code class="docutils literal notranslate"><span class="pre">StagingDir.local</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingDir.remote"><code class="docutils literal notranslate"><span class="pre">StagingDir.remote</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingDir.render_stage"><code class="docutils literal notranslate"><span class="pre">StagingDir.render_stage()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingDir.render_unstage"><code class="docutils literal notranslate"><span class="pre">StagingDir.render_unstage()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingDir.stage"><code class="docutils literal notranslate"><span class="pre">StagingDir.stage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingDir.type_basename"><code class="docutils literal notranslate"><span class="pre">StagingDir.type_basename</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingDir.type_name"><code class="docutils literal notranslate"><span class="pre">StagingDir.type_name</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingDir.unstage"><code class="docutils literal notranslate"><span class="pre">StagingDir.unstage()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.StagingFile"><code class="docutils literal notranslate"><span class="pre">StagingFile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingFile.classes"><code class="docutils literal notranslate"><span class="pre">StagingFile.classes</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingFile.get_hash"><code class="docutils literal notranslate"><span class="pre">StagingFile.get_hash()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingFile.local"><code class="docutils literal notranslate"><span class="pre">StagingFile.local</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingFile.remote"><code class="docutils literal notranslate"><span class="pre">StagingFile.remote</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingFile.render_stage"><code class="docutils literal notranslate"><span class="pre">StagingFile.render_stage()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingFile.render_unstage"><code class="docutils literal notranslate"><span class="pre">StagingFile.render_unstage()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingFile.stage"><code class="docutils literal notranslate"><span class="pre">StagingFile.stage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingFile.type_basename"><code class="docutils literal notranslate"><span class="pre">StagingFile.type_basename</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingFile.type_name"><code class="docutils literal notranslate"><span class="pre">StagingFile.type_name</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.StagingFile.unstage"><code class="docutils literal notranslate"><span class="pre">StagingFile.unstage()</span></code></a></li>
 </ul>
@@ -664,6 +757,8 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_arguments"><code class="docutils literal notranslate"><span class="pre">hash_arguments()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_bytes"><code class="docutils literal notranslate"><span class="pre">hash_bytes()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_eval"><code class="docutils literal notranslate"><span class="pre">hash_eval()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_kwargs"><code class="docutils literal notranslate"><span class="pre">hash_kwargs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_positional_args"><code class="docutils literal notranslate"><span class="pre">hash_positional_args()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_stream"><code class="docutils literal notranslate"><span class="pre">hash_stream()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_struct"><code class="docutils literal notranslate"><span class="pre">hash_struct()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_tag"><code class="docutils literal notranslate"><span class="pre">hash_tag()</span></code></a></li>
@@ -674,22 +769,13 @@
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.job_array">redun.job_array module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.job_array.JobArrayer"><code class="docutils literal notranslate"><span class="pre">JobArrayer</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.JobArrayer.add_job"><code class="docutils literal notranslate"><span class="pre">JobArrayer.add_job()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.JobArrayer.executor"><code class="docutils literal notranslate"><span class="pre">JobArrayer.executor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.JobArrayer.get_stale_descrs"><code class="docutils literal notranslate"><span class="pre">JobArrayer.get_stale_descrs()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.JobArrayer.start"><code class="docutils literal notranslate"><span class="pre">JobArrayer.start()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.JobArrayer.stop"><code class="docutils literal notranslate"><span class="pre">JobArrayer.stop()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.JobArrayer.submit_array_job"><code class="docutils literal notranslate"><span class="pre">JobArrayer.submit_array_job()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.JobArrayer.submit_pending_jobs"><code class="docutils literal notranslate"><span class="pre">JobArrayer.submit_pending_jobs()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.JobArrayer.submit_single_job"><code class="docutils literal notranslate"><span class="pre">JobArrayer.submit_single_job()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.job_array.JobDescription"><code class="docutils literal notranslate"><span class="pre">JobDescription</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.job_array.PendingJob"><code class="docutils literal notranslate"><span class="pre">PendingJob</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.PendingJob.args"><code class="docutils literal notranslate"><span class="pre">PendingJob.args</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.PendingJob.job"><code class="docutils literal notranslate"><span class="pre">PendingJob.job</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.job_array.PendingJob.kwargs"><code class="docutils literal notranslate"><span class="pre">PendingJob.kwargs</span></code></a></li>
-</ul>
-</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.logging">redun.logging module</a></li>
@@ -910,6 +996,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.utils">redun.utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.CacheArgs"><code class="docutils literal notranslate"><span class="pre">CacheArgs</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.Comparable"><code class="docutils literal notranslate"><span class="pre">Comparable</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.MultiMap"><code class="docutils literal notranslate"><span class="pre">MultiMap</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.utils.MultiMap.add"><code class="docutils literal notranslate"><span class="pre">MultiMap.add()</span></code></a></li>
@@ -935,8 +1022,11 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.get_import_paths"><code class="docutils literal notranslate"><span class="pre">get_import_paths()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.iter_nested_value"><code class="docutils literal notranslate"><span class="pre">iter_nested_value()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.iter_nested_value_children"><code class="docutils literal notranslate"><span class="pre">iter_nested_value_children()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.json_cache_key"><code class="docutils literal notranslate"><span class="pre">json_cache_key()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.json_dumps"><code class="docutils literal notranslate"><span class="pre">json_dumps()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.lru_cache_custom"><code class="docutils literal notranslate"><span class="pre">lru_cache_custom()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.map_nested_value"><code class="docutils literal notranslate"><span class="pre">map_nested_value()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.merge_dicts"><code class="docutils literal notranslate"><span class="pre">merge_dicts()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.pickle_dump"><code class="docutils literal notranslate"><span class="pre">pickle_dump()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.pickle_dumps"><code class="docutils literal notranslate"><span class="pre">pickle_dumps()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.utils.pickle_loads"><code class="docutils literal notranslate"><span class="pre">pickle_loads()</span></code></a></li>
@@ -1085,9 +1175,7 @@
             
           </div>
           <div class="right-details">
-            <div class="icons">
-              
-            </div>
+            
           </div>
         </div>
         
