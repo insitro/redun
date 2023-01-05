@@ -122,7 +122,7 @@ def get_script_task_command(
         "-c",
         "-o",
         "pipefail",
-        f"""
+        f"""\"
 {input_stage}
 chmod +x .task_command
 (
@@ -138,5 +138,5 @@ chmod +x .task_command
     echo fail | {status_unstage}
     {exit_command}
 )
-""",
+\"""",
     ]

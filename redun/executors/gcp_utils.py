@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from google.cloud import batch_v1
 
 
@@ -6,24 +8,26 @@ def get_gcp_client() -> batch_v1.BatchServiceClient:
 
 
 def batch_submit(
+    job_name: str,
     project: str,
     region: str,
-    job_name: str = "gcp-batch-job",
-    image: str = None,  # "gcr.io/google-containers/busybox"
+    gcs_bucket: str,
+    mount_path: str,
+    machine_type: str,
+    vcpus: int,
+    memory: int,
+    task_count: int,
+    max_duration: str,
+    retries: int,
+    priority: int,
+    image: str = None,
     command: str = "exit 0",
-    machine_type: str = "e2-standard-4",
-    memory: int = 16,
-    vcpus: int = 2,
-    task_count: int = 1,
-    retries: int = 2,
-    max_duration: str = "3600s",
-    labels: dict[str, str] = {},
+    labels: dict[str, str] = dict(),
 ) -> batch_v1.Job:
 
     client = batch_v1.BatchServiceClient()
 
     # Define what will be done as part of the job.
-    task = batch_v1.TaskSpec()
     runnable = batch_v1.Runnable()
     if image is None:
         runnable.script = batch_v1.Runnable.Script()
@@ -32,12 +36,14 @@ def batch_submit(
         # already on the VM that will be running the job. Using runnable.script.text and
         # runnable.script.path is mutually exclusive.
         # runnable.script.path = '/tmp/test.sh'
-        task.runnables = [runnable]
     else:
         runnable.container = batch_v1.Runnable.Container()
         runnable.container.image_uri = image
         runnable.container.entrypoint = "/bin/sh"
-        runnable.container.commands = ["-c", command]
+        runnable.container.commands = [command]
+
+    task = batch_v1.TaskSpec()
+    task.runnables = [runnable]
 
     # We can specify what resources are requested by each task.
     resources = batch_v1.ComputeResource()
@@ -66,6 +72,7 @@ def batch_submit(
     allocation_policy.instances = [instances]
 
     job = batch_v1.Job()
+    job.priority = priority
     job.task_groups = [group]
     job.allocation_policy = allocation_policy
     job.labels = labels
@@ -85,3 +92,19 @@ def batch_submit(
     create_request.parent = f"projects/{project}/locations/{region}"
 
     return client.create_job(create_request)
+
+
+def list_jobs(project_id: str, region: str) -> Iterable[batch_v1.Job]:
+    """
+    Get a list of all jobs defined in given region.
+
+    Args:
+        project_id: project ID or project number of the Cloud project you want to use.
+        region: name of the region hosting the jobs.
+
+    Returns:
+        An iterable collection of Job object.
+    """
+    client = batch_v1.BatchServiceClient()
+
+    return client.list_jobs(parent=f"projects/{project_id}/locations/{region}")
