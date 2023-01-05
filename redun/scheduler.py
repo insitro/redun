@@ -143,18 +143,6 @@ def set_current_scheduler(scheduler: Optional["Scheduler"]) -> None:
             pass
 
 
-def get_current_job_namespace(required=True) -> str:
-    """
-    Returns the namespace of the current running job or ''.
-    """
-    scheduler = get_current_scheduler(required=required)
-    if scheduler:
-        job = scheduler.get_current_job()
-        if job:
-            return job.task.namespace
-    return ""
-
-
 def set_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> Tuple[Tuple, dict]:
     """
     Set default arguments from Task signature.
@@ -1888,10 +1876,6 @@ class Scheduler:
             return value2
 
         return map_nested_value(postprocess_value, result)
-
-    def get_current_job(self):
-        # TODO
-        return None
 
 
 @scheduler_task(namespace="redun")

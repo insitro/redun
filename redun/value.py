@@ -252,7 +252,43 @@ except ImportError:
 
 class Value(metaclass=MetaValue):
     """
-    Base class for input and output values in redun.
+    The base class for tracking inputs and outputs in redun, encapsulating both value
+    and state, in a hashable and serializable form.
+
+    This class underpins the implementation of memoization of `redun.Task`s. Hashing is used
+    as the sole, unique identifier for a value; there is no fallback to deep equality testing.
+    Hence, we can hash `Task` inputs to identify repeated invocations and supply the cached
+    result instead. Serialization makes it feasible to cache outputs of tasks.
+
+    In addition to handling ordinary values, i.e., data or objects represented in memory, complex
+    workflows often require reasoning about state that may be complex or external, such as
+    a database or filesystem. Redun accomplishes reasoning over this state by converting it into
+    value-like semantics, after which, redun can proceed without differentiating between values
+    and state. Specifically, this class provides that abstraction. Therefore, this class offers
+    a more complex lifecycle than would be required for ordinary values.
+
+    The default hashing and serialization methods are designed for simple object values. Child
+    classes may customize these as needed; see below for the API details.
+
+    We introduce two atypical lifecycle steps that are needed for more complex cases, especially
+    those involving values that wrap state: validity checking and pre/post processing.
+
+    After deserializing a regular data object, we could typically assume that the serialization
+    was successful and proceed to use the resulting object. However, state management requires
+    that after deserialization, we offer another lifecycle hook, `is_valid`, during which the
+    object can identify that the deserialized state no longer matches reality, and hence may not
+    be relied upon.
+
+    The simplest example of validity is a `Value` representing a file on a shared filesystem,
+    where we serialize the path to the file as a string and hash of the file contents. When we
+    retrieve a cache value and deserialize the object, we can recheck the hash of the file. If the
+    file hash does not match, then the object can declare that its state assertion is not valid,
+    and hence we should reassert it (i.e., re-run the task to rewrite the file with the intended
+    contents).
+
+    The scheduler will also arrange for pre- and post-processing hooks to be called on `Value`
+    objects around their use in `Task` implementations. This allows users to implement some
+    more complex concepts, such as lazy initialization or to temporarily allocate resources.
     """
 
     type_name: Optional[str] = None
@@ -262,17 +298,24 @@ class Value(metaclass=MetaValue):
 
     def is_valid(self) -> bool:
         """
-        Returns True if the value is still good to use since being cached.
+        Returns `True` if the value may be used. For ordinary values, this will typically always
+        be true. For state-tracking values, the deserialized cache value may no longer be valid.
+        If this method returns `False`, the object will typically be discarded.
 
-        For example, if the value was a File reference and the corresponding
-        file on the filesystem has since been removed/altered, the File
+        This method may be called repeatedly on the same object.
+
+        For example, if the value was a `File` reference and the corresponding
+        file on the filesystem has since been removed/altered, the `File`
         reference is no longer valid.
         """
         return True
 
     def get_hash(self, data: Optional[bytes] = None) -> str:
         """
-        Returns a hash for the value.
+        Returns a hash for the value. Users may override to provide custom behavior.
+
+        Most basic objects are covered by the default approach of hashing the binary
+        pickle serialization.
         """
         if data is None:
             data = pickle_dumps(self)
@@ -300,25 +343,51 @@ class Value(metaclass=MetaValue):
     def __getstate__(self) -> dict:
         """
         Returns a plain python datastructure for serialization.
+
+        This is the standard pickle method, which users may implement as needed.
         """
         raise NotImplementedError()
 
     def __setstate__(self, state: dict) -> None:
         """
         Populates the value from state during deserialization.
+
+        This is the standard pickle method, which users may implement as needed.
         """
         raise NotImplementedError()
 
-    def preprocess(self, preprocess_args) -> "Value":
+    def preprocess(self, preprocess_args: dict) -> "Value":
         """
-        Preprocess a value before passing to a Task.
+        Preprocess a value before passing it to a Task, and return the preprocessed value.
+
+        This is a scheduler lifecycle method and is not typically invoked by users.
+        This method may be called repeatedly on a particular instance, for example, if a single
+        `Value` is passed to multiple `Task`s.
+
+        Parameters
+        ----------
+        preprocess_args : dict
+            Extra data provided by the scheduler. Implementations that are not part of redun
+            should discard this argument.
         """
+        # Ordinary values don't need to do anything.
         return self
 
-    def postprocess(self, postprocess_args) -> "Value":
+    def postprocess(self, postprocess_args: dict) -> "Value":
         """
-        Post process a value resulting from a Task.
+        Post process a value resulting from a Task, and return the postprocessed value.
+
+        This is a scheduler lifecycle method and is not typically invoked by users.
+        This method may be called repeatedly on a particular instance, for example, if it is
+        returned recursively.
+
+        Parameters
+        ----------
+        postprocess_args : dict
+            Extra data provided by the scheduler. Implementations that are not part of redun
+            should discard this argument.
         """
+        # Ordinary values don't need to do anything.
         return self
 
     @classmethod

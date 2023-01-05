@@ -1,5 +1,5 @@
 import pickle
-from typing import List
+from typing import List, Optional
 from unittest import mock
 
 import pytest
@@ -7,9 +7,10 @@ import pytest
 from redun import Handle, Scheduler, merge_handles, namespace, task
 from redun.backends.db import Handle as HandleRow
 from redun.backends.db import RedunBackendDb
-from redun.handle import HandleInfo, create_handle
 from redun.utils import pickle_dumps
 from redun.value import get_type_registry
+
+redun_namespace = "redun.tests.test_handle"
 
 
 class DBConn:
@@ -25,7 +26,7 @@ class DBConn:
 
 
 class DbHandle(Handle):
-    def __init__(self, name: str, db_file: str):
+    def __init__(self, name: str, db_file: str, namespace: Optional[str] = None):
         self.db_file = db_file
         self.conn = DBConn(db_file)
 
@@ -50,8 +51,9 @@ def test_handle_class() -> None:
 
 def test_handle_init() -> None:
     # Handle instances should have __handle__ info.
-    conn = DbHandle("mydb", "data.db")
+    conn = DbHandle("mydb", "data.db", namespace="")
     assert conn.__handle__.name == "mydb"
+    assert conn.__handle__.namespace == ""
     assert conn.__handle__.args == ("data.db",)
     assert conn.__handle__.kwargs == {}
 
@@ -91,22 +93,10 @@ def test_handle_init() -> None:
 def test_handle_info_get_hash() -> None:
     # Regression test to ensure that non-string handle args and kwargs are properly serialized when
     # getting hash
-    handle_info = HandleInfo(
+    handle_info = Handle.HandleInfo(
         name="foo", class_name="bar", args=(22, 23), kwargs={"not_a_string": True}
     )
     handle_info.get_hash()
-
-
-def test_create_handle() -> None:
-    state = {
-        "name": "mydb",
-        "args": ("data.db",),
-        "kwargs": {},
-        "class_name": "redun.tests.test_handle.DbHandle",
-    }
-    conn = create_handle(state)
-    assert conn.db_file == "data.db"
-    assert isinstance(conn.conn, DBConn)
 
 
 def test_handle_pickle() -> None:
@@ -125,7 +115,7 @@ def test_handle_pickle() -> None:
 def test_handle_no_namespace(scheduler: Scheduler) -> None:
     @task()
     def task1():
-        conn = DbHandle("conn", "data.db")
+        conn = DbHandle("conn", "data.db", namespace="")
         return (conn.__handle__.namespace, conn.__handle__.name, conn.__handle__.fullname)
 
     assert scheduler.run(task1()) == ("", "conn", "conn")
@@ -169,6 +159,19 @@ def test_handle_apply() -> None:
 def test_handle_fork() -> None:
     conn = DbHandle("mydb", "data.db")
     conn2 = conn.fork("1")
+    assert conn2.__handle__.fullname == conn.__handle__.fullname
+    assert conn2.__handle__.class_name == conn.__handle__.class_name
+    assert conn2.__handle__.hash != conn.__handle__.hash
+
+    assert conn2.db_file == conn.db_file
+    assert conn2.conn == conn.conn
+
+
+def test_handle_fork_explicit_namespace() -> None:
+    conn = DbHandle("mydb", "data.db", namespace="explicit_namespace")
+    conn2 = conn.fork("1")
+    assert conn2.__handle__.fullname == conn.__handle__.fullname
+    assert conn2.__handle__.class_name == conn.__handle__.class_name
     assert conn2.__handle__.hash != conn.__handle__.hash
 
     assert conn2.db_file == conn.db_file
@@ -669,7 +672,7 @@ def test_handle_proxy() -> None:
     assert conn.__handle__.name == "mydb"
     assert dict(conn.__getstate__(), hash="") == {
         "name": "mydb",
-        "namespace": "",
+        "namespace": "redun.tests.test_handle",
         "args": ("data.db",),
         "kwargs": {},
         "class_name": "redun.tests.test_handle.DbHandle2",

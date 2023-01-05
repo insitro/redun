@@ -8,6 +8,7 @@ import pytest
 import redun
 from redun import Task, task
 from redun.expression import Expression
+from redun.namespace import compute_namespace
 from redun.scheduler import set_arg_defaults
 from redun.task import Func, get_task_registry, get_tuple_type_length, wraps_task
 from redun.tests.task_test_helpers import square_task
@@ -23,14 +24,14 @@ def test_task_config() -> None:
     def my_task():
         return 10
 
-    assert Task._compute_namespace(my_task) == my_task.namespace
-    assert my_task.fullname == Task._format_fullname(Task._compute_namespace(my_task), "my_task")
+    assert compute_namespace(my_task) == my_task.namespace
+    assert my_task.fullname == Task._format_fullname(compute_namespace(my_task), "my_task")
 
     @task(name="custom_name", namespace="my_namespace", load_module="custom.module")
     def my_task2():
         return 10
 
-    assert Task._compute_namespace(my_task2, namespace="my_namespace") == my_task2.namespace
+    assert compute_namespace(my_task2, namespace="my_namespace") == my_task2.namespace
     assert my_task2.load_module == "custom.module"
 
     redun.namespace("my_namespace2")
@@ -39,7 +40,7 @@ def test_task_config() -> None:
     def my_task3():
         return 10
 
-    assert Task._compute_namespace(my_task3) == my_task3.namespace
+    assert compute_namespace(my_task3) == my_task3.namespace
 
     redun.namespace()
 

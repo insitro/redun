@@ -18,7 +18,7 @@ from typing import (
 
 from redun.expression import SchedulerExpression, TaskExpression
 from redun.hashing import hash_arguments, hash_struct
-from redun.namespace import get_current_namespace
+from redun.namespace import compute_namespace
 from redun.promise import Promise
 from redun.utils import get_func_source
 from redun.value import Value, get_type_registry
@@ -134,7 +134,7 @@ class Task(Value, Generic[Func]):
         source: Optional[str] = None,
     ):
         self.name = name or func.__name__
-        self.namespace = self._compute_namespace(func, namespace)
+        self.namespace = compute_namespace(func, namespace)
         self.func = func
         if source is not None:
             self.source = source
@@ -159,26 +159,6 @@ class Task(Value, Generic[Func]):
 
     def recompute_hash(self):
         self.hash = self._calc_hash()
-
-    @staticmethod
-    def _compute_namespace(func: Callable, namespace: Optional[str] = None):
-        """Compute the namespace for the provided function to wrap.
-
-        WARNING: The computation is stateful and hence this can only be used during task
-        creation.
-
-        Precedence:
-        - Explicit namespace provided (empty string is a valid explicit value)
-        - Infer it from a `redun_namespace` variable in the same module as func
-        - The current namespace, configured with `set_current_namespace`"""
-
-        # Determine task namespace.
-        if namespace is None:
-            namespace = getattr(sys.modules[func.__module__], "redun_namespace", None)
-
-        if namespace is not None:
-            return namespace
-        return get_current_namespace()
 
     @property
     def nout(self) -> Optional[int]:
