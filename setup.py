@@ -27,7 +27,11 @@ requirements = [
 
 python_36_backports = ["dataclasses>=0.8", "types-dataclasses>=0.6.6"]
 
-extras = {"glue": ["pandas", "pyarrow", "pyspark"], "viz": "pygraphviz"}
+extras = {
+    "glue": ["pandas", "pyarrow", "pyspark"],
+    "k8s": "kubernetes>=22.6",
+    "viz": "pygraphviz",
+}
 
 if REQUIRE_POSTGRES:
     requirements.append(PSYCOPG2_VERSION)
