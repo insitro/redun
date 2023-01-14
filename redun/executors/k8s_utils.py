@@ -177,7 +177,7 @@ def create_job_object(
             ]
         )
 
-    container = client.V1Container(name=name, image=image, command=command, env=env)
+    container = client.V1Container(name=name, image=image, args=command, env=env)
 
     if resources is None:
         container.resources = create_resources()

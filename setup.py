@@ -4,7 +4,7 @@ import platform
 from setuptools import find_packages, setup
 
 REQUIRE_POSTGRES = os.getenv("REQUIRE_POSTGRES") == "1"
-PSYCOPG2_VERSION = "psycopg2-binary>=2.8"
+PSYCOPG2_VERSION = "psycopg2>=2.8"
 
 requirements = [
     # By using the extra deps boto3 and awscli, we help the solver find
