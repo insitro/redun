@@ -275,7 +275,7 @@
         <li><a href="redun/redun.html#redun.handle.Handle.apply_call">apply_call() (redun.handle.Handle method)</a>
 
         <ul>
-          <li><a href="redun/redun.html#redun.handle.HandleInfo.apply_call">(redun.handle.HandleInfo method)</a>
+          <li><a href="redun/redun.html#redun.handle.Handle.HandleInfo.apply_call">(redun.handle.Handle.HandleInfo method)</a>
 </li>
         </ul></li>
         <li><a href="redun/redun.html#redun.functools.apply_func">apply_func() (in module redun.functools)</a>
@@ -571,7 +571,7 @@
         <ul>
           <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.clone">(redun.backends.db.RedunBackendDb method)</a>
 </li>
-          <li><a href="redun/redun.html#redun.handle.HandleInfo.clone">(redun.handle.HandleInfo method)</a>
+          <li><a href="redun/redun.html#redun.handle.Handle.HandleInfo.clone">(redun.handle.Handle.HandleInfo method)</a>
 </li>
         </ul></li>
         <li><a href="redun/redun.html#redun.scheduler.Job.collapse">collapse() (redun.scheduler.Job method)</a>
@@ -583,6 +583,8 @@
         <li><a href="redun/redun.html#redun.functools.compose">compose() (in module redun.functools)</a>
 </li>
         <li><a href="redun/redun.html#redun.functools.compose_apply">compose_apply() (in module redun.functools)</a>
+</li>
+        <li><a href="redun/redun.html#redun.namespace.compute_namespace">compute_namespace() (in module redun.namespace)</a>
 </li>
         <li><a href="redun/redun.html#redun.scheduler.cond">cond() (in module redun.scheduler)</a>
 </li>
@@ -635,8 +637,6 @@
         <li><a href="redun/redun.html#redun.config.create_config_section">create_config_section() (in module redun.config)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.create_engine">create_engine() (redun.backends.db.RedunBackendDb method)</a>
-</li>
-        <li><a href="redun/redun.html#redun.handle.create_handle">create_handle() (in module redun.handle)</a>
 </li>
         <li><a href="redun/redun.executors.html#redun.executors.aws_batch.create_job_override_command">create_job_override_command() (in module redun.executors.aws_batch)</a>
 </li>
@@ -973,7 +973,7 @@
         <li><a href="redun/redun.html#redun.handle.Handle.fork">fork() (redun.handle.Handle method)</a>
 
         <ul>
-          <li><a href="redun/redun.html#redun.handle.HandleInfo.fork">(redun.handle.HandleInfo method)</a>
+          <li><a href="redun/redun.html#redun.handle.Handle.HandleInfo.fork">(redun.handle.Handle.HandleInfo method)</a>
 </li>
         </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Value.format">format (redun.backends.db.Value attribute)</a>
@@ -1136,10 +1136,6 @@
 </li>
         <li><a href="redun/redun.html#redun.cli.get_config_path">get_config_path() (in module redun.cli)</a>
 </li>
-        <li><a href="redun/redun.html#redun.scheduler.Scheduler.get_current_job">get_current_job() (redun.scheduler.Scheduler method)</a>
-</li>
-        <li><a href="redun/redun.html#redun.scheduler.get_current_job_namespace">get_current_job_namespace() (in module redun.scheduler)</a>
-</li>
         <li><a href="redun/redun.html#redun.namespace.get_current_namespace">get_current_namespace() (in module redun.namespace)</a>
 </li>
         <li><a href="redun/redun.html#redun.scheduler.get_current_scheduler">get_current_scheduler() (in module redun.scheduler)</a>
@@ -1219,7 +1215,7 @@
 </li>
           <li><a href="redun/redun.html#redun.handle.Handle.get_hash">(redun.handle.Handle method)</a>
 </li>
-          <li><a href="redun/redun.html#redun.handle.HandleInfo.get_hash">(redun.handle.HandleInfo method)</a>
+          <li><a href="redun/redun.html#redun.handle.Handle.HandleInfo.get_hash">(redun.handle.Handle.HandleInfo method)</a>
 </li>
           <li><a href="redun/redun.html#redun.scheduler.ErrorValue.get_hash">(redun.scheduler.ErrorValue method)</a>
 </li>
@@ -1236,10 +1232,10 @@
           <li><a href="redun/redun.html#redun.value.Value.get_hash">(redun.value.Value method)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.executors.html#redun.executors.aws_batch.get_hash_from_job_name">get_hash_from_job_name() (in module redun.executors.aws_batch)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.html#redun.scheduler.get_ignore_warnings_from_config">get_ignore_warnings_from_config() (in module redun.scheduler)</a>
 </li>
         <li><a href="redun/redun.html#redun.utils.get_import_paths">get_import_paths() (in module redun.utils)</a>
@@ -1354,7 +1350,7 @@
 </li>
         <li><a href="redun/redun.html#redun.job_array.JobArrayer.get_stale_descrs">get_stale_descrs() (redun.job_array.JobArrayer method)</a>
 </li>
-        <li><a href="redun/redun.html#redun.handle.HandleInfo.get_state">get_state() (redun.handle.HandleInfo method)</a>
+        <li><a href="redun/redun.html#redun.handle.Handle.HandleInfo.get_state">get_state() (redun.handle.Handle.HandleInfo method)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.serializers.RecordSerializer.get_subserializer">get_subserializer() (redun.backends.db.serializers.RecordSerializer method)</a>
 </li>
@@ -1444,9 +1440,9 @@
         </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Value.handle">handle (redun.backends.db.Value attribute)</a>
 </li>
-        <li><a href="redun/redun.backends.db.html#redun.backends.db.HandleEdge">HandleEdge (class in redun.backends.db)</a>
+        <li><a href="redun/redun.html#redun.handle.Handle.HandleInfo">Handle.HandleInfo (class in redun.handle)</a>
 </li>
-        <li><a href="redun/redun.html#redun.handle.HandleInfo">HandleInfo (class in redun.handle)</a>
+        <li><a href="redun/redun.backends.db.html#redun.backends.db.HandleEdge">HandleEdge (class in redun.backends.db)</a>
 </li>
         <li><a href="redun/redun.backends.html#redun.backends.value_store.ValueStore.has">has() (redun.backends.value_store.ValueStore method)</a>
 </li>
@@ -3399,7 +3395,7 @@
 </li>
           <li><a href="redun/redun.html#redun.file.ShardedS3Dataset.update_hash">(redun.file.ShardedS3Dataset method)</a>
 </li>
-          <li><a href="redun/redun.html#redun.handle.HandleInfo.update_hash">(redun.handle.HandleInfo method)</a>
+          <li><a href="redun/redun.html#redun.handle.Handle.HandleInfo.update_hash">(redun.handle.Handle.HandleInfo method)</a>
 </li>
         </ul></li>
         <li><a href="redun/redun.backends.html#redun.backends.base.RedunBackend.update_tags">update_tags() (redun.backends.base.RedunBackend method)</a>

@@ -1285,7 +1285,9 @@ to execute it.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.expression.Expression.get_hash">
 <span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.expression.Expression.get_hash" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns a hash for the value.</p>
+<dd><p>Returns a hash for the value. Users may override to provide custom behavior.</p>
+<p>Most basic objects are covered by the default approach of hashing the binary
+pickle serialization.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1340,9 +1342,12 @@ to execute it.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.expression.TaskExpression.is_valid">
 <span class="sig-name descname"><span class="pre">is_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.expression.TaskExpression.is_valid" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns True if the value is still good to use since being cached.</p>
-<p>For example, if the value was a File reference and the corresponding
-file on the filesystem has since been removed/altered, the File
+<dd><p>Returns <cite>True</cite> if the value may be used. For ordinary values, this will typically always
+be true. For state-tracking values, the deserialized cache value may no longer be valid.
+If this method returns <cite>False</cite>, the object will typically be discarded.</p>
+<p>This method may be called repeatedly on the same object.</p>
+<p>For example, if the value was a <cite>File</cite> reference and the corresponding
+file on the filesystem has since been removed/altered, the <cite>File</cite>
 reference is no longer valid.</p>
 </dd></dl>
 
@@ -1633,7 +1638,9 @@ backends such as local disk or cloud object storage.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.File.get_hash">
 <span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.file.File.get_hash" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns a hash for the value.</p>
+<dd><p>Returns a hash for the value. Users may override to provide custom behavior.</p>
+<p>Most basic objects are covered by the default approach of hashing the binary
+pickle serialization.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1644,9 +1651,12 @@ backends such as local disk or cloud object storage.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.File.is_valid">
 <span class="sig-name descname"><span class="pre">is_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.file.File.is_valid" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns True if the value is still good to use since being cached.</p>
-<p>For example, if the value was a File reference and the corresponding
-file on the filesystem has since been removed/altered, the File
+<dd><p>Returns <cite>True</cite> if the value may be used. For ordinary values, this will typically always
+be true. For state-tracking values, the deserialized cache value may no longer be valid.
+If this method returns <cite>False</cite>, the object will typically be discarded.</p>
+<p>This method may be called repeatedly on the same object.</p>
+<p>For example, if the value was a <cite>File</cite> reference and the corresponding
+file on the filesystem has since been removed/altered, the <cite>File</cite>
 reference is no longer valid.</p>
 </dd></dl>
 
@@ -1787,7 +1797,9 @@ reference is no longer valid.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.FileSet.get_hash">
 <span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.file.FileSet.get_hash" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns a hash for the value.</p>
+<dd><p>Returns a hash for the value. Users may override to provide custom behavior.</p>
+<p>Most basic objects are covered by the default approach of hashing the binary
+pickle serialization.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1798,9 +1810,12 @@ reference is no longer valid.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.FileSet.is_valid">
 <span class="sig-name descname"><span class="pre">is_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.file.FileSet.is_valid" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns True if the value is still good to use since being cached.</p>
-<p>For example, if the value was a File reference and the corresponding
-file on the filesystem has since been removed/altered, the File
+<dd><p>Returns <cite>True</cite> if the value may be used. For ordinary values, this will typically always
+be true. For state-tracking values, the deserialized cache value may no longer be valid.
+If this method returns <cite>False</cite>, the object will typically be discarded.</p>
+<p>This method may be called repeatedly on the same object.</p>
+<p>For example, if the value was a <cite>File</cite> reference and the corresponding
+file on the filesystem has since been removed/altered, the <cite>File</cite>
 reference is no longer valid.</p>
 </dd></dl>
 
@@ -2123,9 +2138,12 @@ Otherwise, raises OSError on non-empty directories</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.IFile.is_valid">
 <span class="sig-name descname"><span class="pre">is_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.file.IFile.is_valid" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns True if the value is still good to use since being cached.</p>
-<p>For example, if the value was a File reference and the corresponding
-file on the filesystem has since been removed/altered, the File
+<dd><p>Returns <cite>True</cite> if the value may be used. For ordinary values, this will typically always
+be true. For state-tracking values, the deserialized cache value may no longer be valid.
+If this method returns <cite>False</cite>, the object will typically be discarded.</p>
+<p>This method may be called repeatedly on the same object.</p>
+<p>For example, if the value was a <cite>File</cite> reference and the corresponding
+file on the filesystem has since been removed/altered, the <cite>File</cite>
 reference is no longer valid.</p>
 </dd></dl>
 
@@ -2160,9 +2178,12 @@ reference is no longer valid.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.IFileSet.is_valid">
 <span class="sig-name descname"><span class="pre">is_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.file.IFileSet.is_valid" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns True if the value is still good to use since being cached.</p>
-<p>For example, if the value was a File reference and the corresponding
-file on the filesystem has since been removed/altered, the File
+<dd><p>Returns <cite>True</cite> if the value may be used. For ordinary values, this will typically always
+be true. For state-tracking values, the deserialized cache value may no longer be valid.
+If this method returns <cite>False</cite>, the object will typically be discarded.</p>
+<p>This method may be called repeatedly on the same object.</p>
+<p>For example, if the value was a <cite>File</cite> reference and the corresponding
+file on the filesystem has since been removed/altered, the <cite>File</cite>
 reference is no longer valid.</p>
 </dd></dl>
 
@@ -2514,7 +2535,9 @@ be constructed.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.ShardedS3Dataset.get_hash">
 <span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.file.ShardedS3Dataset.get_hash" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns a hash for the value.</p>
+<dd><p>Returns a hash for the value. Users may override to provide custom behavior.</p>
+<p>Most basic objects are covered by the default approach of hashing the binary
+pickle serialization.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2525,9 +2548,12 @@ be constructed.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.ShardedS3Dataset.is_valid">
 <span class="sig-name descname"><span class="pre">is_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.file.ShardedS3Dataset.is_valid" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns True if the value is still good to use since being cached.</p>
-<p>For example, if the value was a File reference and the corresponding
-file on the filesystem has since been removed/altered, the File
+<dd><p>Returns <cite>True</cite> if the value may be used. For ordinary values, this will typically always
+be true. For state-tracking values, the deserialized cache value may no longer be valid.
+If this method returns <cite>False</cite>, the object will typically be discarded.</p>
+<p>This method may be called repeatedly on the same object.</p>
+<p>For example, if the value was a <cite>File</cite> reference and the corresponding
+file on the filesystem has since been removed/altered, the <cite>File</cite>
 reference is no longer valid.</p>
 </dd></dl>
 
@@ -2604,7 +2630,16 @@ operation that can take a few minutes, so set to False for performance.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.ShardedS3Dataset.postprocess">
 <span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">postprocess_args</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.file.ShardedS3Dataset" title="redun.file.ShardedS3Dataset"><span class="pre">ShardedS3Dataset</span></a></span></span><a class="headerlink" href="#redun.file.ShardedS3Dataset.postprocess" title="Permalink to this definition">#</a></dt>
-<dd><p>Post process a value resulting from a Task.</p>
+<dd><p>Post process a value resulting from a Task, and return the postprocessed value.</p>
+<p>This is a scheduler lifecycle method and is not typically invoked by users.
+This method may be called repeatedly on a particular instance, for example, if it is
+returned recursively.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>postprocess_args</strong> (<em>dict</em>) – Extra data provided by the scheduler. Implementations that are not part of redun
+should discard this argument.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -2704,7 +2739,9 @@ with the indicated table name.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.StagingDir.get_hash">
 <span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.file.StagingDir.get_hash" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns a hash for the value.</p>
+<dd><p>Returns a hash for the value. Users may override to provide custom behavior.</p>
+<p>Most basic objects are covered by the default approach of hashing the binary
+pickle serialization.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2753,7 +2790,9 @@ with the indicated table name.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.file.StagingFile.get_hash">
 <span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.file.StagingFile.get_hash" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns a hash for the value.</p>
+<dd><p>Returns a hash for the value. Users may override to provide custom behavior.</p>
+<p>Most basic objects are covered by the default approach of hashing the binary
+pickle serialization.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -3057,9 +3096,64 @@ runtime rather than redun task expression time.</p>
 <span id="redun-handle-module"></span><h2>redun.handle module<a class="headerlink" href="#module-redun.handle" title="Permalink to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.handle.Handle">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.handle.</span></span><span class="sig-name descname"><span class="pre">Handle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.handle.Handle" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.handle.</span></span><span class="sig-name descname"><span class="pre">Handle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.handle.Handle" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#redun.value.Value" title="redun.value.Value"><code class="xref py py-class docutils literal notranslate"><span class="pre">Value</span></code></a></p>
-<p>A Value that accumulates state as it passes through Tasks.</p>
+<p>A <cite>Value</cite> that opaquely accumulates state as it passes through <cite>Task`s. This subclass of
+`Value</cite> has deep support from the scheduler and its backend, in order to provide a foundation
+for encapsulating interactions with a deterministic, stateful, external system, such as a
+database.</p>
+<p>This model of state supports being initialized, then opaque transformations as <cite>Task`s are
+applied. The hash data and serialization data is designed to be opaque to the actual
+data held within the handle. At initialization time, only the constructor data is captured
+for serialization and hashing. Upon transformation (that is, when a `Handle</cite> is returned by
+a <cite>Task</cite>) the hash is replaced with the hash identifying the <cite>Task</cite> invocation, including
+both code and inputs.</p>
+<p>See the design documents for more discussion of the principles behind the design:
+<cite>docs/source/design.md</cite>.</p>
+<p>In general use, users should not alter the serialization methods.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="redun.handle.Handle.HandleInfo">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">HandleInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.handle.Handle.HandleInfo" title="Permalink to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The <cite>fullname</cite> is an identification key for the handle. It is used globally
+across the redun backend to identify other potential instances of this <cite>Handle</cite>.
+However, hashes are used, as usual, to perform equality-like tests.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.handle.Handle.HandleInfo.apply_call">
+<span class="sig-name descname"><span class="pre">apply_call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></span><a class="headerlink" href="#redun.handle.Handle.HandleInfo.apply_call" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.handle.Handle.HandleInfo.clone">
+<span class="sig-name descname"><span class="pre">clone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></span><a class="headerlink" href="#redun.handle.Handle.HandleInfo.clone" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.handle.Handle.HandleInfo.fork">
+<span class="sig-name descname"><span class="pre">fork</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></span><a class="headerlink" href="#redun.handle.Handle.HandleInfo.fork" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.handle.Handle.HandleInfo.get_hash">
+<span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.handle.Handle.HandleInfo.get_hash" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns hash of the handle.</p>
+<p>Implementation note: the Handle state model requires that the computation proceeds
+differently for new Handles and ones that are computed by other tasks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.handle.Handle.HandleInfo.get_state">
+<span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#redun.handle.Handle.HandleInfo.get_state" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns serializable state dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.handle.Handle.HandleInfo.update_hash">
+<span class="sig-name descname"><span class="pre">update_hash</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.handle.Handle.HandleInfo.update_hash" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.handle.Handle.apply_call">
 <span class="sig-name descname"><span class="pre">apply_call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></span><a class="headerlink" href="#redun.handle.Handle.apply_call" title="Permalink to this definition">#</a></dt>
@@ -3069,7 +3163,8 @@ runtime rather than redun task expression time.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.handle.Handle.fork">
 <span class="sig-name descname"><span class="pre">fork</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></span><a class="headerlink" href="#redun.handle.Handle.fork" title="Permalink to this definition">#</a></dt>
-<dd><p>Forks the handle into a second one for use in parallel tasks.</p>
+<dd><p>Forks the handle into a second one for use in parallel tasks. A key must be provided
+to differentiate the fork from the original (although the original may have a key)</p>
 </dd></dl>
 
 <dl class="py method">
@@ -3081,7 +3176,7 @@ runtime rather than redun task expression time.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.handle.Handle.is_valid">
 <span class="sig-name descname"><span class="pre">is_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.handle.Handle.is_valid" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns True if handle is still valid (has not been rolled back).</p>
+<dd><p>Returns True if handle is still valid (i.e., has not been rolled back).</p>
 </dd></dl>
 
 <dl class="py method">
@@ -3101,51 +3196,6 @@ runtime rather than redun task expression time.</p>
 <span class="sig-name descname"><span class="pre">type_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'redun.Handle'</span></em><a class="headerlink" href="#redun.handle.Handle.type_name" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="redun.handle.HandleInfo">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.handle.</span></span><span class="sig-name descname"><span class="pre">HandleInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.handle.HandleInfo" title="Permalink to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Handle state information that is stored under <cite>handle.__handle__</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.handle.HandleInfo.apply_call">
-<span class="sig-name descname"><span class="pre">apply_call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></span><a class="headerlink" href="#redun.handle.HandleInfo.apply_call" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.handle.HandleInfo.clone">
-<span class="sig-name descname"><span class="pre">clone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></span><a class="headerlink" href="#redun.handle.HandleInfo.clone" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.handle.HandleInfo.fork">
-<span class="sig-name descname"><span class="pre">fork</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></span><a class="headerlink" href="#redun.handle.HandleInfo.fork" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.handle.HandleInfo.get_hash">
-<span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.handle.HandleInfo.get_hash" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns hash of the handle.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.handle.HandleInfo.get_state">
-<span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#redun.handle.HandleInfo.get_state" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns serializable state dict.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.handle.HandleInfo.update_hash">
-<span class="sig-name descname"><span class="pre">update_hash</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.handle.HandleInfo.update_hash" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="redun.handle.create_handle">
-<span class="sig-prename descclassname"><span class="pre">redun.handle.</span></span><span class="sig-name descname"><span class="pre">create_handle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></span><a class="headerlink" href="#redun.handle.create_handle" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns a new Handle created from a state dict.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -3313,6 +3363,18 @@ be in (<cite>min_array_size</cite>, <cite>MAX_ARRAY_SIZE</cite>].</p></li>
 <div class="section" id="module-redun.namespace">
 <span id="redun-namespace-module"></span><h2>redun.namespace module<a class="headerlink" href="#module-redun.namespace" title="Permalink to this heading">#</a></h2>
 <dl class="py function">
+<dt class="sig sig-object py" id="redun.namespace.compute_namespace">
+<span class="sig-prename descclassname"><span class="pre">redun.namespace.</span></span><span class="sig-name descname"><span class="pre">compute_namespace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.namespace.compute_namespace" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute the namespace for the provided object.</p>
+<p>Precedence:
+- Explicit namespace provided (note: an empty string is a valid explicit value)
+- Infer it from a <cite>redun_namespace</cite> variable in the same module as func
+- The current namespace, configured with <cite>set_current_namespace</cite></p>
+<p>WARNING: This computation interacts with the global “current namespace” (see above),
+so results may be context dependent.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="redun.namespace.get_current_namespace">
 <span class="sig-prename descclassname"><span class="pre">redun.namespace.</span></span><span class="sig-name descname"><span class="pre">get_current_namespace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#redun.namespace.get_current_namespace" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the current task namespace during import.</p>
@@ -3407,7 +3469,9 @@ at most once. Callbacks can be added both before and after the resolution.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.scheduler.ErrorValue.get_hash">
 <span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.scheduler.ErrorValue.get_hash" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns a hash for the value.</p>
+<dd><p>Returns a hash for the value. Users may override to provide custom behavior.</p>
+<p>Most basic objects are covered by the default approach of hashing the binary
+pickle serialization.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -3596,11 +3660,6 @@ perform Common Subexpression Elimination (CSE).</p>
 </dd>
 </dl>
 </dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.scheduler.Scheduler.get_current_job">
-<span class="sig-name descname"><span class="pre">get_current_job</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#redun.scheduler.Scheduler.get_current_job" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.scheduler.Scheduler.get_eval_hash">
@@ -3968,12 +4027,6 @@ value containing both successful results and errors.</p></li>
 <dt class="sig sig-object py" id="redun.scheduler.get_backend_from_config">
 <span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">get_backend_from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backend_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">SectionProxy</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="redun.backends.html#redun.backends.base.RedunBackend" title="redun.backends.base.RedunBackend"><span class="pre">RedunBackend</span></a></span></span><a class="headerlink" href="#redun.scheduler.get_backend_from_config" title="Permalink to this definition">#</a></dt>
 <dd><p>Parses a redun <a class="reference internal" href="redun.backends.html#redun.backends.base.RedunBackend" title="redun.backends.base.RedunBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">redun.backends.base.RedunBackend</span></code></a> from a config object.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="redun.scheduler.get_current_job_namespace">
-<span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">get_current_job_namespace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">required</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.scheduler.get_current_job_namespace" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns the namespace of the current running job or ‘’.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -5404,7 +5457,36 @@ reference is no longer valid.</p>
 <dt class="sig sig-object py" id="redun.value.Value">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.value.</span></span><span class="sig-name descname"><span class="pre">Value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.value.Value" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Base class for input and output values in redun.</p>
+<p>The base class for tracking inputs and outputs in redun, encapsulating both value
+and state, in a hashable and serializable form.</p>
+<p>This class underpins the implementation of memoization of <cite>redun.Task`s. Hashing is used
+as the sole, unique identifier for a value; there is no fallback to deep equality testing.
+Hence, we can hash `Task</cite> inputs to identify repeated invocations and supply the cached
+result instead. Serialization makes it feasible to cache outputs of tasks.</p>
+<p>In addition to handling ordinary values, i.e., data or objects represented in memory, complex
+workflows often require reasoning about state that may be complex or external, such as
+a database or filesystem. Redun accomplishes reasoning over this state by converting it into
+value-like semantics, after which, redun can proceed without differentiating between values
+and state. Specifically, this class provides that abstraction. Therefore, this class offers
+a more complex lifecycle than would be required for ordinary values.</p>
+<p>The default hashing and serialization methods are designed for simple object values. Child
+classes may customize these as needed; see below for the API details.</p>
+<p>We introduce two atypical lifecycle steps that are needed for more complex cases, especially
+those involving values that wrap state: validity checking and pre/post processing.</p>
+<p>After deserializing a regular data object, we could typically assume that the serialization
+was successful and proceed to use the resulting object. However, state management requires
+that after deserialization, we offer another lifecycle hook, <cite>is_valid</cite>, during which the
+object can identify that the deserialized state no longer matches reality, and hence may not
+be relied upon.</p>
+<p>The simplest example of validity is a <cite>Value</cite> representing a file on a shared filesystem,
+where we serialize the path to the file as a string and hash of the file contents. When we
+retrieve a cache value and deserialize the object, we can recheck the hash of the file. If the
+file hash does not match, then the object can declare that its state assertion is not valid,
+and hence we should reassert it (i.e., re-run the task to rewrite the file with the intended
+contents).</p>
+<p>The scheduler will also arrange for pre- and post-processing hooks to be called on <cite>Value</cite>
+objects around their use in <cite>Task</cite> implementations. This allows users to implement some
+more complex concepts, such as lazy initialization or to temporarily allocate resources.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.value.Value.deserialize">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">deserialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.value.Value.deserialize" title="Permalink to this definition">#</a></dt>
@@ -5414,7 +5496,9 @@ reference is no longer valid.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.value.Value.get_hash">
 <span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.value.Value.get_hash" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns a hash for the value.</p>
+<dd><p>Returns a hash for the value. Users may override to provide custom behavior.</p>
+<p>Most basic objects are covered by the default approach of hashing the binary
+pickle serialization.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -5426,9 +5510,12 @@ reference is no longer valid.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.value.Value.is_valid">
 <span class="sig-name descname"><span class="pre">is_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.value.Value.is_valid" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns True if the value is still good to use since being cached.</p>
-<p>For example, if the value was a File reference and the corresponding
-file on the filesystem has since been removed/altered, the File
+<dd><p>Returns <cite>True</cite> if the value may be used. For ordinary values, this will typically always
+be true. For state-tracking values, the deserialized cache value may no longer be valid.
+If this method returns <cite>False</cite>, the object will typically be discarded.</p>
+<p>This method may be called repeatedly on the same object.</p>
+<p>For example, if the value was a <cite>File</cite> reference and the corresponding
+file on the filesystem has since been removed/altered, the <cite>File</cite>
 reference is no longer valid.</p>
 </dd></dl>
 
@@ -5446,14 +5533,32 @@ reference is no longer valid.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.value.Value.postprocess">
-<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">postprocess_args</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.value.Value" title="redun.value.Value"><span class="pre">Value</span></a></span></span><a class="headerlink" href="#redun.value.Value.postprocess" title="Permalink to this definition">#</a></dt>
-<dd><p>Post process a value resulting from a Task.</p>
+<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">postprocess_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.value.Value" title="redun.value.Value"><span class="pre">Value</span></a></span></span><a class="headerlink" href="#redun.value.Value.postprocess" title="Permalink to this definition">#</a></dt>
+<dd><p>Post process a value resulting from a Task, and return the postprocessed value.</p>
+<p>This is a scheduler lifecycle method and is not typically invoked by users.
+This method may be called repeatedly on a particular instance, for example, if it is
+returned recursively.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>postprocess_args</strong> (<em>dict</em>) – Extra data provided by the scheduler. Implementations that are not part of redun
+should discard this argument.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.value.Value.preprocess">
-<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preprocess_args</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.value.Value" title="redun.value.Value"><span class="pre">Value</span></a></span></span><a class="headerlink" href="#redun.value.Value.preprocess" title="Permalink to this definition">#</a></dt>
-<dd><p>Preprocess a value before passing to a Task.</p>
+<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preprocess_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.value.Value" title="redun.value.Value"><span class="pre">Value</span></a></span></span><a class="headerlink" href="#redun.value.Value.preprocess" title="Permalink to this definition">#</a></dt>
+<dd><p>Preprocess a value before passing it to a Task, and return the preprocessed value.</p>
+<p>This is a scheduler lifecycle method and is not typically invoked by users.
+This method may be called repeatedly on a particular instance, for example, if a single
+<cite>Value</cite> is passed to multiple <a href="#id5"><span class="problematic" id="id6">`</span></a>Task`s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>preprocess_args</strong> (<em>dict</em>) – Extra data provided by the scheduler. Implementations that are not part of redun
+should discard this argument.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -6036,6 +6141,15 @@ reference is no longer valid.</p>
 </li>
 <li><a class="reference internal" href="#module-redun.handle">redun.handle module</a><ul>
 <li><a class="reference internal" href="#redun.handle.Handle"><code class="docutils literal notranslate"><span class="pre">Handle</span></code></a><ul>
+<li><a class="reference internal" href="#redun.handle.Handle.HandleInfo"><code class="docutils literal notranslate"><span class="pre">Handle.HandleInfo</span></code></a><ul>
+<li><a class="reference internal" href="#redun.handle.Handle.HandleInfo.apply_call"><code class="docutils literal notranslate"><span class="pre">Handle.HandleInfo.apply_call()</span></code></a></li>
+<li><a class="reference internal" href="#redun.handle.Handle.HandleInfo.clone"><code class="docutils literal notranslate"><span class="pre">Handle.HandleInfo.clone()</span></code></a></li>
+<li><a class="reference internal" href="#redun.handle.Handle.HandleInfo.fork"><code class="docutils literal notranslate"><span class="pre">Handle.HandleInfo.fork()</span></code></a></li>
+<li><a class="reference internal" href="#redun.handle.Handle.HandleInfo.get_hash"><code class="docutils literal notranslate"><span class="pre">Handle.HandleInfo.get_hash()</span></code></a></li>
+<li><a class="reference internal" href="#redun.handle.Handle.HandleInfo.get_state"><code class="docutils literal notranslate"><span class="pre">Handle.HandleInfo.get_state()</span></code></a></li>
+<li><a class="reference internal" href="#redun.handle.Handle.HandleInfo.update_hash"><code class="docutils literal notranslate"><span class="pre">Handle.HandleInfo.update_hash()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#redun.handle.Handle.apply_call"><code class="docutils literal notranslate"><span class="pre">Handle.apply_call()</span></code></a></li>
 <li><a class="reference internal" href="#redun.handle.Handle.fork"><code class="docutils literal notranslate"><span class="pre">Handle.fork()</span></code></a></li>
 <li><a class="reference internal" href="#redun.handle.Handle.get_hash"><code class="docutils literal notranslate"><span class="pre">Handle.get_hash()</span></code></a></li>
@@ -6045,16 +6159,6 @@ reference is no longer valid.</p>
 <li><a class="reference internal" href="#redun.handle.Handle.type_name"><code class="docutils literal notranslate"><span class="pre">Handle.type_name</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#redun.handle.HandleInfo"><code class="docutils literal notranslate"><span class="pre">HandleInfo</span></code></a><ul>
-<li><a class="reference internal" href="#redun.handle.HandleInfo.apply_call"><code class="docutils literal notranslate"><span class="pre">HandleInfo.apply_call()</span></code></a></li>
-<li><a class="reference internal" href="#redun.handle.HandleInfo.clone"><code class="docutils literal notranslate"><span class="pre">HandleInfo.clone()</span></code></a></li>
-<li><a class="reference internal" href="#redun.handle.HandleInfo.fork"><code class="docutils literal notranslate"><span class="pre">HandleInfo.fork()</span></code></a></li>
-<li><a class="reference internal" href="#redun.handle.HandleInfo.get_hash"><code class="docutils literal notranslate"><span class="pre">HandleInfo.get_hash()</span></code></a></li>
-<li><a class="reference internal" href="#redun.handle.HandleInfo.get_state"><code class="docutils literal notranslate"><span class="pre">HandleInfo.get_state()</span></code></a></li>
-<li><a class="reference internal" href="#redun.handle.HandleInfo.update_hash"><code class="docutils literal notranslate"><span class="pre">HandleInfo.update_hash()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#redun.handle.create_handle"><code class="docutils literal notranslate"><span class="pre">create_handle()</span></code></a></li>
 <li><a class="reference internal" href="#redun.handle.get_fullname"><code class="docutils literal notranslate"><span class="pre">get_fullname()</span></code></a></li>
 <li><a class="reference internal" href="#redun.handle.get_handle_class"><code class="docutils literal notranslate"><span class="pre">get_handle_class()</span></code></a></li>
 </ul>
@@ -6091,6 +6195,7 @@ reference is no longer valid.</p>
 </li>
 <li><a class="reference internal" href="#module-redun.logging">redun.logging module</a></li>
 <li><a class="reference internal" href="#module-redun.namespace">redun.namespace module</a><ul>
+<li><a class="reference internal" href="#redun.namespace.compute_namespace"><code class="docutils literal notranslate"><span class="pre">compute_namespace()</span></code></a></li>
 <li><a class="reference internal" href="#redun.namespace.get_current_namespace"><code class="docutils literal notranslate"><span class="pre">get_current_namespace()</span></code></a></li>
 <li><a class="reference internal" href="#redun.namespace.namespace"><code class="docutils literal notranslate"><span class="pre">namespace()</span></code></a></li>
 </ul>
@@ -6151,7 +6256,6 @@ reference is no longer valid.</p>
 <li><a class="reference internal" href="#redun.scheduler.Scheduler.exec_job"><code class="docutils literal notranslate"><span class="pre">Scheduler.exec_job()</span></code></a></li>
 <li><a class="reference internal" href="#redun.scheduler.Scheduler.extend_run"><code class="docutils literal notranslate"><span class="pre">Scheduler.extend_run()</span></code></a></li>
 <li><a class="reference internal" href="#redun.scheduler.Scheduler.get_cache"><code class="docutils literal notranslate"><span class="pre">Scheduler.get_cache()</span></code></a></li>
-<li><a class="reference internal" href="#redun.scheduler.Scheduler.get_current_job"><code class="docutils literal notranslate"><span class="pre">Scheduler.get_current_job()</span></code></a></li>
 <li><a class="reference internal" href="#redun.scheduler.Scheduler.get_eval_hash"><code class="docutils literal notranslate"><span class="pre">Scheduler.get_eval_hash()</span></code></a></li>
 <li><a class="reference internal" href="#redun.scheduler.Scheduler.get_job_status_report"><code class="docutils literal notranslate"><span class="pre">Scheduler.get_job_status_report()</span></code></a></li>
 <li><a class="reference internal" href="#redun.scheduler.Scheduler.is_valid_value"><code class="docutils literal notranslate"><span class="pre">Scheduler.is_valid_value()</span></code></a></li>
@@ -6185,7 +6289,6 @@ reference is no longer valid.</p>
 <li><a class="reference internal" href="#redun.scheduler.format_job_statuses"><code class="docutils literal notranslate"><span class="pre">format_job_statuses()</span></code></a></li>
 <li><a class="reference internal" href="#redun.scheduler.format_task_call"><code class="docutils literal notranslate"><span class="pre">format_task_call()</span></code></a></li>
 <li><a class="reference internal" href="#redun.scheduler.get_backend_from_config"><code class="docutils literal notranslate"><span class="pre">get_backend_from_config()</span></code></a></li>
-<li><a class="reference internal" href="#redun.scheduler.get_current_job_namespace"><code class="docutils literal notranslate"><span class="pre">get_current_job_namespace()</span></code></a></li>
 <li><a class="reference internal" href="#redun.scheduler.get_current_scheduler"><code class="docutils literal notranslate"><span class="pre">get_current_scheduler()</span></code></a></li>
 <li><a class="reference internal" href="#redun.scheduler.get_ignore_warnings_from_config"><code class="docutils literal notranslate"><span class="pre">get_ignore_warnings_from_config()</span></code></a></li>
 <li><a class="reference internal" href="#redun.scheduler.get_limits_from_config"><code class="docutils literal notranslate"><span class="pre">get_limits_from_config()</span></code></a></li>
