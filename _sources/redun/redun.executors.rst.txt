@@ -68,6 +68,22 @@ redun.executors.docker module
    :undoc-members:
    :show-inheritance:
 
+redun.executors.k8s module
+--------------------------
+
+.. automodule:: redun.executors.k8s
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+redun.executors.k8s\_utils module
+---------------------------------
+
+.. automodule:: redun.executors.k8s_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.executors.local module
 ----------------------------
 

@@ -441,6 +441,11 @@ as expensive as the others.</p></li>
 <p>A list of files that will be made available in the root directory of the run.</p>
 </div>
 </div>
+<div class="section" id="kubernetes-k8s-executor">
+<h3>Kubernetes (k8s) executor<a class="headerlink" href="#kubernetes-k8s-executor" title="Permalink to this heading">#</a></h3>
+<p>The <strong>k8s executor</strong> executes tasks as jobs on a <a class="reference external" href="https://kubernetes.io/">Kubernetes</a> cluster. This executors works similar to the <a class="reference internal" href="#aws-batch-executor"><span class="std std-doc">AWS Batch Executor</span></a> in terms of using scratch object storage to transfer task arguments, results, and code packaging. See the <a class="reference internal" href="config.html#kubernetes-k8s-executor"><span class="std std-doc">configuration documentation</span></a> for more details.</p>
+<p>Note: The k8s executor is new executor provided as a beta release. If you experience an issues, please report them to help improve the implementation.</p>
+</div>
 </div>
 </div>
 
@@ -518,6 +523,7 @@ as expensive as the others.</p></li>
 <li><a class="reference internal" href="#helper-functions">Helper functions</a></li>
 <li><a class="reference internal" href="#available-python-modules">Available Python modules</a></li>
 <li><a class="reference internal" href="#task-options">Task options</a></li>
+<li><a class="reference internal" href="#kubernetes-k8s-executor">Kubernetes (k8s) executor</a></li>
 </ul>
 </li>
 </ul>

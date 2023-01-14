@@ -437,6 +437,8 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.executors.html#redun.executors.docker.submit_task"><code class="docutils literal notranslate"><span class="pre">submit_task()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="redun.executors.html#redun-executors-k8s-module">redun.executors.k8s module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="redun.executors.html#redun-executors-k8s-utils-module">redun.executors.k8s_utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="redun.executors.html#module-redun.executors.local">redun.executors.local module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="redun.executors.html#redun.executors.local.LocalExecutor"><code class="docutils literal notranslate"><span class="pre">LocalExecutor</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#redun.executors.local.LocalExecutor.DEFAULT_START_METHOD"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.DEFAULT_START_METHOD</span></code></a></li>
@@ -2034,6 +2036,12 @@ Otherwise, raises OSError on non-empty directories</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.file.</span></span><span class="sig-name descname"><span class="pre">GSFileSystem</span></span><a class="headerlink" href="#redun.file.GSFileSystem" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#redun.file.FsspecFileSystem" title="redun.file.FsspecFileSystem"><code class="xref py py-class docutils literal notranslate"><span class="pre">FsspecFileSystem</span></code></a></p>
 <p>FileSystem methods for a Google Cloud Storage.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.file.GSFileSystem.glob">
+<span class="sig-name descname"><span class="pre">glob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.file.GSFileSystem.glob" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns filenames matching pattern.</p>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.file.GSFileSystem.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'gs'</span></em><a class="headerlink" href="#redun.file.GSFileSystem.name" title="Permalink to this definition">#</a></dt>
@@ -5852,6 +5860,7 @@ reference is no longer valid.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#redun.file.GSFileSystem"><code class="docutils literal notranslate"><span class="pre">GSFileSystem</span></code></a><ul>
+<li><a class="reference internal" href="#redun.file.GSFileSystem.glob"><code class="docutils literal notranslate"><span class="pre">GSFileSystem.glob()</span></code></a></li>
 <li><a class="reference internal" href="#redun.file.GSFileSystem.name"><code class="docutils literal notranslate"><span class="pre">GSFileSystem.name</span></code></a></li>
 <li><a class="reference internal" href="#redun.file.GSFileSystem.shell_copy"><code class="docutils literal notranslate"><span class="pre">GSFileSystem.shell_copy()</span></code></a></li>
 </ul>
