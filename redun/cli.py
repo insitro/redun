@@ -1704,6 +1704,9 @@ class RedunClient:
         logger.info(f"redun :: version {redun.__version__}")
         logger.info(f"config dir: {get_config_dir(args.config)}")
 
+        # Setup Scheduler.
+        scheduler = self.get_scheduler(args, migrate_if_local=True)
+
         # Determine executor.
         executor_name = args.executor
         if not executor_name:
@@ -1713,6 +1716,7 @@ class RedunClient:
             executor.name: executor
             for executor in get_executors_from_config(config.get("executors", {}))
         }
+        executors.update(scheduler.executors)
         executor: Optional[Executor] = executors.get(executor_name)
         if not executor:
             raise RedunClientError(f"Unknown Executor {executor_name}.")
@@ -1721,7 +1725,6 @@ class RedunClient:
         remote_run_command = " ".join(quote(arg) for arg in extra_args)
 
         # Setup Scheduler.
-        scheduler = self.get_scheduler(args, migrate_if_local=True)
         executor.set_scheduler(scheduler)
 
         # Parse task options.

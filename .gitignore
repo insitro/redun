@@ -8,3 +8,5 @@ docs/build/
 redun.db
 dist/
 build/
+.mypy_cache/
+.pytest_cache/

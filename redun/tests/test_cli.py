@@ -2120,3 +2120,77 @@ def main() -> str:
     )
     lines = waited_display.split("\n")
     assert lines[-2] == "b\"'hi'\\n\""
+
+
+@pytest.mark.parametrize("executor", ["custom"])
+@use_tempdir
+def test_launch_custom_scheduler(executor: str) -> None:
+    """
+    Launch subcommand should run a workflow within an executor.
+    """
+    config_string = """
+[executors.proc]
+type = local
+mode = process
+
+[scheduler]
+setup_scheduler = workflow.py::setup_scheduler
+"""
+    config_string_invalid = """
+[executors.proc]
+type = local
+mode = process
+
+"""
+    workflow = """
+import os
+import redun
+from redun.config import Config
+from redun.executors.local import LocalExecutor
+from redun.scheduler import Scheduler
+
+@redun.task
+def main() -> int:
+    return os.getpid()
+
+def setup_scheduler(config: Config, name: str = None) -> Scheduler:
+    scheduler = Scheduler(config=config)
+    if name:
+        scheduler.add_executor(LocalExecutor(name=name))
+    return scheduler
+"""
+    File(".redun/redun.ini").write(config_string)
+    File("workflow.py").write(workflow)
+    this_pid = os.getpid()
+    client = RedunClient()
+    client.execute(
+        [
+            "redun",
+            "--setup",
+            f"name={executor}",
+            "launch",
+            "--executor",
+            executor,
+            "redun",
+            "run",
+            "workflow.py",
+            "main",
+        ]
+    )
+
+    assert client.scheduler
+    scheduler = client.scheduler
+    assert scheduler.backend
+    backend = cast(RedunBackendDb, scheduler.backend)
+    assert backend.session
+    value = backend.session.query(Value).filter(Value.type != "redun.Task").one()
+    assert value.value_parsed
+    assert value.value_parsed != this_pid
+
+    File(".redun/redun.ini").write(config_string_invalid)
+    File("workflow.py").write(workflow)
+    client = RedunClient()
+    with pytest.raises(RedunClientError):
+        client.execute(
+            ["redun", "launch", "--executor", executor, "redun", "run", "workflow.py", "main"]
+        )

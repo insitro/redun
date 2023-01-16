@@ -700,7 +700,7 @@ class GSFileSystem(FsspecFileSystem):
             if not recursive:
                 return f"gsutil cp {quote(src_path)} {quote(dest_path)}"
             else:
-                return f"gsutil cp -r {quote(src_path)} {quote(dest_path)}"
+                return f"gsutil cp -r {quote(src_path)} {quote(dest_path)}/"
         elif recursive:
             raise ValueError("recursive is not supported with stdin or stdout.")
         elif src_path:

@@ -343,6 +343,7 @@ def test_executor(
         "secret_name": None,
         "vcpus": 1,
         "memory": 4,
+        "gpus": 0,
         "k8s_labels": {
             "redun_execution_id": "",
             "redun_job_id": job.id,
@@ -377,6 +378,7 @@ def test_executor(
         "secret_name": None,
         "vcpus": 1,
         "memory": 8,
+        "gpus": 0,
         "k8s_labels": {
             "redun_execution_id": "",
             "redun_job_id": job2.id,

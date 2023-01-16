@@ -885,7 +885,7 @@ def test_shell_copy_gs() -> None:
 
     assert (
         get_filesystem("gs").shell_copy("gs://bucket/src", "gs://bucket/dest", recursive=True)
-        == "gsutil cp -r gs://bucket/src gs://bucket/dest"
+        == "gsutil cp -r gs://bucket/src gs://bucket/dest/"
     )
     with pytest.raises(ValueError):
         assert get_filesystem("gs").shell_copy("gs://bucket/src", None, recursive=True)
