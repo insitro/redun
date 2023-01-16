@@ -2,6 +2,7 @@ from redun.executors.alias import AliasExecutor
 from redun.executors.aws_batch import AWSBatchExecutor
 from redun.executors.aws_glue import AWSGlueExecutor
 from redun.executors.docker import DockerExecutor
+from redun.executors.gcp_batch import GCPBatchExecutor
 
 try:
     from redun.executors.k8s import K8SExecutor

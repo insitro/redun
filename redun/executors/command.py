@@ -1,4 +1,5 @@
 import os
+from shlex import quote
 from typing import Any, Dict, List, Optional, Tuple
 
 from redun.executors.scratch import (
@@ -74,7 +75,7 @@ def get_oneshot_command(
         [
             REDUN_PROG,
             "--check-version",
-            REDUN_REQUIRED_VERSION,
+            quote(REDUN_REQUIRED_VERSION),
             "oneshot",
             a_task.load_module,
         ]
