@@ -392,6 +392,7 @@ class K8SExecutor(Executor):
         self.default_task_options = {
             "vcpus": config.getint("vcpus", 1),
             "memory": config.getfloat("memory", 4),
+            "gpus": config.getint("gpus", fallback=0),
             "retries": config.getint("retries", 1),
             "service_account_name": config.get("service_account_name", "default"),
             "job_name_prefix": config.get("job_name_prefix", k8s_utils.DEFAULT_JOB_PREFIX),
