@@ -4,9 +4,8 @@ from base64 import b64decode, b64encode
 from collections import defaultdict
 from typing import Any, Dict, Iterator, List, Optional
 
-import sqlalchemy as sa
 from dateutil.parser import parse as parse_date
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import aliased, joinedload, selectinload
 from sqlalchemy.orm.query import Query
 
 from redun.backends import db
@@ -104,12 +103,13 @@ class JobSerializer(Serializer):
         }
 
     def serialize_query(self, query: Query) -> Iterator[dict]:
-
         # Fetch parent-child links.
-        ChildJob = sa.orm.aliased(db.Job)
+        Job = aliased(db.Job, query.subquery())
+        ChildJob = aliased(db.Job, query.subquery())
+
         parent_child_pairs = (
-            query.from_self(db.Job.id, ChildJob.id)
-            .join(ChildJob, ChildJob.parent_id == db.Job.id)
+            query.session.query(Job.id, ChildJob.id)
+            .join(ChildJob, ChildJob.parent_id == Job.id)
             .order_by(ChildJob.start_time)
             .all()
         )

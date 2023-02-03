@@ -3,8 +3,7 @@ from typing import Any
 
 import pytest
 from sqlalchemy import Column, Integer, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from redun.db_utils import filter_in, get_or_create, query_filter_in
 

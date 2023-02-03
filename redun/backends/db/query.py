@@ -527,7 +527,7 @@ class CallGraphQuery:
         query = self.build()
         for record_type, subquery in query.subqueries:
             if record_type in self._filter_types:
-                yield (record_type, subquery.distinct().count())
+                yield record_type, subquery.distinct().count()
 
     def select(self, *columns: Iterable[str], flat: bool = False) -> Iterator[Any]:
         """

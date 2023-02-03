@@ -2423,16 +2423,20 @@ class RedunClient:
         # joining with Files.
         query = query.clone(values=session.query(Value.value_hash))
         value_cte = query.build()._values.cte()
-        value_subquery = sa.select(["*"]).select_from(value_cte)
-        files = (
-            session.query(File)
-            .filter(File.value_hash.in_(value_subquery))
-            .order_by(File.path)
-            .all()
+        value_subquery = sa.select("*").select_from(value_cte)
+        files, value_hashes = zip(
+            *(
+                (file, file.value_hash)
+                for file, _ in (
+                    session.query(File, File.path)
+                    .filter(File.value_hash.in_(value_subquery))
+                    .order_by(File.path)
+                    .all()
+                )
+            )
         )
 
         # Build query file tags.
-        value_hashes = [file.value_hash for file in files]
         tags = session.query(Tag).filter(Tag.entity_id.in_(value_hashes))
         value_hash2tags = defaultdict(list)
         for tag in tags:

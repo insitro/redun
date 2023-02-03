@@ -1396,6 +1396,7 @@ def test_value_subqueries(scheduler: Scheduler, backend: RedunBackendDb, session
 
     # Get the three executions.
     exec3, exec2, exec1 = list(query.filter_types(["Execution"]).order_by("time").all())
+    assert exec3.call_node.timestamp > exec2.call_node.timestamp > exec1.call_node.timestamp
 
     # We should be able to fetch the other record types from the execution.
     assert (

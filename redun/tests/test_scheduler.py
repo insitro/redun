@@ -1697,7 +1697,7 @@ def test_extend_run(scheduler: Scheduler, session: Session) -> None:
     assert result["call_hash"]
 
     # The new job should be a child of the parent job.
-    child_job = session.query(JobDb).get(result["job_id"])
+    child_job = session.get(JobDb, result["job_id"])
     assert child_job.parent_job.id == job.id
     assert child_job.id in {j.id for j in job.child_jobs}
 
@@ -1713,8 +1713,8 @@ def test_extend_run(scheduler: Scheduler, session: Session) -> None:
     session.expunge_all()
 
     # The new job should be a child of the parent job.
-    child_job = session.query(JobDb).get(result["job_id"])
-    job = session.query(JobDb).get(job_id)
+    child_job = session.get(JobDb, result["job_id"])
+    job = session.get(JobDb, job_id)
     assert child_job.parent_job.id == job.id
     assert child_job.id in {j.id for j in job.child_jobs}
 

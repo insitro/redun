@@ -42,8 +42,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, backref, relationship, sessionmaker
+from sqlalchemy.orm import Session, backref, declarative_base, relationship, sessionmaker
 from sqlalchemy.orm.session import object_session
 from sqlalchemy.schema import Index
 from sqlalchemy.sql.expression import cast as sa_cast
@@ -613,37 +612,31 @@ class CallNode(Base):
         else:
             # New style available in sqlalchemy>=1.4.0
             # https://docs.sqlalchemy.org/en/14/changelog/migration_20.html#joinedload-not-uniqued
-            child_nodes = object_session(self).execute(
-                select(CallNode)
-                .join(CallEdge, CallEdge.child_id == CallNode.call_hash)
-                .filter(CallEdge.parent_id == self.call_hash)
-                .order_by(CallEdge.call_order)
+            child_nodes = (
+                object_session(self)
+                .execute(
+                    select(CallNode, CallEdge.call_order)
+                    .join(CallEdge, CallEdge.child_id == CallNode.call_hash)
+                    .filter(CallEdge.parent_id == self.call_hash)
+                    .order_by(CallEdge.call_order)
+                )
+                .columns(CallNode)
             )
             return [node for (node,) in child_nodes]
 
     @property
     def parents(self) -> List["CallNode"]:
-        if sa.__version__.startswith("1.3."):
-            parent_nodes = (
-                object_session(self)
-                .query(CallNode)
-                .join(CallEdge, CallEdge.parent_id == CallNode.call_hash)
-                .filter(CallEdge.child_id == self.call_hash)
-            )
-            # https://github.com/sqlalchemy/sqlalchemy/issues/4395
-            parent_nodes._has_mapper_entities = False
-            return parent_nodes.all()
-
-        else:
-            # New style available in sqlalchemy>=1.4.0
-            # https://docs.sqlalchemy.org/en/14/changelog/migration_20.html#joinedload-not-uniqued
-            parent_nodes = object_session(self).execute(
-                select(CallNode)
+        parent_nodes = (
+            object_session(self)
+            .execute(
+                select(CallNode, CallEdge.call_order)
                 .join(CallEdge, CallEdge.parent_id == CallNode.call_hash)
                 .filter(CallEdge.child_id == self.call_hash)
                 .order_by(CallEdge.call_order)
             )
-            return [node for (node,) in parent_nodes]
+            .columns(CallNode)
+        )
+        return [node for (node,) in parent_nodes]
 
     @property
     def args_display(self) -> str:
@@ -1797,7 +1790,7 @@ class RedunBackendDb(RedunBackend):
             except sa.exc.IntegrityError:
                 # If eval_hash has recently been added, do update instead.
                 self.session.rollback()
-                eval_row = self.session.query(Evaluation).get(eval_hash)
+                eval_row = self.session.get(Evaluation, eval_hash)
                 eval_row.value_hash = value_hash
                 self.session.commit()
 
@@ -2381,7 +2374,7 @@ class RedunBackendDb(RedunBackend):
             self.session.query(Tag)
             .filter(
                 Tag.tag_hash
-                == select([TagEdit.parent_id])
+                == select(TagEdit.parent_id)
                 .where(TagEdit.parent_id == Tag.tag_hash)
                 .scalar_subquery()
             )
