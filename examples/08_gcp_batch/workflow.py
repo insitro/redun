@@ -4,21 +4,19 @@ redun_namespace = "redun.examples.gcp_batch"
 
 
 @task(executor="gcp_batch")
-def hello_world(greet: str) -> list:
-    return [
-        "hello_world",
+def hello_world(greet: str) -> str:
+    return (
         "echo %s world! This is task ${BATCH_TASK_INDEX}. " % (greet)
-        + "This job has a total of ${BATCH_TASK_COUNT} tasks.",
-    ]
+        + "This job has a total of ${BATCH_TASK_COUNT} tasks."
+    )
 
 
 @task(executor="gcp_batch", script=True)
-def hello_world_script(greet: str) -> list:
-    return [
-        "hello_world_script",
+def hello_world_script(greet: str) -> str:
+    return (
         "echo %s world! This is task ${BATCH_TASK_INDEX}. " % (greet)
-        + "This job has a total of ${BATCH_TASK_COUNT} tasks.",
-    ]
+        + "This job has a total of ${BATCH_TASK_COUNT} tasks."
+    )
 
 
 @task(executor="gcp_batch")

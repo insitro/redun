@@ -22,7 +22,8 @@ def batch_submit(
     priority: int,
     image: str = None,
     command: str = "exit 0",
-    labels: dict[str, str] = dict(),
+    service_account_email: str = "",
+    labels: dict[str, str] = {},
 ) -> batch_v1.Job:
 
     client = batch_v1.BatchServiceClient()
@@ -70,6 +71,11 @@ def batch_submit(
     instances = batch_v1.AllocationPolicy.InstancePolicyOrTemplate()
     instances.policy = policy
     allocation_policy.instances = [instances]
+
+    if service_account_email:
+        service_account = batch_v1.ServiceAccount()
+        service_account.email = service_account_email
+        allocation_policy.service_account = service_account
 
     job = batch_v1.Job()
     job.priority = priority

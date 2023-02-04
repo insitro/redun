@@ -54,6 +54,7 @@ class GCPBatchExecutor(Executor):
             "max_duration": config.get("max_duration", "60s"),
             "retries": config.getint("retries", fallback=2),
             "priority": config.getint("priority", fallback=30),
+            "service_account_email": config.get("service_account_email", fallback=""),
             # "job_name_prefix": config.get("job_name_prefix", fallback="redun-job"),
         }
 
@@ -72,6 +73,7 @@ class GCPBatchExecutor(Executor):
         """
         assert job.task
         assert job.task.script
+
         self._submit(job, args, kwargs)
 
     def _submit(self, job: Job, args: Tuple, kwargs: dict) -> None:
