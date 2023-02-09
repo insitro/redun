@@ -23,7 +23,7 @@ def batch_submit(
     priority: int,
     image: str = None,
     script: str = "exit 0",
-    # entrypoint: str = "/bin/sh",
+    entrypoint: str = None,
     commands: list[str] = ["exit 0"],
     service_account_email: str = "",
     labels: dict[str, str] = {},
@@ -40,7 +40,7 @@ def batch_submit(
     else:
         runnable.container = batch_v1.Runnable.Container()
         runnable.container.image_uri = image
-        # runnable.container.entrypoint = entrypoint
+        runnable.container.entrypoint = entrypoint
         runnable.container.commands = commands
 
     task = batch_v1.TaskSpec()
