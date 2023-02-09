@@ -19,6 +19,6 @@ def hello_world_script(greet: str) -> str:
     )
 
 
-@task(executor="gcp_batch")
+@task()
 def main(greet: str = "Hello") -> list:
     return ["main", hello_world(greet), hello_world_script(greet)]

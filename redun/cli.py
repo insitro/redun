@@ -1143,6 +1143,12 @@ class RedunClient:
         # Run command.
         run_parser = subparsers.add_parser("run", allow_abbrev=False, help="Run a workflow task.")
         run_parser.add_argument("--no-cache", action="store_true", help="Do not use cache.")
+        run_parser.add_argument(
+            "--log-level",
+            default="INFO",
+            choices=log_levels.keys(),
+            help="Set redun logging level.",
+        )
         run_parser.add_argument("--dryrun", action="store_true", help="Perform a dry run.")
         run_parser.add_argument("--pdb", action="store_true", help="Start debugger on exception.")
         run_parser.add_argument(

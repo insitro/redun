@@ -8,6 +8,7 @@ def get_gcp_client() -> batch_v1.BatchServiceClient:
 
 
 def batch_submit(
+    client: batch_v1.BatchServiceClient,
     job_name: str,
     project: str,
     region: str,
@@ -21,18 +22,17 @@ def batch_submit(
     retries: int,
     priority: int,
     image: str = None,
-    command: str = "exit 0",
+    script: str = "exit 0",
+    # entrypoint: str = "/bin/sh",
+    commands: list[str] = ["exit 0"],
     service_account_email: str = "",
     labels: dict[str, str] = {},
 ) -> batch_v1.Job:
-
-    client = batch_v1.BatchServiceClient()
-
     # Define what will be done as part of the job.
     runnable = batch_v1.Runnable()
     if image is None:
         runnable.script = batch_v1.Runnable.Script()
-        runnable.script.text = command
+        runnable.script.text = script
         # You can also run a script from a file. Just remember, that needs to be a script that's
         # already on the VM that will be running the job. Using runnable.script.text and
         # runnable.script.path is mutually exclusive.
@@ -40,8 +40,8 @@ def batch_submit(
     else:
         runnable.container = batch_v1.Runnable.Container()
         runnable.container.image_uri = image
-        runnable.container.entrypoint = "/bin/sh"
-        runnable.container.commands = [command]
+        # runnable.container.entrypoint = entrypoint
+        runnable.container.commands = commands
 
     task = batch_v1.TaskSpec()
     task.runnables = [runnable]
@@ -63,7 +63,6 @@ def batch_submit(
     group.task_spec = task
 
     # Policies are used to define on what kind of virtual machines the tasks will run on.
-    # In this case, we tell the system to use "e2-standard-4" machine type.
     # Read more about machine types here: https://cloud.google.com/compute/docs/machine-types
     allocation_policy = batch_v1.AllocationPolicy()
     policy = batch_v1.AllocationPolicy.InstancePolicy()
@@ -82,10 +81,6 @@ def batch_submit(
     job.task_groups = [group]
     job.allocation_policy = allocation_policy
     job.labels = labels
-    if image is None:
-        job.labels["redun_job_type"] = "script"
-    else:
-        job.labels["redun_job_type"] = "container"
 
     # We use Cloud Logging as it's an out of the box available option
     job.logs_policy = batch_v1.LogsPolicy()
@@ -100,7 +95,9 @@ def batch_submit(
     return client.create_job(create_request)
 
 
-def list_jobs(project_id: str, region: str) -> Iterable[batch_v1.Job]:
+def list_jobs(
+    client: batch_v1.BatchServiceClient, project_id: str, region: str
+) -> Iterable[batch_v1.Job]:
     """
     Get a list of all jobs defined in given region.
 
@@ -111,6 +108,70 @@ def list_jobs(project_id: str, region: str) -> Iterable[batch_v1.Job]:
     Returns:
         An iterable collection of Job object.
     """
-    client = batch_v1.BatchServiceClient()
-
     return client.list_jobs(parent=f"projects/{project_id}/locations/{region}")
+
+
+def format_job_name(project_id: str, region: str, job_name: str) -> str:
+    return f"projects/{project_id}/locations/{region}/jobs/{job_name}"
+
+
+def get_job(client: batch_v1.BatchServiceClient, job_name: str) -> batch_v1.Job:
+    """
+    Retrieve information about a Batch Job.
+
+    Args:
+        project_id: project ID or project number of the Cloud project you want to use.
+        region: name of the region hosts the job.
+        job_name: the name of the job you want to retrieve information about.
+
+    Returns:
+        A Job object representing the specified job.
+    """
+    return client.get_job(name=job_name)
+
+
+def format_task_group_name(project_id: str, region: str, job_name: str, group_name: str) -> str:
+    return f"projects/{project_id}/locations/{region}/jobs/{job_name}/taskGroups/{group_name}"
+
+
+def list_tasks(client: batch_v1.BatchServiceClient, group_name: str) -> Iterable[batch_v1.Task]:
+    """
+    Get a list of all jobs defined in given region.
+
+    Args:
+        project_id: project ID or project number of the Cloud project you want to use.
+        region: name of the region hosting the jobs.
+        job_name: name of the job which tasks you want to list.
+        group_name: name of the group of tasks. Usually it's `group0`.
+
+    Returns:
+        An iterable collection of Task objects.
+    """
+    return client.list_tasks(parent=group_name)
+
+
+def format_task_name(
+    project_id: str, region: str, job_name: str, group_name: str, task_number: int
+) -> str:
+    return (
+        f"projects/{project_id}/locations/{region}/jobs/{job_name}"
+        f"/taskGroups/{group_name}/tasks/{task_number}"
+    )
+
+
+def get_task(client: batch_v1.BatchServiceClient, task_name: str) -> batch_v1.Task:
+    """
+    Retrieve information about a Task.
+
+    Args:
+        project_id: project ID or project number of the Cloud project you want to use.
+        region: name of the region hosts the job.
+        job_name: the name of the job you want to retrieve information about.
+        group_name: the name of the group that owns the task you want to check.
+            Usually it's `group0`.
+        task_number: number of the task you want to look up.
+
+    Returns:
+        A Task object representing the specified task.
+    """
+    return client.get_task(name=task_name)
