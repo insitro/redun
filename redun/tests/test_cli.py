@@ -1247,6 +1247,7 @@ def test_query(scheduler: Scheduler, backend: RedunBackendDb, session: Session) 
     # All entities should be part of query.
     query = CallGraphQuery(session)
     assert len(list(query.all())) == 7
+    assert len(list(query.order_by("time").all())) == 7
     assert list(query.count()) == [
         ("Execution", 1),
         ("Job", 1),
@@ -1266,6 +1267,9 @@ def test_query(scheduler: Scheduler, backend: RedunBackendDb, session: Session) 
     # Filter by type.
     execution = query.filter_types(["Execution"]).one()
     assert isinstance(execution, Execution)
+    # ensure the correct type is returned when ordering query is added
+    execution_ordered = query.order_by("time").filter_types(["Execution"]).one()
+    assert isinstance(execution_ordered, Execution)
 
     call_node = query.filter_types(["CallNode"]).one()
     assert isinstance(call_node, CallNode)

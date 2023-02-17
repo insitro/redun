@@ -6,13 +6,13 @@ from typing import Iterator, Optional, Tuple, cast
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from redun import Scheduler
-from redun.backends.db import RedunBackendDb
+from redun.backends.db import RedunBackendDb, RedunSession
 from redun.config import Config
 from redun.task import get_task_registry
 from redun.utils import clear_import_paths
@@ -78,10 +78,13 @@ def testdb(monkeysession) -> Iterator[Optional[str]]:
     engine, conn = connect_with_retries(test_db_uri_stub)
 
     # Create test database.
-    conn.execute("commit")
-    conn.execute("drop database if exists {}".format(database_name))
-    conn.execute("commit")
-    conn.execute("create database {}".format(database_name))
+    conn.execute(text("commit"))
+    conn.execution_options(isolation_level="AUTOCOMMIT").execute(
+        text("drop database if exists {}".format(database_name))
+    )
+    conn.execution_options(isolation_level="AUTOCOMMIT").execute(
+        text("create database {}".format(database_name))
+    )
     conn.close()
     engine.dispose()
 
@@ -106,27 +109,37 @@ def scheduler(testdb: Optional[str]) -> Iterator[Scheduler]:
         scheduler.load()
         backend = cast(RedunBackendDb, scheduler.backend)
         assert backend.engine and backend.session
-        session = backend.session
+
+        # We need to create a session bound to connection,
+        # so let's get rid of the default one
+        # background: https://docs.sqlalchemy.org/en/14/orm/session_transaction.html
+        backend.session.close()
 
         # Run tests inside a transaction, so that we rollback effects.
         # start the session in a SAVEPOINT...
-        trans = session.begin(subtransactions=True)
-        session.begin_nested()
+        connection = backend.engine.connect()
+
+        trans = connection.begin()
+        session = RedunSession(bind=connection, backend=backend)
+        backend.session = session
+
+        nested = connection.begin_nested()
 
         # then each time that SAVEPOINT ends, reopen it
-        # https://gist.github.com/zzzeek/8443477#file-gistfile1-py-L38
         @event.listens_for(session, "after_transaction_end")
         def restart_savepoint(session, transaction):
-            if transaction.nested and not transaction._parent.nested:
-                session.begin_nested()
+            nonlocal nested
+            if not nested.is_active:
+                nested = connection.begin_nested()
 
         yield scheduler
 
+        backend.session.close()
         trans.rollback()
 
         # Explicitly dispose the db engine so we can force kill the docker
         # process without error messages.
-        backend.session.close()
+        connection.close()
         backend.engine.dispose()
         del scheduler
 
