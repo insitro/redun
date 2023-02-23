@@ -1,10 +1,26 @@
-from typing import Iterable
+from enum import Enum
+from typing import Dict, Iterable, List, Tuple
 
 from google.cloud import batch_v1
 
 
-def get_gcp_client() -> batch_v1.BatchServiceClient:
-    return batch_v1.BatchServiceClient()
+# List of supported available CPU Platforms
+# https://cloud.google.com/compute/docs/instances/specify-min-cpu-platform#availablezones
+class MinCPUPlatform(Enum):
+    XEON_ICE_LAKE = "Intel Ice Lake"
+    XEON_CASCADE_LAKE = "Intel Cascade Lake"
+    XEON_SKYLAKE = "Intel Skylake"
+    XEON_BROADWELL = "Intel Broadwell"
+    XEON_HASWELL = "Intel Haswell"
+    XEON_SANDY_BRIDGE = "Intel Sandy Bridge"
+    EPYC_ROME = "AMD Rome"
+    EPYC_MILAN = "AMD Milan"
+
+
+def get_gcp_client(
+    sync: bool = True,
+) -> batch_v1.BatchServiceClient | batch_v1.BatchServiceAsyncClient:
+    return batch_v1.BatchServiceClient() if sync else batch_v1.BatchServiceAsyncClient()
 
 
 def batch_submit(
@@ -21,12 +37,14 @@ def batch_submit(
     max_duration: str,
     retries: int,
     priority: int,
+    min_cpu_platform: MinCPUPlatform = None,
+    accelerators: List[Tuple[str, int]] = [],
     image: str = None,
     script: str = "exit 0",
     entrypoint: str = None,
     commands: list[str] = ["exit 0"],
     service_account_email: str = "",
-    labels: dict[str, str] = {},
+    labels: Dict[str, str] = {},
 ) -> batch_v1.Job:
     # Define what will be done as part of the job.
     runnable = batch_v1.Runnable()
@@ -67,7 +85,19 @@ def batch_submit(
     allocation_policy = batch_v1.AllocationPolicy()
     policy = batch_v1.AllocationPolicy.InstancePolicy()
     policy.machine_type = machine_type
+    policy.min_cpu_platform = min_cpu_platform
+
+    def create_accelerator(typ, count):
+        accelerator = batch_v1.AllocationPolicy.Accelerator()
+        accelerator.type_ = type
+        accelerator.count = count
+        return accelerator
+
+    policy.accelerators = list(map(lambda a: create_accelerator(a[0], a[1]), accelerators))
+
     instances = batch_v1.AllocationPolicy.InstancePolicyOrTemplate()
+    if policy.accelerators:
+        instances.install_gpu_drivers = True
     instances.policy = policy
     allocation_policy.instances = [instances]
 

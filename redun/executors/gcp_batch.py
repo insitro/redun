@@ -1,3 +1,4 @@
+import json
 import logging
 import threading
 import time
@@ -76,8 +77,9 @@ class GCPBatchExecutor(Executor):
             "retries": config.getint("retries", fallback=2),
             "priority": config.getint("priority", fallback=30),
             "service_account_email": config.get("service_account_email", fallback=""),
-            # "job_name_prefix": config.get("job_name_prefix", fallback="redun-job"),
         }
+        if config.get("labels"):
+            self.default_task_options["labels"] = json.loads(config.get("labels"))
 
     def gather_inflight_jobs(self) -> None:
         batch_jobs = gcp_utils.list_jobs(
@@ -159,9 +161,6 @@ class GCPBatchExecutor(Executor):
     def _submit_array_job(self, jobs: List[RedunJob]) -> str:
         """
         Submits an array job, returning job name uuid
-
-        TODO- This will be necessary if we want the JobArrayer to be able to use
-        GCPBatchExecutor./
         """
         all_args = []
         all_kwargs = []
@@ -171,6 +170,42 @@ class GCPBatchExecutor(Executor):
             all_kwargs.append(job.args[1])
 
         return ""
+
+    def _get_job_options(self, job: RedunJob) -> dict:
+        """
+        Determine the task options for a job.
+
+        Task options can be specified at the job-level have precedence over
+        the executor-level (within `redun.ini`):
+        """
+        assert job.eval_hash
+
+        job_options = job.get_options()
+
+        task_options = {
+            **self.default_task_options,
+            **job_options,
+        }
+
+        default_tags = {
+            REDUN_HASH_LABEL_KEY: job.eval_hash,
+            REDUN_JOB_TYPE_LABEL_KEY: "script" if job.task.script else "container",
+        }
+
+        # Merge labels if needed.
+        labels: Dict[str, str] = {
+            **self.default_task_options.get("labels", {}),
+            **job_options.get("labels", {}),
+            **default_tags,
+        }
+
+        task_options["labels"] = labels
+
+        # Clean up task_options
+        task_options.pop("executor")
+        task_options.pop("cache")
+
+        return task_options
 
     def _submit_single_job(self, job: RedunJob) -> None:
         """
@@ -186,13 +221,11 @@ class GCPBatchExecutor(Executor):
         assert job.args
         args, kwargs = job.args
 
-        labels = {REDUN_HASH_LABEL_KEY: job.eval_hash}
+        task_options = self._get_job_options(job)
 
         # Submit a new Batch job.
         gcp_job = None
         if not job.task.script:
-            labels[REDUN_JOB_TYPE_LABEL_KEY] = "container"
-
             # Package code if necessary and we have not already done so. If code_package
             # is False, then we can skip this step. Additionally, if we have already
             # packaged and set code_file, then we do not need to repackage.
@@ -213,12 +246,9 @@ class GCPBatchExecutor(Executor):
                 image=self.image,
                 commands=command,
                 gcs_bucket=self.gcs_scratch_prefix,
-                labels=labels,
-                **self.default_task_options,
+                **task_options,
             )
         else:
-            labels[REDUN_JOB_TYPE_LABEL_KEY] = "script"
-
             task_command = get_task_command(job.task, args, kwargs)
             script_command = get_script_task_command(
                 self.gcs_scratch_prefix,
@@ -233,8 +263,7 @@ class GCPBatchExecutor(Executor):
                 region=self.region,
                 script=" ".join(script_command),
                 gcs_bucket=self.gcs_scratch_prefix,
-                labels=labels,
-                **self.default_task_options,
+                **task_options,
             )
 
         job_dir = get_job_scratch_dir(self.gcs_scratch_prefix, job)
