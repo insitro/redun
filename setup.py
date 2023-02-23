@@ -19,7 +19,9 @@ requirements = [
     "botocore>=1.22.8,<1.28.0",
     "gcsfs>=2021.4.0",
     "s3fs>=2021.11.1",
-    "sqlalchemy>=1.4.0,<2",
+    # Using 2.1 instead of 3.0 in case future 2.x versions drop support
+    # for some legacy APIs still supported in 2.0
+    "sqlalchemy>=1.4.0,<2.1",
     "python-dateutil>=2.8",
     # If updating this list, check executors/aws_glue.py stays up to date with
     # packages needed to run in the glue environment.

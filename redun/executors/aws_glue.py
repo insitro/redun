@@ -48,7 +48,7 @@ DEFAULT_ADDITIONAL_PYTHON_MODULES = [
     "mako",
     "promise",
     "s3fs>=2021.11.1",
-    "sqlalchemy>=1.3.17or<2",  # Don't use commas as AWS won't parse them.
+    "sqlalchemy>=1.4.0or<2.1",  # Don't use commas as AWS won't parse them.
 ]
 
 

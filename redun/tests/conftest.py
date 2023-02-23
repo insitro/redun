@@ -28,7 +28,7 @@ def connect_with_retries(
     """
     logger.info("Connecting to test database ({})...".format(uri))
     credentialed_uri = RedunBackendDb._get_credentialed_uri(uri, {})
-    engine = create_engine(credentialed_uri)
+    engine = create_engine(credentialed_uri, future=True)
     stop = time.time() + timeout
     while time.time() < stop:
         try:
@@ -77,14 +77,11 @@ def testdb(monkeysession) -> Iterator[Optional[str]]:
     # Wait for database to accept connections.
     engine, conn = connect_with_retries(test_db_uri_stub)
 
+    conn = conn.execution_options(isolation_level="AUTOCOMMIT")
+
     # Create test database.
-    conn.execute(text("commit"))
-    conn.execution_options(isolation_level="AUTOCOMMIT").execute(
-        text("drop database if exists {}".format(database_name))
-    )
-    conn.execution_options(isolation_level="AUTOCOMMIT").execute(
-        text("create database {}".format(database_name))
-    )
+    conn.execute(text("drop database if exists {}".format(database_name)))
+    conn.execute(text("create database {}".format(database_name)))
     conn.close()
     engine.dispose()
 

@@ -1164,7 +1164,7 @@ class RedunBackendDb(RedunBackend):
 
     def create_engine(self) -> Engine:
         self.engine = create_engine(
-            self.db_uri, connect_args=self.connect_args, echo=self._db_echo
+            self.db_uri, connect_args=self.connect_args, echo=self._db_echo, future=True
         )
         self.Session = sessionmaker(bind=self.engine, class_=RedunSession)
         self.session = self.Session(backend=self)
