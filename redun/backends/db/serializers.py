@@ -9,7 +9,7 @@ from sqlalchemy.orm import aliased, joinedload, selectinload
 from sqlalchemy.orm.query import Query
 
 from redun.backends import db
-from redun.backends.base import TagEntityType
+from redun.backends.base import TagEntity
 
 # Serialization version.
 VERSION = 1
@@ -338,7 +338,7 @@ class TagSerializer(Serializer):
         return [
             db.Tag(
                 tag_hash=spec["tag_hash"],
-                entity_type=TagEntityType(spec["entity_type"]),
+                entity_type=TagEntity(spec["entity_type"]),
                 entity_id=spec["entity_id"],
                 key=spec["key"],
                 value=spec["value"],

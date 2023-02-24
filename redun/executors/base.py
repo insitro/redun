@@ -34,12 +34,21 @@ class Executor:
         self._scheduler.log(f"Executor[{self.name}]:", *messages, **kwargs)
 
     def submit(self, job: "Job") -> None:
+        """Execute the provided job.
+
+        Implementations must provide results back to the scheduler by either calling `done_job` or
+        `reject_job`."""
         assert self._scheduler
         self._scheduler.reject_job(
             job, ExecutorError("Executor {} does not support submitting tasks.".format(type(self)))
         )
 
     def submit_script(self, job: "Job") -> None:
+        """Execute the provided script job.
+
+        Implementations must provide results back to the scheduler by either calling `done_job` or
+        `reject_job`."""
+
         assert self._scheduler
         self._scheduler.reject_job(
             job,

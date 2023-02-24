@@ -32,7 +32,7 @@ from redun.job_array import JobArrayer
 from redun.logging import logger
 from redun.scheduler import Job, Scheduler
 from redun.scripting import get_task_command
-from redun.task import Task
+from redun.task import CacheScope, Task
 from redun.utils import pickle_dump
 
 T = TypeVar("T")
@@ -868,11 +868,11 @@ class K8SExecutor(Executor):
 
         # Determine job options.
         task_options = self._get_job_options(job)
-        use_cache = task_options.get("cache", True)
+        cache_scope = CacheScope(task_options.get("cache_scope", CacheScope.BACKEND))
 
         # Determine if we can reunite with a previous K8S output or job.
         k8s_job_id: Optional[Union[str, Tuple[str, str, int, str]]] = None
-        if use_cache and job.eval_hash in self.preexisting_k8s_jobs:
+        if cache_scope == CacheScope.BACKEND and job.eval_hash in self.preexisting_k8s_jobs:
             k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
 
             # Handle both single and array jobs.

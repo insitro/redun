@@ -45,7 +45,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
 
 import redun
-from redun.backends.base import TagEntityType
+from redun.backends.base import TagEntity
 from redun.backends.db import (
     JSON,
     Argument,
@@ -2583,7 +2583,7 @@ class RedunClient:
             args, extra_args = parser.parse_known_args(argv)
             return self.log_command(args, extra_args, argv)
 
-    def _parse_entity_info(self, id_prefix: str) -> Tuple[str, TagEntityType]:
+    def _parse_entity_info(self, id_prefix: str) -> Tuple[str, TagEntity]:
         model_pks = {
             Execution: "id",
             Job: "id",
@@ -2596,7 +2596,7 @@ class RedunClient:
         full_id = getattr(entity, model_pks[type(entity)])
 
         try:
-            entity_type = TagEntityType(type(entity).__name__)
+            entity_type = TagEntity(type(entity).__name__)
         except ValueError:
             raise ValueError(
                 "Entity {} is not a taggable entity type ({}).".format(

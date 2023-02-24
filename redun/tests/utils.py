@@ -198,7 +198,7 @@ def assert_match_lines(patterns: List[str], lines: List[str]) -> None:
     """
     assert len(patterns) == len(lines)
     for pattern, line in zip(patterns, lines):
-        assert re.fullmatch(pattern, line)
+        assert re.fullmatch(pattern, line), f"Could not match `{pattern}` to `{line}`"
 
 
 def assert_match_text(pattern: str, text: str, wildcard: str = "*"):

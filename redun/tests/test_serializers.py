@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from redun import File as RedunFile
 from redun import Scheduler, apply_tags, task
-from redun.backends.base import TagEntityType
+from redun.backends.base import TagEntity
 from redun.backends.db import (
     Base,
     CallEdge,
@@ -177,14 +177,14 @@ def test_serialize_tags() -> None:
     """
     tag = Tag(
         tag_hash="123",
-        entity_type=TagEntityType.Value,
+        entity_type=TagEntity.Value,
         entity_id="1",
         key="env",
         value=["prod", "stg"],
     )
     parent_tag = Tag(
         tag_hash="222",
-        entity_type=TagEntityType.Value,
+        entity_type=TagEntity.Value,
         entity_id="1",
         key="env",
         value=["prod"],
@@ -414,7 +414,7 @@ def test_sync_tags(scheduler: Scheduler, backend: RedunBackendDb, session: Sessi
     execution = session.query(Execution).one()
 
     # Update a tag.
-    backend.update_tags(TagEntityType.Execution, execution.id, ["project"], [("project", "skunk")])
+    backend.update_tags(TagEntity.Execution, execution.id, ["project"], [("project", "skunk")])
 
     # Delete a tag.
     value = session.query(Value).filter(Value.type == "builtins.int").one()

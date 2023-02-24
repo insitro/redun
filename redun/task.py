@@ -1,3 +1,4 @@
+import enum
 import inspect
 import re
 import sys
@@ -26,6 +27,39 @@ from redun.value import Value, get_type_registry
 Func = TypeVar("Func", bound=Callable)
 Func2 = TypeVar("Func2", bound=Callable)
 Result = TypeVar("Result")
+
+
+class CacheCheckValid(enum.Enum):
+    """
+    Types of validity checking for cache hits.
+    """
+
+    FULL = "full"  # Recursively check all intermediate values in the call tree
+    SHALLOW = "shallow"  # Only check the final result for validity
+
+
+class CacheScope(enum.Enum):
+    """
+    Types of cache hits and misses.
+    """
+
+    NONE = "NONE"  # Do not cache
+    CSE = "CSE"  # Only allow cache hits against tasks from this execution
+    BACKEND = "BACKEND"  # Allow cache hits from any execution known to the backend
+
+
+class CacheResult(enum.Enum):
+    """
+    Types of cache hits and misses.
+    """
+
+    CSE = "CSE"  # Common Subexpression Elimination hit, i.e., an ultimate reduction from this
+    # execution
+    SINGLE = "SINGLE"  # The result from a single reduction, from a different execution,
+    # i.e., an evaluation cache hit
+    ULTIMATE = "ULTIMATE"  # The ultimate result from the expression, from a different execution,
+    # i.e., a call cache hit
+    MISS = "MISS"  # Complete cache miss.
 
 
 def get_task_registry():
@@ -254,6 +288,19 @@ class Task(Value, Generic[Func]):
             if self.nout < 0:
                 raise TypeError("nout must be non-negative")
 
+        for options_dict in [self._task_options_base, self._task_options_override]:
+            # Update the legacy options
+            if "cache" in options_dict:
+                cache_value = options_dict.pop("cache")
+                options_dict["cache_scope"] = CacheScope.BACKEND if cache_value else CacheScope.CSE
+
+            # Sanitize the cache options into enums
+            if "cache_scope" in options_dict:
+                options_dict["cache_scope"] = CacheScope(options_dict["cache_scope"])
+
+            if "check_valid" in options_dict:
+                options_dict["check_valid"] = CacheCheckValid(options_dict["check_valid"])
+
     @property
     def fullname(self) -> str:
         """
@@ -276,7 +323,11 @@ class Task(Value, Generic[Func]):
         return cast(
             Result,
             TaskExpression(
-                self.fullname, args, kwargs, self._task_options_override, length=self.nout
+                self.fullname,
+                args,
+                kwargs,
+                task_options=self._task_options_override,
+                length=self.nout,
             ),
         )
 
@@ -302,7 +353,8 @@ class Task(Value, Generic[Func]):
             **self._task_options_override,
             **task_options_update,
         }
-        return Task(
+        # Be sure to clone the actual type, in case it's a derived one.
+        return self.__class__(
             self.func,
             name=self.name,
             namespace=self.namespace,
@@ -395,6 +447,8 @@ class Task(Value, Generic[Func]):
 
         self._signature = None
 
+        self._validate()
+
     def is_valid(self) -> bool:
         """
         Returns True if the Task Value is still valid (task hash matches registry).
@@ -449,7 +503,16 @@ class SchedulerTask(Task[Func]):
         """
         Returns a lazy Expression of calling the task.
         """
-        return cast(Result, SchedulerExpression(self.fullname, args, kwargs))
+        return cast(
+            Result,
+            SchedulerExpression(
+                self.fullname,
+                args,
+                kwargs,
+                task_options=self._task_options_override,
+                length=self.nout,
+            ),
+        )
 
     __call__ = cast(Func, _call)
 
@@ -650,7 +713,10 @@ def task(
 
 
 def scheduler_task(
-    name: Optional[str] = None, namespace: Optional[str] = None, version: str = "1"
+    name: Optional[str] = None,
+    namespace: Optional[str] = None,
+    version: str = "1",
+    **task_options_base: Any,
 ) -> Callable[[Callable[..., Promise[Result]]], SchedulerTask[Callable[..., Result]]]:
     """
     Decorator to register a function as a scheduler task.
@@ -702,7 +768,11 @@ def scheduler_task(
         nonlocal name, namespace
 
         _task: SchedulerTask[Callable[..., Result]] = SchedulerTask(
-            func, name=name, namespace=namespace, version=version
+            func,
+            name=name,
+            namespace=namespace,
+            version=version,
+            task_options_base=task_options_base,
         )
         get_task_registry().add(_task)
         return _task
@@ -820,15 +890,14 @@ def wraps_task(
 
                 old_fullname = task_.fullname
                 if task_.namespace != "":
-                    task_.namespace = f"{task_.namespace}.{suffix}"
+                    new_namespace = f"{task_.namespace}.{suffix}"
                 else:
-                    task_.namespace = suffix
-                # Fix the hash, which we have to do manually.
-                task_.recompute_hash()
+                    new_namespace = suffix
 
-                new_fullname = task_.fullname
-                get_task_registry().rename(old_fullname, new_fullname)
-                return new_fullname
+                new_task = get_task_registry().rename(
+                    old_fullname, new_name=task_.name, new_namespace=new_namespace
+                )
+                return new_task.fullname
 
             nonlocal wrapper_name
             if not wrapper_name:
@@ -867,15 +936,17 @@ def wraps_task(
 class TaskRegistry:
     """
     A registry of currently registered Tasks.
-
     The @task() decorator registers tasks to the current registry.
     """
 
     def __init__(self):
         self._tasks: Dict[str, Task] = {}
 
+        self.task_hashes = set()
+
     def add(self, task: Task) -> None:
         self._tasks[task.fullname] = task
+        self.task_hashes.add(task.hash)
 
     def get(self, task_name: Optional[str] = None, hash: Optional[str] = None) -> Optional[Task]:
         if task_name:
@@ -888,10 +959,15 @@ class TaskRegistry:
         else:
             raise ValueError("No task field given.")
 
-    def rename(self, old_name: str, new_name: str) -> None:
+    def rename(self, old_name: str, new_namespace: str, new_name: str) -> Task:
         assert old_name in self._tasks
         task = self._tasks.pop(old_name)
-        self._tasks[new_name] = task
+        self.task_hashes.remove(task.hash)
+
+        task.namespace = new_namespace
+        task.name = new_name
+        self.add(task)
+        return task
 
     def __iter__(self) -> Iterable[Task]:
         return iter(self._tasks.values())

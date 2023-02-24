@@ -20,7 +20,7 @@ from redun.backends.db import (
     RedunVersion,
     RedunVersionError,
     Tag,
-    TagEntityType,
+    TagEntity,
     Value,
     parse_db_version,
 )
@@ -66,7 +66,7 @@ def test_max_value_size() -> None:
 def test_call_graph_db() -> None:
     backend = RedunBackendDb(db_uri="sqlite:///:memory:")
     backend.load()
-    backend.current_task_hashes = {
+    task_hashes = {
         "task_hash1",
         "task_hash2",
         "task_hash3",
@@ -102,7 +102,7 @@ def test_call_graph_db() -> None:
     )
 
     # Get a node.
-    call_node = backend._get_call_node("task_hash3", "args_hash3")
+    call_node = backend._get_call_node("task_hash3", "args_hash3", task_hashes)
     assert call_node
     assert call_node.task_name == "mytask3"
 
@@ -111,7 +111,7 @@ def test_call_graph_db() -> None:
     assert call_node.children[1].task_name == "mytask2"
 
     # Get another node.
-    call_node = backend._get_call_node("task_hash1", "args_hash1")
+    call_node = backend._get_call_node("task_hash1", "args_hash1", task_hashes)
     assert call_node
     assert call_node.task_name == "mytask1"
 
@@ -319,9 +319,10 @@ def test_multiple_expr(scheduler: Scheduler) -> None:
     assert task_calls == ["task1"]
 
     # Now let's test the cache.
-    with mock.patch.object(scheduler, "get_cache", wraps=scheduler.get_cache) as get_cache:
+    with mock.patch.object(scheduler, "_get_cache", wraps=scheduler._get_cache) as get_cache:
         assert scheduler.run(main(1)) == [[1, 1], [2, 1]]
-        assert get_cache.call_count == 4
+        # Depending on timing, we'll get a CSE from pending or the backend.
+        assert 4 <= get_cache.call_count <= 5
 
     # Get root call node.
     backend = scheduler.backend
@@ -985,7 +986,6 @@ def test_db_backend_clone() -> None:
     clone = backend.clone()
     assert clone.engine is backend.engine
     assert clone.current_execution is backend.current_execution
-    assert clone.current_task_hashes is backend.current_task_hashes
 
     assert clone.session is not backend.session
 
@@ -999,7 +999,7 @@ def test_json_field(scheduler: Scheduler, session: Session) -> None:
     session.add(
         Tag(
             tag_hash="111",
-            entity_type=TagEntityType.Value,
+            entity_type=TagEntity.Value,
             entity_id="1",
             key="params",
             value="hello",
@@ -1012,7 +1012,7 @@ def test_json_field(scheduler: Scheduler, session: Session) -> None:
 
     # Add and filter an int value.
     session.add(
-        Tag(tag_hash="222", entity_type=TagEntityType.Value, entity_id="2", key="params", value=10)
+        Tag(tag_hash="222", entity_type=TagEntity.Value, entity_id="2", key="params", value=10)
     )
     session.commit()
 
@@ -1023,7 +1023,7 @@ def test_json_field(scheduler: Scheduler, session: Session) -> None:
     session.add(
         Tag(
             tag_hash="333",
-            entity_type=TagEntityType.Value,
+            entity_type=TagEntity.Value,
             entity_id="2",
             key="params",
             value=[1, 2, 3],
@@ -1042,7 +1042,7 @@ def test_json_field(scheduler: Scheduler, session: Session) -> None:
     session.add(
         Tag(
             tag_hash="444",
-            entity_type=TagEntityType.Value,
+            entity_type=TagEntity.Value,
             entity_id="2",
             key="params",
             value={"a": 1, "b": 2},

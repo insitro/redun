@@ -32,7 +32,7 @@ from typing import (
     overload,
 )
 
-from redun.backends.base import RedunBackend, TagEntityType
+from redun.backends.base import RedunBackend, TagEntity
 from redun.backends.db import RedunBackendDb
 from redun.config import Config, Section, SectionProxy, create_config_section
 from redun.executors.base import Executor, get_executors_from_config
@@ -55,9 +55,17 @@ from redun.hashing import hash_eval, hash_struct
 from redun.logging import logger as _logger
 from redun.promise import Promise, wait_promises
 from redun.tags import parse_tag_value
-from redun.task import Task, TaskRegistry, get_task_registry, scheduler_task, task
+from redun.task import (
+    CacheCheckValid,
+    CacheResult,
+    CacheScope,
+    Task,
+    TaskRegistry,
+    get_task_registry,
+    scheduler_task,
+    task,
+)
 from redun.utils import format_table, iter_nested_value, map_nested_value, trim_string
-from redun.value import TypeError as RedunTypeError
 from redun.value import Value, get_type_registry
 
 # Globals.
@@ -264,7 +272,8 @@ class Job:
         # This is true if we fetched the result from the cache.
         self.was_cached: bool = False
 
-        # Hash of the CallNode associated with running this job.
+        # Hash of the CallNode associated with running this job. This hash requires knowledge
+        # of the Job's result, hence is available after either computing or retrieving the result.
         self.call_hash: Optional[str] = None
 
         # Promise for evaluating self.expr.
@@ -292,7 +301,7 @@ class Job:
         self._status: Optional[str] = None
 
         if parent_job:
-            self.notify_parent(parent_job)
+            self.add_parent(parent_job)
         if execution:
             execution.add_job(self)
 
@@ -317,7 +326,7 @@ class Job:
         else:
             raise ValueError("Unknown status")
 
-    def get_option(self, key: str, default: Any = None) -> Any:
+    def get_option(self, key: str, default: Any = None, as_type: Optional[Type] = None) -> Any:
         """
         Returns a task option associated with a :class:`Job`.
 
@@ -328,14 +337,18 @@ class Job:
         assert "task_expr_options" in self.expr.__dict__
         task = cast(Task, self.task)
 
-        if key in self.task_options:
-            return self.task_options[key]
-        elif key in self.expr.task_expr_options:
-            return self.expr.task_expr_options[key]
-        elif task.has_task_option(key):
-            return task.get_task_option(key)
-        else:
-            return default
+        def get_raw():
+            if key in self.task_options:
+                return self.task_options[key]
+            elif key in self.expr.task_expr_options:
+                return self.expr.task_expr_options[key]
+            elif task.has_task_option(key):
+                return task.get_task_option(key)
+            else:
+                return default
+
+        result = get_raw()
+        return as_type(result) if as_type else result
 
     def get_options(self) -> dict:
         """
@@ -371,7 +384,7 @@ class Job:
         job_limits.update(limits)
         return job_limits
 
-    def notify_parent(self, parent_job: "Job") -> None:
+    def add_parent(self, parent_job: "Job") -> None:
         """
         Maintains the Job tree but connecting the job with a parent job.
         """
@@ -390,13 +403,26 @@ class Job:
         assert parent_job
         parent_job.child_jobs[parent_job.child_jobs.index(self)] = other_job
 
+        # Make callbacks just as if we had gotten a cache hit.
         def then(result: Any) -> None:
             self.call_hash = other_job.call_hash
-            self.resolve(result)
+            scheduler = get_current_scheduler()
+            assert scheduler
+            self.was_cached = True
+
+            scheduler.done_job(self, result)
 
         def fail(error: Any) -> None:
             self.call_hash = other_job.call_hash
-            self.reject(error)
+            scheduler = get_current_scheduler()
+            assert scheduler
+            assert other_job.eval_args
+            self.was_cached = True
+
+            # It's important to use the main thread directly, because if we queue up the
+            # event, the scheduler may shut down before processing it. This way, we can ensure
+            # all the bookkeeping gets done synchronously.
+            scheduler._reject_job_main_thread(self, error)
 
         other_job.result_promise.then(then, fail)
 
@@ -423,6 +449,9 @@ class Job:
         # Record final status before clearing execution state.
         self._status = self.status
 
+        # Implementation note: we need to do this because the job holds
+        # both parent and child jobs, creating a reference cycle that would
+        # prevent garbage collection. Here, we break that cycle.
         self.expr = None
         self.eval_args = None
         self.args = None
@@ -714,6 +743,23 @@ def needs_root_task(task_registry: TaskRegistry, expr: Any) -> bool:
 class Scheduler:
     """
     Scheduler for evaluating redun tasks.
+
+    A thread may only have a single running scheduler at a time, and a scheduler can perform
+    exactly one execution at a time. While running, the scheduler will register itself into a
+    thread-local variable, see `get_current_scheduler` and `set_current_scheduler`.
+
+    A scheduler may be reused for multiple executions, and makes every effort to be stateless
+    between executions. That is, the scheduler clears its internal state before starting a new
+    execution, providing isolation from any others we may have performed.
+
+    Although the scheduler collaborates with executors that may use multiple threads during
+    execution, the scheduler logic relies upon being executed from a single thread. Therefore,
+    the main lifecycle methods used by executors defer back to the scheduler thread.
+    The scheduler is implemented around an event loop and asynchronous callbacks, allowing it to
+    coordinate many in-flight jobs in parallel.
+
+    Scheduler tasks are generally considered "friends" of the scheduler and may need to access
+    some private methods.
     """
 
     def __init__(
@@ -783,15 +829,26 @@ class Scheduler:
         # Tracking for Common Subexpression Elimination (CSE) for pending Jobs.
         self._pending_jobs: Dict[Optional[str], Job] = {}
 
-        # Currenting pending/running jobs.
+        # Currently pending/running jobs.
         self._jobs: Set[Job] = set()
 
         # Job status of finalized jobs.
         self._finalized_jobs: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
         # Execution modes.
-        self.dryrun = False
-        self.use_cache = True
+        self._dryrun = False
+        self._use_cache = True
+
+    @property
+    def is_running(self) -> bool:
+        return self._current_execution is not None
+
+    def clear(self):
+        """Release resources"""
+        self._pending_expr.clear()
+        self._pending_jobs.clear()
+        self._jobs.clear()
+        self._finalized_jobs.clear()
 
     def add_executor(self, executor: Executor) -> None:
         """
@@ -845,34 +902,37 @@ class Scheduler:
         This is a private method that returns the original workflow Promise.
         """
         # Set scheduler and start executors.
-        set_current_scheduler(self)
-        for executor in self.executors.values():
-            executor.start()
-        self.dryrun = dryrun
-        self.use_cache = cache
-        self.traceback = None
 
-        self._validate_tasks()
-        self.backend.calc_current_nodes({task.hash for task in self.task_registry})
+        try:
+            set_current_scheduler(self)
+            self.clear()
 
-        # Start event loop to evaluate expression.
-        start_time = time.time()
-        self.thread_id = threading.get_ident()
-        self._pending_expr.clear()
-        self._pending_jobs.clear()
-        self._jobs.clear()
-        self._finalized_jobs.clear()
-        result = self.evaluate(expr, parent_job=parent_job)
-        self.process_events(result)
+            for executor in self.executors.values():
+                executor.start()
+            self._dryrun = dryrun
+            self._use_cache = cache
+            self.traceback = None
 
-        # Log execution duration.
-        duration = time.time() - start_time
-        self.log(f"Execution duration: {duration:.2f} seconds")
+            self._validate_tasks()
 
-        # Stop executors and unset scheduler.
-        for executor in self.executors.values():
-            executor.stop()
-        set_current_scheduler(None)
+            # Start event loop to evaluate expression.
+            start_time = time.time()
+            self.thread_id = threading.get_ident()
+            result = self.evaluate(expr, parent_job=parent_job)
+            self._process_events(result)
+
+            # Log execution duration.
+            duration = time.time() - start_time
+            self.log(f"Execution duration: {duration:.2f} seconds")
+        except Exception:
+            raise
+        finally:
+            # Stop executors and unset scheduler.
+            for executor in self.executors.values():
+                executor.stop()
+
+            self._current_execution = None
+            set_current_scheduler(None)
 
         return result
 
@@ -908,6 +968,12 @@ class Scheduler:
     ) -> Result:
         """
         Run the scheduler to evaluate an Expression `expr`.
+
+        This is the primary user entry point to the scheduler. The scheduler will register
+        itself as this thread's running scheduler for the duration of the execution.
+        This function blocks, running the event loop until the result is ready and can be returned.
+
+        The scheduler can only run one execution at a time.
         """
         if needs_root_task(self.task_registry, expr):
             # Ensure we always have one root-level job encompassing the whole execution.
@@ -919,7 +985,7 @@ class Scheduler:
             exec_argv = ["scheduler.run", trim_string(repr(expr))]
         self._current_execution = Execution(self.backend.record_execution(exec_argv))
         self.backend.record_tags(
-            TagEntityType.Execution, self._current_execution.id, chain(self._exec_tags, tags)
+            TagEntity.Execution, self._current_execution.id, chain(self._exec_tags, tags)
         )
 
         self.log(
@@ -946,7 +1012,7 @@ class Scheduler:
 
             raise result.error
 
-        elif result.is_pending and self.dryrun:
+        elif result.is_pending and self._dryrun:
             self.log("Dryrun: Additional jobs would run.")
             raise DryRunResult()
 
@@ -962,6 +1028,8 @@ class Scheduler:
     ) -> dict:
         """
         Extend an existing scheduler execution (run) to evaluate a Task or Expression.
+
+        This is an alternative to the `run` method, and acts as a primary user entry point.
         """
         if needs_root_task(self.task_registry, expr):
             # Ensure we always have one root-level job encompassing the whole execution.
@@ -976,7 +1044,7 @@ class Scheduler:
         # - We need to set its id to match the given parent_job_id.
         # - We set the same execution id as the original parent_job.
         # - Any expression will do, so we use a minimal root task.
-        # - We also mimic the task and eval_args being set like they are in exec_job().
+        # - We also mimic the task and eval_args being set like they are in _exec_job().
         parent_job = Job(
             root_task,
             root_task(quote(None)),  # type: ignore
@@ -1005,20 +1073,21 @@ class Scheduler:
                 "job_id": job.id,
                 "call_hash": job.call_hash,
             }
-        elif result.is_pending and self.dryrun:
+        elif result.is_pending and self._dryrun:
             # Return an incomplete run due to dryrun being active.
             return {"dryrun": True, "job_id": job.id, "call_hash": job.call_hash}
         else:
             raise AssertionError("Unexpected state")
 
-    def process_events(self, workflow_promise: Promise) -> None:
+    def _process_events(self, workflow_promise: Promise) -> None:
         """
-        Main scheduler event loop for evaluating the current expression.
+        Main scheduler event loop for evaluating the current expression. Loop over events,
+        blocking until the provided `workflow_promise` is resolved.
         """
         self.workflow_promise = workflow_promise
 
         while self.workflow_promise.is_pending:
-            if self.dryrun and self.events_queue.empty():
+            if self._dryrun and self.events_queue.empty():
                 # We have exhausted the completed part of the workflow.
                 break
 
@@ -1062,17 +1131,23 @@ class Scheduler:
 
     def evaluate(self, expr: AnyExpression, parent_job: Optional[Job] = None) -> Promise:
         """
-        Begin an evaluation of an expression (concrete value or Expression).
+        Begin an asynchronous evaluation of an expression (concrete value or Expression). Assumes
+        this scheduler is currently running.
+
+        This method is not a typical entry point for users, however, it is often used by
+        `SchedulerTask`s, to trigger further computations.
 
         Returns a Promise that will resolve when the evaluation is complete.
         """
+
+        assert self.is_running, "Scheduler is not currently running."
 
         def eval_term(value):
             # Evaluate one term of an expression.
             if isinstance(value, ValueExpression):
                 return value.value
             elif isinstance(value, ApplyExpression):
-                return self.evaluate_apply(value, parent_job=parent_job)
+                return self._evaluate_apply(value, parent_job=parent_job)
             else:
                 return value
 
@@ -1091,12 +1166,16 @@ class Scheduler:
             lambda _: map_nested_value(resolve_term, pending_expr)
         )
 
-    def evaluate_apply(self, expr: ApplyExpression, parent_job: Optional[Job] = None) -> Promise:
+    def _evaluate_apply(self, expr: ApplyExpression, parent_job: Optional[Job] = None) -> Promise:
         """
         Begin an evaluation of an ApplyExpression.
 
+        This method is responsible for ensuring that each unique expression object is evaluated
+        exactly once.
+
         Returns a Promise that will resolve/reject when the evaluation is complete.
         """
+
         # Detect expression cycles. Specifically, we look for previous expressions
         # being evaluated within the same parent_job. If we find one, we can
         # reuse its Promise and then copy over the evaluation bookkeeping
@@ -1120,27 +1199,31 @@ class Scheduler:
 
             return pending_promise.then(callback)
 
+        # Implementation note: we have to store this promise on the expression provided.
+        # This happens at the end of the function, so do not return early!
+        promise: Promise
+
         if isinstance(expr, SchedulerExpression):
             task = self.task_registry.get(expr.task_name)
             if not task:
-                return Promise(
+                promise = Promise(
                     lambda resolve, reject: reject(
                         NotImplementedError(
                             "Scheduler task '{}' does not exist".format(expr.task_name)
                         )
                     )
                 )
-
-            # Scheduler tasks are executed with access to scheduler, parent_job, and
-            # raw args (i.e. possibly unevaluated).
-            promise = task.func(self, parent_job, expr, *expr.args, **expr.kwargs)
+            else:
+                # Scheduler tasks are executed with access to scheduler, parent_job, and
+                # raw args (i.e. possibly unevaluated).
+                promise = task.func(self, parent_job, expr, *expr.args, **expr.kwargs)
 
         elif isinstance(expr, TaskExpression):
             # Evaluate task_name to specific task.
             # TaskRegistry is like an environment.
             task = self.task_registry.get(expr.task_name)
             if not task:
-                return Promise(
+                promise = Promise(
                     lambda resolve, reject: reject(
                         f"Task not found in registry: {expr.task_name}.  This can occur if the "
                         "script that defines a user task wasn't loaded or, in the case of redun "
@@ -1148,37 +1231,37 @@ class Scheduler:
                         "fails to define the task."
                     )
                 )
+            else:
+                # TaskExpressions need to be executed in a new Job.
+                job = Job(task, expr, parent_job=parent_job, execution=self._current_execution)
+                self._jobs.add(job)
 
-            # TaskExpressions need to be executed in a new Job.
-            job = Job(task, expr, parent_job=parent_job, execution=self._current_execution)
-            self._jobs.add(job)
+                # Make default arguments explicit in case they need to be evaluated.
+                expr_args = set_arg_defaults(task, expr.args, expr.kwargs)
 
-            # Make default arguments explicit in case they need to be evaluated.
-            expr_args = set_arg_defaults(task, expr.args, expr.kwargs)
-
-            # Evaluate args then execute job.
-            args_promise = self.evaluate(expr_args, parent_job=parent_job)
-            promise = args_promise.then(lambda eval_args: self.exec_job(job, eval_args))
+                # Evaluate args then execute job.
+                args_promise = self.evaluate(expr_args, parent_job=parent_job)
+                promise = args_promise.then(lambda eval_args: self._exec_job(job, eval_args))
 
         elif isinstance(expr, SimpleExpression):
             # Simple Expressions can be executed synchronously.
             func = get_lazy_operation(expr.func_name)
             if not func:
-                return Promise(
+                promise = Promise(
                     lambda resolve, reject: reject(
                         NotImplementedError(
                             "Expression function '{}' does not exist".format(expr.func_name)
                         )
                     )
                 )
-
-            # Evaluate args, apply func, evaluate result.
-            args_promise = self.evaluate((expr.args, expr.kwargs), parent_job=parent_job)
-            promise = args_promise.then(
-                lambda eval_args: self.evaluate(
-                    cast(Callable, func)(*eval_args[0], **eval_args[1]), parent_job=parent_job
+            else:
+                # Evaluate args, apply func, evaluate result.
+                args_promise = self.evaluate((expr.args, expr.kwargs), parent_job=parent_job)
+                promise = args_promise.then(
+                    lambda eval_args: self.evaluate(
+                        cast(Callable, func)(*eval_args[0], **eval_args[1]), parent_job=parent_job
+                    )
                 )
-            )
 
         else:
             raise NotImplementedError("Unknown expression: {}".format(expr))
@@ -1219,7 +1302,7 @@ class Scheduler:
 
     def _check_jobs_pending_limits(self) -> None:
         """
-        Checks whether Jobs pending due to limits can now satistify limits and run.
+        Checks whether Jobs pending due to limits can now satisfy limits and run.
         """
 
         def _add_limits(limits1, limits2):
@@ -1244,8 +1327,10 @@ class Scheduler:
 
         self._jobs_pending_limits = not_ready_jobs
 
+        # We're just nominating these jobs to start again, but their resource needs will be
+        # checked again as part of restarting them. It's possible they'll get re-queued again.
         for job, eval_args in ready_jobs:
-            self.exec_job(job, eval_args)
+            self._exec_job(job, eval_args)
 
     def _check_pending_job(self, job: Job) -> Optional[Job]:
         """
@@ -1256,121 +1341,152 @@ class Scheduler:
 
         This is a form of common subexpression elimination.
         https://en.wikipedia.org/wiki/Common_subexpression_elimination
+
+        If there is another job we can rely on, return it. Otherwise, return `None`.
         """
-        pending_job = self._pending_jobs.get(job.eval_hash)
-        if not pending_job:
-            # New job.
-            self._pending_jobs[job.eval_hash] = job
+
+        if (
+            job.get_option("cache_scope", CacheScope.BACKEND, as_type=CacheScope)
+            == CacheScope.NONE
+        ):
             return None
 
-        # Remove job from pending list.
-        self._jobs.remove(job)
-        job.collapse(pending_job)
-        return pending_job
+        # Check the task has been configured to restrict CSE. This isn't typical, but it
+        # is allowed.
+        allowed_cache_results = job.get_option("allowed_cache_results", None)
+        if allowed_cache_results is not None:
+            assert isinstance(allowed_cache_results, set)
+            if CacheResult.CSE not in allowed_cache_results:
+                return None
 
-    def exec_job(self, job: Job, eval_args: Tuple[Tuple, dict]) -> Promise:
+        pending_job = self._pending_jobs.get(job.eval_hash)
+        if pending_job:
+            job.collapse(pending_job)
+            return pending_job
+
+        return None
+
+    def _exec_job(self, job: Job, eval_args: Tuple[Tuple, dict]) -> Promise:
         """
         Execute a job that is ready using the fully evaluated arguments.
         """
-        self.events_queue.put(lambda: self._exec_job(job, eval_args))
+        # Delay the execution to a new event so we don't interrupt the current event.
+        self.events_queue.put(lambda: self._exec_job_main_thread(job, eval_args))
         return job.result_promise
 
-    def _exec_job(self, job: Job, eval_args: Tuple[Tuple, dict]) -> None:
+    def _exec_job_main_thread(self, job: Job, eval_args: Tuple[Tuple, dict]) -> None:
         """
         Execute a job that is ready using the fully evaluated arguments.
 
-        This function runs on the main scheduler thread. Use
-        :method:`Scheduler.exec_job()` if calling from another thread.
+        This function runs on the main scheduler thread.
         """
+
+        # Downgrade the cache option, if needed.
+        if not self._use_cache:
+            job.task_options["cache_scope"] = CacheScope.NONE
 
         # Ensure we are on main scheduler thread.
         assert self.thread_id == threading.get_ident()
+        assert job.task
 
-        # Make sure the job can "fit" within the available resource limits.
-        job_limits = job.get_limits()
-        if not self._is_job_within_limits(job_limits):
-            self._add_job_pending_limits(job, eval_args)
-            return
-        self._consume_resources(job_limits)
+        assert not job.was_cached, f"Job {job} was marked as cached, but we're evaluating it?"
 
         # Set eval_args on job.
         job.eval_args = eval_args
 
-        # Set job caching preference.
-        if not self.use_cache:
-            job.task_options["cache"] = False
-
         # Preprocess arguments before sending them to task function.
         args, kwargs = job.eval_args
-        args, kwargs = job.args = self.preprocess_args(job, args, kwargs)
+        args, kwargs = job.args = self._preprocess_args(job, args, kwargs)
 
         # Check cache using eval_hash as key.
         job.eval_hash, job.args_hash = self.get_eval_hash(job.task, args, kwargs)
+        assert job.eval_hash
+        assert job.args_hash
 
         # Check whether a job of the same eval_hash is already running.
-        if self._check_pending_job(job):
+        if self._check_pending_job(job) is not None:
+            # If we're trying to execute a job that is being re-triggered because we hit
+            # resource limits on the first try, it's important we don't hit this exit,
+            # because then the job will have been dropped.
+
+            # There's no work to do, but be sure we consider it started.
+            self.backend.record_job_start(job)
+
             return
 
-        self.backend.record_job_start(job)
+        # Check cache for job.
+        result, job.was_cached, call_hash = self._get_cache(job)
 
-        # HACK: This is a workaround introduced by DE-4761. See the ticket for
-        # notes on how script_task could be redesigned to remove the need for
-        # this special-casing.
-        is_script_task = job.task.fullname == "redun.script_task"
-
-        call_hash: Optional[str]
-        if self.use_cache and job.get_option("cache", True) and not is_script_task:
-            result, job.was_cached, call_hash = self.get_cache(
-                job,
-                job.eval_hash,
-                job.task.hash,
-                job.args_hash,
-                check_valid=job.get_option("check_valid", "full"),
-            )
-        else:
-            result, job.was_cached, call_hash = None, False, None
         if job.was_cached:
             # Evaluation was cached, so we proceed to done_job/resolve_job.
             self.log(
-                "{action} Job {job_id}:  {task_call} (eval_hash={eval_hash}{check_valid})".format(
+                "{action} Job {job_id}:  {task_call} (eval_hash={eval_hash}{check_valid}, "
+                "call_hash={call_hash})".format(
                     job_id=job.id[:8],
                     action="Cached".ljust(JOB_ACTION_WIDTH),
                     task_call=format_task_call(job.task, args, kwargs),
                     eval_hash=job.eval_hash[:8],
+                    call_hash=call_hash[:8] if call_hash else "None",
                     check_valid=", check_valid=shallow" if call_hash else "",
                 )
             )
-            if call_hash:
-                # We have a fully resolved result.
-                return self._resolve_job(job, result, call_hash)
+
+            # Record the call hash, if we recovered one.
+            job.call_hash = call_hash
+
+            # There's no work to do, but be sure we consider it started.
+            self.backend.record_job_start(job)
+
+            # Trigger downstream steps, just like an executor would, upon completing it.
+            # One of the roles of `done_job` is to trigger evaluation on `result`, in case it is
+            # an expression. In the case of an ultimate reduction cache hit, we know that's not
+            # needed. However, we let this duplicate work happen anyway, because it keeps the
+            # program flow the same and is inexpensive.
+            if isinstance(result, ErrorValue):
+                return self.reject_job(job, result.error, result.traceback)
             else:
-                # We have a result that needs further evaluation.
-                return self._done_job(job, result)
+                return self.done_job(job, result)
 
         # Perform rollbacks due to Handles that conflict with past Handles.
-        if not self.dryrun:
-            self.perform_rollbacks(args, kwargs)
+        if not self._dryrun:
+            self._perform_rollbacks(args, kwargs)
 
         # Determine executor.
         executor_name = job.get_option("executor") or "default"
         executor = self.executors.get(executor_name)
         if not executor:
-            return self._reject_job(
+            return self.reject_job(
                 job, SchedulerError('Unknown executor "{}"'.format(executor_name))
             )
 
         self.log(
             "{action} Job {job_id}:  {task_call} on {executor}".format(
                 job_id=job.id[:8],
-                action=("Dryrun" if self.dryrun else "Run").ljust(JOB_ACTION_WIDTH),
+                action=("Dryrun" if self._dryrun else "Run").ljust(JOB_ACTION_WIDTH),
                 task_call=format_task_call(job.task, args, kwargs),
                 executor=executor_name,
             )
         )
 
-        # Stop short of submitting jobs during a dryrun.
-        if self.dryrun:
+        # Stop short of submitting jobs during a _dryrun.
+        if self._dryrun:
             return
+
+        # Since the result was not cached, either run it now, or reschedule for whenever
+        # the resources are available.
+        job_limits = job.get_limits()
+        if not self._is_job_within_limits(job_limits):
+            self._add_job_pending_limits(job, eval_args)
+            return
+        self._consume_resources(job_limits)
+
+        # Record that the job is actually starting.
+        self.backend.record_job_start(job)
+
+        # Record the job as pending, since we're submitting it.
+        # Note that if the CSE is disabled, this job might have the same `eval_hash` as a prior
+        # one. We don't care about overwriting, however, since they're all equivalent.
+        self._pending_jobs[job.eval_hash] = job
 
         # Submit job.
         if not job.task.script:
@@ -1380,15 +1496,19 @@ class Scheduler:
 
     def done_job(self, job: Job, result: Any, job_tags: List[Tuple[str, Any]] = []) -> None:
         """
-        Mark a :class:`Job` as successfully done with a result.
-        """
-        self.events_queue.put(lambda: self._done_job(job, result, job_tags=job_tags))
+        Mark a :class:`Job` as successfully done with a `result`.
 
-    def _done_job(self, job: Job, result: Any, job_tags: List[Tuple[str, Any]] = []) -> None:
+        A primary Executor lifecycle method, hence is thread safe.
+        """
+        self.events_queue.put(lambda: self._done_job_main_thread(job, result, job_tags=job_tags))
+
+    def _done_job_main_thread(
+        self, job: Job, result: Any, job_tags: List[Tuple[str, Any]] = []
+    ) -> None:
         """
         Mark a :class:`Job` as successfully done with a `result`.
 
-        result might require additional evaluation.
+        Note that `result` might require additional evaluation.
 
         This function runs on the main scheduler thread. Use
         :method:`Scheduler.done_job()` if calling from another thread.
@@ -1397,51 +1517,59 @@ class Scheduler:
         # Ensure we are on main scheduler thread.
         assert self.thread_id == threading.get_ident()
 
-        self._release_resources(job.get_limits())
-        self._check_jobs_pending_limits()
+        # Cached jobs won't have used any resources.
+        if not job.was_cached:
+            self._release_resources(job.get_limits())
+            self._check_jobs_pending_limits()
 
+        assert job.task
         assert job.eval_hash
         assert job.eval_args
         assert job.args_hash
 
         job.job_tags.extend(job_tags)
 
-        # Update cache.
+        # Update cache. Note that cache scope dictates whether we *read* from the cache, but we
+        # always *write* to the backend.
         if not job.was_cached:
-            assert not self.dryrun
-            result = self.postprocess_result(job, result, job.eval_hash)
+            assert not self._dryrun
+            result = self._postprocess_result(job, result, job.eval_hash)
             self.set_cache(job.eval_hash, job.task.hash, job.args_hash, result)
 
         # Eval result (child tasks), then resolve job.
         self.evaluate(result, parent_job=job).then(
-            lambda result: self.resolve_job(job, result)
+            lambda result: self._resolve_job(job, result)
         ).catch(lambda error: self.reject_job(job, error))
 
-    def resolve_job(self, job: Job, result: Any, call_hash: Optional[str] = None) -> None:
+    def _resolve_job(self, job: Job, result: Any) -> None:
+        """
+        Resolve a :class:`Job` with a fully evaluated result. Internal method; executors should
+        call `done_job` or `reject_job`.
+
+        This occurs after a job is done and the result is fully evaluated.
+        """
+        self.events_queue.put(lambda: self._resolve_job_main_thread(job, result))
+
+    def _resolve_job_main_thread(self, job: Job, result: Any) -> None:
         """
         Resolve a :class:`Job` with a fully evaluated result.
 
         This occurs after a job is done and the result is fully evaluated.
-        """
-        self.events_queue.put(lambda: self._resolve_job(job, result, call_hash=call_hash))
 
-    def _resolve_job(self, job: Job, result: Any, call_hash: Optional[str] = None) -> None:
-        """
-        Resolve a :class:`Job` with a fully evaluated result.
-
-        This occurs after a job is done and the result is fully evaluated.
         This function runs on the main scheduler thread. Use
-        :method:`Scheduler.resolve_job()` if calling from another thread.
+        :method:`Scheduler._resolve_job()` if calling from another thread.
         """
         # Ensure we are on main scheduler thread.
         assert self.thread_id == threading.get_ident()
 
+        assert job.task
         assert job.args_hash
         assert job.eval_args
 
-        if call_hash:
-            # CallNode is already recorded, use it again for this job.
-            job.call_hash = call_hash
+        # If the call hash is already known, we must have retrieved it from the cache. Otherwise,
+        # compute the hash and record the call node.
+        if job.call_hash:
+            assert job.was_cached
         else:
             # Ignore failed child jobs, which have no call_hash.
             child_call_hashes = [
@@ -1480,32 +1608,30 @@ class Scheduler:
         # the job. They no longer can be part of any more cycles.
         self._pending_expr.pop(job, None)
 
-        # When a job finishes, we no longer need to track in memory for CSE.
+        # Once a job has been recorded to the cache, we don't need to keep around
+        # the job, since if we see it again, we'll simply download the result.
         self._pending_jobs.pop(job.eval_hash, None)
 
     def _record_job_tags(self, job: Job) -> None:
         """
         Record tags acquired during Job.
         """
+        assert job.task
         assert job.execution
 
         # Record value tags.
         for value_hash, tags in job.value_tags:
-            self.backend.record_tags(
-                entity_type=TagEntityType.Value, entity_id=value_hash, tags=tags
-            )
+            self.backend.record_tags(entity_type=TagEntity.Value, entity_id=value_hash, tags=tags)
 
         # Record Job tags.
         job_tags = job.get_option("tags", []) + job.job_tags
         if job_tags:
-            self.backend.record_tags(
-                entity_type=TagEntityType.Job, entity_id=job.id, tags=job_tags
-            )
+            self.backend.record_tags(entity_type=TagEntity.Job, entity_id=job.id, tags=job_tags)
 
         # Record Execution tags.
         if job.execution_tags:
             self.backend.record_tags(
-                entity_type=TagEntityType.Execution,
+                entity_type=TagEntity.Execution,
                 entity_id=job.execution.id,
                 tags=job.execution_tags,
             )
@@ -1514,7 +1640,7 @@ class Scheduler:
         task_tags = job.task.get_task_option("tags")
         if task_tags:
             self.backend.record_tags(
-                entity_type=TagEntityType.Task, entity_id=job.task.hash, tags=task_tags
+                entity_type=TagEntity.Task, entity_id=job.task.hash, tags=task_tags
             )
 
     def reject_job(
@@ -1526,14 +1652,16 @@ class Scheduler:
     ) -> None:
         """
         Reject a :class:`Job` that has failed with an `error`.
+
+        A primary Executor lifecycle method, hence is thread safe.
         """
         self.events_queue.put(
-            lambda: self._reject_job(
+            lambda: self._reject_job_main_thread(
                 job, error, error_traceback=error_traceback, job_tags=job_tags
             )
         )
 
-    def _reject_job(
+    def _reject_job_main_thread(
         self,
         job: Optional[Job],
         error: Any,
@@ -1546,6 +1674,8 @@ class Scheduler:
         This function runs on the main scheduler thread. Use
         :method:`Scheduler.reject_job()` if calling from another thread.
         """
+        # Ensure we are on main scheduler thread.
+        assert self.thread_id == threading.get_ident()
 
         # Attach the traceback to the error so the redun traceback is always available on the error
         # itself. In some cases (like AWS batch), the error will be constructed by unpickling a
@@ -1554,6 +1684,7 @@ class Scheduler:
         error.redun_traceback = error_traceback
 
         if job:
+            assert job.task
             assert job.args_hash
             assert job.eval_args
 
@@ -1567,8 +1698,10 @@ class Scheduler:
                 )
             )
 
-            self._release_resources(job.get_limits())
-            self._check_jobs_pending_limits()
+            # Cached jobs won't have used any resources.
+            if not job.was_cached:
+                self._release_resources(job.get_limits())
+                self._check_jobs_pending_limits()
 
             if self.use_task_traceback:
                 self._set_task_traceback(job, error, error_traceback=error_traceback)
@@ -1696,9 +1829,7 @@ class Scheduler:
 
         return hash_eval(self.type_registry, task.hash, args2, kwargs2)
 
-    def get_cache(
-        self, job: Job, eval_hash: str, task_hash: str, args_hash: str, check_valid: str = "full"
-    ) -> Tuple[Any, bool, Optional[str]]:
+    def _get_cache(self, job: Job) -> Tuple[Any, bool, Optional[str]]:
         """
         Attempt to find a cached value for an evaluation (`eval_hash`).
 
@@ -1706,35 +1837,61 @@ class Scheduler:
         -------
         (result, is_cached, call_hash): Tuple[Any, bool, Optional[str]]
            is_cached is True if `result` was in the cache.
+           Note that the result may be an `ErrorValue`, which the caller must unwrap.
         """
-        assert check_valid in {"full", "shallow"}
+        check_valid = job.get_option("check_valid", CacheCheckValid.FULL, as_type=CacheCheckValid)
 
-        if check_valid == "full":
-            result, is_cached = self.backend.get_eval_cache(eval_hash)
-            call_hash: Optional[str] = None
+        # HACK: This is a workaround introduced by DE-4761. See the ticket for
+        # notes on how script_task could be redesigned to remove the need for
+        # this special-casing.
+        is_script_task = job.task.fullname == "redun.script_task"
 
-        else:
-            # See if the full call is cached and valid.
-            call_hash = self.backend.get_call_hash(task_hash, args_hash)
-            if call_hash:
-                try:
-                    result, is_cached = self.backend.get_cache(call_hash)
-                except RedunTypeError:
-                    # Type no longer exists, we can't use shallow checking.
-                    result, is_cached = self.backend.get_eval_cache(eval_hash)
-            else:
-                result, is_cached = self.backend.get_eval_cache(eval_hash)
+        # Determine whether we should use cache.
+        cache_scope = (
+            CacheScope.CSE
+            if is_script_task
+            else job.get_option("cache_scope", CacheScope.BACKEND, as_type=CacheScope)
+        )
 
-        if isinstance(result, ErrorValue):
-            # Errors can't be used from the cache.
-            result, is_cached = None, False
+        allowed_cache_results = job.get_option("allowed_cache_results", None)
+        assert allowed_cache_results is None or isinstance(allowed_cache_results, set), (
+            "Should have gotten a set for option `allowed_cache_results`, got"
+            f" {allowed_cache_results} instead."
+        )
 
-        if self.dryrun and not is_cached:
-            # In dryrun mode, log reason for cache miss.
-            self._log_cache_miss(job, task_hash, args_hash)
+        # Check CSE and cache.
+        assert job.task
+        assert job.args_hash
+        assert job.eval_hash
+        assert job.execution
+        result, call_hash, cache_type = self.backend.check_cache(
+            job.task.hash,
+            job.args_hash,
+            job.eval_hash,
+            job.execution.id,
+            self.task_registry.task_hashes,
+            cache_scope,
+            check_valid,
+            allowed_cache_results,
+        )
 
-        if self.is_valid_value(result):
-            return result, is_cached, call_hash
+        if cache_type == CacheResult.CSE:
+            # If this is a CSE hit, we can use the result immediately. The result may be
+            # an error wrapped as a `ErrorValue`, but we can still use it.
+            return result, True, call_hash
+        elif isinstance(result, ErrorValue):
+            # Errors can't be used from the backend cache.
+            return None, False, None
+        elif cache_type == CacheResult.MISS:
+            if self._dryrun:
+                # In dryrun mode, log reason for cache miss.
+                self._log_cache_miss(job, job.task.hash, job.args_hash)
+            return None, False, None
+
+        elif self._is_valid_value(result):
+            # Result must still be valid to use.
+            return result, True, call_hash
+
         else:
             self.log(
                 "{action} Job {job}:  Cached result is no longer valid "
@@ -1742,7 +1899,7 @@ class Scheduler:
                     action="Miss".ljust(JOB_ACTION_WIDTH),
                     job=job.id[:8],
                     result=trim_string(repr(result)),
-                    eval_hash=eval_hash[:8],
+                    eval_hash=job.eval_hash[:8],
                 )
             )
             return None, False, None
@@ -1811,10 +1968,12 @@ class Scheduler:
     def set_cache(self, eval_hash: str, task_hash: str, args_hash: str, value: Any) -> None:
         """
         Set the cache for an evaluation (`eval_hash`) with result `value`.
+
+        This method should only be used by the scheduler or `SchedulerTask`s
         """
         self.backend.set_eval_cache(eval_hash, task_hash, args_hash, value, value_hash=None)
 
-    def is_valid_value(self, value: Any) -> bool:
+    def _is_valid_value(self, value: Any) -> bool:
         """
         Returns True if the value is valid.
 
@@ -1822,7 +1981,7 @@ class Scheduler:
         """
         return self.type_registry.is_valid_nested(value)
 
-    def perform_rollbacks(self, args: Tuple, kwargs: dict) -> None:
+    def _perform_rollbacks(self, args: Tuple, kwargs: dict) -> None:
         """
         Perform any Handle rollbacks needed for the given Task arguments.
         """
@@ -1830,7 +1989,7 @@ class Scheduler:
             if isinstance(value, Handle):
                 self.backend.rollback_handle(value)
 
-    def preprocess_args(self, job: Job, args: Tuple, kwargs: dict) -> Any:
+    def _preprocess_args(self, job: Job, args: Tuple, kwargs: dict) -> Any:
         """
         Preprocess arguments for a Task before execution.
         """
@@ -1857,7 +2016,7 @@ class Scheduler:
 
         return map_nested_value(preprocess_value, (args, kwargs))
 
-    def postprocess_result(self, job: Job, result: Any, pre_call_hash: str) -> Any:
+    def _postprocess_result(self, job: Job, result: Any, pre_call_hash: str) -> Any:
         """
         Postprocess a result from a Task before caching.
         """
@@ -1868,7 +2027,7 @@ class Scheduler:
         def postprocess_value(value):
             value2 = self.type_registry.postprocess(value, postprocess_args)
 
-            if isinstance(value, Handle) and not self.dryrun:
+            if isinstance(value, Handle) and not self._dryrun:
                 # Handles accumulate state change from jobs that emit them.
                 assert value2 != value
                 self.backend.advance_handle([value], value2)
@@ -2031,6 +2190,18 @@ def catch(
         except KeyError as error:
             return recover2(error)
 
+    Implementation/behavior note: Usually, we don't cache errors, since this is rarely productive.
+    Also recall that we typically cache each round of evaluation separately, allowing
+    the scheduler to retrace the call graph and detect if any subtasks have changed
+    (i.e. hash change) or if any Values in the subworkflow are now invalid (e.g. File hash has
+    changed). To correctly cache a caught expression, we need to cache both the fact that
+    `expr` resolved to an `Exception`, then that the `recover_expr` produced a non-error result.
+    However, we only want to cache the exception if it is successfully handled, so if the
+    recovery re-raises the exception or issues another error, the error should not be cached.
+
+    In order to create this behavior, we have to implement custom caching behavior that delays
+    caching the error until we see that it has been successfully handled.
+
 
     Parameters
     ----------
@@ -2045,11 +2216,6 @@ def catch(
     eval_hash: str
     args_hash: str
     recover_expr: Any = None
-
-    # Note: In redun, we cache only one round of evaluation, `expr` and `recover_expr`,
-    # instead of the final result, `result`. This approach allows the scheduler
-    # to retrace the call graph and detect if any subtasks have changed (i.e. hash change)
-    # or if any Values in the subworkflow are now invalid (e.g. File hash has changed).
 
     def on_success(result: Result) -> Result:
         # Cache `expr` if catch is ultimately successful.
@@ -2083,9 +2249,21 @@ def catch(
     # Check cache.
     catch_args = (expr,) + catch_args
     eval_hash, args_hash = scheduler.get_eval_hash(catch, catch_args, {})
-    if scheduler.use_cache:
-        cached_expr, is_cached = scheduler.backend.get_eval_cache(eval_hash)
-        if is_cached:
+    # We haven't set an option on the catch task, so we just have to look for one at runtime.
+    cache_scope = CacheScope(sexpr.task_expr_options.get("cache_scope", CacheScope.BACKEND))
+    if scheduler._use_cache and cache_scope != CacheScope.NONE:
+        assert parent_job.execution
+        cached_expr, call_hash, cache_type = scheduler.backend.check_cache(
+            task_hash=catch.hash,
+            args_hash=args_hash,
+            eval_hash=eval_hash,
+            execution_id=parent_job.execution.id,
+            cache_scope=cache_scope,
+            check_valid=CacheCheckValid.FULL,
+            scheduler_task_hashes=scheduler.task_registry.task_hashes,
+            allowed_cache_results={CacheResult.SINGLE},
+        )
+        if cache_type != CacheResult.MISS:
             return scheduler.evaluate(cached_expr, parent_job=parent_job).catch(promise_catch)
 
     return scheduler.evaluate(expr, parent_job=parent_job).then(on_success, promise_catch)
@@ -2251,6 +2429,8 @@ def apply_tags(
     name="subrun_root_task",
     version="1",
     config_args=["config", "load_modules", "run_config"],
+    cache_scope=CacheScope.CSE,
+    check_valid=CacheCheckValid.SHALLOW,
 )
 def _subrun_root_task(
     expr: Any,
@@ -2262,6 +2442,26 @@ def _subrun_root_task(
     Launches a sub-scheduler and runs the provided expression by first "unwrapping" it.
     The evaluated result is returned within a dict alongside other sub-scheduler-related
     state to the caller.
+
+    This task is limited to execution cache scope because it is difficult for the caller to
+    be reactive to the details of the subrun. When retrieving a cache value for this task,
+    the parent scheduler only sees the final values, not the whole call tree, so it can only
+    perform shallow checking. Selecting execution scope means that validity checking is not
+    required. We also set shallow checking as a reminder of how it behaves.
+
+    In the case that there is no execution-scope cache hit, then the sub-scheduler has to
+    be started. However, the sub-scheduler is free to perform any cache logic it desires. It
+    has the complete context to be fully reactive, or not, as configured. So, if there is a
+    backend-scope cache hit available, the sub-scheduler may return almost instantly.
+
+    The parent scheduler may or may not have access to the code, which also makes full reactivity
+    difficult. It is a mild assumption that the code does not change during an execution.
+
+    There is one particular case we have not implemented, where the parent scheduler could bypass
+    the need to start the sub-scheduler. If 1) the user only wants shallow validity checking
+    and 2) the parent scheduler has all access all the code (to compute task hashes), then
+    the parent scheduler could correctly identify a backend-scope cache hit using information
+    stored from the prior call node. This is left to future work.
 
     Parameters
     ----------
@@ -2332,8 +2532,8 @@ def _subrun_root_task(
     subrun_result.update(
         {
             "run_config": {
-                "dryrun": sub_scheduler.dryrun,
-                "cache": sub_scheduler.use_cache,
+                "dryrun": sub_scheduler._dryrun,
+                "cache": sub_scheduler._use_cache,
             },
             "status": sub_scheduler.get_job_status_report(),
         }
@@ -2341,7 +2541,12 @@ def _subrun_root_task(
     return subrun_result
 
 
-@scheduler_task(namespace="redun", version="1")
+@scheduler_task(
+    namespace="redun",
+    version="1",
+    cache_scope=CacheScope.BACKEND,
+    check_valid=CacheCheckValid.SHALLOW,
+)
 def subrun(
     scheduler: Scheduler,
     parent_job: Job,
@@ -2374,6 +2579,17 @@ def subrun(
     be launched on local tasks defined in workflow1.py but subrun(executor="batch) is invoked on
     taskX defined in workflow2.py.  In this case, the user must ensure workflow2.py is copied to
     the batch node by placing it within the same directory tree as workflow1.py.
+
+    The cache behavior of `subrun` is customized. Since recursive reductions are supposed to
+    happen inside the subrun, we can't accept a single reduction. If the user wants full
+    validity checking, that requires using single reductions, which means we have to actually
+    start the sub-scheduler and let it handle the caching logic. In contrast, if a CSE or
+    ultimate reduction is available, then we won't need to start the sub-scheduler.
+
+    Most scheduler tasks don't accept the cache options `cache_scope` and `check_valid`,
+    but `subrun` does, so we can forward them to the underlying `Task` that implements the subrun.
+    Note that we also set the default `check_valid` value to be `CacheCheckValid.SHALLOW`, unlike
+    its usual value.
 
     Parameters
     ----------
@@ -2420,12 +2636,25 @@ def subrun(
 
     # Prepare child task call for subrun.
     run_config: Dict[str, Any] = {
-        "dryrun": scheduler.dryrun,
-        "cache": scheduler.use_cache,
+        "dryrun": scheduler._dryrun,
+        "cache": scheduler._use_cache,
     }
     if not new_execution:
         run_config["parent_job_id"] = parent_job.id
-    subrun_root_task_expr = _subrun_root_task.options(executor=executor, **task_options)(
+
+    # Extract the cache options.
+    all_options: Dict[str, Any] = {
+        "cache_scope": CacheScope(
+            sexpr.task_expr_options.get("cache_scope", subrun.get_task_option("cache_scope"))
+        ),
+        "check_valid": CacheCheckValid(
+            sexpr.task_expr_options.get("check_valid", subrun.get_task_option("check_valid"))
+        ),
+        "allowed_cache_results": {CacheResult.CSE, CacheResult.ULTIMATE},
+    }
+    all_options.update(task_options)
+
+    subrun_root_task_expr = _subrun_root_task.options(executor=executor, **all_options)(
         expr=quote(expr),
         config=config,
         load_modules=sorted(load_modules),

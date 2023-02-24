@@ -52,7 +52,7 @@ A string that specifies the location of a user-defined function for setting up t
 - `{file_or_module}` should be a filename relative to the `redun.ini` file (e.g. `../workflow.py`), or a python module using dot-syntax (e.g. `workflow_lib.utils.scheduler`).
 - `{function_name}` should the name of a function, typically `setup_scheduler`.
 
-The user function `setup_scheduler()` should take as its first argument `config` (see [Config](redun/redun.md#redun.config.Config)) and it should return an instantiated `scheduler` (see [Scheduler](redun/redun.md#redun.scheduler.Scheduler)).
+The user function `setup_scheduler()` should take as its first argument `config` (see [Config](redun.config.Config)) and it should return an instantiated `scheduler` (see [Scheduler](redun.scheduler.Scheduler)).
 
 ```py
 from redun.config import Config
@@ -370,7 +370,7 @@ If not none, use a multi-node job and set the number of workers.
 
 #### AWS Glue executor
 
-The [AWS Glue executor](executors.md#aws-glue-executor) (`type = aws_glue`) executes tasks on the AWS Glue compute service.
+The [AWS Glue executor](executors.md#aws-glue-spark-executor) (`type = aws_glue`) executes tasks on the AWS Glue compute service.
 
 ##### `s3_scratch`
 

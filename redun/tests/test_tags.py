@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from redun import Scheduler, apply_tags, task
-from redun.backends.base import TagEntityType
+from redun.backends.base import TagEntity
 from redun.backends.db import Execution, Job, RedunBackendDb, Tag, Task, Value
 from redun.tags import (
     ANY_VALUE,
@@ -213,7 +213,7 @@ def test_task_tags(scheduler: Scheduler, session: Session) -> None:
     task_row.tags[0].key == "env"
 
     # Job tags are defined at call time.
-    job_tag = session.query(Tag).filter(Tag.entity_type == TagEntityType.Job).one()
+    job_tag = session.query(Tag).filter(Tag.entity_type == TagEntity.Job).one()
     assert job_tag.key == "user"
     assert job_tag.value == "alice"
     assert isinstance(job_tag.entity, Job)
@@ -265,7 +265,7 @@ def test_execution_tags(scheduler: Scheduler, session: Session) -> None:
     expected_tag_keys = {"project", "git_commit", "git_origin_url"}
     for tag in tags:
         assert tag.entity_id == execution.id
-        assert tag.entity_type == TagEntityType.Execution
+        assert tag.entity_type == TagEntity.Execution
         assert tag.key in expected_tag_keys
         if tag.key == "project":
             assert tag.value == "acme"
@@ -280,13 +280,11 @@ def test_tag_edit(backend: RedunBackendDb, session: Session) -> None:
     entity_id = backend.record_value(entity)
 
     # Tag the Value with env=dev.
-    [(tag_hash, _, _, _)] = backend.record_tags(TagEntityType.Value, entity_id, [("env", "dev")])
+    [(tag_hash, _, _, _)] = backend.record_tags(TagEntity.Value, entity_id, [("env", "dev")])
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["dev"]}}
 
     # Update the tag with env=prod.
-    [tag2] = backend.record_tags(
-        TagEntityType.Value, entity_id, [("env", "prod")], parents=[tag_hash]
-    )
+    [tag2] = backend.record_tags(TagEntity.Value, entity_id, [("env", "prod")], parents=[tag_hash])
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["prod"]}}
 
     # Ensure TagEdit edges are recorded.
@@ -296,12 +294,12 @@ def test_tag_edit(backend: RedunBackendDb, session: Session) -> None:
 
     # Update the tag with env=prod2 and add tag user=alice.
     backend.record_tags(
-        TagEntityType.Value, entity_id, [("env", "prod2"), ("user", "alice")], update=True
+        TagEntity.Value, entity_id, [("env", "prod2"), ("user", "alice")], update=True
     )
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["prod2"], "user": ["alice"]}}
 
     # Rename the tag key.
-    backend.update_tags(TagEntityType.Value, entity_id, ["env"], [("environ", "production")])
+    backend.update_tags(TagEntity.Value, entity_id, ["env"], [("environ", "production")])
     assert backend.get_tags([entity_id]) == {
         entity_id: {"environ": ["production"], "user": ["alice"]}
     }
@@ -315,15 +313,15 @@ def test_tag_edit_idempotent(backend: RedunBackendDb, session: Session) -> None:
     entity = 10
     entity_id = backend.record_value(entity)
 
-    [(tag_hash, _, _, _)] = backend.record_tags(TagEntityType.Value, entity_id, [("key", "value")])
+    [(tag_hash, _, _, _)] = backend.record_tags(TagEntity.Value, entity_id, [("key", "value")])
     backend.record_tags(
-        TagEntityType.Value,
+        TagEntity.Value,
         entity_id,
         [("key", "value2")],
         parents=[tag_hash],
     )
     backend.record_tags(
-        TagEntityType.Value,
+        TagEntity.Value,
         entity_id,
         [("key", "value2")],
         parents=[tag_hash],
@@ -340,15 +338,15 @@ def test_tag_merge(backend: RedunBackendDb, session: Session) -> None:
     entity_id = backend.record_value(entity)
 
     # Tag the Value with env=dev.
-    backend.record_tags(TagEntityType.Value, entity_id, [("env", "dev")])
+    backend.record_tags(TagEntity.Value, entity_id, [("env", "dev")])
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["dev"]}}
 
     # In parallel, tag the Value with env=dev.
-    backend.record_tags(TagEntityType.Value, entity_id, [("env", "prod")])
+    backend.record_tags(TagEntity.Value, entity_id, [("env", "prod")])
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["dev", "prod"]}}
 
     # Merge tags.
-    backend.record_tags(TagEntityType.Value, entity_id, [("env", "prod")], update=True)
+    backend.record_tags(TagEntity.Value, entity_id, [("env", "prod")], update=True)
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["prod"]}}
 
 
@@ -361,7 +359,7 @@ def test_tag_delete(backend: RedunBackendDb, session: Session) -> None:
     entity_id = backend.record_value(entity)
 
     # Tag the Value with env=dev.
-    backend.record_tags(TagEntityType.Value, entity_id, [("env", "dev"), ("env", "prod")])
+    backend.record_tags(TagEntity.Value, entity_id, [("env", "dev"), ("env", "prod")])
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["dev", "prod"]}}
 
     # Delete tag.
@@ -378,7 +376,7 @@ def test_tag_new(backend: RedunBackendDb, session: Session) -> None:
     entity_id = backend.record_value(entity)
 
     # Tag the Value with env=dev.
-    backend.record_tags(TagEntityType.Value, entity_id, [("env", "dev"), ("env", "prod")])
+    backend.record_tags(TagEntity.Value, entity_id, [("env", "dev"), ("env", "prod")])
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["dev", "prod"]}}
 
     # Delete tag.
@@ -386,13 +384,11 @@ def test_tag_new(backend: RedunBackendDb, session: Session) -> None:
     assert backend.get_tags([entity_id])[entity_id] == {"env": ["prod"]}
 
     # Trying to make the same tag without parents, will not bring the tag back.
-    backend.record_tags(TagEntityType.Value, entity_id, [("env", "dev"), ("env", "prod")])
+    backend.record_tags(TagEntity.Value, entity_id, [("env", "dev"), ("env", "prod")])
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["prod"]}}
 
     # Using new=True, we will automatically create the tag as a leaf in the TagGraph.
-    backend.record_tags(
-        TagEntityType.Value, entity_id, [("env", "dev"), ("env", "prod")], new=True
-    )
+    backend.record_tags(TagEntity.Value, entity_id, [("env", "dev"), ("env", "prod")], new=True)
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["dev", "prod"]}}
 
     # Delete the tag again.
@@ -400,7 +396,5 @@ def test_tag_new(backend: RedunBackendDb, session: Session) -> None:
     assert backend.get_tags([entity_id])[entity_id] == {"env": ["prod"]}
 
     # Add tag back again.
-    backend.record_tags(
-        TagEntityType.Value, entity_id, [("env", "dev"), ("env", "prod")], new=True
-    )
+    backend.record_tags(TagEntity.Value, entity_id, [("env", "dev"), ("env", "prod")], new=True)
     assert backend.get_tags([entity_id]) == {entity_id: {"env": ["dev", "prod"]}}

@@ -78,7 +78,7 @@ def test_registry_value():
         def preprocess(self, preprocess_args):
             return Row(self.hash, self.x + 1)
 
-        def postprocess(self, preprocess_args):
+        def postprocess(self, postprocess_args):
             return Row(self.hash, self.x - 1)
 
         @classmethod
@@ -132,7 +132,7 @@ def test_registry_proxy_value():
         def preprocess(self, preprocess_args):
             return Row(self.instance.hash, self.instance.x + 1)
 
-        def postprocess(self, preprocess_args):
+        def postprocess(self, postprocess_args):
             return Row(self.instance.hash, self.instance.x - 1)
 
         @classmethod

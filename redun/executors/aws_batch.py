@@ -38,7 +38,7 @@ from redun.file import File
 from redun.job_array import JobArrayer
 from redun.scheduler import Job, Scheduler, Traceback
 from redun.scripting import get_task_command
-from redun.task import Task
+from redun.task import CacheScope, Task
 from redun.utils import json_cache_key, lru_cache_custom, merge_dicts, pickle_dump
 
 SUBMITTED = "SUBMITTED"
@@ -544,7 +544,7 @@ def submit_task(
         args,
         kwargs,
         # Suppress cache checking since output is discarded.
-        job_options={**job_options, "cache": False},
+        job_options={**job_options, "cache_scope": CacheScope.NONE},
         code_file=code_file,
         array_uuid=array_uuid,
         output_path="/dev/null",  # Let main command write to scratch file.
@@ -1207,11 +1207,11 @@ class AWSBatchExecutor(Executor):
 
         # Determine job options.
         task_options = self._get_job_options(job)
-        use_cache = task_options.get("cache", True)
+        cache_scope = CacheScope(task_options.get("cache_scope", CacheScope.BACKEND))
 
         # Determine if we can reunite with a previous Batch output or job.
         batch_job_id: Optional[str] = None
-        if use_cache and job.eval_hash in self.preexisting_batch_jobs:
+        if cache_scope == CacheScope.BACKEND and job.eval_hash in self.preexisting_batch_jobs:
             batch_job_id = self.preexisting_batch_jobs.pop(job.eval_hash)
 
             # Make sure Batch API still has a status on this job.

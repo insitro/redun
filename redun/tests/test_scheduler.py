@@ -1,5 +1,6 @@
 import dataclasses
 import os
+import time
 from traceback import FrameSummary
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from unittest.mock import Mock, patch
@@ -25,7 +26,7 @@ from redun.scheduler import (
     cond,
     scheduler_task,
 )
-from redun.task import PartialTask, SchedulerTask
+from redun.task import CacheScope, PartialTask, SchedulerTask
 from redun.tests.utils import assert_match_lines, use_tempdir
 from redun.utils import map_nested_value
 from redun.value import Value, get_type_registry
@@ -620,11 +621,13 @@ def test_no_cache_task(scheduler: Scheduler) -> None:
     """
     task_calls = []
 
-    @task(cache=False)
+    # Try out the legacy option and all three
+    @task(cache_scope=CacheScope.NONE)
     def task1():
         task_calls.append("task1")
         return 10
 
+    task_calls = []
     scheduler.run(task1())
     assert task_calls == ["task1"]
 
@@ -650,6 +653,161 @@ def test_no_cache(scheduler: Scheduler) -> None:
     # Running the task again will execute again because we have disabled caching.
     scheduler.run(task1(), cache=False)
     assert task_calls == ["task1", "task1"]
+
+
+def test_cse_scopes(scheduler: Scheduler) -> None:
+    """
+    Scheduler should trigger CSE against both pending and completed jobs, depending upon the
+    requested scope.
+    """
+    task_calls = []
+
+    @task
+    def noop(any: Any) -> None:
+        # Use this no-op to ensure all the expressions are different.
+        return
+
+    @task(cache_scope=CacheScope.CSE)
+    def task1(any):
+        task_calls.append("task1")
+        return 10
+
+    @task(cache_scope=CacheScope.NONE)
+    def task2():
+        return task1(noop(3))
+
+    @task(cache_scope=CacheScope.NONE)
+    def task3():
+        return task1.options(cache_scope=CacheScope.NONE)(noop(4))
+
+    @task(cache_scope=CacheScope.CSE)
+    def task_fail(any):
+        task_calls.append("task_fail")
+        raise RuntimeError("Fail")
+
+    @task(cache_scope=CacheScope.NONE)
+    def task_wrapped_fail():
+        return task_fail(noop(2))
+
+    # Spy on the call to `collapse`, as a way to distinguish between a cache hit from the
+    # backend and from a pending job.
+    with patch.object(Job, "collapse", side_effect=Job.collapse, autospec=True) as collapse_mock:
+        # The second call will trigger CSE against the first job while it is still pending
+        task_calls = []
+        scheduler.run([task1(noop(1)), task1(noop(2))])
+        assert collapse_mock.call_count == 1
+        assert task_calls == ["task1"]
+
+        # Verify there is an entry in the backend, so that our later tests demonstrate that
+        # it's not being retrieved.
+        task_calls = []
+        scheduler.run([task1.options(cache_scope=CacheScope.BACKEND)])
+        assert task_calls == []
+
+        # Running the task again will execute once more, because we can't use the one from the
+        # backend.
+        collapse_mock.reset_mock()
+        task_calls = []
+        scheduler.run([task1(noop(1)), task1(noop(2))])
+        assert collapse_mock.call_count == 1
+        assert task_calls == ["task1"]
+
+        # Ensure that CSE from pending jobs honors the cache setting
+        collapse_mock.reset_mock()
+        task_calls = []
+        scheduler.run([task1(noop(1)), task1.options(cache_scope=CacheScope.NONE)(noop(2))])
+        assert collapse_mock.call_count == 0
+        assert task_calls == ["task1", "task1"]
+
+        # The second call is delayed, so it will come from the backend, not the pending cache.
+        collapse_mock.reset_mock()
+        task_calls = []
+        scheduler.run([task1(noop(1)), task2()])
+        assert collapse_mock.call_count == 0
+        assert task_calls == ["task1"]
+
+        # Ensure that CSE from the backend also honors the cache setting
+        collapse_mock.reset_mock()
+        task_calls = []
+        scheduler.run([task1(noop(1)), task3()])
+        assert collapse_mock.call_count == 0
+        assert task_calls == ["task1", "task1"]
+
+        # Combine the two styles
+        collapse_mock.reset_mock()
+        task_calls = []
+        scheduler.run([task1(noop(1)), task1(noop(2)), task2()])
+        assert collapse_mock.call_count == 1
+        assert task_calls == ["task1"]
+
+        # Check that errors are replayed from pending CSE
+        collapse_mock.reset_mock()
+        task_calls = []
+        with pytest.raises(RuntimeError, match="Fail"):
+            scheduler.run([task_fail(noop(1)), task_fail(noop(2))])
+        assert collapse_mock.call_count == 1
+        assert task_calls == ["task_fail"]
+
+        # Or from remote CSE.
+        collapse_mock.reset_mock()
+        task_calls = []
+        with pytest.raises(RuntimeError, match="Fail"):
+            scheduler.run([task_fail(noop(1)), task_wrapped_fail()])
+        assert collapse_mock.call_count == 0
+        assert task_calls == ["task_fail"]
+
+
+class InvalidValue(Value):
+    """A value that is never valid, hence can't be cached."""
+
+    def is_valid(self) -> bool:
+        return False
+
+    def __setstate__(self, state):
+        pass
+
+    def __getstate__(self):
+        return {}
+
+
+def test_cse_no_validity(scheduler: Scheduler) -> None:
+    """
+    Validity of values is not checked upon CSE.
+    """
+    task_calls = []
+
+    @task
+    def noop():
+        # Ensure we don't get any expression cycles.
+        return None
+
+    @task()
+    def task1(any=None):
+        task_calls.append("task1")
+        return InvalidValue()
+
+    @task(cache_scope=CacheScope.NONE)
+    def task2():
+        return task1()
+
+    # Seed the cache
+    scheduler.run([task1()])
+    assert task_calls == ["task1"]
+
+    # We can't get a hit, because it's not valid.
+    task_calls = []
+    scheduler.run([task1()])
+    assert task_calls == ["task1"]
+
+    # But if we get a CSE hit, we don't check validity, either from a pending job
+    task_calls = []
+    scheduler.run([task1(), task1(any=noop())])
+    assert task_calls == ["task1"]
+
+    # or from the backend.
+    task_calls = []
+    scheduler.run([task1(), task2()])
+    assert task_calls == ["task1"]
 
 
 def test_job_options() -> None:
@@ -1222,9 +1380,19 @@ def test_catch_cache(scheduler: Scheduler) -> None:
     assert scheduler.run(catch(faulty(), ZeroDivisionError, recover)) == 1.0
     assert calls == ["faulty"]
 
-    # Caching should not be used if turned off.
+    # Caching should not be used if turned off at the scheduler level
     assert scheduler.run(catch(faulty(), ZeroDivisionError, recover), cache=False) == 1.0
     assert calls == ["faulty", "faulty"]
+
+    # Caching should not be used if turned off at the task level.
+    assert (
+        scheduler.run(
+            catch(faulty.options(cache_scope=CacheScope.NONE)(), ZeroDivisionError, recover),
+            cache=False,
+        )
+        == 1.0
+    )
+    assert calls == ["faulty", "faulty", "faulty"]
 
     # Reraised catch should not cache.
     calls = []
@@ -1573,14 +1741,35 @@ def test_common_expression() -> None:
 
     @task
     def boom(x: int) -> int:
+        time.sleep(2)  # Ensure there's enough time for the pending job hit.
         raise ValueError("BOOM!")
 
-    # There should be only one job for add.
+    @task()
+    def noop(any):
+        """No-op used to ensure expressions are different."""
+        return 1
+
+    @task
+    def wrapped_boom():
+        return boom(noop(2))
+
+    # There should be two jobs, although one will be cached
     scheduler = Scheduler()
     assert isinstance(scheduler.backend, RedunBackendDb)
     assert scheduler.backend.session
     assert scheduler.run([add(1, 2), add(1, 2)]) == [3, 3]
-    assert scheduler.backend.session.query(JobDb).filter(JobDb.task_hash == add.hash).count() == 1
+    assert (
+        scheduler.backend.session.query(JobDb)
+        .filter(JobDb.task_hash == add.hash, JobDb.cached == True)  # noqa: E712
+        .count()
+        == 0
+    )
+    assert (
+        scheduler.backend.session.query(JobDb)
+        .filter(JobDb.task_hash == add.hash, JobDb.cached == False)  # noqa: E712
+        .count()
+        == 1
+    )
 
     # We should do CSE after argument expressions are evaluated, such as `id(2)`.
     scheduler = Scheduler()
@@ -1588,23 +1777,46 @@ def test_common_expression() -> None:
     assert scheduler.backend.session
 
     # Cache id(2) so that we can force `add(1, id(2))` and `add(1, 2)` at the same time
-    # and excercise the CSE logic on two different expressions.
+    # and exercise the CSE logic on two different expressions.
     assert scheduler.run(id(2)) == 2
     assert scheduler.run([add(1, id(2)), add(1, 2)]) == [3, 3]
-    assert scheduler.backend.session.query(JobDb).filter(JobDb.task_hash == add.hash).count() == 1
+    assert (
+        scheduler.backend.session.query(JobDb)
+        .filter(JobDb.task_hash == add.hash, JobDb.cached == True)  # noqa: E712
+        .count()
+        == 1
+    )
+    assert (
+        scheduler.backend.session.query(JobDb)
+        .filter(JobDb.task_hash == add.hash, JobDb.cached == False)  # noqa: E712
+        .count()
+        == 1
+    )
 
     # Expressions that have been collapsed by CSE should also propagate errors.
     scheduler = Scheduler()
     assert isinstance(scheduler.backend, RedunBackendDb)
     assert scheduler.backend.session
     with pytest.raises(ValueError, match="BOOM"):
-        scheduler.run([boom(1), boom(1)])
-    assert scheduler.backend.session.query(JobDb).filter(JobDb.task_hash == boom.hash).count() == 1
+        # This combination produces a pending CSE hit
+        scheduler.run([boom(noop(1)), boom(noop(2))])
+    assert (
+        scheduler.backend.session.query(JobDb)
+        .filter(JobDb.task_hash == boom.hash, JobDb.cached == True)  # noqa: E712
+        .count()
+        == 1
+    )
+    assert (
+        scheduler.backend.session.query(JobDb)
+        .filter(JobDb.task_hash == boom.hash, JobDb.cached == False)  # noqa: E712
+        .count()
+        == 1
+    )
 
 
-def test_cycle_expression() -> None:
+def test_expressions_evaluate_once() -> None:
     """
-    Scheduler should not double evaluate cycles in the Expression Graph.
+    Scheduler should not evaluate expression objects more than once.
     """
     calls = []
 
@@ -1615,62 +1827,73 @@ def test_cycle_expression() -> None:
         promise.do_resolve(x)
         return promise
 
-    # We should call echo only once.
+    # We should call echo only once, even though scheduler tasks aren't cached.
     scheduler = Scheduler()
     x = echo(1)
     y = x + x
     assert scheduler.run(y) == 2
     assert calls == ["id"]
 
+    # Expression cycle checking will find these as being the same
+    calls = []
+    y = echo(1) + echo(1)
+    assert scheduler.run(y) == 2
+    assert calls == ["id"]
 
-def test_cycle_expression_cache(scheduler: Scheduler, session: Session) -> None:
+
+def test_expressions_evaluate_once_cache(scheduler: Scheduler, session: Session) -> None:
     """
-    Detecting expression cycles should work with cached expressions.
+    Detecting repeated expression objects should work with cached expressions.
     """
 
-    @task
+    task1_value = 0
+
+    @task(namespace="redun.tests.test_scheduler", cache_scope="NONE")
     def task1():
-        return 10
+        nonlocal task1_value
+        task1_value += 10
+        return task1_value
 
     @task
     def add(x, y):
         return x + y
+
+    calls = 0
 
     @task
     def main():
-        x = task1()
+        nonlocal calls
+        calls += 1
 
-        # Use x twice so that we have a dimond in the Expression graph.
+        x = task1()
+        # Reuse the expression object.
         return {
             "a": add(x, 1),
             "b": add(x, 2),
+            "c": x,
+            "d": task1(),  # This is not a reuse, and should invoke another call.
         }
 
-    original_collapse = Job.collapse
+    # a-c all use the first call, and d gets the second one.
+    result = scheduler.run(main())
+    assert result["a"] == 11
+    assert result["b"] == 12
+    assert result["c"] == 10
+    assert result["d"] == 10
+    assert calls == 1
+    assert task1_value == 10
 
-    def collapse(self, other_job):
-        nonlocal calls
-        calls += 1
-        return original_collapse(self, other_job)
-
+    # If we run it again, `main` will get cached, returning an expression. Within that expression,
+    # "a"-"c" share the expression for the nested call to `task1`, hence those get deduplicated.
+    # However, "d" is a new expression and is not deduplicated.
     calls = 0
-    with patch.object(Job, "collapse", collapse):
-        assert scheduler.run(main()) == {"a": 11, "b": 12}
-
-    # We should not create extra Jobs needing collapsing.
-    assert calls == 0
-
-    # Update a task in the workflow.
-    @task(version="1")  # type: ignore[no-redef]
-    def add(x, y):
-        return x + y
-
-    # Even when using an Expression from the cache, we should avoid needing to use Job collapsing.
-    calls = 0
-    with patch.object(Job, "collapse", collapse):
-        assert scheduler.run(main()) == {"a": 11, "b": 12}
-
-    assert calls == 0
+    result2 = scheduler.run(main())
+    assert calls == 0  # Check that main was cached
+    assert result2["a"] == 21
+    assert result2["b"] == 22
+    assert result2["c"] == 20
+    assert result2["d"] == 20
+    assert task1_value == 20
 
 
 def test_extend_run(scheduler: Scheduler, session: Session) -> None:
