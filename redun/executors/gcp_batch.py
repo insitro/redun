@@ -244,8 +244,8 @@ class GCPBatchExecutor(Executor):
 
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
-        project = task_options.pop("project", self.image)
-        region = task_options.pop("region", self.image)
+        project = task_options.pop("project", self.project)
+        region = task_options.pop("region", self.region)
 
         # Submit a new Batch job.
         gcp_job = None
