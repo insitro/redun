@@ -24,9 +24,11 @@ from redun.executors.aws_batch import (
     SUCCEEDED,
     AWSBatchExecutor,
     batch_submit,
+    equiv_job_def,
     get_batch_job_name,
     get_hash_from_job_name,
     get_job_definition,
+    get_job_details,
     get_job_log_stream,
     get_or_create_job_definition,
     iter_batch_job_log_lines,
@@ -2374,3 +2376,36 @@ def test_get_log_stream(aws_describe_jobs_mock) -> None:
     assert aws_describe_jobs_mock.call_args == unittest.mock.call(
         ["multi_node_id#0"], aws_region=aws_region
     )
+
+
+def test_equiv_job_def() -> None:
+    """Check our equality testing for job definitions."""
+
+    basic_job = get_job_details(image="some_image", role="some_role")
+    # This is derived from a real query for a job description from batch, lightly redacted.
+    # It has lots of keys we don't set, but shouldn't cause errors.
+    existing_job = {
+        "jobDefinitionName": "jobDefinitionName",
+        "jobDefinitionArn": "jobDefinitionArn",
+        "revision": 12345,
+        "status": "ACTIVE",
+        "type": "container",
+        "parameters": {},
+        "containerProperties": {
+            "image": "some_image",
+            "vcpus": 1,
+            "memory": 4,
+            "command": ["ls"],
+            "jobRoleArn": "some_role",
+            "volumes": [],
+            "environment": [],
+            "mountPoints": [],
+            "privileged": False,
+            "ulimits": [],
+            "resourceRequirements": [],
+            "secrets": [],
+        },
+        "tags": {},
+    }
+
+    assert equiv_job_def(basic_job, existing_job)

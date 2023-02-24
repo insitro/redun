@@ -231,7 +231,7 @@ def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
         """Overwrite the resource properties with redactions."""
         result = copy.deepcopy(job_def)
 
-        # Ignore job definition name.
+        # Ignore some fields.
         result.pop("jobDefinitionName", None)
 
         result.setdefault("containerProperties", {}).update(no_resource_container_properties)
@@ -245,7 +245,18 @@ def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
     # Limit equality to the keys of job_def1.
     job_def1 = sanitize_job_def(job_def1)
     job_def2 = sanitize_job_def(job_def2)
-    return all(job_def1[key] == job_def2[key] for key in job_def1.keys())
+
+    def dict_eq_lhs_keys(lhs: Dict, rhs: Dict) -> bool:
+        """Recursively check that the lhs is a subset of the rhs - Batch may return more keys
+        than we set, usually to empty values, but we don't care."""
+
+        return all(
+            lhs[key] == rhs[key]
+            or (isinstance(lhs[key], dict) and dict_eq_lhs_keys(lhs[key], rhs[key]))
+            for key in lhs.keys()
+        )
+
+    return dict_eq_lhs_keys(job_def1, job_def2)
 
 
 def get_job_def_revision(job_def_name: str) -> int:
