@@ -5,7 +5,7 @@ from redun import task
 redun_namespace = "redun.examples.gcp_batch"
 
 
-@task(executor="gcp_batch", memory=64)
+@task(executor="gcp_batch")
 def hello_world(greet: str) -> str:
 
     batch_task_index = os.getenv("BATCH_TASK_INDEX")

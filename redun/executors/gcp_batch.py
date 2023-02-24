@@ -13,6 +13,7 @@ from redun.executors import gcp_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
 from redun.executors.command import get_oneshot_command, get_script_task_command
+from redun.executors.docker import DockerExecutor, get_docker_executor_config
 from redun.executors.scratch import (
     SCRATCH_OUTPUT,
     get_job_scratch_dir,
@@ -27,6 +28,8 @@ from redun.scripting import get_task_command
 
 REDUN_HASH_LABEL_KEY = "redun_hash"
 REDUN_JOB_TYPE_LABEL_KEY = "redun_job_type"
+
+DEBUG_SCRATCH = "scratch"
 
 
 @register_executor("gcp_batch")
@@ -47,7 +50,13 @@ class GCPBatchExecutor(Executor):
 
         self.debug = config.getboolean("debug", fallback=False)
 
+        # Use DockerExecutor for local debug mode.
+        docker_config = get_docker_executor_config(config)
+        docker_config["scratch"] = config.get("debug_scratch", fallback=DEBUG_SCRATCH)
+        self._docker_executor = DockerExecutor(name + "_debug", scheduler, config=docker_config)
+
         self.gcp_client = gcp_utils.get_gcp_client()
+
         # Required config.
         self.project = config["project"]
         self.region = config["region"]
@@ -81,6 +90,16 @@ class GCPBatchExecutor(Executor):
         if config.get("labels"):
             self.default_task_options["labels"] = json.loads(config.get("labels"))
 
+    def set_scheduler(self, scheduler: Scheduler) -> None:
+        super().set_scheduler(scheduler)
+        self._docker_executor.set_scheduler(scheduler)
+
+    def _is_debug_job(self, job: RedunJob) -> bool:
+        """
+        Returns True if job should be sent to debugging DockerExecutor.
+        """
+        return self.debug or job.get_option("debug", False)
+
     def gather_inflight_jobs(self) -> None:
         batch_jobs = gcp_utils.list_jobs(
             client=self.gcp_client, project_id=self.project, region=self.region
@@ -110,7 +129,10 @@ class GCPBatchExecutor(Executor):
         assert job.task
         assert not job.task.script
 
-        self._submit(job)
+        if self._is_debug_job(job):
+            return self._docker_executor.submit(job)
+        else:
+            self._submit(job)
 
     def submit_script(self, job: RedunJob) -> None:
         """
@@ -119,7 +141,10 @@ class GCPBatchExecutor(Executor):
         assert job.task
         assert job.task.script
 
-        self._submit(job)
+        if self._is_debug_job(job):
+            return self._docker_executor.submit_script(job)
+        else:
+            self._submit(job)
 
     def _submit(self, job: RedunJob) -> None:
         """
@@ -201,10 +226,6 @@ class GCPBatchExecutor(Executor):
 
         task_options["labels"] = labels
 
-        # Clean up task_options
-        task_options.pop("executor")
-        task_options.pop("cache")
-
         return task_options
 
     def _submit_single_job(self, job: RedunJob) -> None:
@@ -222,6 +243,9 @@ class GCPBatchExecutor(Executor):
         args, kwargs = job.args
 
         task_options = self._get_job_options(job)
+        image = task_options.pop("image", self.image)
+        project = task_options.pop("project", self.image)
+        region = task_options.pop("region", self.image)
 
         # Submit a new Batch job.
         gcp_job = None
@@ -241,9 +265,9 @@ class GCPBatchExecutor(Executor):
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
                 job_name=f"redun-{job.id}",
-                project=self.project,
-                region=self.region,
-                image=self.image,
+                project=project,
+                region=region,
+                image=image,
                 commands=command,
                 gcs_bucket=self.gcs_scratch_prefix,
                 **task_options,
@@ -256,11 +280,13 @@ class GCPBatchExecutor(Executor):
                 task_command,
                 exit_command="exit 1",
             )
+            # GCP Batch takes script as a string and requires quoting of -c argument
+            script_command[-1] = f'"{script_command[-1]}"'
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
                 job_name=f"redun-{job.id}",
-                project=self.project,
-                region=self.region,
+                project=project,
+                region=region,
                 script=" ".join(script_command),
                 gcs_bucket=self.gcs_scratch_prefix,
                 **task_options,
@@ -296,6 +322,8 @@ class GCPBatchExecutor(Executor):
         Stop Executor and monitoring thread.
         """
         self.is_running = False
+
+        self._docker_executor.stop()
 
         # Stop monitor thread.
         if (
@@ -342,35 +370,33 @@ class GCPBatchExecutor(Executor):
 
     def _process_job_status(self, job: BatchJob) -> None:
         assert self._scheduler
-        match job.status.state:
-            case JobStatus.State.STATE_UNSPECIFIED:
-                return
-            case JobStatus.State.QUEUED:
-                return
-            case JobStatus.State.SCHEDULED:
-                return
-            case JobStatus.State.RUNNING:
-                return
-            case JobStatus.State.SUCCEEDED:
-                redun_job = self.pending_batch_jobs.pop(job.name)
-                result, exists = parse_job_result(self.gcs_scratch_prefix, redun_job)
-                if exists:
-                    self._scheduler.done_job(redun_job, result)
-                else:
-                    # This can happen if job ended in an inconsistent state.
-                    self._scheduler.reject_job(
-                        redun_job,
-                        FileNotFoundError(
-                            get_job_scratch_file(
-                                self.gcs_scratch_prefix, redun_job, SCRATCH_OUTPUT
-                            )
-                        ),
-                    )
-            case JobStatus.State.FAILED:
-                redun_job = self.pending_batch_jobs.pop(job.name)
-                error, error_traceback = parse_job_error(self.gcs_scratch_prefix, redun_job)
+        state = job.status.state
+        if state == JobStatus.State.STATE_UNSPECIFIED:
+            return
+        elif state == JobStatus.State.QUEUED:
+            return
+        elif state == JobStatus.State.SCHEDULED:
+            return
+        elif state == JobStatus.State.RUNNING:
+            return
+        elif state == JobStatus.State.SUCCEEDED:
+            redun_job = self.pending_batch_jobs.pop(job.name)
+            result, exists = parse_job_result(self.gcs_scratch_prefix, redun_job)
+            if exists:
+                self._scheduler.done_job(redun_job, result)
+            else:
+                # This can happen if job ended in an inconsistent state.
+                self._scheduler.reject_job(
+                    redun_job,
+                    FileNotFoundError(
+                        get_job_scratch_file(self.gcs_scratch_prefix, redun_job, SCRATCH_OUTPUT)
+                    ),
+                )
+        elif state == JobStatus.State.FAILED:
+            redun_job = self.pending_batch_jobs.pop(job.name)
+            error, error_traceback = parse_job_error(self.gcs_scratch_prefix, redun_job)
 
-                self._scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
+            self._scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
 
-            case JobStatus.State.DELETION_IN_PROGRESS:
-                return
+        elif state == JobStatus.State.DELETION_IN_PROGRESS:
+            return

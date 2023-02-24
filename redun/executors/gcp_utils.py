@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Tuple, Union
 
 from google.cloud import batch_v1
 
@@ -19,12 +19,12 @@ class MinCPUPlatform(Enum):
 
 def get_gcp_client(
     sync: bool = True,
-) -> batch_v1.BatchServiceClient | batch_v1.BatchServiceAsyncClient:
+) -> Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient]:
     return batch_v1.BatchServiceClient() if sync else batch_v1.BatchServiceAsyncClient()
 
 
 def batch_submit(
-    client: batch_v1.BatchServiceClient,
+    client: Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient],
     job_name: str,
     project: str,
     region: str,
@@ -37,14 +37,16 @@ def batch_submit(
     max_duration: str,
     retries: int,
     priority: int,
+    boot_disk_size_gb: int = None,
     min_cpu_platform: MinCPUPlatform = None,
     accelerators: List[Tuple[str, int]] = [],
     image: str = None,
     script: str = "exit 0",
     entrypoint: str = None,
-    commands: list[str] = ["exit 0"],
+    commands: List[str] = ["exit 0"],
     service_account_email: str = "",
     labels: Dict[str, str] = {},
+    **kwargs,  # Ignore extra args
 ) -> batch_v1.Job:
     # Define what will be done as part of the job.
     runnable = batch_v1.Runnable()
@@ -69,6 +71,8 @@ def batch_submit(
     resources.cpu_milli = vcpus * 1000  # in milliseconds per cpu-second.
     # This means the task requires 2 whole CPUs with default value.
     resources.memory_mib = memory
+    if boot_disk_size_gb:
+        resources.boot_disk_mib = boot_disk_size_gb * 1000
     task.compute_resource = resources
 
     task.max_retry_count = retries
