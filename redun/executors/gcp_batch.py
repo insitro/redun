@@ -1,5 +1,6 @@
 import json
 import logging
+import shlex
 import threading
 import time
 from collections import OrderedDict
@@ -169,7 +170,7 @@ class GCPBatchExecutor(Executor):
 
             self.log(
                 "reunite redun job {redun_job} with {job_type} {batch_job}:\n"
-                "  s3_scratch_path = {job_dir}".format(
+                "  gcs_scratch_path = {job_dir}".format(
                     redun_job=job.id,
                     job_type="GCP Batch Job",
                     batch_job=existing_job.uid,
@@ -281,13 +282,14 @@ class GCPBatchExecutor(Executor):
                 exit_command="exit 1",
             )
             # GCP Batch takes script as a string and requires quoting of -c argument
-            script_command[-1] = f'"{script_command[-1]}"'
+            script_command[-1] = shlex.join(shlex.split(script_command[-1]))
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
                 job_name=f"redun-{job.id}",
                 project=project,
                 region=region,
-                script=" ".join(script_command),
+                image=image,
+                commands=script_command,
                 gcs_bucket=self.gcs_scratch_prefix,
                 **task_options,
             )
