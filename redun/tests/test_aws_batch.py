@@ -4,7 +4,7 @@ import pickle
 import time
 import unittest.mock
 import uuid
-from typing import cast
+from typing import Any, Dict, cast
 from unittest.mock import Mock, patch
 
 import boto3
@@ -1157,7 +1157,9 @@ def test_iter_batch_job_logs(aws_describe_jobs_mock) -> None:
     assert list(iter_batch_job_logs(job_id, required=False)) == []
 
 
-def mock_executor(scheduler, debug=False, code_package=False):
+def mock_executor(
+    scheduler, custom_config_args: Dict[str, Any] = {}, debug=False, code_package=False
+):
     """
     Returns an AWSBatchExecutor with AWS API mocks.
     """
@@ -1176,15 +1178,16 @@ def mock_executor(scheduler, debug=False, code_package=False):
                 "job_stale_time": 0.01,
                 "code_package": code_package,
                 "debug": debug,
+                **custom_config_args,
             }
         }
     )
     executor = AWSBatchExecutor("batch", scheduler, config["batch"])
 
-    executor.get_jobs = Mock()
+    executor.get_jobs = Mock()  # type: ignore[assignment]
     executor.get_jobs.return_value = []
 
-    executor.get_array_child_jobs = Mock()
+    executor.get_array_child_jobs = Mock()  # type: ignore[assignment]
     executor.get_array_child_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")
@@ -1212,7 +1215,7 @@ def test_executor(
     parse_job_logs_mock.return_value = []
 
     scheduler = mock_scheduler()
-    executor = mock_executor(scheduler)
+    executor = mock_executor(scheduler, {"timeout": 5, "shared_memory": 5, "privileged": True})
     executor.start()
 
     try:
@@ -1240,7 +1243,11 @@ def test_executor(
             "vcpus": 1,
             "gpus": 0,
             "memory": 4,
-            "shared_memory": None,
+            "shared_memory": 5,
+            "timeout": 5,
+            "privileged": True,
+            "autocreate_job": True,
+            "job_def_name": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1278,7 +1285,11 @@ def test_executor(
             "vcpus": 1,
             "gpus": 0,
             "memory": 8,
-            "shared_memory": None,
+            "shared_memory": 5,
+            "timeout": 5,
+            "privileged": True,
+            "autocreate_job": True,
+            "job_def_name": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1375,6 +1386,10 @@ def test_executor_multinode(
             "gpus": 0,
             "memory": 4,
             "shared_memory": None,
+            "timeout": None,
+            "privileged": False,
+            "autocreate_job": True,
+            "job_def_name": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",

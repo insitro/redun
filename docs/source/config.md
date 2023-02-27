@@ -346,6 +346,17 @@ A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wa
 
 An optional integer (default: None) that specifies the time duration in seconds (measure from job attempt's `startedAt` timestamp) after which AWS Batch will terminate the job. For more on job timeouts, see the [Job Timeouts on Batch docs](https://docs.aws.amazon.com/batch/latest/userguide/job_timeouts.html). When not set, jobs will run indefinitely (unless on Fargate where there is a 14 day limit).
 
+#### privileged
+An optional bool (default: False) that specifies whether to run the job in privileged mode.
+
+#### autocreate_job
+An optional bool (default: True). If `autocreate_job` is disabled, then we require a `job_def_name`
+to be present and lookup the job by name. If `autocreate_job` is enabled, then we will create
+a new job definition if an existing one matching `job_def_name` and required properties cannot be found.
+
+#### job_def_name
+An optional str (default: None) that specifies a job definition to use. If not set, a new job definition will created.
+
 ##### `batch_tags`
 
 An optional JSON mapping of string key-value pairs to use as Batch job tags. This could be used to track jobs or query them after execution.

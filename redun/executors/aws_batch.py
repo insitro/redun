@@ -503,6 +503,7 @@ def get_batch_job_options(job_options: dict) -> dict:
     """
     Returns AWS Batch-specific job options from general job options.
     """
+    # These options are usually mirrored in default_task_options for use with the redun.ini.
     keys = [
         "vcpus",
         "gpus",
@@ -860,11 +861,16 @@ class AWSBatchExecutor(Executor):
         self.debug = config.getboolean("debug", fallback=False)
 
         # Default task options.
+        # Defaults should be set for all values mirrored in get_batch_job_options.
         self.default_task_options: Dict[str, Any] = {
             "vcpus": config.getint("vcpus", fallback=1),
             "gpus": config.getint("gpus", fallback=0),
             "memory": config.getfloat("memory", fallback=4),
             "shared_memory": config.getint("shared_memory", fallback=None),
+            "timeout": config.getint("timeout", fallback=None),
+            "privileged": config.getboolean("privileged", fallback=False),
+            "autocreate_job": config.getboolean("autocreate_job", fallback=True),
+            "job_def_name": config.get("job_def_name", fallback=None),
             "retries": config.getint("retries", fallback=1),
             "role": config.get("role"),
             "job_name_prefix": config.get("job_name_prefix", fallback="redun-job"),
