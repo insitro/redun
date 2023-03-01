@@ -210,7 +210,7 @@ def postprocess_script(result: Any, outputs: Any, temp_path: Optional[str] = Non
 
 
 def script(
-    command: str, inputs: Any = [], outputs: Any = NULL, tempdir=False, **task_options
+    command: str, inputs: Any = [], outputs: Any = NULL, tempdir=False, as_mount=False, **task_options
 ) -> Any:
     """
     Execute a shell script as a redun task with file staging.
@@ -229,14 +229,14 @@ def script(
         temp_path = None
 
     # Stage inputs.
-    command_parts.extend(input.render_stage() for input in iter_nested_value(inputs))
+    command_parts.extend(input.render_stage(as_mount) for input in iter_nested_value(inputs))
 
     # User command.
     command_parts.append(get_wrapped_command(prepare_command(command)))
 
     # Unstage outputs.
     file_stages = [value for value in iter_nested_value(outputs) if isinstance(value, Staging)]
-    command_parts.extend(file_stage.render_unstage() for file_stage in file_stages)
+    command_parts.extend(file_stage.render_unstage(as_mount) for file_stage in file_stages)
 
     full_command = "\n".join(command_parts)
 
