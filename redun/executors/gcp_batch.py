@@ -25,7 +25,7 @@ from redun.executors.scratch import (
 from redun.file import File
 from redun.scheduler import Job as RedunJob
 from redun.scheduler import Scheduler
-from redun.scripting import get_task_command
+from redun.scripting import get_task_command, DEFAULT_SHELL
 
 REDUN_HASH_LABEL_KEY = "redun_hash"
 REDUN_JOB_TYPE_LABEL_KEY = "redun_job_type"
@@ -292,7 +292,7 @@ class GCPBatchExecutor(Executor):
                                                job,
                                                START_SCRIPT)
 
-            File(script_path).write('#!/usr/bin/env bash' + script_command[-1])
+            File(script_path).write(DEFAULT_SHELL + script_command[-1])
 
             script_path = script_path.replace('gs://', '/mnt/disks/share/')
 

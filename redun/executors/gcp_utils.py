@@ -74,7 +74,7 @@ def batch_submit(
         runnable.container.image_uri = image
         runnable.container.entrypoint = entrypoint
         runnable.container.commands = commands
-        runnable.container.options = '-w /workspace' + ''.join([f' -v {x.mount_path}:{x.mount_path}' for x in volumes])
+        runnable.container.options = ''.join([f' -v {x.mount_path}:{x.mount_path}' for x in volumes])
         runnable.container.volumes = [f'{x.mount_path}:{x.mount_path}' for x in volumes]
 
     task = batch_v1.TaskSpec()

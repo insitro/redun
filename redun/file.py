@@ -713,20 +713,25 @@ class GSFileSystem(FsspecFileSystem):
                 dest_path = to_mount_directory(dest_path)
 
             # When staging mounted files, soft-link to stage in.
+
+            if dest_path:
+                # Ensure dest path exists.
+                mk_dest_dir = f'mkdir -p {quote(os.path.dirname(dest_path))}'
+
             if src_path and dest_path:
                 if src_proto == "gs" and dest_proto == "local":
                     return f"ln -s {quote(src_path)} {quote(dest_path)}"
                 if src_proto == "local" and dest_proto == "gs":
                     if not recursive:
-                        return f"cp {quote(src_path)} {quote(dest_path)}"
+                        return f"{mk_dest_dir} && cp {quote(src_path)} {quote(dest_path)}"
                     else:
-                        return f"cp -r {quote(src_path)} {quote(dest_path)}"
+                        return f"{mk_dest_dir} && cp -r {quote(src_path)} {quote(dest_path)}"
             elif recursive:
                 raise ValueError("recursive is not supported with stdin or stdout.")
             elif src_path:
                 return f"cat {quote(src_path)}"
             elif dest_path:
-                return f"cat - > {quote(dest_path)}"
+                return f"$({mk_dest_dir}) cat - > {quote(dest_path)}"
             else:
                 raise ValueError("At least one path must be given.")
 
