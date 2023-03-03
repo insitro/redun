@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Dict, Iterable, List, Tuple, Union
 
 from google.cloud import batch_v1
-
+from urllib.parse import urlparse
 
 # List of supported available CPU Platforms
 # https://cloud.google.com/compute/docs/instances/specify-min-cpu-platform#availablezones
@@ -28,8 +28,8 @@ def batch_submit(
     job_name: str,
     project: str,
     region: str,
-    gcs_bucket: str,
-    mount_path: str,
+    mount_buckets: List[str],
+    gcs_scratch_prefix: str,
     machine_type: str,
     vcpus: int,
     memory: int,
@@ -50,6 +50,18 @@ def batch_submit(
 ) -> batch_v1.Job:
     # Define what will be done as part of the job.
     runnable = batch_v1.Runnable()
+
+    # Setup volumes
+    def make_volume(bucket):
+        gcs_bucket = batch_v1.GCS()
+        gcs_bucket.remote_path = bucket
+        gcs_volume = batch_v1.Volume()
+        gcs_volume.gcs = gcs_bucket
+        gcs_volume.mount_path = f'/mnt/disks/share/{bucket}'
+        return gcs_volume
+
+    volumes = [make_volume(bucket) for bucket in mount_buckets]
+
     if image is None:
         runnable.script = batch_v1.Runnable.Script()
         runnable.script.text = script
@@ -62,9 +74,12 @@ def batch_submit(
         runnable.container.image_uri = image
         runnable.container.entrypoint = entrypoint
         runnable.container.commands = commands
+        runnable.container.options = ''.join([f' -v {x.mount_path}:{x.mount_path}' for x in volumes])
+        runnable.container.volumes = [f'{x.mount_path}:{x.mount_path}' for x in volumes]
 
     task = batch_v1.TaskSpec()
     task.runnables = [runnable]
+    task.volumes = volumes
 
     # We can specify what resources are requested by each task.
     resources = batch_v1.ComputeResource()

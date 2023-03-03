@@ -1,6 +1,6 @@
 import json
 import logging
-import shlex
+import re
 import threading
 import time
 from collections import OrderedDict
@@ -25,7 +25,7 @@ from redun.executors.scratch import (
 from redun.file import File
 from redun.scheduler import Job as RedunJob
 from redun.scheduler import Scheduler
-from redun.scripting import get_task_command
+from redun.scripting import get_task_command, DEFAULT_SHELL
 
 REDUN_HASH_LABEL_KEY = "redun_hash"
 REDUN_JOB_TYPE_LABEL_KEY = "redun_job_type"
@@ -270,7 +270,7 @@ class GCPBatchExecutor(Executor):
                 region=region,
                 image=image,
                 commands=command,
-                gcs_bucket=self.gcs_scratch_prefix,
+                gcs_scratch_prefix=self.gcs_scratch_prefix,
                 **task_options,
             )
         else:
@@ -280,9 +280,24 @@ class GCPBatchExecutor(Executor):
                 job,
                 task_command,
                 exit_command="exit 1",
+                as_mount=True,
             )
+
+            # Get buckets - This can probably be improved.
+            mount_buckets = set(re.findall(r'/mnt/disks/share/([^\/]+)/', script_command[-1] + task_command))
+
+            # Convert start command to script.
+            START_SCRIPT = '.redun_job.sh'
+            script_path = get_job_scratch_file(self.gcs_scratch_prefix,
+                                               job,
+                                               START_SCRIPT)
+
+            File(script_path).write(DEFAULT_SHELL + script_command[-1])
+
+            script_path = script_path.replace('gs://', '/mnt/disks/share/')
+
             # GCP Batch takes script as a string and requires quoting of -c argument
-            script_command[-1] = shlex.join(shlex.split(script_command[-1]))
+            script_command[-1] = script_path
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
                 job_name=f"redun-{job.id}",
@@ -290,7 +305,8 @@ class GCPBatchExecutor(Executor):
                 region=region,
                 image=image,
                 commands=script_command,
-                gcs_bucket=self.gcs_scratch_prefix,
+                gcs_scratch_prefix=self.gcs_scratch_prefix,
+                mount_buckets=mount_buckets,
                 **task_options,
             )
 
