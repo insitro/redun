@@ -85,7 +85,7 @@ def batch_submit(
     resources = batch_v1.ComputeResource()
     resources.cpu_milli = vcpus * 1000  # in milliseconds per cpu-second.
     # This means the task requires 2 whole CPUs with default value.
-    resources.memory_mib = memory
+    resources.memory_mib = memory * 1000
     if boot_disk_size_gb:
         resources.boot_disk_mib = boot_disk_size_gb * 1000
     task.compute_resource = resources
