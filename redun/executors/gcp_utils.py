@@ -37,7 +37,7 @@ def batch_submit(
     max_duration: str,
     retries: int,
     priority: int,
-    boot_disk_size_gb: int = None,
+    boot_disk_size_gib: int = None,
     min_cpu_platform: MinCPUPlatform = None,
     accelerators: List[Tuple[str, int]] = [],
     image: str = None,
@@ -85,9 +85,9 @@ def batch_submit(
     resources = batch_v1.ComputeResource()
     resources.cpu_milli = vcpus * 1000  # in milliseconds per cpu-second.
     # This means the task requires 2 whole CPUs with default value.
-    resources.memory_mib = memory * 1000
-    if boot_disk_size_gb:
-        resources.boot_disk_mib = boot_disk_size_gb * 1000
+    resources.memory_mib = memory * 1024
+    if boot_disk_size_gib:
+        resources.boot_disk_mib = boot_disk_size_gib * 1024
     task.compute_resource = resources
 
     task.max_retry_count = retries
