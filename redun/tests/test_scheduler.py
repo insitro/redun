@@ -1,3 +1,4 @@
+import copy
 import dataclasses
 import os
 import time
@@ -19,13 +20,16 @@ from redun.scheduler import (
     DryRunResult,
     Frame,
     Job,
+    SchedulerError,
     Task,
     Traceback,
     catch,
     catch_all,
     cond,
+    federated_task,
     scheduler_task,
 )
+from redun.scheduler_config import postprocess_config
 from redun.task import CacheScope, PartialTask, SchedulerTask
 from redun.tests.utils import assert_match_lines, use_tempdir
 from redun.utils import map_nested_value
@@ -36,6 +40,11 @@ from redun.value import Value, get_type_registry
 class Node:
     value: str
     next_: Optional["Node"]
+
+
+@task(namespace="redun_test")
+def module_task(x, y=3):
+    return x + y
 
 
 def test_simple(scheduler: Scheduler) -> None:
@@ -1966,3 +1975,90 @@ def test_extend_run_dryrun(scheduler: Scheduler, session: Session) -> None:
     result = scheduler.extend_run(main(11), parent_job_id=job.id)
     result = scheduler.extend_run(main(11), parent_job_id=job.id, dryrun=True)
     assert result["result"] == 12
+
+
+@task
+def foo(x):
+    return {
+        "pid": os.getpid(),
+        "result": x,
+    }
+
+
+@use_tempdir
+def test_federated_task() -> None:
+
+    # Use a process executor
+    config_dict = {
+        "federated_tasks.sample_task": {
+            "executor": "process",
+            "namespace": "redun_test",
+            "task_name": "module_task",
+            "load_module": "redun.tests.test_scheduler",
+            "config_dir": os.path.join(
+                os.path.dirname(__file__),
+                "test_data",
+                "federated_configs",
+                "federated_task_config",
+            ),
+            "new_execution": "True",
+        },
+        "executors.process": {
+            "type": "local",
+            "mode": "process",
+            "start_method": "spawn",
+        },
+    }
+
+    config = Config(config_dict=config_dict)
+    config = postprocess_config(config, config_dir=os.getcwd())
+
+    scheduler = Scheduler(config)
+    scheduler.load()
+
+    federated = federated_task("sample_task", 3)
+    assert 6 == scheduler.run(federated)
+    federated = federated_task("sample_task", 3, y=8)
+    assert 11 == scheduler.run(federated)
+    federated = federated_task("sample_task", x=4, y=8)
+    assert 12 == scheduler.run(federated)
+
+    # Check error on incorrect task
+    federated = federated_task("wrong_task", task_args=[3])
+    with pytest.raises(AssertionError, match="Could not find the entrypoint `wrong_task`"):
+        assert 6 == scheduler.run(federated)
+
+    # Check behavior on missing executor
+    config_dict_broken = copy.deepcopy(config_dict)
+    config_dict_broken["federated_tasks.sample_task"]["executor"] = "bad_executor"
+
+    config = Config(config_dict=config_dict_broken)
+    config = postprocess_config(config, config_dir=os.getcwd())
+
+    scheduler = Scheduler(config)
+    scheduler.load()
+
+    federated = federated_task("sample_task", task_args=[4])
+    with pytest.raises(
+        SchedulerError,
+        match='Unknown executor "bad_executor"',
+    ):
+        scheduler.run(federated)
+
+    # Check behavior on missing entrypoint configs
+    config_dict_broken = copy.deepcopy(config_dict)
+    del config_dict_broken["federated_tasks.sample_task"]["executor"]
+
+    config = Config(config_dict=config_dict_broken)
+    config = postprocess_config(config, config_dir=os.getcwd())
+
+    scheduler = Scheduler(config)
+    scheduler.load()
+
+    federated = federated_task("sample_task", task_args=[4])
+    with pytest.raises(
+        AssertionError,
+        match="Federated task entry `sample_task` does not have the "
+        "required keys, missing `{'executor'}`",
+    ):
+        scheduler.run(federated)

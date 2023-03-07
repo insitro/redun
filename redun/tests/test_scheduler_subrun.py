@@ -1,5 +1,6 @@
 import ast
 import os
+import shutil
 from typing import cast
 from unittest.mock import patch
 
@@ -243,6 +244,8 @@ def _config_found_in_logs(mock_log, config_dict):
             if isinstance(actual_config, dict) and actual_config == config_dict:
                 print(f"Verified config: {actual_config}")
                 return True
+            print(f"Not Verified config: {actual_config}")
+
         except Exception:
             pass
     return False
@@ -265,6 +268,40 @@ def test_subscheduler_config():
     with patch.object(scheduler, "log") as mock_log:
         assert 5 == scheduler.run(local_main(5))
         assert _config_found_in_logs(mock_log, CONFIG_DICT)
+
+
+@use_tempdir
+def test_subscheduler_config_dir():
+    """Verify that the sub-scheduler uses the provided config_dir"""
+
+    @task(executor="nondefault")
+    def bar(x):
+        return x
+
+    @task
+    def foo(x):
+        return x
+
+    config_file = os.path.join(os.path.dirname(__file__), "test_data/subrun_config_dir/redun.ini")
+    shutil.copy(config_file, "./redun.ini")
+
+    @task
+    def local_main(x):
+        return subrun(foo(x), "default", config_dir=".", new_execution=True)
+
+    scheduler = Scheduler(Config(CONFIG_DICT))
+    scheduler.load()
+
+    FILE_CONFIG_DICT = {
+        "backend": {"config_dir": ".", "db_uri": f"sqlite:///{os.getcwd()}/redun.db"},
+        "executors.nondefault": {"mode": "thread", "type": "local"},
+        "repos.default": {"config_dir": "."},
+        "scheduler": {},
+    }
+
+    with patch.object(scheduler, "log") as mock_log:
+        assert 5 == scheduler.run(local_main(5))
+        assert _config_found_in_logs(mock_log, FILE_CONFIG_DICT)
 
 
 @use_tempdir
@@ -434,7 +471,7 @@ def test_subrun_nested_list_of_tasks():
 
 
 def test_subrun_cached():
-    """Subrun "wrapper" task is cached"""
+    """Subrun "implementation" task is cached"""
     task_calls = []
 
     @task(cache=False)
@@ -614,3 +651,64 @@ def test_process_executor(start_method: str):
 
         # Confirm that the sub-scheduler actually used the config_dict we passed it.
         assert _config_found_in_logs(mock_log, config_dict)
+
+
+# ==========================================================================================
+# Load module test
+# ==========================================================================================
+@use_tempdir
+def test_subrun_load_module():
+    """Verify that explicit load modules are honored."""
+
+    from redun.tests.isolated_task import isolated_task
+
+    # Note that these use the `bar` implementation at module scope.
+
+    @task
+    def local_main(x):
+        return subrun(
+            isolated_task(x),
+            "process_main",
+            CONFIG_DICT,
+            new_execution=True,
+            load_modules=["redun.tests.isolated_task"],
+        )
+
+    @task
+    def local_main_missing_module(x):
+        return subrun(
+            isolated_task(x),
+            "process_main",
+            CONFIG_DICT,
+            new_execution=True,
+            load_modules=["redun.tests.bad_module"],
+        )
+
+    @task
+    def local_main_wrong_module(x):
+        return subrun(
+            isolated_task(x),
+            "process_main",
+            CONFIG_DICT,
+            new_execution=True,
+            load_modules=["redun.tests.test_scheduler_subrun"],
+        )
+
+    config_dict = {
+        "backend": {"db_uri": "sqlite:///redun.db"},
+        "executors.process_main": {
+            "type": "local",
+            "mode": "process",
+            "start_method": "spawn",
+        },
+    }
+
+    scheduler = Scheduler(Config(config_dict))
+    scheduler.load()
+    assert 5 == scheduler.run(local_main(5))["result"]
+    with pytest.raises(ModuleNotFoundError, match="No module named 'redun.tests.bad_module'"):
+        scheduler.run(local_main_missing_module(6))
+    # If the test is working properly, we shouldn't be able to find the task without the correct
+    # module supplied.
+    with pytest.raises(AssertionError, match="Could not find task `isolated_task`"):
+        scheduler.run(local_main_wrong_module(6))

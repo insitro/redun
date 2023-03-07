@@ -38,7 +38,7 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import ParseResult, urlparse, urlunparse
+from urllib.parse import ParseResult, urlparse
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
@@ -88,6 +88,17 @@ from redun.scheduler import (
     format_job_statuses,
     get_task_registry,
 )
+from redun.scheduler_config import (
+    DEFAULT_DB_URI,
+    DEFAULT_POSTGRESQL_PORT,
+    DEFAULT_REDUN_INI,
+    DEFAULT_REPO_NAME,
+    REDUN_CONFIG_DIR,
+    REDUN_CONFIG_ENV,
+    REDUN_INI_FILE,
+    REDUN_USER_ENV,
+    postprocess_config,
+)
 from redun.scripting import script_task
 from redun.tags import (
     ANY_VALUE,
@@ -117,36 +128,7 @@ redun :: version {version}
 
 The redundant workflow engine.
 """
-REDUN_CONFIG_ENV = "REDUN_CONFIG"
-REDUN_USER_ENV = "REDUN_USER"
-REDUN_CONFIG_DIR = ".redun"
-REDUN_INI_FILE = "redun.ini"
-DEFAULT_REPO_NAME = "default"
-DEFAULT_DB_URI = "sqlite:///redun.db"
-DEFAULT_POSTGRESQL_PORT = 5432
-DEFAULT_REDUN_INI = """\
-# redun configuration.
 
-[backend]
-db_uri = {db_uri}
-
-[executors.default]
-type = local
-max_workers = 20
-
-# [executors.batch]
-# type = aws_batch
-#
-# # Required:
-# image =
-# queue =
-# s3_scratch =
-#
-# # Optional:
-# aws_region =
-# role =
-# debug = False
-"""
 
 PAGER = "less"
 
@@ -264,47 +246,6 @@ def get_abs_path(path: str) -> str:
         return os.path.abspath(path)
 
 
-def get_abs_url(uri: str, base: str) -> str:
-    """
-    Returns URI with absolute path.
-    """
-    if re.match(r"^[^:]+:////", uri):
-        # URI starts with four slashes, so it is already absolute.
-        return uri
-
-    # Parse db_uri.
-    url_parts = urlparse(uri)
-    if url_parts.netloc != "":
-        # Non-file based URL. Use as is.
-        return uri
-
-    # Construct absolute path.
-    path = url_parts.path[1:]
-    abs_path = os.path.join(base, path)
-
-    # Format a new URL with absolute path.
-    abs_url_parts = url_parts._replace(path=abs_path, netloc="")
-    abs_uri_prep = urlunparse(abs_url_parts)
-
-    # Fix leading slashes to match sqlalchemy scheme (4 slashes for abs path).
-    abs_uri = re.sub(r"^([^:]+):", r"\1:///", abs_uri_prep)
-    return abs_uri
-
-
-def get_abs_db_uri(db_uri: str, config_dir: str, cwd: Optional[str] = None) -> str:
-    """
-    Returns DB_URI with absolute path.
-
-    If `db_uri` is a relative path, it is assumed to be relative to `config_dir`.
-    `config_dir` itself may be relative to the current working directory (cwd).
-    """
-    if not cwd:
-        cwd = os.getcwd()
-    abs_config_dir = os.path.normpath(os.path.join(cwd, config_dir))
-    abs_db_uri = get_abs_url(db_uri, abs_config_dir)
-    return abs_db_uri
-
-
 def get_config_dir(config_dir: Optional[str] = None) -> str:
     """
     Get the redun config dir.
@@ -392,36 +333,6 @@ def get_user_setup_func(config: Config) -> Callable[..., Scheduler]:
     module = import_script(file_or_module)
     setup_func = getattr(module, func_name)
     return setup_func
-
-
-def postprocess_config(config: Config, config_dir: str) -> Config:
-    """
-    Postprocess config.
-    """
-    # Add default repository if not specified in config.
-    default_repo = create_config_section({"config_dir": config_dir})
-    if config.get("repos"):
-        config["repos"][DEFAULT_REPO_NAME] = default_repo
-    else:
-        config["repos"] = {DEFAULT_REPO_NAME: default_repo}
-
-    # Set default db_uri if not specified in config.
-    if not config.get("backend"):
-        config["backend"] = create_config_section()
-    if not config["backend"].get("db_uri"):
-        config["backend"]["db_uri"] = DEFAULT_DB_URI
-
-    # Grandfather old default db_uri.
-    if config["backend"]["db_uri"] == "sqlite:///.redun/redun.db":
-        config["backend"]["db_uri"] = DEFAULT_DB_URI
-
-    # Convert db_uri to absolute path.
-    config["backend"]["db_uri"] = get_abs_db_uri(config["backend"]["db_uri"], config_dir)
-
-    # Populate config_dir in backend section.
-    config["backend"]["config_dir"] = config_dir
-
-    return config
 
 
 def get_config_path(config_dir: Optional[str] = None) -> str:

@@ -50,10 +50,12 @@ from redun.expression import (
     get_lazy_operation,
     quote,
 )
+from redun.file import Dir
 from redun.handle import Handle
 from redun.hashing import hash_eval, hash_struct
 from redun.logging import logger as _logger
 from redun.promise import Promise, wait_promises
+from redun.scheduler_config import REDUN_INI_FILE, postprocess_config
 from redun.tags import parse_tag_value
 from redun.task import (
     CacheCheckValid,
@@ -65,7 +67,7 @@ from redun.task import (
     scheduler_task,
     task,
 )
-from redun.utils import format_table, iter_nested_value, map_nested_value, trim_string
+from redun.utils import format_table, iter_nested_value, map_nested_value, str2bool, trim_string
 from redun.value import Value, get_type_registry
 
 # Globals.
@@ -735,7 +737,11 @@ def needs_root_task(task_registry: TaskRegistry, expr: Any) -> bool:
 
     # All arguments must be concrete.
     task = task_registry.get(expr.task_name)
-    assert task
+
+    assert (
+        task
+    ), f"Could not find task `{expr.task_name}`, found options {list(task_registry._tasks.keys())}"
+
     args, kwargs = set_arg_defaults(task, expr.args, expr.kwargs)
     return any(isinstance(arg, Expression) for arg in iter_nested_value((args, kwargs)))
 
@@ -2428,13 +2434,14 @@ def apply_tags(
     namespace="redun",
     name="subrun_root_task",
     version="1",
-    config_args=["config", "load_modules", "run_config"],
+    config_args=["config", "config_dir", "load_modules", "run_config"],
     cache_scope=CacheScope.CSE,
     check_valid=CacheCheckValid.SHALLOW,
 )
 def _subrun_root_task(
     expr: Any,
     config: Dict[str, Dict],
+    config_dir: Optional[str],
     load_modules: List[str],
     run_config: Dict[str, Any],
 ) -> Any:
@@ -2469,7 +2476,10 @@ def _subrun_root_task(
         TaskExpression to be run by sub-scheduler.
     config
         A two-level python dict to configure the sub-scheduler.  (Will be used to initialize a
-        :class:`Config` object via the `config_dict` kwarg.)
+        :class:`Config` object via the `config_dict` kwarg.) Used if a `config_dir` is not
+        provided.
+    config_dir : Optional[str]
+        If supplied, this config is loaded and used instead of the supplied `config`
     load_modules
         List of modules that must be imported before starting the sub-scheduler. Before
         launching the sub-scheduler, the modules that define the user tasks must be imported.
@@ -2500,7 +2510,20 @@ def _subrun_root_task(
 
         parent_job_id is present in run_config, only results are return. Errors are raised.
     """
-    sub_scheduler = Scheduler(config=Config(config_dict=config))
+    assert not config or config_dir is None, "Only one of config and config_dir can be used"
+
+    # A lazily-loaded config directory takes precedence.
+    if config_dir is not None:
+        # Load config file.
+        config_obj = Config()
+        config_obj.read_path(Dir(config_dir).file(REDUN_INI_FILE).path)
+
+        # Postprocess config.
+        config_obj = postprocess_config(config_obj, config_dir)
+    else:
+        config_obj = Config(config_dict=config)
+
+    sub_scheduler = Scheduler(config=config_obj)
     sub_scheduler.load()
 
     # Import user modules.  The user is responsible for ensuring that the Executor that runs this
@@ -2554,7 +2577,9 @@ def subrun(
     expr: Any,
     executor: str,
     config: Optional[Dict[str, Any]] = None,
+    config_dir: Optional[str] = None,
     new_execution: bool = False,
+    load_modules: Optional[List[str]] = None,
     **task_options: dict,
 ) -> Promise:
     """
@@ -2564,9 +2589,10 @@ def subrun(
     _subrun_root_task) that starts the sub-scheduler. For example, you can configure the task
     with a batch executor to run the sub-scheduler on AWS Batch.
 
-    `config`: To ease configuration management of the sub-scheduler, you can pass a `config`
+    `config`: To ease configuration management of the sub-scheduler, you can either pass a `config`
     dict which contains configuration that would otherwise require a redun.ini file in the
-    sub-scheduler environment. If you do not pass a config, the local scheduler's config will be
+    sub-scheduler environment, or you can provide a `config_dir` to be loaded when the subrun
+    starts. If you do not pass either, the local scheduler's config will be
     forwarded to the sub-scheduler (replacing the local `config_dir` with "."). In practice,
     the sub-scheduler's `config_dir` should be less important as you probably want to log both
     local and sub-scheduler call graphs to a common database. You can also obtain a copy of the
@@ -2605,9 +2631,15 @@ def subrun(
         empty, the local Scheduler's config will be passed to the sub-scheduler and any values
         with local config_dir will be replaced with ".".  Do not include database credentials as
         they will be logged as clear text in the call graph.
+    config_dir : str
+        Optional path to load a config from. Must be available in the execution context of the
+        subrun.
     new_execution : bool
         If True, record the provenance of the evaluation of `expr` as a new Execution, otherwise
         extend the current Execution with new Jobs.
+    load_modules: Optional[List[str]]
+        If provided, an explicit list of the modules to load to prepare the subrun. If not
+        supplied, the `load_module` for every task in the task registry will be included.
     **task_options : Any
         Task options for _subrun_root_task.  E.g. when running the sub-scheduler via Batch
         executor, you can pass ECS configuration (e.g. `memory`, `vcpus`, `batch_tags`).
@@ -2617,22 +2649,28 @@ def subrun(
     Dict[str, Any]
         Returns a dict result of evaluating the _subrun_root_task
     """
+    assert not config or config_dir is None, "Only one of config and config_dir can be used"
 
     # If a config wasn't provided, forward the parent scheduler's backend config to the
     # sub-scheduler, replacing the local config_dir with "."
-    if not config:
+    if config_dir is not None:
+        config = {}
+    elif not config:
         config = scheduler.config.get_config_dict(replace_config_dir=".")
 
     # Collect a list of all modules that define user task.  This list will include the initial
     # task(s) to be subrun() as these are registered in the local task registry during subrun()
     # argument formulation.
     registry = get_task_registry()
-    load_modules = set()
-    for _task in registry:
-        module_name = _task.load_module
-        if module_name.startswith("redun.") and not module_name.startswith("redun.tests."):
-            continue
-        load_modules.add(module_name)
+    load_modules_set = set()
+    if load_modules is not None:
+        load_modules_set = set(load_modules)
+    else:
+        for _task in registry:
+            module_name = _task.load_module
+            if module_name.startswith("redun.") and not module_name.startswith("redun.tests."):
+                continue
+            load_modules_set.add(module_name)
 
     # Prepare child task call for subrun.
     run_config: Dict[str, Any] = {
@@ -2657,7 +2695,8 @@ def subrun(
     subrun_root_task_expr = _subrun_root_task.options(executor=executor, **all_options)(
         expr=quote(expr),
         config=config,
-        load_modules=sorted(load_modules),
+        config_dir=config_dir,
+        load_modules=sorted(load_modules_set),
         run_config=run_config,
     )
 
@@ -2713,3 +2752,76 @@ def subrun(
             return Promise()
 
     return scheduler.evaluate(subrun_root_task_expr, parent_job=parent_job).then(then)
+
+
+@scheduler_task(namespace="redun")
+def federated_task(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    entrypoint: str,
+    *task_args,
+    **task_kwargs,
+) -> Promise:
+    """Execute a task that has been indirectly specified in the scheduler config file by providing
+    a `federated_task` and its executor. This allows us to invoke code we do not have locally.
+
+    Since the code isn't visible, the cache_scope for the subrun is always set to CSE.
+
+    Parameters
+    ----------
+    entrypoint: str
+        The name of the `federated_task` section in the config that identifies the task to perform.
+    task_args: Optional[List[Any]]
+        Positional arguments for the task
+    task_kwargs: Any
+        Keyword arguments for the task
+    """
+
+    # Load the federated config and find the specified entrypoint within it.
+    federated_task_configs = scheduler.config.get("federated_tasks")
+
+    assert entrypoint in federated_task_configs, (
+        f"Could not find the entrypoint `{entrypoint}` "
+        f"in the provided federated tasks. Found `{list(federated_task_configs.keys())}`"
+    )
+
+    entrypoint_config: Dict[str, Any] = dict(federated_task_configs[entrypoint])
+
+    required_keys = {"namespace", "task_name", "load_module", "executor", "config_dir"}
+    available_keys = set(entrypoint_config.keys())
+    assert required_keys.issubset(available_keys), (
+        f"Federated task entry `{entrypoint}` does not have the required keys, missing "
+        f"`{required_keys.difference(available_keys)}`"
+    )
+
+    # The description is optional, but it shouldn't be in the hash. Just hide it from the
+    # downstream subrun, so we don't have to deal with merging a user's `config_args`.
+    entrypoint_config.pop("description", None)
+
+    # Extract the keys relevant to hashing
+    hash_config = {}
+    for key in required_keys:
+        hash_config[key] = entrypoint_config[key]
+
+    # This argument needs to be parsed.
+    if "new_execution" in entrypoint_config:
+        entrypoint_config["new_execution"] = str2bool(entrypoint_config["new_execution"])
+
+    # Since we require a namespace, we can simply dot format this ourselves.
+    wrapper_task_expr: TaskExpression = TaskExpression(
+        task_name=f'{entrypoint_config.pop("namespace")}.{entrypoint_config.pop("task_name")}',
+        args=task_args,
+        kwargs=task_kwargs,
+    )
+
+    subrun_task = subrun(
+        expr=wrapper_task_expr,
+        executor=entrypoint_config.pop("executor"),
+        load_modules=[entrypoint_config.pop("load_module")],
+        # Since the code isn't visible, only accept CSE hits.
+        cache_scope=CacheScope.CSE,
+        **entrypoint_config,
+    )
+
+    return scheduler.evaluate(subrun_task, parent_job=parent_job)

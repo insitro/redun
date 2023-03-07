@@ -643,3 +643,75 @@ def wrapper_with_args(wrapper_arg: int) -> Callable[[Func], Task[Func]]:
     return _wrapper_with_args
 ```
 
+### Subrun
+
+Redun provides the `subrun` scheduler task, which is able to start a nested scheduler within
+the body of a task.
+
+To see why this is useful, imagine
+a task graph `main -> f -> g`, where you would like both of `f, g` to occur on one AWS Batch
+node, and `main` to occur locally. This is not possible without subrun, because the redun
+`batch` executor uses a CLI command called `oneshot` to launch a single task at a time on the
+batch node, without actually launching a scheduler. Hence, that if the task was implemented like
+this, then the `f` oneshot would return the unevaluated expression `g`, which the original 
+scheduler would deploy to another execution.
+
+```py
+@task(exectutor="batch")
+def g(x):
+  return "value" + x
+
+@task(exectutor="batch")
+def f():
+  return g("str")
+
+@task
+def main():
+    # Results in two batch executions, one for `f`, then another for `g`.
+    return f()
+```
+
+We can accomplish the desired outcome by using subrun to push the entire execution onto one worker:
+
+```python
+@task
+def g(x):
+  return "value" + x
+
+@task
+def f():
+  return g("str")
+
+@task
+def main():
+    # Only invokes batch once because it starts a scheduler that handles the resolution of
+    # both `f` and `g`
+    return subrun(f(), executor="batch")
+```
+
+See the example `examples/subrun` for more information.
+
+### Federated task
+
+Generally redun requires access to the code implementing a task in order to execute that task.
+Federated tasks provide a mechanism to invoke a task without having local access to the code.
+
+The typical scenario is that we have two python repositories, a `local` one we are currently working in,
+and a `remote` one containing a task we wish to call, but do not wish to import.
+Broadly, we're going to accomplish this by publishing the `remote` repository as a docker image
+containing both redun and the package, and we'll provide configuration data explaining how to do so.
+
+We can create `federated_tasks` in the config file that indicates the task by name and how to
+import it. It also defers to an executor that can make the code available, which will typically
+be one based on Docker, but need not be. This data is termed an "entrypoint", and is identified
+by name; there is no namespacing, but incorporating repository identifiers into the entrypoint
+name and associated executors may be a useful strategy. This federated entrypoint is wrapped into
+a task within the `local` repository and can be used like an ordinary task.
+
+Furthermore, we might wish for these federated tasks and their executors to be provided by the
+authors of the `remote` repository. Therefore, the configuration file can indicate `federated_imports`,
+which are additional config files that are allowed to specify additional `federated_tasks` and
+`executors`. These can be shared out-of-band, for example, by placing them on a shared file system.
+
+See the example `examples/federated_task` for more information.
+

@@ -4,8 +4,10 @@ from unittest.mock import patch
 
 import pytest
 
-from redun.cli import get_config_dir, postprocess_config, setup_scheduler
+from redun.cli import get_config_dir, setup_scheduler
 from redun.config import Config
+from redun.file import RedunFileNotFoundError
+from redun.scheduler_config import postprocess_config
 from redun.tests.utils import use_tempdir
 
 
@@ -120,7 +122,7 @@ def test_postprocess_config(sample_config):
     post_processed_config = postprocess_config(sample_config, "/tmp/config_dir")
     config = Config(config_dict=post_processed_config.get_config_dict())
 
-    assert sorted(config.keys()) == ["backend", "executors", "repos"]
+    assert sorted(config.keys()) == ["backend", "executors", "repos", "scheduler"]
     config = postprocess_config(config, "/tmp/config_dir")
     # Default repository should be added since it was missing
     assert config["repos"]["default"]["config_dir"] == "/tmp/config_dir"
@@ -130,6 +132,87 @@ def test_postprocess_config(sample_config):
     # Ensure that the auto-added sections are truly Section objects and not plain dicts.
     assert isinstance(config["repos"]["default"], SectionProxy)
     assert isinstance(config["backend"], SectionProxy)
+
+
+def test_postprocess_federated_config(sample_config):
+    federated_imports_dict = sample_config.get_config_dict()
+    federated_imports_dict["scheduler"] = {
+        "federated_configs": """redun/tests/test_data/federated_configs/federated_import_valid"""
+    }
+    config = Config(federated_imports_dict)
+    config = postprocess_config(config, "/tmp/config_dir")
+
+    assert config["executors"]["batch"]["type"] == "aws_batch"
+    assert config["executors"]["headnode"]["type"] == "docker"
+    assert config["federated_tasks"]["entrypoint_name"]["executor"] == "headnode"
+
+    federated_imports_dict["scheduler"] = {
+        "federated_configs": """redun/tests/test_data/federated_configs/federated_import_valid
+redun/tests/test_data/federated_configs/federated_import_valid2"""
+    }
+
+    config = Config(federated_imports_dict)
+    config = postprocess_config(config, "/tmp/config_dir")
+
+    assert config["executors"]["batch"]["type"] == "aws_batch"
+    assert config["executors"]["headnode"]["type"] == "docker"
+    assert config["executors"]["headnode2"]["type"] == "docker"
+    assert config["federated_tasks"]["entrypoint_name"]["executor"] == "headnode"
+    assert config["federated_tasks"]["entrypoint_name2"]["executor"] == "headnode2"
+
+    # Check duplicate handling on executors against the main config
+    federated_imports_dict["executors.headnode"] = {"type": "duplicate"}
+    config = Config(federated_imports_dict)
+
+    with pytest.raises(AssertionError, match="Imported executor name `headnode` is a duplicate"):
+        postprocess_config(config, "/tmp/config_dir")
+
+    # Check duplicate handling on tasks  against the main config
+    del federated_imports_dict["executors.headnode"]
+    federated_imports_dict["federated_tasks.entrypoint_name"] = {"executor": "duplicate"}
+    config = Config(federated_imports_dict)
+
+    with pytest.raises(
+        AssertionError, match="Imported federated_task name `entrypoint_name` is a duplicate"
+    ):
+        postprocess_config(config, "/tmp/config_dir")
+
+    # Check bad config dir
+    federated_imports_dict = sample_config.get_config_dict()
+    federated_imports_dict["scheduler"] = {
+        "federated_configs": """redun/tests/test_data/federated_configs/federated_import_valid
+redun/tests/test_data/federated_configs/not_real_directory"""
+    }
+
+    config = Config(federated_imports_dict)
+
+    with pytest.raises(
+        RedunFileNotFoundError,
+        match="No such file or directory. "
+        "redun/tests/test_data/federated_configs/not_real_directory/redun.ini",
+    ):
+        postprocess_config(config, "/tmp/config_dir")
+
+    # Check conflicts between multiple configs
+    federated_imports_dict = sample_config.get_config_dict()
+    federated_imports_dict["scheduler"] = {
+        "federated_configs": """redun/tests/test_data/federated_configs/federated_import_valid
+redun/tests/test_data/federated_configs/federated_import_duplicate_task"""
+    }
+    config = Config(federated_imports_dict)
+    with pytest.raises(
+        AssertionError, match="Imported federated_task name `entrypoint_name` is a duplicate"
+    ):
+        postprocess_config(config, "/tmp/config_dir")
+
+    federated_imports_dict["scheduler"] = {
+        "federated_configs": """redun/tests/test_data/federated_configs/federated_import_valid
+redun/tests/test_data/federated_configs/federated_import_duplicate_executor"""
+    }
+
+    config = Config(federated_imports_dict)
+    with pytest.raises(AssertionError, match="Imported executor name `headnode` is a duplicate"):
+        postprocess_config(config, "/tmp/config_dir")
 
 
 def test_config_env_vars():

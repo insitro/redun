@@ -104,6 +104,30 @@ redun --setup profile=dev run workflow.py main --x 1 --y 2
 An integer (default: 20) of how many seconds between displays of the job status table.
 
 
+### `federated_configs`
+
+A config file may mark other config files that should be imported. This is particularly useful
+for importing remote config files containing federated entrypoints and their executors.
+
+```
+[scheduler]
+federated_configs = <path to config_dir>
+```
+
+or
+
+```
+[scheduler]
+federated_configs = 
+    <path to config_dir_1>
+    <path to config_dir_2>
+```
+
+Only the `executor` and `federated_tasks` from these config file(s) are imported, all other sections
+are ignored. There is no namespacing for these imported executors and federated tasks, either
+from each other or from the rest of the scheduler's configuration. Any duplicate names will result 
+in an error being raised.
+
 ### Backend
 
 Backend options, such as connecting to the redun database, can be configured in the `[backend]` section.
@@ -451,6 +475,36 @@ A string (default: `**/*.py`) that specifies a pattern for which files should be
 
 A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 
+### Federated tasks
+
+The following config keys are required. All other data is passed to the `subrun` that 
+implements the bulk of the federated task behavior, hence they are either consumed by `subrun` directly or
+are set as task options.
+
+#### `namespace`
+
+The namespace of the federated task.
+
+#### `task_name`
+
+The name of the federated task.
+
+#### `load_module`
+
+The name of the module to load, which will ensure that the above task is actually defined.
+
+#### `executor`
+
+The name of the executor that has the execution context for this federated task.
+
+#### `config_dir`
+
+The path to the configuration to use for the remainder of the execution. Either an absolute
+path or relative to the executor entrypoint. 
+
+#### `description`
+
+Optional. A description of this entrypoint.
 
 #### Kubernetes (k8s) executor
 

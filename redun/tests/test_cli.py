@@ -25,7 +25,6 @@ from redun.cli import (
     check_version,
     find_config_dir,
     find_file,
-    get_abs_db_uri,
     get_config_dir,
     import_script,
     is_port_in_use,
@@ -36,6 +35,7 @@ from redun.executors.aws_batch import BATCH_LOG_GROUP
 from redun.executors.code_packaging import create_tar
 from redun.job_array import AWS_ARRAY_VAR
 from redun.scheduler import Traceback
+from redun.scheduler_config import get_abs_db_uri
 from redun.tags import ANY_VALUE
 from redun.tests.utils import assert_match_lines, use_tempdir
 from redun.utils import get_import_paths, pickle_dump
