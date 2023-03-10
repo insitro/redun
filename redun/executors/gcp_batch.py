@@ -80,11 +80,12 @@ class GCPBatchExecutor(Executor):
         self.default_task_options: Dict[str, Any] = {
             "mount_path": config.get("mount_path", fallback="/mnt/share"),
             "machine_type": config.get("machine_type", fallback="e2-standard-4"),
+            "provisioning_model": config.get("provisioning_model", fallback="standard"),
             "vcpus": config.getint("vcpus", fallback=2),
             "gpus": config.getint("gpus", fallback=0),
             "memory": config.getint("memory", fallback=16),
             "task_count": config.getint("task_count", fallback=1),
-            "max_duration": config.get("max_duration", "3d"),
+            "max_duration": config.get("max_duration", "259200s"),  # 3 days in seconds
             "retries": config.getint("retries", fallback=2),
             "priority": config.getint("priority", fallback=30),
             "service_account_email": config.get("service_account_email", fallback=""),

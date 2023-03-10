@@ -40,6 +40,7 @@ def batch_submit(
     boot_disk_size_gib: int = None,
     min_cpu_platform: MinCPUPlatform = None,
     accelerators: List[Tuple[str, int]] = [],
+    provisioning_model: str = "standard",
     image: str = None,
     script: str = "exit 0",
     entrypoint: str = None,
@@ -107,6 +108,11 @@ def batch_submit(
     policy = batch_v1.AllocationPolicy.InstancePolicy()
     policy.machine_type = machine_type
     policy.min_cpu_platform = min_cpu_platform
+    policy.provisioning_model = (
+        batch_v1.AllocationPolicy.ProvisioningModel.SPOT
+        if provisioning_model == "spot"
+        else batch_v1.AllocationPolicy.ProvisioningModel.STANDARD
+    )
 
     def create_accelerator(typ, count):
         accelerator = batch_v1.AllocationPolicy.Accelerator()
