@@ -698,15 +698,33 @@ class GSFileSystem(FsspecFileSystem):
 
         if src_path and dest_path:
             if not recursive:
-                return f"gsutil cp {quote(src_path)} {quote(dest_path)}"
+                return f"gcloud storage cp {quote(src_path)} {quote(dest_path)}"
             else:
-                return f"gsutil cp -r {quote(src_path)} {quote(dest_path)}/"
+                # add / to end of directory path to make sure that gcloud copies the contents to a directory
+                if not dest_path.endswith("/"):
+                    dest_path += "/"
+                command = ""
+                if get_proto(dest_path) == "local":
+                    command += f"mkdir -p {quote(dest_path)} && "
+                    if os.path.basename(dest_path.rstrip("/")) != os.path.basename(src_path.rstrip("/")):
+                        # if the destination directory has a different name than the source directory we want to rename the directory
+                        # implementation could be done by
+                        # first putting it in a temporary directory
+                        # then moving it to the destination directory and cleaning up the temporary directory
+                        # this is necessary because gsutil/gcloud does not allow renaming directories
+                        raise NotImplementedError(f"Renaming directories (from {src_path} to {dest_path}) is not yet supported.")
+                    else:
+                        # same name, so we can just copy the directory to the parent directory of the destination directory
+                        dest_path = os.path.dirname(dest_path.rstrip("/"))
+                        if not dest_path:
+                            dest_path = "."
+                return command + f"gcloud storage cp -r {quote(src_path)} {quote(dest_path)}"
         elif recursive:
             raise ValueError("recursive is not supported with stdin or stdout.")
         elif src_path:
-            return f"gsutil cp {quote(src_path)} -"
+            return f"gcloud storage cat {quote(src_path)}"
         elif dest_path:
-            return f"gsutil cp - {quote(dest_path)}"
+            return f"gcloud storage cp - {quote(dest_path)}"
         else:
             raise ValueError("At least one path must be given.")
 
