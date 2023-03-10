@@ -8,6 +8,7 @@ from configparser import SectionProxy
 from tempfile import mkstemp
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
 
+from redun.config import create_config_section
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
@@ -33,7 +34,16 @@ class DockerError(Exception):
     pass
 
 
+def get_docker_executor_config(config: SectionProxy) -> SectionProxy:
+    """
+    Returns a config for DockerExecutor.
+    """
+    keys = ["image", "scratch", "job_monitor_interval", "vcpus", "gpus", "memory"]
+    return create_config_section({key: config[key] for key in keys if key in config})
+
+
 def run_docker(
+    executor_name: str,
     command: List[str],
     image: str,
     volumes: Iterable[Tuple[str, str]] = [],
@@ -69,27 +79,28 @@ def run_docker(
         Number of GB of shared memory to reserve for the container.
     """
     # Add AWS credentials to environment for docker command.
-    env = dict(os.environ)
-    if not aws_utils.is_ec2_instance():
-        env.update(aws_utils.get_aws_env_vars())
-
     common_args = []
     if cleanup:
         common_args.append("--rm")
 
-    # Environment args.
-    common_args.extend(
-        [
-            "-e",
-            "AWS_ACCESS_KEY_ID",
-            "-e",
-            "AWS_SECRET_ACCESS_KEY",
-            "-e",
-            "AWS_SESSION_TOKEN",
-            "-e",
-            "AWS_DEFAULT_REGION",
-        ]
-    )
+    env = dict(os.environ)
+    if executor_name == "aws_batch-debug" and not aws_utils.is_ec2_instance():
+        env.update(aws_utils.get_aws_env_vars())
+        # AWS Environment args.
+        common_args.extend(
+            [
+                "-e",
+                "AWS_ACCESS_KEY_ID",
+                "-e",
+                "AWS_SECRET_ACCESS_KEY",
+                "-e",
+                "AWS_SESSION_TOKEN",
+                "-e",
+                "AWS_DEFAULT_REGION",
+            ]
+        )
+    elif executor_name == "gcp_batch_debug":
+        pass
 
     # Volume mounting args.
     for host, container in volumes:
@@ -150,6 +161,7 @@ def get_docker_job_options(job_options: dict, scratch_path: str) -> dict:
 
 
 def submit_task(
+    executor_name: str,
     image: str,
     scratch_prefix: str,
     job: Job,
@@ -172,6 +184,7 @@ def submit_task(
         code_file=code_file,
     )
     container_id = run_docker(
+        executor_name,
         command,
         image=image,
         **get_docker_job_options(job_options, scratch_prefix),
@@ -180,6 +193,7 @@ def submit_task(
 
 
 def submit_command(
+    executor_name: str,
     image: str,
     scratch_prefix: str,
     job: Job,
@@ -191,7 +205,10 @@ def submit_command(
     """
     shell_command = get_script_task_command(scratch_prefix, job, command)
     container_id = run_docker(
-        shell_command, image=image, **get_docker_job_options(job_options, scratch_prefix)
+        executor_name,
+        shell_command,
+        image=image,
+        **get_docker_job_options(job_options, scratch_prefix),
     )
     return {"jobId": container_id, "redun_job_id": job.id}
 
@@ -240,6 +257,7 @@ class DockerExecutor(Executor):
             raise ValueError("DockerExecutor requires config.")
 
         # Required config.
+        self._executor_name = name
         self._image = config["image"]
         self._scratch_prefix_rel = config["scratch"]
         self._scratch_prefix_abs: Optional[str] = None
@@ -386,6 +404,7 @@ class DockerExecutor(Executor):
         try:
             if not job.task.script:
                 docker_resp = submit_task(
+                    self._executor_name,
                     image,
                     self._scratch_prefix,
                     job,
@@ -398,6 +417,7 @@ class DockerExecutor(Executor):
             else:
                 command = get_task_command(job.task, args, kwargs)
                 docker_resp = submit_command(
+                    self._executor_name,
                     image,
                     self._scratch_prefix,
                     job,
