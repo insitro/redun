@@ -7,8 +7,8 @@ from collections import OrderedDict
 from configparser import SectionProxy
 from typing import Any, Dict, List, Optional
 
+from google.cloud.batch_v1 import Job as BatchJob
 from google.cloud.batch_v1 import JobStatus
-from google.cloud.batch_v1 import job as BatchJob
 
 from redun.executors import gcp_utils
 from redun.executors.base import Executor, register_executor
