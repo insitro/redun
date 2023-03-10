@@ -502,6 +502,10 @@ The name of the executor that has the execution context for this federated task.
 The path to the configuration to use for the remainder of the execution. Either an absolute
 path or relative to the executor entrypoint. 
 
+#### `task_signature`
+
+Optional. The signature of the federated task. Because the task options can be used to change the name of the task itself, task_name _and_ task_signature are separate options in the config.
+
 #### `description`
 
 Optional. A description of this entrypoint.
