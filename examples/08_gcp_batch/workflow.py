@@ -27,4 +27,9 @@ def hello_world_script(greet: str) -> str:
 
 @task()
 def main(greet: str = "Hello") -> list:
-    return ["main", hello_world(greet), hello_world_script(greet)]
+
+    return [
+        "main",
+        hello_world_script(greet),
+        [hello_world(f"({i}) {greet}") for i in range(1, 4)],
+    ]

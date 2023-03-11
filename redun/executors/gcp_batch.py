@@ -3,12 +3,13 @@ import logging
 import re
 import threading
 import time
+import uuid
 from collections import OrderedDict
 from configparser import SectionProxy
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
-from google.cloud.batch_v1 import Job as BatchJob
-from google.cloud.batch_v1 import JobStatus
+from google.api_core.exceptions import NotFound
+from google.cloud.batch_v1 import JobStatus, Task, TaskStatus
 
 from redun.executors import gcp_utils
 from redun.executors.base import Executor, register_executor
@@ -16,16 +17,25 @@ from redun.executors.code_packaging import package_code, parse_code_package_conf
 from redun.executors.command import get_oneshot_command, get_script_task_command
 from redun.executors.docker import DockerExecutor, get_docker_executor_config
 from redun.executors.scratch import (
+    SCRATCH_ERROR,
+    SCRATCH_HASHES,
+    SCRATCH_INPUT,
     SCRATCH_OUTPUT,
+    get_array_scratch_file,
     get_job_scratch_dir,
     get_job_scratch_file,
     parse_job_error,
     parse_job_result,
 )
 from redun.file import File
+from redun.job_array import JobArrayer
 from redun.scheduler import Job as RedunJob
 from redun.scheduler import Scheduler
-from redun.scripting import get_task_command, DEFAULT_SHELL
+from redun.scripting import DEFAULT_SHELL, get_task_command
+from redun.utils import pickle_dump
+
+REDUN_ARRAY_JOB_PREFIX = "redun-array-"
+REDUN_JOB_PREFIX = "redun-"
 
 REDUN_HASH_LABEL_KEY = "redun_hash"
 REDUN_JOB_TYPE_LABEL_KEY = "redun_job_type"
@@ -69,12 +79,20 @@ class GCPBatchExecutor(Executor):
         self.code_file: Optional[File] = None
 
         # Monitoring internals
-        self.preexisting_batch_jobs: Dict[str, str] = {}  # RedunJob hash -> BatchJob name
+        self.preexisting_batch_tasks: Dict[str, str] = {}  # RedunJob hash -> BatchJob task name
         # We use an OrderedDict in order to retain submission order.
-        self.pending_batch_jobs: Dict[str, "RedunJob"] = OrderedDict()
+        self.pending_batch_tasks: Dict[str, "RedunJob"] = OrderedDict()
         self.is_running = False
         self.interval = config.getfloat("job_monitor_interval", fallback=5.0)
         self._thread: Optional[threading.Thread] = None
+        self.arrayer = JobArrayer(
+            self._submit_jobs,
+            self._on_error,
+            submit_interval=self.interval,
+            stale_time=config.getfloat("job_stale_time", fallback=3.0),
+            min_array_size=config.getint("min_array_size", fallback=2),
+            max_array_size=config.getint("max_array_size", fallback=5000),
+        )
 
         # Default task options.
         self.default_task_options: Dict[str, Any] = {
@@ -82,14 +100,20 @@ class GCPBatchExecutor(Executor):
             "machine_type": config.get("machine_type", fallback="e2-standard-4"),
             "vcpus": config.getint("vcpus", fallback=2),
             "memory": config.getint("memory", fallback=16),
-            "task_count": config.getint("task_count", fallback=1),
-            "max_duration": config.get("max_duration", "3d"),
+            "max_duration": config.get("max_duration", fallback="259200s"),
             "retries": config.getint("retries", fallback=2),
             "priority": config.getint("priority", fallback=30),
             "service_account_email": config.get("service_account_email", fallback=""),
         }
         if config.get("labels"):
             self.default_task_options["labels"] = json.loads(config.get("labels"))
+
+    def _on_error(self, error: Exception) -> None:
+        """
+        Callback for JobArrayer to report scheduler-level errors.
+        """
+        assert self._scheduler
+        self._scheduler.reject_job(None, error)
 
     def set_scheduler(self, scheduler: Scheduler) -> None:
         super().set_scheduler(scheduler)
@@ -105,23 +129,85 @@ class GCPBatchExecutor(Executor):
         batch_jobs = gcp_utils.list_jobs(
             client=self.gcp_client, project_id=self.project, region=self.region
         )
+        inflight_job_statuses = [
+            JobStatus.State.SCHEDULED,
+            JobStatus.State.QUEUED,
+            JobStatus.State.RUNNING,
+        ]
+        inflight_task_statuses = [
+            TaskStatus.State.ASSIGNED,
+            TaskStatus.State.PENDING,
+            TaskStatus.State.RUNNING,
+        ]
 
         for job in batch_jobs:
-            # Skip job if it is not in one of the 'inflight' states
-            if job.status.state not in [
-                JobStatus.State.SCHEDULED,
-                JobStatus.State.QUEUED,
-                JobStatus.State.RUNNING,
-            ]:
-                continue
-
-            # If a job is in the inflight state but is not labelled with a redun hash
-            # then it is not a redun job
+            # If a job is not labelled with a redun hash then it is not a redun job
             if REDUN_HASH_LABEL_KEY not in job.labels:
                 continue
 
+            if job.status.state not in inflight_job_statuses:
+                continue
+
             job_hash = job.labels[REDUN_HASH_LABEL_KEY]
-            self.preexisting_batch_jobs[job_hash] = job.name
+
+            # Single jobs have only one task in their task group and can be simply added to dict of
+            # pre-existing jobs.
+            if job.task_groups[0].task_count == 1:
+                task_name = f"{job.task_groups[0].name}/tasks/0"
+                self.preexisting_batch_tasks[job_hash] = task_name
+
+            # Otherwise we need to read the eval file to reunite with batch tasks in the batch job
+            else:
+                eval_file = File(
+                    get_array_scratch_file(self.gcs_scratch_prefix, job_hash, SCRATCH_HASHES)
+                )
+                if not eval_file.exists():
+                    # Eval file does not exist, so we cannot reunite with this array job.
+                    continue
+
+                # Get eval_hash for all jobs that were part of the array
+                eval_hashes = cast(str, eval_file.read("r")).splitlines()
+
+                batch_tasks = gcp_utils.list_tasks(
+                    client=self.gcp_client, group_name=job.task_groups[0].name
+                )
+                for array_index, task in enumerate(batch_tasks):
+                    # Skip job if it is not in one of the 'inflight' states
+                    if task.status.state in inflight_task_statuses:
+                        array_job_hash = eval_hashes[array_index]
+                        self.preexisting_batch_tasks[array_job_hash] = task.name
+
+    def _get_job_options(self, job: RedunJob, array_uuid: Optional[str] = None) -> dict:
+        """
+        Determine the task options for a job.
+
+        Task options can be specified at the job-level have precedence over
+        the executor-level (within `redun.ini`):
+        """
+        assert job.eval_hash
+
+        job_options = job.get_options()
+
+        task_options = {
+            **self.default_task_options,
+            **job_options,
+        }
+
+        default_tags = {
+            REDUN_HASH_LABEL_KEY: array_uuid if array_uuid else job.eval_hash,
+            REDUN_JOB_TYPE_LABEL_KEY: "script" if job.task.script else "container",
+        }
+
+        # Merge labels if needed.
+        labels: Dict[str, str] = {
+            **self.default_task_options.get("labels", {}),
+            **job_options.get("labels", {}),
+            **default_tags,
+        }
+
+        task_options["labels"] = labels
+
+        return task_options
 
     def submit(self, job: RedunJob) -> None:
         """
@@ -163,31 +249,56 @@ class GCPBatchExecutor(Executor):
             # Precompute existing inflight jobs for job reuniting.
             self.gather_inflight_jobs()
 
-        if job.eval_hash in self.preexisting_batch_jobs:
-            job_dir = get_job_scratch_dir(self.gcs_scratch_prefix, job)
-            job_name = self.preexisting_batch_jobs[job.eval_hash]
-            existing_job = gcp_utils.get_job(client=self.gcp_client, job_name=job_name)
+        # Package code if necessary and we have not already done so. If code_package
+        # is False, then we can skip this step. Additionally, if we have already
+        # packaged and set code_file, then we do not need to repackage.
+        if self.code_package is not False and self.code_file is None:
+            code_package = self.code_package or {}
+            assert isinstance(code_package, dict)
+            self.code_file = package_code(self.gcs_scratch_prefix, code_package)
 
-            self.log(
-                "reunite redun job {redun_job} with {job_type} {batch_job}:\n"
-                "  gcs_scratch_path = {job_dir}".format(
-                    redun_job=job.id,
-                    job_type="GCP Batch Job",
-                    batch_job=existing_job.uid,
-                    job_dir=job_dir,
+        task_options = self._get_job_options(job)
+        use_cache = task_options.get("cache", True)
+
+        batch_task_name: Optional[str] = None
+        if use_cache and job.eval_hash in self.preexisting_batch_tasks:
+            batch_task_name = self.preexisting_batch_tasks.pop(job.eval_hash)
+
+            job_dir = get_job_scratch_dir(self.gcs_scratch_prefix, job)
+            existing_task = gcp_utils.get_task(client=self.gcp_client, task_name=batch_task_name)
+
+            if existing_task:
+                self.log(
+                    "reunite redun job {redun_job} with {job_type}:\n"
+                    "  task_name = {batch_task_name}"
+                    "  gcs_scratch_path = {job_dir}".format(
+                        redun_job=job.id,
+                        job_type="GCP Batch Job Task",
+                        batch_task_name=batch_task_name,
+                        job_dir=job_dir,
+                    )
                 )
-            )
-            self.pending_batch_jobs[existing_job.name] = job
-        else:
-            # TODO support array jobs instead of just single jobs
-            self._submit_single_job(job)
+                self.pending_batch_tasks[existing_task.name] = job
+        if batch_task_name is None:
+            self.arrayer.add_job(job)
 
         self._start()
+
+    def _submit_jobs(self, jobs: List[RedunJob]) -> None:
+        """
+        Callback for JobArrayer to return arrays of Jobs.
+        """
+        if len(jobs) == 1:
+            # Singleton jobs are given as single element lists.
+            self._submit_single_job(jobs[0])
+        else:
+            self._submit_array_job(jobs)
 
     def _submit_array_job(self, jobs: List[RedunJob]) -> str:
         """
         Submits an array job, returning job name uuid
         """
+        array_size = len(jobs)
         all_args = []
         all_kwargs = []
         for job in jobs:
@@ -195,39 +306,91 @@ class GCPBatchExecutor(Executor):
             all_args.append(job.args[0])
             all_kwargs.append(job.args[1])
 
-        return ""
+        # All jobs identical so just grab the first one
+        job = jobs[0]
+        assert job.task
+        if job.task.script:
+            raise NotImplementedError("Array jobs not supported for scripts")
 
-    def _get_job_options(self, job: RedunJob) -> dict:
-        """
-        Determine the task options for a job.
+        # Generate a unique name for job with no '-' to simplify job name parsing.
+        array_uuid = str(uuid.uuid4())
 
-        Task options can be specified at the job-level have precedence over
-        the executor-level (within `redun.ini`):
-        """
-        assert job.eval_hash
+        task_options = self._get_job_options(job, array_uuid=array_uuid)
 
-        job_options = job.get_options()
+        # Setup input, output and error path files. Input file is a pickled list
+        # of args, and kwargs, for each child job.
+        input_file = get_array_scratch_file(self.gcs_scratch_prefix, array_uuid, SCRATCH_INPUT)
+        with File(input_file).open("wb") as out:
+            pickle_dump([all_args, all_kwargs], out)
 
-        task_options = {
-            **self.default_task_options,
-            **job_options,
-        }
+        # Output file is a plaintext list of output paths, for each child job.
+        output_file = get_array_scratch_file(self.gcs_scratch_prefix, array_uuid, SCRATCH_OUTPUT)
+        output_paths = [
+            get_job_scratch_file(self.gcs_scratch_prefix, job, SCRATCH_OUTPUT) for job in jobs
+        ]
+        with File(output_file).open("w") as ofile:
+            json.dump(output_paths, ofile)
 
-        default_tags = {
-            REDUN_HASH_LABEL_KEY: job.eval_hash,
-            REDUN_JOB_TYPE_LABEL_KEY: "script" if job.task.script else "container",
-        }
+        # Error file is a plaintext list of error paths, one for each child job.
+        error_file = get_array_scratch_file(self.gcs_scratch_prefix, array_uuid, SCRATCH_ERROR)
+        error_paths = [
+            get_job_scratch_file(self.gcs_scratch_prefix, job, SCRATCH_ERROR) for job in jobs
+        ]
+        with File(error_file).open("w") as efile:
+            json.dump(error_paths, efile)
 
-        # Merge labels if needed.
-        labels: Dict[str, str] = {
-            **self.default_task_options.get("labels", {}),
-            **job_options.get("labels", {}),
-            **default_tags,
-        }
+        # Eval hash file is plaintext hashes of child jobs for matching for job
+        # reuniting.
+        eval_file = get_array_scratch_file(self.gcs_scratch_prefix, array_uuid, SCRATCH_HASHES)
+        with File(eval_file).open("w") as eval_f:
+            eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
 
-        task_options["labels"] = labels
+        image = task_options.pop("image", self.image)
+        project = task_options.pop("project", self.project)
+        region = task_options.pop("region", self.region)
 
-        return task_options
+        command = get_oneshot_command(
+            self.gcs_scratch_prefix, job, job.task, code_file=self.code_file, array_uuid=array_uuid
+        )
+
+        gcp_job = gcp_utils.batch_submit(
+            client=self.gcp_client,
+            job_name=f"{REDUN_ARRAY_JOB_PREFIX}{array_uuid}",
+            project=project,
+            region=region,
+            image=image,
+            commands=command,
+            gcs_scratch_prefix=self.gcs_scratch_prefix,
+            task_count=array_size,
+            **task_options,
+        )
+
+        gcp_job_task_count = gcp_job.task_groups[0].task_count
+        if gcp_job_task_count != array_size:
+            raise AssertionError(
+                f"Batch job task group has {len(gcp_job_task_count)} tasks "
+                f"instead of requested array size {array_size}."
+            )
+
+        array_task_group_name = gcp_job.task_groups[0].name
+        for i in range(0, gcp_job_task_count):
+            self.pending_batch_tasks[f"{array_task_group_name}/tasks/{i}"] = jobs[i]
+
+        self.log(
+            "submit {array_size} redun job(s) as {job_type} {array_job_id}:\n"
+            "  array_job_id    = {array_job_id}\n"
+            "  array_task_group_name  = {array_task_group_name}\n"
+            "  array_size      = {array_size}\n"
+            "  gcs_scratch_path = {job_dir}\n".format(
+                array_size=array_size,
+                job_type="GCP Batch Job",
+                array_job_id=gcp_job.uid,
+                array_task_group_name=array_task_group_name,
+                job_dir=get_array_scratch_file(self.gcs_scratch_prefix, array_uuid, ""),
+            )
+        )
+
+        return array_uuid
 
     def _submit_single_job(self, job: RedunJob) -> None:
         """
@@ -251,21 +414,18 @@ class GCPBatchExecutor(Executor):
         # Submit a new Batch job.
         gcp_job = None
         if not job.task.script:
-            # Package code if necessary and we have not already done so. If code_package
-            # is False, then we can skip this step. Additionally, if we have already
-            # packaged and set code_file, then we do not need to repackage.
-            if self.code_package is not False and self.code_file is None:
-                code_package = self.code_package or {}
-                assert isinstance(code_package, dict)
-                self.code_file = package_code(self.gcs_scratch_prefix, code_package)
-
             command = get_oneshot_command(
-                self.gcs_scratch_prefix, job, job.task, args, kwargs, code_file=self.code_file
+                self.gcs_scratch_prefix,
+                job,
+                job.task,
+                args=args,
+                kwargs=kwargs,
+                code_file=self.code_file,
             )
 
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
-                job_name=f"redun-{job.id}",
+                job_name=f"{REDUN_JOB_PREFIX}{job.id}",
                 project=project,
                 region=region,
                 image=image,
@@ -284,17 +444,17 @@ class GCPBatchExecutor(Executor):
             )
 
             # Get buckets - This can probably be improved.
-            mount_buckets = set(re.findall(r'/mnt/disks/share/([^\/]+)/', script_command[-1] + task_command))
+            mount_buckets: List[str] = list(
+                set(re.findall(r"/mnt/disks/share/([^\/]+)/", script_command[-1] + task_command))
+            )
 
             # Convert start command to script.
-            START_SCRIPT = '.redun_job.sh'
-            script_path = get_job_scratch_file(self.gcs_scratch_prefix,
-                                               job,
-                                               START_SCRIPT)
+            START_SCRIPT = ".redun_job.sh"
+            script_path = get_job_scratch_file(self.gcs_scratch_prefix, job, START_SCRIPT)
 
             File(script_path).write(DEFAULT_SHELL + script_command[-1])
 
-            script_path = script_path.replace('gs://', '/mnt/disks/share/')
+            script_path = script_path.replace("gs://", "/mnt/disks/share/")
 
             # GCP Batch takes script as a string and requires quoting of -c argument
             script_command[-1] = script_path
@@ -311,20 +471,19 @@ class GCPBatchExecutor(Executor):
             )
 
         job_dir = get_job_scratch_dir(self.gcs_scratch_prefix, job)
-        job_type = "GCP Batch job"
         self.log(
-            "submit redun job {redun_job} as {job_type} {batch_job}:\n"
-            "  job_id          = {batch_job}\n"
-            "  job_name        = {job_name}\n"
+            "submit redun job {redun_job} as {job_type}:\n"
+            "  task_name          = {task_name}\n"
             "  gcs_scratch_path = {job_dir}\n".format(
                 redun_job=job.id,
-                job_type=job_type,
-                batch_job=gcp_job.uid,
-                job_name=gcp_job.name,
+                job_type="GCP Batch Job Task",
+                task_name=gcp_job.task_groups[0].name,
                 job_dir=job_dir,
             )
         )
-        self.pending_batch_jobs[gcp_job.name] = job
+        task_name = gcp_job.task_groups[0].name
+        # For a single submitted task we can set task name directly
+        self.pending_batch_tasks[f"{task_name}/tasks/0"] = job
 
     def _start(self) -> None:
         """
@@ -342,6 +501,7 @@ class GCPBatchExecutor(Executor):
         self.is_running = False
 
         self._docker_executor.stop()
+        self.arrayer.stop()
 
         # Stop monitor thread.
         if (
@@ -361,19 +521,27 @@ class GCPBatchExecutor(Executor):
         gcp_client = gcp_utils.get_gcp_client()
 
         try:
-            while self.is_running and (self.pending_batch_jobs):
+            while self.is_running and (self.pending_batch_tasks or self.arrayer.num_pending):
                 if self._scheduler.logger.level >= logging.DEBUG:
                     self.log(
-                        f"Waiting on {len(self.pending_batch_jobs)} Batch job(s):\n\t"
-                        + "\n\t".join(sorted(self.pending_batch_jobs.keys())),
+                        f"Preparing {self.arrayer.num_pending} job(s) for Job Arrays.",
+                        level=logging.DEBUG,
+                    )
+                    self.log(
+                        f"Waiting on {len(self.pending_batch_tasks)} Batch tasks(s):\n\t"
+                        + "\n\t".join(sorted(self.pending_batch_tasks.keys())),
                         level=logging.DEBUG,
                     )
 
-                # Copy pending_batch_jobs.keys() since it can change due to new submissions.
-                job_names = list(self.pending_batch_jobs.keys())
-                for name in job_names:
-                    job = gcp_utils.get_job(client=gcp_client, job_name=name)
-                    self._process_job_status(job)
+                # Copy pending_batch_tasks.keys() since it can change due to new submissions.
+                task_names = list(self.pending_batch_tasks.keys())
+                for name in task_names:
+                    try:
+                        task = gcp_utils.get_task(client=gcp_client, task_name=name)
+                        self._process_task_status(task)
+                    except NotFound:
+                        # Batch Job has not instantiated tasks yet so ignore this NotFound error
+                        continue
 
                 time.sleep(self.interval)
 
@@ -386,19 +554,17 @@ class GCPBatchExecutor(Executor):
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
 
-    def _process_job_status(self, job: BatchJob) -> None:
+    def _process_task_status(self, task: Task) -> None:
         assert self._scheduler
-        state = job.status.state
-        if state == JobStatus.State.STATE_UNSPECIFIED:
+        state = task.status.state
+        if state == TaskStatus.State.STATE_UNSPECIFIED:
             return
-        elif state == JobStatus.State.QUEUED:
+        elif state == TaskStatus.State.RUNNING:
             return
-        elif state == JobStatus.State.SCHEDULED:
+        elif state == TaskStatus.State.ASSIGNED:
             return
-        elif state == JobStatus.State.RUNNING:
-            return
-        elif state == JobStatus.State.SUCCEEDED:
-            redun_job = self.pending_batch_jobs.pop(job.name)
+        elif state == TaskStatus.State.SUCCEEDED:
+            redun_job = self.pending_batch_tasks.pop(task.name)
             result, exists = parse_job_result(self.gcs_scratch_prefix, redun_job)
             if exists:
                 self._scheduler.done_job(redun_job, result)
@@ -410,11 +576,8 @@ class GCPBatchExecutor(Executor):
                         get_job_scratch_file(self.gcs_scratch_prefix, redun_job, SCRATCH_OUTPUT)
                     ),
                 )
-        elif state == JobStatus.State.FAILED:
-            redun_job = self.pending_batch_jobs.pop(job.name)
+        elif state == TaskStatus.State.FAILED:
+            redun_job = self.pending_batch_tasks.pop(task.name)
             error, error_traceback = parse_job_error(self.gcs_scratch_prefix, redun_job)
 
             self._scheduler.reject_job(redun_job, error, error_traceback=error_traceback)
-
-        elif state == JobStatus.State.DELETION_IN_PROGRESS:
-            return

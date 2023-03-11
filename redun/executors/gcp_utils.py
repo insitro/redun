@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Dict, Iterable, List, Tuple, Union
 
 from google.cloud import batch_v1
-from urllib.parse import urlparse
+
 
 # List of supported available CPU Platforms
 # https://cloud.google.com/compute/docs/instances/specify-min-cpu-platform#availablezones
@@ -28,15 +28,15 @@ def batch_submit(
     job_name: str,
     project: str,
     region: str,
-    mount_buckets: List[str],
     gcs_scratch_prefix: str,
     machine_type: str,
     vcpus: int,
     memory: int,
-    task_count: int,
     max_duration: str,
     retries: int,
     priority: int,
+    task_count: int = 1,
+    mount_buckets: List[str] = [],
     boot_disk_size_gib: int = None,
     min_cpu_platform: MinCPUPlatform = None,
     accelerators: List[Tuple[str, int]] = [],
@@ -57,7 +57,7 @@ def batch_submit(
         gcs_bucket.remote_path = bucket
         gcs_volume = batch_v1.Volume()
         gcs_volume.gcs = gcs_bucket
-        gcs_volume.mount_path = f'/mnt/disks/share/{bucket}'
+        gcs_volume.mount_path = f"/mnt/disks/share/{bucket}"
         return gcs_volume
 
     volumes = [make_volume(bucket) for bucket in mount_buckets]
@@ -74,8 +74,10 @@ def batch_submit(
         runnable.container.image_uri = image
         runnable.container.entrypoint = entrypoint
         runnable.container.commands = commands
-        runnable.container.options = ''.join([f' -v {x.mount_path}:{x.mount_path}' for x in volumes])
-        runnable.container.volumes = [f'{x.mount_path}:{x.mount_path}' for x in volumes]
+        runnable.container.options = "".join(
+            [f" -v {x.mount_path}:{x.mount_path}" for x in volumes]
+        )
+        runnable.container.volumes = [f"{x.mount_path}:{x.mount_path}" for x in volumes]
 
     task = batch_v1.TaskSpec()
     task.runnables = [runnable]
@@ -161,6 +163,17 @@ def list_jobs(
 
 
 def format_job_name(project_id: str, region: str, job_name: str) -> str:
+    """
+    Create a job name from provided details
+
+    Args:
+        project_id: project ID or project number of the Cloud project you want to use.
+        region: name of the region hosts the job.
+        job_name: fully qualified name of the job you want to retrieve information about.
+
+    Returns:
+        A formatted job name.
+    """
     return f"projects/{project_id}/locations/{region}/jobs/{job_name}"
 
 
@@ -169,9 +182,7 @@ def get_job(client: batch_v1.BatchServiceClient, job_name: str) -> batch_v1.Job:
     Retrieve information about a Batch Job.
 
     Args:
-        project_id: project ID or project number of the Cloud project you want to use.
-        region: name of the region hosts the job.
-        job_name: the name of the job you want to retrieve information about.
+        job_name: fully qualified name of the job you want to retrieve information about.
 
     Returns:
         A Job object representing the specified job.
@@ -180,6 +191,18 @@ def get_job(client: batch_v1.BatchServiceClient, job_name: str) -> batch_v1.Job:
 
 
 def format_task_group_name(project_id: str, region: str, job_name: str, group_name: str) -> str:
+    """
+    Create a task group name from provided details
+
+    Args:
+        project_id: project ID or project number of the Cloud project you want to use.
+        region: name of the region hosting the jobs.
+        job_name: name of the job which tasks you want to list.
+        group_name: name of the group of tasks. Usually it's `group0`.
+
+    Return:
+        A formatted task group name.
+    """
     return f"projects/{project_id}/locations/{region}/jobs/{job_name}/taskGroups/{group_name}"
 
 
@@ -188,10 +211,7 @@ def list_tasks(client: batch_v1.BatchServiceClient, group_name: str) -> Iterable
     Get a list of all jobs defined in given region.
 
     Args:
-        project_id: project ID or project number of the Cloud project you want to use.
-        region: name of the region hosting the jobs.
-        job_name: name of the job which tasks you want to list.
-        group_name: name of the group of tasks. Usually it's `group0`.
+        group_name: fully qualified name of the group of tasks you want to look up
 
     Returns:
         An iterable collection of Task objects.
@@ -202,6 +222,20 @@ def list_tasks(client: batch_v1.BatchServiceClient, group_name: str) -> Iterable
 def format_task_name(
     project_id: str, region: str, job_name: str, group_name: str, task_number: int
 ) -> str:
+    """
+    Create a task name from provided details
+
+    Args:
+        project_id: project ID or project number of the Cloud project you want to use.
+        region: name of the region hosts the job.
+        job_name: the name of the job you want to retrieve information about.
+        group_name: the name of the group that owns the task you want to check.
+            Usually it's `group0`.
+        task_number: number of the task you want to look up.
+
+    Return:
+        A formatted task name.
+    """
     return (
         f"projects/{project_id}/locations/{region}/jobs/{job_name}"
         f"/taskGroups/{group_name}/tasks/{task_number}"
@@ -213,12 +247,7 @@ def get_task(client: batch_v1.BatchServiceClient, task_name: str) -> batch_v1.Ta
     Retrieve information about a Task.
 
     Args:
-        project_id: project ID or project number of the Cloud project you want to use.
-        region: name of the region hosts the job.
-        job_name: the name of the job you want to retrieve information about.
-        group_name: the name of the group that owns the task you want to check.
-            Usually it's `group0`.
-        task_number: number of the task you want to look up.
+        task_name: fully qualified name of the task you want to look up.
 
     Returns:
         A Task object representing the specified task.

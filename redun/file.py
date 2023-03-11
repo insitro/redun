@@ -51,13 +51,15 @@ def register_filesystem(cls: Type["FileSystem"]) -> Type["FileSystem"]:
     return cls
 
 
-def get_proto(url: str) -> str:
+def get_proto(url: Optional[str] = None) -> str:
     """
     Returns the protocol for a url.
 
     For example the protocol for 'http://example.com' is 'http'. Local paths
     '/path/to/my/file' have the protocol 'local'.
     """
+    if not url:
+        return "local"
     return urlparse(url).scheme or "local"
 
 
@@ -309,7 +311,7 @@ class FileSystem(abc.ABC):
         src_path: Optional[str],
         dest_path: Optional[str],
         recursive: bool = False,
-        as_mount: bool = False
+        as_mount: bool = False,
     ) -> str:
         """
         Returns a shell command for performing a file copy.
@@ -331,12 +333,16 @@ class FileSystem(abc.ABC):
             else:
                 raise ValueError("recursive is not supported with stdin or stdout.")
 
-        src_cmd = get_filesystem(url=src_path).shell_copy(src_path,
-                                                          None,
-                                                          as_mount=as_mount) if src_path else None
-        dest_cmd = get_filesystem(url=dest_path).shell_copy(None,
-                                                            dest_path,
-                                                            as_mount=as_mount) if dest_path else None
+        src_cmd = (
+            get_filesystem(url=src_path).shell_copy(src_path, None, as_mount=as_mount)
+            if src_path
+            else None
+        )
+        dest_cmd = (
+            get_filesystem(url=dest_path).shell_copy(None, dest_path, as_mount=as_mount)
+            if dest_path
+            else None
+        )
 
         if src_cmd and dest_cmd:
             # Combine two fs-specific shell commands through a pipe.
@@ -464,7 +470,11 @@ class LocalFileSystem(FileSystem):
             super().copy(src_path, dest_path)
 
     def shell_copy(
-        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False, as_mount: bool = False
+        self,
+        src_path: Optional[str],
+        dest_path: Optional[str],
+        recursive: bool = False,
+        as_mount: bool = False,
     ) -> str:
         """
         Returns a shell command for performing a file copy.
@@ -486,7 +496,9 @@ class LocalFileSystem(FileSystem):
         other_proto = next((proto for proto in protos if proto != "local"), None)
         if other_proto:
             # Let other proto produce the command.
-            return get_filesystem(other_proto).shell_copy(src_path, dest_path, recursive=recursive, as_mount=as_mount)
+            return get_filesystem(other_proto).shell_copy(
+                src_path, dest_path, recursive=recursive, as_mount=as_mount
+            )
 
         if src_path and dest_path:
             if not recursive:
@@ -603,7 +615,11 @@ class FsspecFileSystem(FileSystem):
             super().copy(src_path, dest_path)
 
     def shell_copy(
-        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False
+        self,
+        src_path: Optional[str],
+        dest_path: Optional[str],
+        recursive: bool = False,
+        as_mount: bool = False,
     ) -> str:
         """
         Returns a shell command for performing a file copy.
@@ -687,7 +703,11 @@ class GSFileSystem(FsspecFileSystem):
     name = "gs"
 
     def shell_copy(
-        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False, as_mount: bool = False
+        self,
+        src_path: Optional[str],
+        dest_path: Optional[str],
+        recursive: bool = False,
+        as_mount: bool = False,
     ) -> str:
         """
         Returns a shell command for performing a file copy.
@@ -701,9 +721,10 @@ class GSFileSystem(FsspecFileSystem):
         recursive : bool
             If True, copy a directory tree of files.
         """
+
         def to_mount_directory(path):
             parsed_path = urlparse(path)
-            return f'/mnt/disks/share/{parsed_path.netloc}{parsed_path.path}'
+            return f"/mnt/disks/share/{parsed_path.netloc}{parsed_path.path}"
 
         if as_mount:
             src_proto, dest_proto = get_proto(src_path), get_proto(dest_path)
@@ -716,7 +737,7 @@ class GSFileSystem(FsspecFileSystem):
 
             if dest_path:
                 # Ensure dest path exists.
-                mk_dest_dir = f'mkdir -p {quote(os.path.dirname(dest_path))}'
+                mk_dest_dir = f"mkdir -p {quote(os.path.dirname(dest_path))}"
 
             if src_path and dest_path:
                 if src_proto == "gs" and dest_proto == "local":
@@ -739,10 +760,7 @@ class GSFileSystem(FsspecFileSystem):
 
         if "gs" not in protos or not (protos <= {"local", "gs"}):
             # Fallback to generic copy strategy.
-            return super().shell_copy(src_path,
-                                      dest_path,
-                                      recursive=recursive,
-                                      as_mount=as_mount)
+            return super().shell_copy(src_path, dest_path, recursive=recursive, as_mount=as_mount)
 
         if src_path and dest_path:
             if not recursive:
@@ -858,7 +876,11 @@ class S3FileSystem(FileSystem):
             super().copy(src_path, dest_path)
 
     def shell_copy(
-        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False
+        self,
+        src_path: Optional[str],
+        dest_path: Optional[str],
+        recursive: bool = False,
+        as_mount: bool = False,
     ) -> str:
         """
         Returns a shell command for performing a file copy.
@@ -1236,10 +1258,10 @@ class Staging(Value, Generic[T]):
     def unstage(self) -> T:
         pass
 
-    def render_unstage(self) -> str:
+    def render_unstage(self, as_mount: bool = False) -> str:
         pass
 
-    def render_stage(self) -> str:
+    def render_stage(self, as_mount: bool = False) -> str:
         pass
 
     @classmethod
