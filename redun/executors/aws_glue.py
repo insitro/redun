@@ -543,6 +543,9 @@ class AWSGlueExecutor(Executor):
         )
         return glue_resp["JobRunId"]
 
+    def scratch_root(self) -> str:
+        return self.s3_scratch_prefix
+
 
 def submit_glue_job(
     job: Job,

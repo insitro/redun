@@ -2006,15 +2006,15 @@ def task1(x: int):
     return x + 1
 
 @task()
-def main(x: int):
-    return task1(x) + 1
+def main(x: int, y: int):
+    return task1(x) + 1 + y
 """
     )
 
     client = RedunClient()
 
-    result = client.execute(["redun", "run", "workflow.py", "main", "--x", "10"])
-    assert result == 12
+    result = client.execute(["redun", "run", "workflow.py", "main", "--x", "10", "--y", "5"])
+    assert result == 17
 
     assert client.scheduler
     scheduler = client.scheduler
@@ -2030,12 +2030,49 @@ def main(x: int):
         if job.parent_id:
             assert result == 11
         else:
-            assert result == 12
+            assert result == 17
 
     # Ensure that we can specify execution ids as well as job ids
     execution = backend.session.query(Execution).first()
     result = client.execute(["redun", "run", "--rerun", "workflow.py", execution.id])
+    assert result == 17
+
+    result = client.execute(["redun", "run", "--rerun", "workflow.py", execution.id, "--y", "10"])
+    assert result == 22
+
+
+@use_tempdir
+def test_run_packed_inputs() -> None:
+    """
+    Test that `run` accepts binary inputs w/ the --input flag.
+    """
+    file = File("workflow.py")
+    file.write(
+        """
+from redun import task
+
+redun_namespace = 'test'
+
+@task()
+def main(x: int, y: int = 0):
+    # Note: the default value y=0 is important to the test, this is a corner case of the CLI.
+    return x + y
+"""
+    )
+
+    client = RedunClient()
+
+    with File("inputs").open("wb") as out:
+        pickle_dump([(5,), {"y": 7}], out)
+
+    result = client.execute(["redun", "run", "workflow.py", "main", "--input", "inputs"])
     assert result == 12
+
+    # We should still allow overrides from the cmdline.
+    result = client.execute(
+        ["redun", "run", "workflow.py", "main", "--input", "inputs", "--y", "10"]
+    )
+    assert result == 15
 
 
 @pytest.mark.parametrize("executor", ["proc", "thread"])
@@ -2073,12 +2110,10 @@ def main() -> int:
         # Process executors are not shut down in py3.8, so it may still be running.
         # This is expected but we skip the test rather than try to wait it out
         return
-    assert client.scheduler
-    scheduler = client.scheduler
-    assert scheduler.backend
-    backend = cast(RedunBackendDb, scheduler.backend)
-    assert backend.session
-    value = backend.session.query(Value).filter(Value.type != "redun.Task").one()
+
+    parser = client.get_command_parser()
+    args, extra_args = parser.parse_known_args([])
+    value = client.get_session(args=args).query(Value).filter(Value.type != "redun.Task").one()
     assert value.value_parsed
     assert value.value_parsed != this_pid
 

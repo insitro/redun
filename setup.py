@@ -23,6 +23,7 @@ requirements = [
     # for some legacy APIs still supported in 2.0
     "sqlalchemy>=1.4.0,<2.1",
     "python-dateutil>=2.8",
+    "requests>=2.27.1",
     # If updating this list, check executors/aws_glue.py stays up to date with
     # packages needed to run in the glue environment.
 ]

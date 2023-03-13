@@ -74,6 +74,7 @@ class LocalExecutor(Executor):
         self.mode = config.get("mode", mode)
         # Autoconvert deprecated modes.
         self.mode = self._OLD2NEW_MODES.get(self.mode, self.mode)
+        self._scratch_root = config.get("scratch", "/tmp/redun")
         assert self.mode in self.MODES, f"Unknown mode: {self.mode}"
 
         self.start_method = config.get("start_method", self.DEFAULT_START_METHOD)
@@ -161,3 +162,6 @@ class LocalExecutor(Executor):
     def submit_script(self, job: "Job") -> None:
         assert job.task.script
         self._submit(exec_script_task, job)
+
+    def scratch_root(self) -> str:
+        return self._scratch_root

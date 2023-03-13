@@ -30,7 +30,7 @@ from redun.scheduler import (
     scheduler_task,
 )
 from redun.scheduler_config import postprocess_config
-from redun.task import CacheScope, PartialTask, SchedulerTask
+from redun.task import CacheScope, PartialTask, SchedulerTask, hash_args_eval
 from redun.tests.utils import assert_match_lines, use_tempdir
 from redun.utils import map_nested_value
 from redun.value import Value, get_type_registry
@@ -1623,9 +1623,9 @@ def test_config_args(scheduler: Scheduler) -> None:
     def task1(x: int, y: int, z: str = "hello") -> int:
         return x
 
-    eval_hash1, args_hash1 = scheduler.get_eval_hash(task1, (10, 11), {})
+    eval_hash1, args_hash1 = hash_args_eval(scheduler.type_registry, task1, (10, 11), {})
     # Changing 'x' and 'z' does not change args_hash.
-    eval_hash2, args_hash2 = scheduler.get_eval_hash(task1, (11, 11), {"z": "bye"})
+    eval_hash2, args_hash2 = hash_args_eval(scheduler.type_registry, task1, (11, 11), {"z": "bye"})
     assert eval_hash1 == eval_hash2
     assert args_hash1 == args_hash2
 
@@ -1639,8 +1639,10 @@ def test_variadic_args(scheduler: Scheduler) -> None:
     def task1(x: int, y: int, *rest: int) -> int:
         return x
 
-    eval_hash1, args_hash1 = scheduler.get_eval_hash(task1, (10, 11, 12), {})
-    eval_hash2, args_hash2 = scheduler.get_eval_hash(task1, (10, 11, 12, 13, 14), {})
+    eval_hash1, args_hash1 = hash_args_eval(scheduler.type_registry, task1, (10, 11, 12), {})
+    eval_hash2, args_hash2 = hash_args_eval(
+        scheduler.type_registry, task1, (10, 11, 12, 13, 14), {}
+    )
     assert eval_hash1 != eval_hash2
     assert args_hash1 != args_hash2
 

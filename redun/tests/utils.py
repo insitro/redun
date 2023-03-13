@@ -17,7 +17,9 @@ from aiobotocore.response import StreamingBody
 from botocore.awsrequest import AWSResponse
 from moto import mock_s3 as _mock_s3
 from moto.core.botocore_stubber import MockRawResponse
-from urllib3.response import HTTPHeaderDict
+
+# This should be public, and will be in v2.0. Until then, live with the private import.
+from urllib3._collections import HTTPHeaderDict
 
 from redun import Scheduler
 

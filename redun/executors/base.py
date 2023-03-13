@@ -63,6 +63,9 @@ class Executor:
     def stop(self) -> None:
         pass
 
+    def scratch_root(self) -> str:
+        raise NotImplementedError()
+
 
 # Singleton executor registry.
 _executor_classes: Dict[str, Type[Executor]] = {}
@@ -117,6 +120,18 @@ def get_executors_from_config(executors_config: dict) -> Iterator[Executor]:
         executor_class = cast(Type[Executor], get_executor_class(executor_config["type"]))
         executor = executor_class(executor_name, config=executor_config)
         yield executor
+
+
+def get_executor_from_config(executors_config: dict, executor_name: str) -> Executor:
+    """Create and return the executor by name. Raise an error if it is not present."""
+    for name, executor_config in executors_config.items():
+        if name != executor_name:
+            continue
+
+        executor_class = cast(Type[Executor], get_executor_class(executor_config["type"]))
+        executor = executor_class(executor_name, config=executor_config)
+        return executor
+    raise RuntimeError(f"Unknown Executor {executor_name}.")
 
 
 def load_task_module(module_name: str, task_name: str) -> None:

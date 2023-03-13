@@ -2,6 +2,7 @@ import enum
 import inspect
 import re
 import sys
+import typing
 from typing import (
     Any,
     Callable,
@@ -18,11 +19,11 @@ from typing import (
 )
 
 from redun.expression import SchedulerExpression, TaskExpression
-from redun.hashing import hash_arguments, hash_struct
+from redun.hashing import hash_arguments, hash_eval, hash_struct
 from redun.namespace import compute_namespace
 from redun.promise import Promise
 from redun.utils import get_func_source
-from redun.value import Value, get_type_registry
+from redun.value import TypeRegistry, Value, get_type_registry
 
 Func = TypeVar("Func", bound=Callable)
 Func2 = TypeVar("Func2", bound=Callable)
@@ -975,3 +976,42 @@ class TaskRegistry:
 
 # Global singleton task registry.
 _task_registry = TaskRegistry()
+
+
+def hash_args_eval(
+    type_registry: TypeRegistry, task: Task, args: tuple, kwargs: dict
+) -> Tuple[str, str]:
+    """
+    Compute eval_hash and args_hash for a task call, filtering out config args before hashing.
+    """
+    # Filter out config args from args and kwargs.
+    sig = task.signature
+    config_args: List = task.get_task_option("config_args", [])
+
+    # Determine the variadic parameter if it exists.
+    var_param_name: typing.Optional[str] = None
+    for param in sig.parameters.values():
+        if param.kind == inspect.Parameter.VAR_POSITIONAL:
+            var_param_name = param.name
+            break
+
+    # Filter args to remove config_args.
+    args2 = [
+        arg_value
+        for arg_name, arg_value in zip(sig.parameters, args)
+        if arg_name not in config_args
+    ]
+
+    # Additional arguments are assumed to be variadic arguments.
+    args2.extend(
+        arg_value for arg_value in args[len(sig.parameters) :] if var_param_name not in config_args
+    )
+
+    # Filter kwargs.
+    kwargs2 = {
+        arg_name: arg_value
+        for arg_name, arg_value in kwargs.items()
+        if arg_name not in config_args
+    }
+
+    return hash_eval(type_registry, task.hash, args2, kwargs2)

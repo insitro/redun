@@ -52,7 +52,7 @@ from redun.expression import (
 )
 from redun.file import Dir
 from redun.handle import Handle
-from redun.hashing import hash_eval, hash_struct
+from redun.hashing import hash_struct
 from redun.logging import logger as _logger
 from redun.promise import Promise, wait_promises
 from redun.scheduler_config import REDUN_INI_FILE, postprocess_config
@@ -64,6 +64,7 @@ from redun.task import (
     Task,
     TaskRegistry,
     get_task_registry,
+    hash_args_eval,
     scheduler_task,
     task,
 )
@@ -217,8 +218,8 @@ class Execution:
     An Execution tracks the execution of a workflow of :class:`redun.task.Task`s.
     """
 
-    def __init__(self, id: str):
-        self.id = id
+    def __init__(self, id: Optional[str] = None):
+        self.id = id or str(uuid.uuid4())
         self.job: Optional[Job] = None
 
     def add_job(self, job: "Job") -> None:
@@ -950,6 +951,7 @@ class Scheduler:
         dryrun: bool = False,
         cache: bool = True,
         tags: Iterable[Tuple[str, Any]] = (),
+        execution_id: Optional[str] = None,
     ) -> Result:
         pass
 
@@ -961,6 +963,7 @@ class Scheduler:
         dryrun: bool = False,
         cache: bool = True,
         tags: Iterable[Tuple[str, Any]] = (),
+        execution_id: Optional[str] = None,
     ) -> Result:
         pass
 
@@ -971,6 +974,7 @@ class Scheduler:
         dryrun: bool = False,
         cache: bool = True,
         tags: Iterable[Tuple[str, Any]] = (),
+        execution_id: Optional[str] = None,
     ) -> Result:
         """
         Run the scheduler to evaluate an Expression `expr`.
@@ -989,7 +993,8 @@ class Scheduler:
         parent_job: Optional[Job]
         if exec_argv is None:
             exec_argv = ["scheduler.run", trim_string(repr(expr))]
-        self._current_execution = Execution(self.backend.record_execution(exec_argv))
+        self._current_execution = Execution(execution_id)
+        self.backend.record_execution(self._current_execution.id, exec_argv)
         self.backend.record_tags(
             TagEntity.Execution, self._current_execution.id, chain(self._exec_tags, tags)
         )
@@ -1405,7 +1410,7 @@ class Scheduler:
         args, kwargs = job.args = self._preprocess_args(job, args, kwargs)
 
         # Check cache using eval_hash as key.
-        job.eval_hash, job.args_hash = self.get_eval_hash(job.task, args, kwargs)
+        job.eval_hash, job.args_hash = hash_args_eval(self.type_registry, job.task, args, kwargs)
         assert job.eval_hash
         assert job.args_hash
 
@@ -1796,44 +1801,6 @@ class Scheduler:
 
         # Set this execution's traceback.
         self.traceback = Traceback(error, task_frames, logs=error_traceback.logs)
-
-    def get_eval_hash(self, task: Task, args: tuple, kwargs: dict) -> Tuple[str, str]:
-        """
-        Compute eval_hash and args_hash for a task call, filtering out config args before hashing.
-        """
-        # Filter out config args from args and kwargs.
-        sig = task.signature
-        config_args: List = task.get_task_option("config_args", [])
-
-        # Determine the variadic parameter if it exists.
-        var_param_name: Optional[str] = None
-        for param in sig.parameters.values():
-            if param.kind == inspect.Parameter.VAR_POSITIONAL:
-                var_param_name = param.name
-                break
-
-        # Filter args to remove config_args.
-        args2 = [
-            arg_value
-            for arg_name, arg_value in zip(sig.parameters, args)
-            if arg_name not in config_args
-        ]
-
-        # Additional arguments are assumed to be variadic arguments.
-        args2.extend(
-            arg_value
-            for arg_value in args[len(sig.parameters) :]
-            if var_param_name not in config_args
-        )
-
-        # Filter kwargs.
-        kwargs2 = {
-            arg_name: arg_value
-            for arg_name, arg_value in kwargs.items()
-            if arg_name not in config_args
-        }
-
-        return hash_eval(self.type_registry, task.hash, args2, kwargs2)
 
     def _get_cache(self, job: Job) -> Tuple[Any, bool, Optional[str]]:
         """
@@ -2254,7 +2221,7 @@ def catch(
 
     # Check cache.
     catch_args = (expr,) + catch_args
-    eval_hash, args_hash = scheduler.get_eval_hash(catch, catch_args, {})
+    eval_hash, args_hash = hash_args_eval(scheduler.type_registry, catch, catch_args, {})
     # We haven't set an option on the catch task, so we just have to look for one at runtime.
     cache_scope = CacheScope(sexpr.task_expr_options.get("cache_scope", CacheScope.BACKEND))
     if scheduler._use_cache and cache_scope != CacheScope.NONE:
@@ -2439,7 +2406,7 @@ def apply_tags(
     check_valid=CacheCheckValid.SHALLOW,
 )
 def _subrun_root_task(
-    expr: Any,
+    expr: QuotedExpression,
     config: Dict[str, Dict],
     config_dir: Optional[str],
     load_modules: List[str],
@@ -2472,8 +2439,8 @@ def _subrun_root_task(
 
     Parameters
     ----------
-    expr: TaskExpression
-        TaskExpression to be run by sub-scheduler.
+    expr: QuotedExpression
+        QuotedExpression to be run by sub-scheduler.
     config
         A two-level python dict to configure the sub-scheduler.  (Will be used to initialize a
         :class:`Config` object via the `config_dict` kwarg.) Used if a `config_dir` is not
@@ -2549,7 +2516,8 @@ def _subrun_root_task(
         subrun_result.update(result)
 
     else:
-        result = sub_scheduler.run(expr.eval(), **run_config)
+        execution_id = run_config.get("execution_id", None)
+        result = sub_scheduler.run(expr=expr.eval(), execution_id=execution_id, **run_config)
         subrun_result["result"] = result
 
     subrun_result.update(

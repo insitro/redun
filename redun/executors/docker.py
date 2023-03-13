@@ -433,3 +433,6 @@ class DockerExecutor(Executor):
         Submit Job for script task to executor.
         """
         return self._submit(job)
+
+    def scratch_root(self) -> str:
+        return self._scratch_prefix

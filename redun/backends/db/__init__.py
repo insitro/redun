@@ -2162,12 +2162,14 @@ class RedunBackendDb(RedunBackend):
         )
         return is_valid
 
-    def record_execution(self, args: List[str]) -> str:
+    def record_execution(self, exec_id: str, args: List[str]) -> None:
         """
         Records an Execution to the backend.
 
         Parameters
         ----------
+        exec_id : str
+            The id of the execution.
         args : List[str]
             Arguments used on the command line to start Execution.
 
@@ -2177,10 +2179,9 @@ class RedunBackendDb(RedunBackend):
             UUID of new Execution.
         """
         self.current_execution = Execution(
-            id=str(uuid.uuid4()),
+            id=exec_id,
             args=json.dumps(args),
         )
-        return self.current_execution.id
 
     def record_job_start(self, job: "BaseJob", now: Optional[datetime] = None) -> Job:
         """

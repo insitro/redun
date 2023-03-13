@@ -590,6 +590,41 @@ It's common to use workflow engines to implement Extract Transform Load (ETL) pi
 
 redun provides solutions to several of these challenges using a concept called (Handles)[values.md#Handles-for-ephemeral-and-stateful-values].
 
+### Running without a scheduler
+
+Redun is designed to execute workflows in a highly parallel and asynchronous manner. This allows
+it to efficiently orchestrate complex workflows spread over a wide collection of resources.
+If the workflow is configured to use remote resources, this can mean that the scheduler
+sits idle, waiting for offloaded tasks to complete. However, having the long-lived scheduler
+waiting for those results is central to the design of redun. We prioritized
+keeping Executors as simple as possible, and instead rely on the scheduler to handle pre- and
+post-execution tasks, like recording to the backend database and processing any downstream
+tasks. Executors implement ways to offload computation to other resources or environments;
+their implementations involve arranging for the tasks provided by the scheduler to be run,
+then monitoring them (often in a long-lived thread) and notifying the scheduler when they
+are finished.
+
+There are a couple of instances where redun offers alternatives to this pattern, but they
+come with compromises. First, the `redun launch` command line provides a lightweight way
+to submit a command to a remote executor; most commonly, this is used to trigger redun itself,
+such as `redun launch --executor batch redun run file.py mytask`. The launch command
+offers an asynchronous mode, where it simply attempts to submit the job and exits. Not all
+executors will actually work; the Docker and AWS Batch executors are the intended use case,
+at the time of writing. When running asynchronously, the launcher doesn't write to the database
+at all.
+
+Second, `subrun` shifts the execution by starting a child scheduler, which means that the
+task is far more independent of the parent scheduler, able to interact with the backend and
+resolve complex expressions or recursive tasks.
+
+Third, federated task for submitting to a REST proxy is fire-and-forget; see 
+[Federated task](tasks.md#Federated-task) It will trigger a
+completely separate redun execution to occur, but it only provides the execution id back to the
+caller. It doesn't make sense for the REST proxy to be a full executor, since it's not
+capable enough to handle arbitrary tasks, by design it only handles federated tasks. Plus,
+the proxy is not long-lived, and we don't have any way for the caller to monitor for job
+results.
+
 ### Connections to functional programming
 
 redun's use of task decorators and lazy-evaluation can be thought of as a [monad](https://en.wikipedia.org/wiki/Monad_(functional_programming)). The redun monad consists of three components:

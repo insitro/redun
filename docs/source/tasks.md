@@ -713,5 +713,12 @@ authors of the `remote` repository. Therefore, the configuration file can indica
 which are additional config files that are allowed to specify additional `federated_tasks` and
 `executors`. These can be shared out-of-band, for example, by placing them on a shared file system.
 
+In addition to primary federated tasks, we provide tools to support REST-based proxy.
+See `redun.federated_tasks.rest_federated_task` and `redun.federated_tasks.launch_federated_task`.
+The proxy has two main features. First, it is designed to help facilitate a fire-and-forget approach
+to launching jobs (see [Running without a scheduler](design.md#Running-without-a-scheduler) ), 
+which is useful in implementing a UI. Second, it can help arrange for permissions, such as 
+facilitating AWS role switches.
+
 See the example `examples/federated_task` for more information.
 

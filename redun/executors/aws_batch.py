@@ -1470,3 +1470,6 @@ class AWSBatchExecutor(Executor):
 
         for job_id in job_ids:
             yield batch_client.terminate_job(jobId=job_id, reason=reason)
+
+    def scratch_root(self) -> str:
+        return self.s3_scratch_prefix
