@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.14.0
+March 13, 2023
+
+This release primarily introduces "federated tasks", a mechanism for working with tasks 
+where you do not have to import the implementation code.
+
+* `#261` - Provide integration code for redun and a proxy
+* `#277` - Add task_def option to federated_task config
+* `#247` - Publish federated tasks
+* `#270` - DE-8068 Pass through missing aws batch options
+
 ## 0.13.0
 February 27, 2023
 
