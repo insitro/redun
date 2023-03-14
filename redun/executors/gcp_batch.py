@@ -83,7 +83,7 @@ class GCPBatchExecutor(Executor):
             "vcpus": config.getint("vcpus", fallback=2),
             "memory": config.getint("memory", fallback=16),
             "task_count": config.getint("task_count", fallback=1),
-            "max_duration": config.get("max_duration", "3d"),
+            "max_duration": config.get("max_duration", "259200s"),
             "retries": config.getint("retries", fallback=2),
             "priority": config.getint("priority", fallback=30),
             "service_account_email": config.get("service_account_email", fallback=""),
