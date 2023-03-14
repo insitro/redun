@@ -1,5 +1,10 @@
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Iterable, List, Tuple, Union
+from functools import cache
+from statistics import mean
+from typing import Dict, Iterable, List, Optional, Tuple, Union
+
+import requests
 
 from google.cloud import batch_v1
 
@@ -47,6 +52,7 @@ def batch_submit(
     commands: List[str] = ["exit 0"],
     service_account_email: str = "",
     labels: Dict[str, str] = {},
+    gpus: int = 0,
     **kwargs,  # Ignore extra args
 ) -> batch_v1.Job:
     # Define what will be done as part of the job.
@@ -104,6 +110,12 @@ def batch_submit(
 
     # Policies are used to define on what kind of virtual machines the tasks will run on.
     # Read more about machine types here: https://cloud.google.com/compute/docs/machine-types
+    if not machine_type:
+        machine_type = find_best_matching_machine_type(
+            cpus=vcpus, memory=memory, region=region,
+            spot=provisioning_model == "spot", local_ssd=False,
+            gpus=gpus, min_cpu_platform=min_cpu_platform
+        )
     allocation_policy = batch_v1.AllocationPolicy()
     policy = batch_v1.AllocationPolicy.InstancePolicy()
     policy.machine_type = machine_type
@@ -224,3 +236,107 @@ def get_task(client: batch_v1.BatchServiceClient, task_name: str) -> batch_v1.Ta
         A Task object representing the specified task.
     """
     return client.get_task(name=task_name)
+
+
+# largely based on nextflow's implementation: https://github.com/nextflow-io/nextflow/blob/master/plugins/nf-google/src/main/nextflow/cloud/google/batch/GoogleBatchMachineTypeSelector.groovy
+@dataclass
+class MachineType:
+    type: str
+    family: str
+    spot_price: float
+    on_demand_price: float
+    cpus: int
+    memory: int
+    gpus: int
+
+
+@cache
+def get_available_machine_types(region: str) -> List[MachineType]:
+    CLOUD_INFO_API = "https://cloudinfo.seqera.io/api/v1"
+    API_URL = f"{CLOUD_INFO_API}/providers/google/services/compute/regions/{region}/products"
+    request = requests.get(API_URL, timeout=30)
+    if request.status_code != 200:
+        raise RuntimeError(f"Error getting machine types from url '{API_URL}'!\nSpecify machine type manually.")
+    result: List[Dict] = request.json()["products"]
+    return [
+        MachineType(
+            type=p["type"],
+            family=p["type"].split("-")[0],
+            spot_price=mean(e["price"] for e in p["spotPrice"]),
+            on_demand_price=p["onDemandPrice"],
+            cpus=p["cpusPerVm"],
+            memory=p["memPerVm"],
+            gpus=p["gpusPerVm"],
+        )
+        for p in result
+    ]
+
+
+def find_best_matching_machine_type(
+    cpus: int,
+    memory: int,
+    region: str,
+    spot: bool,
+    local_ssd: bool,
+    gpus: int = 0,
+    families: Optional[List[str]] = None,
+    min_cpu_platform: Optional[MinCPUPlatform] = None,
+) -> str:
+    if gpus > 0:
+        # seqera's cloudinfo doesn't have GPU prices yet
+        raise NotImplementedError("Automatic machine type selection is not implemented yet for GPU instances. Specify machine type manually.")
+    FAMILY_COST_CORRECTION = {
+        "e2": 1.0,  # Mix of processors, tend to be similar in performance to N1
+        # INTEL
+        "n1": 1.0,  # Skylake, Broadwell, Haswell, Sandy Bridge, and Ivy Bridge ~2.7 Ghz
+        "n2": 0.85,  # Intel Xeon Gold 6268CL ~3.4 Ghz
+        "c2": 0.8,  # Intel Xeon Gold 6253CL ~3.8 Ghz
+        "m1": 1.0,  # Intel Xeon E7-8880V4 ~2.7 Ghz
+        "m2": 0.85,  # Intel Xeon Platinum 8280L ~3.4 Ghz
+        "m3": 0.85,  # Intel Xeon Platinum 8373C ~3.4 Ghz
+        "a2": 0.9,  # Intel Xeon Platinum 8273CL ~2.9 Ghz
+        # AMD
+        "t2d": 1.0,  # AMD EPYC Milan ~2.7 Ghz
+        "n2d": 1.0,  # AMD EPYC Milan ~2.7 Ghz
+    }
+    FAMILIES_WITH_LOCAL_SSD = ["n1", "n2", "n2d", "c2", "c2d", "m3"]
+    NO_MIN_CPU_PLATFORM = ["e2-micro", "e2-small", "e2-medium", "f1-micro", "g1-small"]
+
+    machine_types = get_available_machine_types(region)
+    if not families:
+        families = []
+    if len(families) == 1:
+        family_or_type = families[0]
+        if "custom-" in family_or_type:
+            return family_or_type
+        if any(e.type == family_or_type for e in machine_types):
+            return family_or_type
+    # restrict to families with local ssd
+    if not families and local_ssd:
+        families = FAMILIES_WITH_LOCAL_SSD
+
+    if min_cpu_platform:
+        # restrict to machine types with at least the specified min cpu platform
+        machine_types = [
+            e
+            for e in machine_types
+            if all(not e.type.startswith(no_min_cpu) for no_min_cpu in NO_MIN_CPU_PLATFORM)
+        ]
+
+    valid_machine_types = [
+        e
+        for e in machine_types
+        if e.cpus >= cpus and e.memory >= memory and e.gpus >= gpus
+        # either no family restriction or family has to at least start with one of the families
+        and (not families or any(e.family.startswith(fam) for fam in families))
+    ]
+
+    min_cost_machine = min(
+        valid_machine_types,
+        key=lambda e: (
+            FAMILY_COST_CORRECTION.get(e.family, 1) if e.cpus > 2 or e.memory > 2 else 1
+        )
+        * (e.spot_price if spot else e.on_demand_price),
+    )
+
+    return min_cost_machine.type
