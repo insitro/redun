@@ -75,7 +75,7 @@ def get_oneshot_command(
         [
             REDUN_PROG,
             "--check-version",
-            quote(REDUN_REQUIRED_VERSION),
+            REDUN_REQUIRED_VERSION,
             "oneshot",
             a_task.load_module,
         ]
