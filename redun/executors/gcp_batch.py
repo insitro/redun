@@ -79,7 +79,7 @@ class GCPBatchExecutor(Executor):
         # Default task options.
         self.default_task_options: Dict[str, Any] = {
             "mount_path": config.get("mount_path", fallback="/mnt/share"),
-            "machine_type": config.get("machine_type", fallback="e2-standard-4"),
+            "machine_type": config.get("machine_type"),
             "provisioning_model": config.get("provisioning_model", fallback="standard"),
             "vcpus": config.getint("vcpus", fallback=2),
             "gpus": config.getint("gpus", fallback=0),

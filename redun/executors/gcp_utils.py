@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from functools import cache
+from functools import lru_cache
 from statistics import mean
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
@@ -35,7 +35,7 @@ def batch_submit(
     region: str,
     mount_buckets: List[str],
     gcs_scratch_prefix: str,
-    machine_type: str,
+    machine_type: Optional[str],
     vcpus: int,
     memory: int,
     task_count: int,
@@ -250,7 +250,7 @@ class MachineType:
     gpus: int
 
 
-@cache
+@lru_cache
 def get_available_machine_types(region: str) -> List[MachineType]:
     CLOUD_INFO_API = "https://cloudinfo.seqera.io/api/v1"
     API_URL = f"{CLOUD_INFO_API}/providers/google/services/compute/regions/{region}/products"
