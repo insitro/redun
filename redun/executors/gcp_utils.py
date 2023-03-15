@@ -23,8 +23,8 @@ def get_gcp_client(
     return batch_v1.BatchServiceClient() if sync else batch_v1.BatchServiceAsyncClient()
 
 def gb_to_mib(gb):
-    # Convert Gigabytes to Mebibytes.
-    return int((1000**3 * gb) / 1024**2)
+    # Convert GiB to MiB.
+    return int(gb * 1024)
 
 def batch_submit(
     client: Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient],
@@ -90,8 +90,7 @@ def batch_submit(
     resources = batch_v1.ComputeResource()
     resources.cpu_milli = vcpus * 1000  # in milliseconds per cpu-second.
     # This means the task requires 2 whole CPUs with default value.
-    resources.memory_mib = gb_to_mib(memory)
-
+    resources.memory_mib = gb_to_mib(memory * 1024)
     if boot_disk_size:
         resources.boot_disk_mib = gb_to_mib(boot_disk_size)
     task.compute_resource = resources
