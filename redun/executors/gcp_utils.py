@@ -250,7 +250,7 @@ class MachineType:
     gpus: int
 
 
-@lru_cache
+@lru_cache()
 def get_available_machine_types(region: str) -> List[MachineType]:
     CLOUD_INFO_API = "https://cloudinfo.seqera.io/api/v1"
     API_URL = f"{CLOUD_INFO_API}/providers/google/services/compute/regions/{region}/products"
