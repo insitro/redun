@@ -1,5 +1,4 @@
 import os
-from shlex import quote
 from typing import Any, Dict, List, Optional, Tuple
 
 from redun.executors.scratch import (
