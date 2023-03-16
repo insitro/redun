@@ -79,7 +79,6 @@ class GCPBatchExecutor(Executor):
         # Default task options.
         self.default_task_options: Dict[str, Any] = {
             "mount_path": config.get("mount_path", fallback="/mnt/share"),
-            "mount_buckets": config.get("mount_buckets", fallback=[]),
             "machine_type": config.get("machine_type"),
             "provisioning_model": config.get("provisioning_model", fallback="standard"),
             "vcpus": config.getint("vcpus", fallback=2),
@@ -266,6 +265,9 @@ class GCPBatchExecutor(Executor):
             command = get_oneshot_command(
                 self.gcs_scratch_prefix, job, job.task, args, kwargs, code_file=self.code_file
             )
+        
+            if "mount_buckets" not in task_options:
+                task_options["mount_buckets"] = []
 
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
