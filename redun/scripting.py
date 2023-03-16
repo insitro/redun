@@ -210,7 +210,7 @@ def postprocess_script(result: Any, outputs: Any, temp_path: Optional[str] = Non
 
 
 def script(
-    command: str, inputs: Any = [], outputs: Any = NULL, tempdir=False, as_mount=False, **task_options
+    command: str, inputs: Any = [], outputs: Any = NULL, tempdir: bool = False, as_mount: bool = False, **task_options: Any
 ) -> Any:
     """
     Execute a shell script as a redun task with file staging.
