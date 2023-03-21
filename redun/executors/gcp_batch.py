@@ -101,7 +101,6 @@ class GCPBatchExecutor(Executor):
             "vcpus": config.getint("vcpus", fallback=2),
             "memory": config.getint("memory", fallback=16),
             "task_count": config.getint("task_count", fallback=1),
-            "max_duration": config.get("max_duration", "259200s"),
             "retries": config.getint("retries", fallback=2),
             "priority": config.getint("priority", fallback=30),
             "service_account_email": config.get("service_account_email", fallback=""),
@@ -448,16 +447,16 @@ class GCPBatchExecutor(Executor):
 
             # Get buckets - This can probably be improved.
             mount_buckets: List[str] = list(
-                set(re.findall(r"/mnt/disks/share/([^\/]+)/", script_command[-1] + task_command))
+                set(re.findall(r"/mnt/disks/([^\/]+)/",
+                               script_command[-1] + task_command))
             )
 
             # Convert start command to script.
-            START_SCRIPT = ".redun_job.sh"
-            script_path = get_job_scratch_file(self.gcs_scratch_prefix, job, START_SCRIPT)
+            script_path = get_job_scratch_file(self.gcs_scratch_prefix, job, ".redun_job.sh")
 
-            File(script_path).write(DEFAULT_SHELL + script_command[-1])
+            File(script_path).write(DEFAULT_SHELL + '\n' + script_command[-1])
 
-            script_path = script_path.replace("gs://", "/mnt/disks/share/")
+            script_path = script_path.replace("gs://", "/mnt/disks/")
 
             # GCP Batch takes script as a string and requires quoting of -c argument
             script_command = ["bash", script_path]
@@ -468,7 +467,6 @@ class GCPBatchExecutor(Executor):
                 region=region,
                 image=image,
                 commands=script_command,
-                gcs_scratch_prefix=self.gcs_scratch_prefix,
                 mount_buckets=mount_buckets,
                 **task_options,
             )

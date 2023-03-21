@@ -31,13 +31,12 @@ def batch_submit(
     job_name: str,
     project: str,
     region: str,
-    gcs_scratch_prefix: str,
     machine_type: str,
     vcpus: int,
     memory: int,
-    max_duration: str,
     retries: int,
     priority: int,
+    max_duration: str = None,
     task_count: int = 1,
     mount_buckets: List[str] = [],
     boot_disk_size: int = None,
@@ -45,7 +44,6 @@ def batch_submit(
     accelerators: List[Tuple[str, int]] = [],
     image: str = None,
     script: str = "exit 0",
-    entrypoint: str = None,
     commands: List[str] = ["exit 0"],
     service_account_email: str = "",
     labels: Dict[str, str] = {},
@@ -60,7 +58,7 @@ def batch_submit(
         gcs_bucket.remote_path = bucket
         gcs_volume = batch_v1.Volume()
         gcs_volume.gcs = gcs_bucket
-        gcs_volume.mount_path = f"/mnt/disks/share/{bucket}"
+        gcs_volume.mount_path = f"/mnt/disks/{bucket}"
         return gcs_volume
 
     volumes = [make_volume(bucket) for bucket in mount_buckets]
@@ -75,12 +73,8 @@ def batch_submit(
     else:
         runnable.container = batch_v1.Runnable.Container()
         runnable.container.image_uri = image
-        runnable.container.entrypoint = entrypoint
         runnable.container.commands = commands
-        runnable.container.options = "".join(
-            [f" -v {x.mount_path}:{x.mount_path}" for x in volumes]
-        )
-        runnable.container.volumes = [f"{x.mount_path}:{x.mount_path}" for x in volumes]
+        runnable.container.volumes = [','.join([f"{x.mount_path}:{x.mount_path}" for x in volumes])]
 
     task = batch_v1.TaskSpec()
     task.runnables = [runnable]
@@ -96,7 +90,9 @@ def batch_submit(
     task.compute_resource = resources
 
     task.max_retry_count = retries
-    task.max_run_duration = max_duration
+
+    if max_duration:
+        task.max_run_duration = max_duration
 
     # Tasks are grouped inside a job using TaskGroups.
     # Currently, it's possible to have only one task group.

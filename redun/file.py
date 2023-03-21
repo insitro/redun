@@ -724,7 +724,7 @@ class GSFileSystem(FsspecFileSystem):
 
         def to_mount_directory(path):
             parsed_path = urlparse(path)
-            return f"/mnt/disks/share/{parsed_path.netloc}{parsed_path.path}"
+            return f"/mnt/disks/{parsed_path.netloc}{parsed_path.path}"
 
         if as_mount:
             src_proto, dest_proto = get_proto(src_path), get_proto(dest_path)
