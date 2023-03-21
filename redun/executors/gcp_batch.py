@@ -350,6 +350,8 @@ class GCPBatchExecutor(Executor):
         project = task_options.pop("project", self.project)
         region = task_options.pop("region", self.region)
 
+        # Drop task_count, since we can infer it from the number of jobs.
+        task_options.pop("task_count", None)
         command = get_oneshot_command(
             self.gcs_scratch_prefix, job, job.task, code_file=self.code_file, array_uuid=array_uuid
         )
