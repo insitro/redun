@@ -458,7 +458,7 @@ class GCPBatchExecutor(Executor):
             script_path = script_path.replace("gs://", "/mnt/disks/share/")
 
             # GCP Batch takes script as a string and requires quoting of -c argument
-            script_command[-1] = script_path
+            script_command = ["bash", script_path]
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
                 job_name=f"redun-{job.id}",
