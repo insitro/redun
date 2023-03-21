@@ -752,6 +752,7 @@ class GSFileSystem(FsspecFileSystem):
             elif src_path:
                 return f"cat {quote(src_path)}"
             elif dest_path:
+                # We use a subshell to make dest_dir so that cat receives stdin.
                 return f"$({mk_dest_dir}) cat - > {quote(dest_path)}"
             else:
                 raise ValueError("At least one path must be given.")
