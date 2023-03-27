@@ -126,7 +126,7 @@ def batch_submit(
         else batch_v1.AllocationPolicy.ProvisioningModel.STANDARD
     )
 
-    def create_accelerator(typ, count):
+    def create_accelerator(type, count):
         accelerator = batch_v1.AllocationPolicy.Accelerator()
         accelerator.type_ = type
         accelerator.count = count
