@@ -12,6 +12,8 @@ MAX_ARRAY_SIZE = 10000
 AWS_ARRAY_VAR = "AWS_BATCH_JOB_ARRAY_INDEX"
 # https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/
 K8S_ARRAY_VAR = "JOB_COMPLETION_INDEX"
+# https://cloud.google.com/batch/docs/create-run-basic-job#predefined-environment-variables
+GCP_ARRAY_VAR = "BATCH_TASK_INDEX"
 
 
 class JobDescription:

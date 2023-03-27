@@ -78,7 +78,7 @@ from redun.executors.code_packaging import extract_tar
 from redun.expression import TaskExpression
 from redun.file import File as BaseFile
 from redun.file import copy_file, list_filesystems
-from redun.job_array import AWS_ARRAY_VAR, K8S_ARRAY_VAR
+from redun.job_array import AWS_ARRAY_VAR, GCP_ARRAY_VAR, K8S_ARRAY_VAR
 from redun.logging import log_levels, logger
 from redun.scheduler import (
     DryRunResult,
@@ -1143,6 +1143,12 @@ class RedunClient:
         # Run command.
         run_parser = subparsers.add_parser("run", allow_abbrev=False, help="Run a workflow task.")
         run_parser.add_argument("--no-cache", action="store_true", help="Do not use cache.")
+        run_parser.add_argument(
+            "--log-level",
+            default="INFO",
+            choices=log_levels.keys(),
+            help="Set redun logging level.",
+        )
         run_parser.add_argument("--dryrun", action="store_true", help="Perform a dry run.")
         run_parser.add_argument("--pdb", action="store_true", help="Start debugger on exception.")
         run_parser.add_argument(
@@ -2713,6 +2719,8 @@ class RedunClient:
                 array_job_index = int(os.environ[AWS_ARRAY_VAR])
             elif K8S_ARRAY_VAR in os.environ:
                 array_job_index = int(os.environ[K8S_ARRAY_VAR])
+            elif GCP_ARRAY_VAR in os.environ:
+                array_job_index = int(os.environ[GCP_ARRAY_VAR])
             else:
                 raise RedunClientError("Array job environment variable not set")
 

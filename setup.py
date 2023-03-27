@@ -18,6 +18,7 @@ requirements = [
     # https://github.com/iterative/dvc/issues/8513#issuecomment-1298761683
     "botocore>=1.22.8,<1.28.0",
     "gcsfs>=2021.4.0",
+    "google-cloud-batch>=0.2.0",
     "s3fs>=2021.11.1",
     "sqlalchemy>=1.3.17,<2",
     "python-dateutil>=2.8",

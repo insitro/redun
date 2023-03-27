@@ -51,13 +51,15 @@ def register_filesystem(cls: Type["FileSystem"]) -> Type["FileSystem"]:
     return cls
 
 
-def get_proto(url: str) -> str:
+def get_proto(url: Optional[str] = None) -> str:
     """
     Returns the protocol for a url.
 
     For example the protocol for 'http://example.com' is 'http'. Local paths
     '/path/to/my/file' have the protocol 'local'.
     """
+    if not url:
+        return "local"
     return urlparse(url).scheme or "local"
 
 
@@ -613,7 +615,11 @@ class FsspecFileSystem(FileSystem):
             super().copy(src_path, dest_path)
 
     def shell_copy(
-        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False
+        self,
+        src_path: Optional[str],
+        dest_path: Optional[str],
+        recursive: bool = False,
+        as_mount: bool = False,
     ) -> str:
         """
         Returns a shell command for performing a file copy.
@@ -718,7 +724,7 @@ class GSFileSystem(FsspecFileSystem):
 
         def to_mount_directory(path):
             parsed_path = urlparse(path)
-            return f"/mnt/disks/share/{parsed_path.netloc}{parsed_path.path}"
+            return f"/mnt/disks/{parsed_path.netloc}{parsed_path.path}"
 
         if as_mount:
             src_proto, dest_proto = get_proto(src_path), get_proto(dest_path)
@@ -746,6 +752,7 @@ class GSFileSystem(FsspecFileSystem):
             elif src_path:
                 return f"cat {quote(src_path)}"
             elif dest_path:
+                # We use a subshell to make dest_dir so that cat receives stdin.
                 return f"$({mk_dest_dir}) cat - > {quote(dest_path)}"
             else:
                 raise ValueError("At least one path must be given.")
@@ -900,7 +907,11 @@ class S3FileSystem(FileSystem):
             super().copy(src_path, dest_path)
 
     def shell_copy(
-        self, src_path: Optional[str], dest_path: Optional[str], recursive: bool = False
+        self,
+        src_path: Optional[str],
+        dest_path: Optional[str],
+        recursive: bool = False,
+        as_mount: bool = False,
     ) -> str:
         """
         Returns a shell command for performing a file copy.
@@ -1094,7 +1105,7 @@ class File(Value):
         ----------
         dest_path : Optional[str]
             Destination path to copy to. If None, use stdout.
-        as_mount : bool
+        as_mount : Optional[str]
             Copy files from mounted directories.
         """
         return self.filesystem.shell_copy(self.path, dest_path, as_mount=as_mount)
@@ -1278,10 +1289,10 @@ class Staging(Value, Generic[T]):
     def unstage(self) -> T:
         pass
 
-    def render_unstage(self) -> str:
+    def render_unstage(self, as_mount: bool = False) -> str:
         pass
 
-    def render_stage(self) -> str:
+    def render_stage(self, as_mount: bool = False) -> str:
         pass
 
     @classmethod
