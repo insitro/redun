@@ -53,7 +53,6 @@ def batch_submit(
     commands: List[str] = ["exit 0"],
     service_account_email: str = "",
     labels: Dict[str, str] = {},
-    gpus: int = 0,
     **kwargs,  # Ignore extra args
 ) -> batch_v1.Job:
     # Define what will be done as part of the job.
@@ -110,6 +109,7 @@ def batch_submit(
     # Policies are used to define on what kind of virtual machines the tasks will run on.
     # Read more about machine types here: https://cloud.google.com/compute/docs/machine-types
     if not machine_type:
+        gpus = sum([a[1] for a in accelerators])
         machine_type = find_best_matching_machine_type(
             cpus=vcpus, memory=memory, region=region,
             spot=provisioning_model == "spot", local_ssd=False,
