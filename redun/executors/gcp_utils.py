@@ -80,7 +80,13 @@ def batch_submit(
         runnable.container = batch_v1.Runnable.Container()
         runnable.container.image_uri = image
         runnable.container.commands = commands
-        runnable.container.volumes = [','.join([f"{x.mount_path}:{x.mount_path}" for x in volumes])]
+        # TODO: is this needed?
+        # runnable.container.options = "".join(
+        #     [f" -v {x.mount_path}:{x.mount_path}" for x in volumes]
+        # )
+        runnable.container.volumes = [f"{x.mount_path}:{x.mount_path}" for x in volumes]
+        # TODO: this causes an error, going back to the above
+        # runnable.container.volumes = [','.join([f"{x.mount_path}:{x.mount_path}" for x in volumes])]
 
     task = batch_v1.TaskSpec()
     task.runnables = [runnable]

@@ -1,3 +1,4 @@
+import ast
 import json
 import logging
 import re
@@ -98,7 +99,6 @@ class GCPBatchExecutor(Executor):
         self.default_task_options: Dict[str, Any] = {
             "mount_path": config.get("mount_path", fallback="/mnt/share"),
             "machine_type": config.get("machine_type"),
-            "accelerators": config.get("accelerators", fallback=[]),
             "provisioning_model": config.get("provisioning_model", fallback="standard"),
             "vcpus": config.getint("vcpus", fallback=2),
             "memory": config.getint("memory", fallback=16),
@@ -107,6 +107,8 @@ class GCPBatchExecutor(Executor):
             "priority": config.getint("priority", fallback=30),
             "service_account_email": config.get("service_account_email", fallback=""),
         }
+        if config.get("accelerators"):
+            self.default_task_options["accelerators"] = ast.literal_eval(config.get("accelerators"))
         if config.get("labels"):
             self.default_task_options["labels"] = json.loads(config.get("labels"))
         if config.get("boot_disk_size_gib"):
