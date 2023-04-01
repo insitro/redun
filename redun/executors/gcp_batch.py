@@ -107,6 +107,14 @@ class GCPBatchExecutor(Executor):
             "priority": config.getint("priority", fallback=30),
             "service_account_email": config.get("service_account_email", fallback=""),
         }
+        if config.get("container_volumes"):
+            self.default_task_options["container_volumes"] = ast.literal_eval(
+                config.get("container_volumes")
+            )
+        if config.get("container_options"):
+            self.default_task_options["container_options"] = ast.literal_eval(
+                config.get("container_options")
+            )
         if config.get("accelerators"):
             self.default_task_options["accelerators"] = ast.literal_eval(config.get("accelerators"))
         if config.get("labels"):

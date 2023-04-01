@@ -44,6 +44,8 @@ def batch_submit(
     max_duration: str = None,
     task_count: int = 1,
     mount_buckets: List[str] = [],
+    container_volumes: List[str] = [],
+    container_options: List[str] = [],
     boot_disk_size_gib: int = None,
     min_cpu_platform: MinCPUPlatform = None,
     accelerators: List[Tuple[str, int]] = [],
@@ -84,7 +86,9 @@ def batch_submit(
         # runnable.container.options = "".join(
         #     [f" -v {x.mount_path}:{x.mount_path}" for x in volumes]
         # )
-        runnable.container.volumes = [f"{x.mount_path}:{x.mount_path}" for x in volumes]
+        runnable.container.options = " ".join(container_options)
+        runnable.container.volumes = container_volumes
+        runnable.container.volumes += [f"{x.mount_path}:{x.mount_path}" for x in volumes]
         # TODO: this causes an error, going back to the above
         # runnable.container.volumes = [','.join([f"{x.mount_path}:{x.mount_path}" for x in volumes])]
 
