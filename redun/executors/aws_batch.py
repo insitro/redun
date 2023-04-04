@@ -394,6 +394,8 @@ def batch_submit(
     timeout: Optional[int] = None,
     batch_tags: Optional[Dict[str, str]] = None,
     propagate_tags: bool = True,
+    share_id: Optional[str] = None,
+    scheduling_priority_override: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Actually perform job submission to AWS batch. Create or retrieve the job definition, then
     use it to submit the job.
@@ -453,6 +455,12 @@ def batch_submit(
         batch_job_args["timeout"] = {"attemptDurationSeconds": timeout}
     if batch_tags:
         batch_job_args["tags"] = batch_tags
+
+    # If provided, set batch args required by queues with Scheduling Policies
+    if share_id is not None:
+        batch_job_args["shareIdentifier"] = share_id
+    if scheduling_priority_override is not None:
+        batch_job_args["schedulingPriorityOverride"] = scheduling_priority_override
 
     # Submit to batch.
     batch_run = batch_client.submit_job(
@@ -518,6 +526,8 @@ def get_batch_job_options(job_options: dict) -> dict:
         "batch_tags",
         "num_nodes",
         "job_def_extra",
+        "share_id",
+        "scheduling_priority_override",
     ]
     return {key: job_options[key] for key in keys if key in job_options}
 
@@ -876,6 +886,8 @@ class AWSBatchExecutor(Executor):
             "job_name_prefix": config.get("job_name_prefix", fallback="redun-job"),
             "num_nodes": config.getint("num_nodes", fallback=None),
             "job_def_extra": parse_nullable_json(config.get("job_def_extra", fallback=None)),
+            "share_id": config.get("share_id"),
+            "scheduling_priority_override": config.getint("scheduling_priority_override"),
         }
         if config.get("batch_tags"):
             self.default_task_options["batch_tags"] = json.loads(config.get("batch_tags"))

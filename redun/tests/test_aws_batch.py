@@ -1260,6 +1260,8 @@ def test_executor(
                 "redun_project": "",
                 "redun_task_name": "task1",
             },
+            "share_id": None,
+            "scheduling_priority_override": None,
         }
 
         batch_submit_mock.return_value = {
@@ -1302,6 +1304,8 @@ def test_executor(
                 "redun_project": "",
                 "redun_task_name": "task1",
             },
+            "share_id": None,
+            "scheduling_priority_override": None,
         }
 
         # Simulate AWS Batch completing job.
@@ -1402,6 +1406,8 @@ def test_executor_multinode(
                 "redun_project": "",
                 "redun_task_name": "task1",
             },
+            "share_id": None,
+            "scheduling_priority_override": None,
         }
         job.job_tags == [("aws_batch_job", "batch-job-id#0"), ("aws_log_stream", "log1")]
     finally:
@@ -2424,3 +2430,75 @@ def test_equiv_job_def() -> None:
     }
 
     assert equiv_job_def(basic_job, existing_job)
+
+
+################################################################################################
+# Fair Share Scheduling related tests
+################################################################################################
+
+
+def test_fss_executor_config(scheduler: Scheduler) -> None:
+    """
+    FSS config variables flow are recognized by Executor.
+    """
+    # Setup executor.
+    config = Config(
+        {
+            "batch": {
+                "image": "image",
+                "queue": "queue",
+                "s3_scratch": "s3_scratch_prefix",
+                "share_id": "team1",
+                "scheduling_priority_override": 20,
+            }
+        }
+    )
+    executor = AWSBatchExecutor("batch", scheduler, config["batch"])
+
+    assert executor.image == "image"
+    assert executor.queue == "queue"
+    assert executor.s3_scratch_prefix == "s3_scratch_prefix"
+    assert isinstance(executor.code_package, dict)
+    assert executor.debug is False
+
+    @task(namespace="test")
+    def task1(x):
+        return x
+
+    exec1 = Execution("123")
+    job = Job(task1, task1(10), execution=exec1)
+
+    options = executor._get_job_options(job)
+    assert options["share_id"] == "team1"
+    assert options["scheduling_priority_override"] == 20
+
+
+def test_fss_task_override(scheduler: Scheduler) -> None:
+    """
+    FSS config variables can be overridden on Task
+    """
+    # Setup executor.
+    config = Config(
+        {
+            "batch": {
+                "image": "image",
+                "queue": "queue",
+                "s3_scratch": "s3_scratch_prefix",
+                "share_id": "team1",
+                "scheduling_priority_override": 20,
+            }
+        }
+    )
+    executor = AWSBatchExecutor("batch", scheduler, config["batch"])
+    executor._aws_user = "alice"
+
+    @task(share_id="subteam2", scheduling_priority_override=99, namespace="test")
+    def task1(x):
+        return x
+
+    exec1 = Execution("123")
+    job = Job(task1, task1(10), execution=exec1)
+
+    options = executor._get_job_options(job)
+    assert options["share_id"] == "subteam2"
+    assert options["scheduling_priority_override"] == 99

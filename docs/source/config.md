@@ -598,6 +598,17 @@ Maximum number (default: 1000) of equivalent tasks that will be submitted togeth
 
 A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wait before submission to be possibly bundled into an array job.
 
+##### `share_id`
+
+Queues with Scheduling Policies require all jobs be assigned a Fair Share 
+Scheduling `shareIdentifier`. Can be further overridden on a per-task basis using task options.
+
+##### `scheduling_priority_override`
+
+Queues with Scheduling Policies require that all job definitions specify a `schedulingPriority` 
+Alternatively, if the batch job definition does *not* configure a `schedulingPriority`, you 
+must provide a `schedulingPriorityOverride` by setting this variable. 
+Can be further overridden on a per-task basis using task options. 
 
 ## Configuration variables
 
