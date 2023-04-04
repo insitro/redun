@@ -35,13 +35,20 @@ from redun.scheduler import Scheduler
 from redun.scripting import DEFAULT_SHELL, get_task_command
 from redun.utils import pickle_dump
 
-REDUN_ARRAY_JOB_PREFIX = "redun-array-"
-REDUN_JOB_PREFIX = "redun-"
+REDUN_JOB_PREFIX = "redun"
+REDUN_ARRAY_JOB_SUFFIX = "array"
 
 REDUN_HASH_LABEL_KEY = "redun_hash"
 REDUN_JOB_TYPE_LABEL_KEY = "redun_job_type"
 
 DEBUG_SCRATCH = "scratch"
+
+
+def get_batch_job_name(prefix: str, job_id: str, array: bool = False) -> str:
+    """
+    Return a GCP Batch Job name by either job or job hash.
+    """
+    return "{}-{}{}".format(prefix, job_id, f"-{REDUN_ARRAY_JOB_SUFFIX}" if array else "")
 
 
 @register_executor("gcp_batch")
@@ -369,9 +376,13 @@ class GCPBatchExecutor(Executor):
             self.gcs_scratch_prefix, job, job.task, code_file=self.code_file, array_uuid=array_uuid
         )
 
+        job_name = get_batch_job_name(
+            task_options.get("job_name_prefix", REDUN_JOB_PREFIX), array_uuid, array=True
+        )
+
         gcp_job = gcp_utils.batch_submit(
             client=self.gcp_client,
-            job_name=f"{REDUN_ARRAY_JOB_PREFIX}{array_uuid}",
+            job_name=job_name,
             project=project,
             region=region,
             image=image,
@@ -427,6 +438,10 @@ class GCPBatchExecutor(Executor):
         project = task_options.pop("project", self.project)
         region = task_options.pop("region", self.region)
 
+        job_name = get_batch_job_name(
+            task_options.get("job_name_prefix", REDUN_JOB_PREFIX), job.id, array=False
+        )
+
         # Submit a new Batch job.
         gcp_job = None
         if not job.task.script:
@@ -441,7 +456,7 @@ class GCPBatchExecutor(Executor):
 
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
-                job_name=f"{REDUN_JOB_PREFIX}{job.id}",
+                job_name=job_name,
                 project=project,
                 region=region,
                 image=image,
@@ -476,7 +491,7 @@ class GCPBatchExecutor(Executor):
             script_command = ["bash", script_path]
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
-                job_name=f"redun-{job.id}",
+                job_name=job_name,
                 project=project,
                 region=region,
                 image=image,
