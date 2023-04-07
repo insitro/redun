@@ -313,22 +313,22 @@ On the first execution of `scheduler.run(main(10))`:
 
 - The scheduler considers `main(10)` as an Expression `TaskExpression('main', (10,), {})`.
 - It first creates a cache key `(task=main, version='1', args=10)` and uses it to look up in a key-value store whether a previous result for this task call has been recorded. As this is our first execution, it will be a cache miss.
-- The function `main(10)` is executed, and its initial result is an Expression tree: `TaskExpression('step2', (TaskExpression('task1', (10,) {}),), {})`.
+- The function `main(10)` is executed, and its initial result is an Expression tree: `TaskExpression('step2', (TaskExpression('step1', (10,) {}),), {})`.
 - The *expression tree itself* is cached for the cache key `(task=main, version='1', args=10)`.
-- The redun scheduler proceeds to evaluate the Expression tree, calling task `task1(10)` and then `task2(11)`.
+- The redun scheduler proceeds to evaluate the Expression tree, calling task `step1(10)` and then `step2(11)`.
 - Each of their results is cached with cache keys indicating the task, task version/hash, and arguments.
 - Ultimately the scheduler returns concrete value `22`.
 
 For the second execution, with version='2' for step1, we have:
 
 - The scheduler considers `main(10)` as an Expression `TaskExpression('main', (10,), {})`.
-- It creates a cache key `(task=main, version='1', args=10)` and finds a cache hit, namely `TaskExpression('step2', (TaskExpression('task1', (10,) {}),), {})`.
+- It creates a cache key `(task=main, version='1', args=10)` and finds a cache hit, namely `TaskExpression('step2', (TaskExpression('step1', (10,) {}),), {})`.
 - Due to having a cached result, the scheduler skips executing the function `main(10)`, and proceeds to evaluate the expression tree.
-- When the scheduler evaluates `TaskExpression('task1', (10,) {}),)`, it notices that the cache key `(task=step1, version='2', args=10)` has not been seen before, and so it executes `task1(10)` to get the result `12`.
-- The second sub-expression `TaskExpression('task2', (12,), {})` has also not been seen before, and so it executes as well.
+- When the scheduler evaluates `TaskExpression('step1', (10,) {}),)`, it notices that the cache key `(task=step1, version='2', args=10)` has not been seen before, and so it executes `step1(10)` to get the result `12`.
+- The second sub-expression `TaskExpression('step2', (12,), {})` has also not been seen before, and so it executes as well.
 - Ultimately the scheduler returns the concrete value `24`.
 
-The end result of this process is that redun correctly skips re-execution of unchanged high level tasks, such as `main`, but properly re-executes updated deeply nested tasks, such as `task1`. It is quite common in large programs that the upper level tasks mostly perform routing of arguments and results, and the lower level tasks perform the actual work. Routing frequently is unaffected by the actual data or implementations of the lower level tasks, so being able to skip re-execution of high level tasks is an important optimization.
+The end result of this process is that redun correctly skips re-execution of unchanged high level tasks, such as `main`, but properly re-executes updated deeply nested tasks, such as `step1`. It is quite common in large programs that the upper level tasks mostly perform routing of arguments and results, and the lower level tasks perform the actual work. Routing frequently is unaffected by the actual data or implementations of the lower level tasks, so being able to skip re-execution of high level tasks is an important optimization.
 
 
 ### File reactivity
