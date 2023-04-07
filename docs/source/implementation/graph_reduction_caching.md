@@ -63,8 +63,8 @@ see in the workflow above, `add4` itself returns more expressions, specifically 
 ```py
 TaskExpression(
   "add", (
-     TaskExpression("add, (1, 2)),
-     TaskExpression("add, (3, 4)),
+     TaskExpression("add", (1, 2)),
+     TaskExpression("add", (3, 4)),
   )
 )
 ```
@@ -77,8 +77,8 @@ Let e1 = TaskExpression("add4", (1, 2, 3, 4))
 
 Reduce TaskExpression("add4", (1, 2, 3, 4)) to TaskExpression(
   "add", (
-     TaskExpression("add, (1, 2)),
-     TaskExpression("add, (3, 4)),
+     TaskExpression("add", (1, 2)),
+     TaskExpression("add", (3, 4)),
   )
 )
 
@@ -86,14 +86,14 @@ Substituting that result back into the graph gives us:
 
 e2 = TaskExpression(
   "add", (
-     TaskExpression("add, (1, 2)),
-     TaskExpression("add, (3, 4)),
+     TaskExpression("add", (1, 2)),
+     TaskExpression("add", (3, 4)),
   )
 )
 
-Reduce TaskExpression("add, (1, 2)) to 3
+Reduce TaskExpression("add", (1, 2)) to 3
 
-Reduce TaskExpression("add, (3, 4)) to 7
+Reduce TaskExpression("add", (3, 4)) to 7
 
 Substituting those results back into e2 give us:
 
@@ -110,7 +110,7 @@ We now have a single concrete value and the workflow concludes.
 
 #### The redun Expression Graph language
 
-Here, we define a full grammar describing the redun Expression Graph structure.
+Here, we define a full [grammar](https://en.wikipedia.org/wiki/Formal_grammar) describing the redun Expression Graph structure.
 
 ```
 e = TaskExpression(task_name, (e, ...), {arg_key: e, ...}, options)
