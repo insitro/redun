@@ -1,0 +1,4 @@
+dependencies:
+  - python=3.10
+  - pip:
+    - git+https://github.com/retrobiosciences/redun.git@3896dcad9446edee35912794883f81c114f2a76f
