@@ -2,6 +2,7 @@
 Redun Executor class for running tasks and scripts in a local conda environment.
 """
 import hashlib
+import logging
 import os
 import pickle
 import shutil
@@ -19,7 +20,8 @@ from redun.config import create_config_section
 from redun.executors.base import Executor, register_executor
 from redun.executors.command import get_oneshot_command
 from redun.scheduler import Job, Scheduler, Traceback
-from redun.scripting import ScriptError, get_task_command
+from redun.scripting import ScriptError, prepare_command
+from redun.task import Task
 
 CONDA_ENV_CREATION_TIMEOUT = 5 * 60  # 5 minutes
 
@@ -264,6 +266,7 @@ class CondaExecutor(Executor):
             execute,
             self._scratch_prefix,
             self.env_base,
+            self._scheduler.logger.getEffectiveLevel(),
             job,
             job.task.fullname,
             args,
@@ -318,10 +321,21 @@ def get_job_conda_environment(job: Job, env_base_path: Optional[str]) -> CondaEn
         # assume conda_arg is an env name
         return CondaEnvironment(env_name=conda_arg, pip_requirements_file=pip_requirements_file, output_dir=env_base_path)
 
+def get_task_command(task: Task, args: Tuple, kwargs: dict, log_level: int) -> str:
+    """
+    Get command from a script task.
+    """
+    command = task.func(*args, **kwargs)
+    if log_level <= logging.INFO:
+        shell = "#!/usr/bin/env bash\nset -euxo pipefail"
+    else:
+        shell = "#!/usr/bin/env bash\nset -euo pipefail"
+    return prepare_command(command, shell)
 
 def execute(
     scratch_path: str,
     env_base_path: Optional[str],
+    log_level: int,
     job: Job,
     task_fullname: str,
     args: Tuple = (),
@@ -347,7 +361,7 @@ def execute(
     command_error_path = os.path.join(task_files_dir, "command_error")
 
     if job.task.script:
-        script_command = get_task_command(job.task, args, kwargs)
+        script_command = get_task_command(job.task, args, kwargs, log_level)
         script_command_path = os.path.join(task_files_dir, "script_command")
         with open(script_command_path, "w") as f:
             f.write(script_command)
