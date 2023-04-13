@@ -460,7 +460,6 @@ class GCPBatchExecutor(Executor):
 
             # GCP Batch takes script as a string and requires quoting of -c argument
             script_command = ["bash", script_path]
-
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
                 job_name=f"redun-{job.id}",
