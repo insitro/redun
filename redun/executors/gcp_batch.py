@@ -425,9 +425,6 @@ class GCPBatchExecutor(Executor):
                 code_file=self.code_file,
             )
 
-            # Get buckets - This can probably be improved.
-            #mount_buckets: List[str] = ["mattrasmus"]
-
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
                 job_name=f"{REDUN_JOB_PREFIX}{job.id}",
@@ -435,7 +432,6 @@ class GCPBatchExecutor(Executor):
                 region=region,
                 image=image,
                 commands=command,
-                #mount_buckets=mount_buckets,
                 gcs_scratch_prefix=self.gcs_scratch_prefix,
                 **task_options,
             )
