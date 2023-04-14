@@ -1,10 +1,7 @@
-IMAGE=redun_example
-REGION=us-west1
-PROJECT=$(shell gcloud config get-value project)
-REGISTRY=$(REGION)-docker.pkg.dev/$(PROJECT)/redun-example
-#ACCOUNT=$(shell aws ecr describe-registry --query registryId --output text)
-#REGION=$(shell aws configure get region)
-#REGISTRY=$(ACCOUNT).dkr.ecr.$(REGION).amazonaws.com
+IMAGE?=redun_example
+REGION?=us-west1
+PROJECT?=$(shell gcloud config get-value project)
+REGISTRY?=$(REGION)-docker.pkg.dev/$(PROJECT)/redun-example
 
 
 setup:
@@ -15,7 +12,7 @@ setup:
 
 
 login:
-	aws ecr get-login-password --region $(REGION) | docker login --username AWS --password-stdin $(REGISTRY)
+	gcloud auth configure-docker $(REGION)-docker.pkg.dev
 
 build:
 	docker build -t $(REGISTRY)/$(IMAGE) .
