@@ -35,7 +35,7 @@ class CondaEnvironment:
         env_name: Optional[str] = None,
         env_file: Optional[str] = None,
         env_dir: Optional[str] = None,
-        pip_requirements_file: Optional[str] = None,
+        pip_requirements_files: Optional[List[str]] = None,
         output_dir: Optional[str] = None,
     ):
         if not any([env_name, env_file, env_dir]):
@@ -48,7 +48,7 @@ class CondaEnvironment:
             raise ValueError(f"env_dir must be an absolute path. Got: {self.env_dir}")
         self.output_dir = output_dir
 
-        self.pip_requirements_file = pip_requirements_file
+        self.pip_requirements_files = pip_requirements_files
         self._ensure_env_exists()
 
     def __repr__(self):
@@ -64,7 +64,7 @@ class CondaEnvironment:
             raise RuntimeError("Failed to list Conda environments.")
         if self.env_file:
             # Calculate the hash of the environment file
-            env_hash = self._hash_file(self.env_file, self.pip_requirements_file)
+            env_hash = self._hash_file(self.env_file, self.pip_requirements_files)
             env_path = os.path.abspath(self.env_file)
             if self.output_dir is None:
                 self.output_dir = tempfile.mkdtemp(prefix="redun_conda_envs_")
@@ -98,7 +98,7 @@ class CondaEnvironment:
                 shutil.copy(env_path, os.path.join(env_output_dir, "environment.yml"))
             elif env_path.endswith(".lock"):
                 create_env_code, _, create_env_error = self._run_command(
-                    ["conda", "create", "-f", env_path, "-p", os.path.join(env_output_dir, ".conda")],
+                    ["conda", "create", "--file", env_path, "-p", os.path.join(env_output_dir, ".conda")],
                     capture_output=True
                 )
                 shutil.copy(env_path, os.path.join(env_output_dir, "environment.lock"))
@@ -113,17 +113,20 @@ class CondaEnvironment:
             self.env_dir = os.path.join(env_output_dir, ".conda")
 
             # install extra pip requirements, if specified
-            if self.pip_requirements_file:
-                pip_install_command = ["pip", "install", "-r", self.pip_requirements_file]
-                if self.env_name:
-                    pip_install_command = ["conda", "run", "-n", self.env_name, "--no-capture-output"] + pip_install_command
-                elif self.env_dir:
-                    pip_install_command = ["conda", "run", "-p", self.env_dir, "--no-capture-output"] + pip_install_command
+            if self.pip_requirements_files:
+                for pip_req_file in self.pip_requirements_files:
+                    pip_install_command = ["pip", "install", "-r", pip_req_file]
+                    if self.env_name:
+                        pip_install_command = ["conda", "run", "-n", self.env_name, "--no-capture-output"] + pip_install_command
+                    elif self.env_dir:
+                        pip_install_command = ["conda", "run", "-p", self.env_dir, "--no-capture-output"] + pip_install_command
 
-                pip_install_code, _, pip_install_error = self._run_command(pip_install_command, capture_output=True)
-                shutil.copy(self.pip_requirements_file, os.path.join(env_output_dir, "pip_requirements.txt"))
-                if pip_install_code != 0:
-                    raise RuntimeError(f"Failed to install pip requirements for conda environment `{env_output_dir}: {pip_install_error}")
+                    pip_install_code, _, pip_install_error = self._run_command(pip_install_command, capture_output=True)
+                    pip_file_name = Path(pip_req_file).name
+                    pip_file_name = os.path.splitext(pip_file_name)[0]
+                    shutil.copy(pip_req_file, os.path.join(env_output_dir, f"pip_requirements.{pip_file_name}.txt"))
+                    if pip_install_code != 0:
+                        raise RuntimeError(f"Failed to install pip requirements for conda environment `{env_output_dir}: {pip_install_error}")
             
             # Create a file to indicate that the environment has been initialized
             (Path(env_output_dir) / "redun_initialized").touch()
@@ -159,22 +162,16 @@ class CondaEnvironment:
             return ["conda", "run", "--no-capture-output", "-p", self.env_dir]
         raise RuntimeError(f"Cannot get conda command without `env_name` or `env_dir`. {self}")
 
-    def _hash_file(self, file_path: str, second_file: Optional[str]) -> str:
+    def _hash_file(self, file_path: str, other_files: Optional[List[str]]) -> str:
         with open(file_path, "r") as file:
             # strip whitespaces and newlines
             file_content = sorted(line.strip() for line in file)
-        if second_file:
-            with open(second_file, "r") as file:
-                file_content += sorted(line.strip() for line in file)
+        if other_files:
+            for f in other_files:
+                with open(f, "r") as file:
+                    file_content += sorted(line.strip() for line in file)
         file_hash = hashlib.md5(b"".join(line.encode() for line in file_content)).hexdigest()
         return file_hash
-
-    def _get_env_name_from_file(self, file_path: str) -> str:
-        with open(file_path, "r") as file:
-            for line in file:
-                if line.startswith("name:"):
-                    return line.split(":", 1)[1].strip()
-        raise RuntimeError("Environment name not found in the environment file")
 
 
 @register_executor("conda")
@@ -292,34 +289,60 @@ def get_job_conda_environment(job: Job, env_base_path: Optional[str]) -> CondaEn
         raise RuntimeError("No conda environment name/dir/file provided.")
 
     pip_arg = job.get_option("pip")
-    pip_requirements_file = None
+    pip_requirements_files = None
     if pip_arg is not None:
         if isinstance(pip_arg, str):
             # either it's a file or a single package
-            if os.path.exists(pip_arg):
-                pip_requirements_file = pip_arg
+            if os.path.exists(pip_arg) and os.path.isfile(pip_arg):
+                pip_requirements_files = [pip_arg]
             else:
                 with tempfile.NamedTemporaryFile(
                     mode="w", prefix="pip_requirements_", suffix=".txt", delete=False
                 ) as f:
                     f.write(pip_arg)
-                pip_requirements_file = f.name
+                pip_requirements_files = [f.name]
         if isinstance(pip_arg, list):
-            with tempfile.NamedTemporaryFile(
-                mode="w", prefix="pip_requirements_", suffix=".txt", delete=False
-            ) as f:
-                for package in sorted(pip_arg):
-                    f.write(f"{package}\n")
-            pip_requirements_file = f.name
+            # determine format of pip_arg
+            # either a list of packages or a list of lists of packages
+            is_list_of_lists = all(isinstance(x, list) for x in pip_arg)
+            is_list_of_str = all(isinstance(x, str) for x in pip_arg)
+            if not is_list_of_lists and not is_list_of_str:
+                raise ValueError(
+                    f"pip option must be a string, a list of strings or a list of lists of strings: {pip_arg}"
+                )
+
+            if is_list_of_lists:
+                pip_requirements_files = []
+                for package_list in pip_arg:
+                    with tempfile.NamedTemporaryFile(
+                        mode="w", prefix="pip_requirements_", suffix=".txt", delete=False
+                    ) as f:
+                        if len(package_list) == 1 and os.path.exists(package_list[0]) and os.path.isfile(package_list[0]):
+                            pip_requirements_files.append(package_list[0])
+                        else:
+                            for package in package_list:
+                                if os.path.exists(package) and os.path.isfile(package):
+                                    f.write(f"-r {package}\n")
+                                else:
+                                    f.write(f"{package}\n")
+                            pip_requirements_files.append(f.name)
+            else:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", prefix="pip_requirements_", suffix=".txt", delete=False
+                ) as f:
+                    for package in pip_arg:
+                        f.write(f"{package}\n")
+                    pip_requirements_files = [f.name]
+
 
     if os.path.exists(conda_arg): # file or directory
         if os.path.isdir(conda_arg):
-            return CondaEnvironment(env_dir=conda_arg, pip_requirements_file=pip_requirements_file, output_dir=env_base_path)
+            return CondaEnvironment(env_dir=conda_arg, pip_requirements_files=pip_requirements_files, output_dir=env_base_path)
         else:
-            return CondaEnvironment(env_file=conda_arg, pip_requirements_file=pip_requirements_file, output_dir=env_base_path)
+            return CondaEnvironment(env_file=conda_arg, pip_requirements_files=pip_requirements_files, output_dir=env_base_path)
     else:
         # assume conda_arg is an env name
-        return CondaEnvironment(env_name=conda_arg, pip_requirements_file=pip_requirements_file, output_dir=env_base_path)
+        return CondaEnvironment(env_name=conda_arg, pip_requirements_files=pip_requirements_files, output_dir=env_base_path)
 
 def get_task_command(task: Task, args: Tuple, kwargs: dict, log_level: int) -> str:
     """
