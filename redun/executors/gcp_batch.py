@@ -64,6 +64,7 @@ class GCPBatchExecutor(Executor):
         # Use DockerExecutor for local debug mode.
         docker_config = get_docker_executor_config(config)
         docker_config["scratch"] = config.get("debug_scratch", fallback=DEBUG_SCRATCH)
+        docker_config["include_aws_env"] = "False"
         self._docker_executor = DockerExecutor(name + "_debug", scheduler, config=docker_config)
 
         self.gcp_client = gcp_utils.get_gcp_client()
@@ -446,8 +447,7 @@ class GCPBatchExecutor(Executor):
 
             # Get buckets - This can probably be improved.
             mount_buckets: List[str] = list(
-                set(re.findall(r"/mnt/disks/([^\/]+)/",
-                               script_command[-1] + task_command))
+                set(re.findall(r"/mnt/disks/([^\/]+)/", script_command[-1] + task_command))
             )
 
             # Convert start command to script.

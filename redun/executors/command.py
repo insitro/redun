@@ -116,7 +116,9 @@ def get_script_task_command(
     input_stage = File(input_path).stage(".task_command").render_stage(as_mount)
     output_unstage = File(output_path).stage(".task_output").render_unstage(as_mount)
     error_unstage = File(error_path).stage(".task_error").render_unstage(as_mount)
-    status_unstage = get_filesystem(url=status_path).shell_copy(None, status_path, as_mount=as_mount)
+    status_unstage = get_filesystem(url=status_path).shell_copy(
+        None, status_path, as_mount=as_mount
+    )
 
     return [
         "bash",

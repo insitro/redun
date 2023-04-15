@@ -487,6 +487,8 @@ class LocalFileSystem(FileSystem):
             Destination path to copy to. If None, use stdout.
         recursive : bool
             If True, copy a directory tree of files.
+        as_mount : bool
+            Treat src/dest as mounted.
         """
         protos = {get_proto(path) for path in [src_path, dest_path] if path}
         if "local" not in protos:
@@ -632,6 +634,8 @@ class FsspecFileSystem(FileSystem):
             Destination path to copy to. If None, use stdout.
         recursive : bool
             If True, copy a directory tree of files.
+        as_mount : bool
+            Treat src/dest as mounted.
         """
         if recursive:
             if not src_path or not dest_path:
@@ -720,6 +724,8 @@ class GSFileSystem(FsspecFileSystem):
             Destination path to copy to. If None, use stdout.
         recursive : bool
             If True, copy a directory tree of files.
+        as_mount : bool
+            Treat src/dest as mounted.
         """
 
         def to_mount_directory(path):
@@ -894,6 +900,8 @@ class S3FileSystem(FileSystem):
             Destination path to copy to. If None, use stdout.
         recursive : bool
             If True, copy a directory tree of files.
+        as_mount : bool
+            Treat src/dest as mounted.
         """
         protos = {get_proto(path) for path in [src_path, dest_path] if path}
         if "s3" not in protos or not (protos <= {"local", "s3"}):
@@ -1239,6 +1247,8 @@ class Dir(FileSet):
         ----------
         dest_path : str
             Destination path to copy to.
+        as_mount : bool
+            Treat src/dest as mounted.
         """
         return self.filesystem.shell_copy(self.path, dest_path, recursive=True, as_mount=as_mount)
 

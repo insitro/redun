@@ -22,9 +22,11 @@ def get_gcp_client(
 ) -> Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient]:
     return batch_v1.BatchServiceClient() if sync else batch_v1.BatchServiceAsyncClient()
 
+
 def gb_to_mib(gb):
     # Convert GiB to MiB.
     return int(gb * 1024)
+
 
 def batch_submit(
     client: Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient],
@@ -75,7 +77,9 @@ def batch_submit(
         runnable.container.image_uri = image
         runnable.container.commands = commands
         if volumes:
-            runnable.container.volumes = [','.join([f"{x.mount_path}:{x.mount_path}" for x in volumes])]
+            runnable.container.volumes = [
+                ",".join([f"{x.mount_path}:{x.mount_path}" for x in volumes])
+            ]
 
     task = batch_v1.TaskSpec()
     task.runnables = [runnable]
@@ -106,7 +110,7 @@ def batch_submit(
     allocation_policy = batch_v1.AllocationPolicy()
     policy = batch_v1.AllocationPolicy.InstancePolicy()
     policy.machine_type = machine_type
-    policy.min_cpu_platform = min_cpu_platform
+    policy.min_cpu_platform = min_cpu_platform.value if min_cpu_platform else None
 
     def create_accelerator(typ, count):
         accelerator = batch_v1.AllocationPolicy.Accelerator()

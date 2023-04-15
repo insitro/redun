@@ -43,7 +43,6 @@ def get_docker_executor_config(config: SectionProxy) -> SectionProxy:
 
 
 def run_docker(
-    executor_name: str,
     command: List[str],
     image: str,
     volumes: Iterable[Tuple[str, str]] = [],
@@ -53,6 +52,7 @@ def run_docker(
     vcpus: int = 1,
     gpus: int = 0,
     shared_memory: Optional[int] = None,
+    include_aws_env: bool = False,
 ) -> str:
     """
     Run a Docker container locally.
@@ -77,6 +77,8 @@ def run_docker(
         Number of GPUs to reserve for the container.
     shared_memory : Optional[int]
         Number of GB of shared memory to reserve for the container.
+    include_aws_env : bool
+        If True, forward AWS environment variables to the container.
     """
     # Add AWS credentials to environment for docker command.
     common_args = []
@@ -84,9 +86,9 @@ def run_docker(
         common_args.append("--rm")
 
     env = dict(os.environ)
-    if executor_name == "aws_batch-debug" and not aws_utils.is_ec2_instance():
+    if include_aws_env and not aws_utils.is_ec2_instance():
+        # Forward AWS environment args to docker container.
         env.update(aws_utils.get_aws_env_vars())
-        # AWS Environment args.
         common_args.extend(
             [
                 "-e",
@@ -99,9 +101,6 @@ def run_docker(
                 "AWS_DEFAULT_REGION",
             ]
         )
-
-    elif executor_name == "gcp_batch_debug":
-        pass
 
     # Volume mounting args.
     for host, container in volumes:
@@ -155,14 +154,21 @@ def get_docker_job_options(job_options: dict, scratch_path: str) -> dict:
 
     Adds the scratch_path as a volume mount.
     """
-    keys = ["vcpus", "memory", "gpus", "shared_memory", "volumes", "interactive"]
+    keys = [
+        "vcpus",
+        "memory",
+        "gpus",
+        "shared_memory",
+        "volumes",
+        "interactive",
+        "include_aws_env",
+    ]
     options = {key: job_options[key] for key in keys if key in job_options}
     options["volumes"] = options.get("volumes", []) + [(scratch_path, scratch_path)]
     return options
 
 
 def submit_task(
-    executor_name: str,
     image: str,
     scratch_prefix: str,
     job: Job,
@@ -171,6 +177,7 @@ def submit_task(
     kwargs: Dict[str, Any] = {},
     job_options: dict = {},
     code_file: Optional[File] = None,
+    include_aws_env: bool = False,
 ) -> Dict[str, Any]:
     """
     Submit a redun Task to Docker.
@@ -185,7 +192,6 @@ def submit_task(
         code_file=code_file,
     )
     container_id = run_docker(
-        executor_name,
         command,
         image=image,
         **get_docker_job_options(job_options, scratch_prefix),
@@ -194,19 +200,18 @@ def submit_task(
 
 
 def submit_command(
-    executor_name: str,
     image: str,
     scratch_prefix: str,
     job: Job,
     command: str,
     job_options: dict = {},
+    include_aws_env: bool = False,
 ) -> dict:
     """
     Submit a shell command to Docker.
     """
     shell_command = get_script_task_command(scratch_prefix, job, command)
     container_id = run_docker(
-        executor_name,
         shell_command,
         image=image,
         **get_docker_job_options(job_options, scratch_prefix),
@@ -275,6 +280,7 @@ class DockerExecutor(Executor):
             "memory": config.getint("memory", fallback=4),
             "shared_memory": config.getint("shared_memory", fallback=None),
             "interactive": config.getboolean("interactive", fallback=False),
+            "include_aws_env": config.getboolean("include_aws_env", fallback=True),
         }
 
         self._is_running = False
@@ -405,7 +411,6 @@ class DockerExecutor(Executor):
         try:
             if not job.task.script:
                 docker_resp = submit_task(
-                    self._executor_name,
                     image,
                     self._scratch_prefix,
                     job,
@@ -418,7 +423,6 @@ class DockerExecutor(Executor):
             else:
                 command = get_task_command(job.task, args, kwargs)
                 docker_resp = submit_command(
-                    self._executor_name,
                     image,
                     self._scratch_prefix,
                     job,
