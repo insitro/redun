@@ -1387,7 +1387,7 @@ class StagingDir(Staging[Dir]):
 
         return self.local.shell_copy_to(self.remote.path, as_mount=as_mount)
 
-    def render_stage(self, as_mount=False) -> str:
+    def render_stage(self, as_mount: bool = False) -> str:
         """
         Returns a shell command for staging a directory.
         """
