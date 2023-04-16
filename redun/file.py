@@ -1377,7 +1377,7 @@ class StagingDir(Staging[Dir]):
 
         return self.local.copy_to(self.remote)
 
-    def render_unstage(self, as_mount=False) -> str:
+    def render_unstage(self, as_mount: bool = False) -> str:
         """
         Returns a shell command for unstaging a directory.
         """
