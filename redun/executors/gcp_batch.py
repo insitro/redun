@@ -105,6 +105,7 @@ class GCPBatchExecutor(Executor):
             "retries": config.getint("retries", fallback=2),
             "priority": config.getint("priority", fallback=30),
             "service_account_email": config.get("service_account_email", fallback=""),
+            "mount_staging": config.getboolean("mount_staging", fallback=True),
         }
         if config.get("labels"):
             self.default_task_options["labels"] = json.loads(config.get("labels"))
@@ -414,6 +415,7 @@ class GCPBatchExecutor(Executor):
         image = task_options.pop("image", self.image)
         project = task_options.pop("project", self.project)
         region = task_options.pop("region", self.region)
+        mount_staging = task_options.pop("mount_staging", True)
 
         # Submit a new Batch job.
         gcp_job = None
@@ -438,7 +440,7 @@ class GCPBatchExecutor(Executor):
                 **task_options,
             )
         else:
-            task_command = get_task_command(job.task, args, kwargs)
+            task_command = get_task_command(job.task, args, kwargs, mount_staging=mount_staging)
             script_command = get_script_task_command(
                 self.gcs_scratch_prefix,
                 job,

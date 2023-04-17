@@ -40,6 +40,17 @@ class ScriptError(Exception):
         return f"ScriptError('{str(self)}')"
 
 
+class ScriptCommand:
+    """
+    Class to store pre- and postprocessing information for a script command.
+    """
+    def __init__(self, command: str, inputs: Any, outputs: Any, temp_path: str):
+        self.command = command
+        self.inputs = inputs
+        self.outputs = outputs
+        self.temp_path = temp_path
+
+
 def prepare_command(command: str, default_shell=DEFAULT_SHELL) -> str:
     """
     Prepare a command string execution by removing surrounding blank lines and dedent.
@@ -52,12 +63,47 @@ def prepare_command(command: str, default_shell=DEFAULT_SHELL) -> str:
     return command
 
 
-def get_task_command(task: Task, args: Tuple, kwargs: dict) -> str:
+def get_task_command(task: Task, args: Tuple, kwargs: dict, mount_staging: bool = False) -> str:
     """
     Get command from a script task.
     """
     command = task.func(*args, **kwargs)
-    return prepare_command(command)
+
+    if isinstance(command, ScriptCommand):
+        # Render a ScriptCommand into a full command string.
+        command_parts = []
+
+        # Prepare tempdir if requested.
+        if command.temp_path:
+            command_parts.append('cd "{}"'.format(command.temp_path))
+
+        # Stage inputs.
+        command_parts.extend(
+            input.render_stage(as_mount=mount_staging)
+            for input in iter_nested_value(command.inputs)
+        )
+
+        # User command.
+        command_parts.append(get_wrapped_command(prepare_command(command.command)))
+
+        # Unstage outputs.
+        file_stages = [
+            value for value in iter_nested_value(command.outputs) if isinstance(value, Staging)
+        ]
+        command_parts.extend(
+            file_stage.render_unstage(as_mount=mount_staging) for file_stage in file_stages
+        )
+
+        full_command = "\n".join(command_parts)
+
+        return prepare_command(full_command)
+
+    elif isinstance(command, str):
+        # Comand is already a string.
+        return prepare_command(command)
+
+    else:
+        raise ValueError(f"Unexpected return value from script task: {command}")
 
 
 def exec_script(command: str) -> bytes:
@@ -148,20 +194,30 @@ exit $RETCODE
 
 
 @task(name="script_task", namespace="redun", version="1", script=True)
-def script_task(command: str) -> str:
+def script_task(
+    command: str, inputs: Any = [], outputs: Any = None, temp_path: Optional[str] = None
+) -> ScriptCommand:
     """
     Execute a shell script as redun Task.
     """
-    return command
+    return ScriptCommand(command, inputs, outputs, temp_path)
 
 
-@task(name="script", namespace="redun", version="1", check_valid="shallow")
+@task(
+    name="script",
+    namespace="redun",
+    version="1",
+    check_valid="shallow",
+    config_args=["input_staging"],
+)
 def _script(
     command: str,
     inputs: Any,
     outputs: Any,
     task_options: dict = {},
     temp_path: Optional[str] = None,
+    core_command: Optional[str] = None,
+    input_staging: Any = None,
 ) -> Any:
     """
     Internal task for executing a script.
@@ -181,9 +237,18 @@ def _script(
     """
     # Note: inputs are an argument just for reactivity sake.
     # They have already been incorporated into the command.
-    return postprocess_script(
-        script_task.options(**task_options)(command), outputs, temp_path=temp_path
-    )
+
+    # Run the script.
+    if core_command:
+        result = script_task.options(**task_options)(
+            core_command, input_staging, outputs, temp_path
+        )
+    else:
+        # Backward-compatible behavior for cached expressions.
+        result = script_task.options(**task_options)(command)
+
+    # Post-process script results.
+    return postprocess_script(result, outputs, temp_path=temp_path)
 
 
 @task(name="postprocess_script", namespace="redun", version="1")
@@ -209,12 +274,39 @@ def postprocess_script(result: Any, outputs: Any, temp_path: Optional[str] = Non
     return map_nested_value(get_file, outputs)
 
 
+def build_backcompat_full_command(
+    command: str, inputs: Any = [], outputs: Any = None, temp_path: Optional[str] = None
+) -> str:
+    """
+    Build a full command with staging and unstaging.
+
+    Note: This is only used for achieving caching backwards compatibility.
+    """
+    command_parts = []
+
+    # Prepare tempdir if requested.
+    if temp_path:
+        command_parts.append('cd "{}"'.format(temp_path))
+
+    # Stage inputs.
+    command_parts.extend(input.render_stage() for input in iter_nested_value(inputs))
+
+    # User command.
+    command_parts.append(get_wrapped_command(prepare_command(command)))
+
+    # Unstage outputs.
+    file_stages = [value for value in iter_nested_value(outputs) if isinstance(value, Staging)]
+    command_parts.extend(file_stage.render_unstage() for file_stage in file_stages)
+
+    full_command = "\n".join(command_parts)
+    return full_command
+
+
 def script(
     command: str,
     inputs: Any = [],
     outputs: Any = NULL,
     tempdir: bool = False,
-    as_mount: bool = False,
     **task_options: Any,
 ) -> Any:
     """
@@ -223,27 +315,9 @@ def script(
     if outputs == NULL:
         outputs = File("-")
 
-    command_parts = []
-
     # Prepare tempdir if requested.
-    temp_path: Optional[str]
-    if tempdir:
-        temp_path = mkdtemp(suffix=".tempdir")
-        command_parts.append('cd "{}"'.format(temp_path))
-    else:
-        temp_path = None
-
-    # Stage inputs.
-    command_parts.extend(input.render_stage(as_mount) for input in iter_nested_value(inputs))
-
-    # User command.
-    command_parts.append(get_wrapped_command(prepare_command(command)))
-
-    # Unstage outputs.
-    file_stages = [value for value in iter_nested_value(outputs) if isinstance(value, Staging)]
-    command_parts.extend(file_stage.render_unstage(as_mount) for file_stage in file_stages)
-
-    full_command = "\n".join(command_parts)
+    temp_path = mkdtemp(suffix=".tempdir") if tempdir else None
+    full_command = build_backcompat_full_command(command, inputs, outputs, temp_path=temp_path)
 
     # Get input files for reactivity.
     def get_file(value: Any) -> Any:
@@ -256,5 +330,11 @@ def script(
 
     input_args = map_nested_value(get_file, inputs)
     return _script(
-        full_command, input_args, outputs, task_options=task_options, temp_path=temp_path
+        full_command,
+        input_args,
+        outputs,
+        task_options=task_options,
+        temp_path=temp_path,
+        core_command=command,
+        input_staging=inputs,
     )
