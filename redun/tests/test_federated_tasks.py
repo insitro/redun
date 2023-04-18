@@ -6,7 +6,12 @@ import pytest
 
 from redun import Scheduler, task
 from redun.config import Config
-from redun.federated_tasks import federated_task, launch_federated_task, rest_federated_task
+from redun.federated_tasks import (
+    federated_task,
+    lambda_federated_task,
+    launch_federated_task,
+    rest_federated_task,
+)
 from redun.scheduler import SchedulerError
 from redun.scheduler_config import postprocess_config
 from redun.tests.utils import use_tempdir, wait_until
@@ -101,6 +106,59 @@ def test_federated_task() -> None:
         "required keys, missing `{'executor'}`",
     ):
         scheduler.run(federated)
+
+
+def test_lambda_federated_task(tmpdir) -> None:
+    """Demonstrate that we can use the data from the lambda invocation to start a task."""
+    config_dir = os.path.join(
+        os.path.dirname(__file__),
+        "test_data",
+        "federated_configs",
+        "federated_demo_config",
+    )
+
+    config = Config()
+    config.read_path(os.path.join(config_dir, "redun.ini"))
+    config = postprocess_config(config, config_dir=os.getcwd())
+
+    scheduler = Scheduler(config)
+    scheduler.load()
+
+    result_path = os.path.join(tmpdir, "out.txt")
+
+    # Run the invocation, which packages the inputs for us. Use the scratch redun defaults to.
+    execution_id, invocation_data = scheduler.run(
+        lambda_federated_task(
+            config_name=config_dir,
+            entrypoint="sample_task",
+            lambda_function_name="fake-lambda-function",
+            scratch_prefix="/tmp/redun",
+            dryrun=True,
+            x=8,
+            y=9,
+            result_path=result_path,
+        )
+    )
+
+    assert invocation_data["config_name"].endswith(
+        "redun/tests/test_data/federated_configs/federated_demo_config"
+    )
+    assert invocation_data["entrypoint"] == "sample_task"
+    assert invocation_data["input_path"].endswith("input")
+    assert invocation_data["execution_id"] == execution_id
+
+    invocation_data["federated_config_path"] = invocation_data.pop("config_name")
+
+    # Now launch the task. Local executors happen to work because the process pool is shut down
+    # gently.
+    launch_federated_task(**invocation_data)
+
+    # The launched task is async to us, so let it finish.
+    wait_until(lambda: os.path.isfile(result_path), timeout=5)
+
+    with open(result_path, "r") as fp:
+        result = fp.read()
+    assert result == "17"
 
 
 def test_rest_federated_task(tmpdir) -> None:

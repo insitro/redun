@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Any, Dict, Optional, Tuple
 
@@ -5,6 +6,7 @@ import requests
 
 from redun import File, Scheduler
 from redun.config import Config
+from redun.executors.aws_utils import DEFAULT_AWS_REGION, get_aws_client
 from redun.executors.base import get_executor_from_config
 from redun.executors.launch import launch_script
 from redun.executors.scratch import SCRATCH_INPUT, get_execution_scratch_file
@@ -13,6 +15,14 @@ from redun.promise import Promise
 from redun.scheduler import Execution, Job, subrun
 from redun.task import CacheScope, scheduler_task
 from redun.utils import pickle_dump, str2bool
+
+
+class InvocationException(Exception):
+    """
+    Custom exception that is raised when there is an error encountered invoking an AWS lambda.
+    """
+
+    pass
 
 
 @scheduler_task(namespace="redun")
@@ -62,6 +72,87 @@ def federated_task(
     )
 
     return scheduler.evaluate(subrun_task, parent_job=parent_job)
+
+
+@scheduler_task(namespace="redun")
+def lambda_federated_task(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    config_name: str,
+    entrypoint: str,
+    lambda_function_name: str,
+    scratch_prefix: str,
+    dryrun: bool,
+    *task_args,
+    **task_kwargs,
+) -> Promise[Tuple[str, Dict]]:
+    """Submit a task to an AWS Lambda Function, by packaging the inputs and sending as the payload
+    with instructions.
+
+    This allows a workflow to trigger execution of a remote workflow, to be executed by another
+    service.
+
+    This is fire-and-forget, you do not get back the results. We do not implement a way to wait
+    for results, because it's not currently possible to monitor the backend database and gracefully
+    determine whether an execution has finished. Specifically, executions look "errored"
+    until they succeed, so we would have to rely on timeouts to determine if an error actually
+    happened. Or, we would need to create another side-channel to record progress, which we
+    did not want to undertake.
+
+    Parameters
+    ----------
+    config_name : str
+        The name of the config to use; the lambda defines how this name is chosen, not redun.
+    entrypoint : str
+        The name of the entrypoint into the above config.
+    url : str
+        The name of the AWS Lambda function to invoke
+    scratch_prefix : str
+        The path where the packaged inputs can be written. This is dictated by the lambda, hence
+        is a user input.
+    dryrun : bool
+        If false, actually invoke the lambda. If true, skip it.
+
+    Other args are intended for the task itself.
+
+    Returns
+    -------
+        str
+            The execution ID we asked the proxy lambda to use
+        Dict
+            The data package.
+    """
+    promise: Promise[Tuple[str, Dict]] = Promise()
+
+    execution = Execution()
+
+    input_path = get_execution_scratch_file(scratch_prefix, execution.id, SCRATCH_INPUT)
+    with File(input_path).open("wb") as out:
+        pickle_dump([task_args, task_kwargs], out)
+
+    request_data = {
+        "config_name": config_name,
+        "entrypoint": entrypoint,
+        "input_path": input_path,
+        "execution_id": execution.id,
+    }
+
+    if not dryrun:
+        aws_region = os.environ.get("AWS_REGION", DEFAULT_AWS_REGION)
+        lambda_client = get_aws_client("lambda", aws_region)
+        response = lambda_client.invoke(
+            FunctionName=lambda_function_name,
+            Payload=json.dumps(request_data),
+        )
+        if not response["StatusCode"] == 200:
+            raise InvocationException(
+                f"Failed to invoke lambda '{lambda_function_name}'. Encountered erorr "
+                f"{response['FunctionError']}: {response['Payload']}"
+            )
+
+    promise.do_resolve((execution.id, request_data))
+    return promise
 
 
 @scheduler_task(namespace="redun")
