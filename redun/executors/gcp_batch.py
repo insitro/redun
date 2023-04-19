@@ -447,7 +447,7 @@ class GCPBatchExecutor(Executor):
 
             # Get buckets - This can probably be improved.
             mount_buckets: List[str] = list(
-                set(re.findall(r"/mnt/disks/([^\/]+)/", script_command[-1] + task_command))
+                set(re.findall(r"/mnt/disks/([^ \/]+)/", script_command[-1] + task_command))
             )
 
             # Convert start command to script.

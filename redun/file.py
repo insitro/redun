@@ -592,7 +592,10 @@ class FsspecFileSystem(FileSystem):
         self.fs.makedirs(path, exist_ok=True)
 
     def rmdir(self, path: str, recursive: bool = False) -> None:
-        self.fs.rm(path, recursive=recursive)
+        try:
+            self.fs.rm(path, recursive=recursive)
+        except FileNotFoundError:
+            pass
 
     def get_hash(self, path: str) -> str:
         """
