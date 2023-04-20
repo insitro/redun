@@ -8,7 +8,11 @@ try:
 except ModuleNotFoundError:
     # Skip k8s executor if kubernetes is not installed.
     pass
-from redun.executors.gcp_batch import GCPBatchExecutor
+try:
+    from redun.executors.gcp_batch import GCPBatchExecutor
+except ModuleNotFoundError:
+    # Skip gcp_batch executor if google-cloud-batch is not installed.
+    pass
 from redun.executors.local import LocalExecutor
 from redun.file import Dir, File, ShardedS3Dataset
 from redun.handle import Handle
