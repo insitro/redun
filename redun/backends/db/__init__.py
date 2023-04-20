@@ -2158,9 +2158,12 @@ class RedunBackendDb(RedunBackend):
         """
         assert self.session
         (is_valid,) = (
-            self.session.query(Handle.is_valid).filter_by(hash=handle.__handle__.hash).one()
+            self.session.query(Handle.is_valid)
+            .filter_by(hash=handle.__handle__.hash)
+            .one_or_none()
         )
-        return is_valid
+        # If handle isn't recorded, it is not valid.
+        return is_valid is True
 
     def record_execution(self, exec_id: str, args: List[str]) -> None:
         """
