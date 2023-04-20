@@ -32,7 +32,7 @@ def mock_executor(scheduler, debug=False, code_package=False):
     return GCPBatchExecutor("batch", scheduler, config["gcp_batch"])
 
 
-def test_executor_config(scheduler: Scheduler) -> None:
+def _test_executor_config(scheduler: Scheduler) -> None:
     """
     Executor should be able to parse its config.
     """

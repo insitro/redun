@@ -2706,9 +2706,11 @@ class RedunClient:
         """
         array_job_index: int = -1
         if args.array_job:
-            array_job_index = get_job_array_index()
-            if array_job_index is None:
+            index = get_job_array_index()
+            if index is None:
                 raise RedunClientError("Array job environment variable not set")
+            else:
+                array_job_index = index
 
             # Get path to actual error file based on index.
             if args.error:
