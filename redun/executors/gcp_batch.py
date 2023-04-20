@@ -27,13 +27,13 @@ from redun.executors.scratch import (
     parse_job_error,
     parse_job_result,
 )
-from redun.file import File
+from redun.file import File, StagingFile, get_proto
 from redun.job_array import JobArrayer
 from redun.scheduler import Job as RedunJob
 from redun.scheduler import Scheduler
-from redun.scripting import DEFAULT_SHELL, get_task_command
+from redun.scripting import DEFAULT_SHELL, ScriptCommand, get_task_command
 from redun.task import CacheScope
-from redun.utils import pickle_dump
+from redun.utils import iter_nested_value, pickle_dump
 
 REDUN_ARRAY_JOB_PREFIX = "redun-array-"
 REDUN_JOB_PREFIX = "redun-"
@@ -42,6 +42,34 @@ REDUN_HASH_LABEL_KEY = "redun_hash"
 REDUN_JOB_TYPE_LABEL_KEY = "redun_job_type"
 
 DEBUG_SCRATCH = "scratch"
+
+
+def get_gs_bucket_name(url: str) -> str:
+    """
+    Return the bucket name of a gs url:
+    """
+    match = re.match("gs://([^/]+)", url)
+    assert match
+    return match[1]
+
+
+def get_mount_buckets(job: RedunJob) -> List[str]:
+    """
+    Returns the GS Buckets to mount to support File staging for a redun Job.
+    """
+    assert job.args
+    args, kwargs = job.args
+    command = job.task.func(*args, **kwargs)
+    mount_buckets = []
+
+    if isinstance(command, ScriptCommand):
+        # Find all gs StagingFiles and parse out the bucket name.
+        for value in iter_nested_value([command.inputs, command.outputs]):
+            if isinstance(value, StagingFile):
+                for path in [value.local.path, value.remote.path]:
+                    if get_proto(path) == "gs":
+                        mount_buckets.append(get_gs_bucket_name(path))
+    return mount_buckets
 
 
 @register_executor("gcp_batch")
@@ -440,6 +468,7 @@ class GCPBatchExecutor(Executor):
                 **task_options,
             )
         else:
+            # Get script command for a redun job.
             task_command = get_task_command(job.task, args, kwargs, mount_staging=mount_staging)
             script_command = get_script_task_command(
                 self.gcs_scratch_prefix,
@@ -449,20 +478,15 @@ class GCPBatchExecutor(Executor):
                 as_mount=True,
             )
 
-            # Get buckets - This can probably be improved.
-            mount_buckets: List[str] = list(
-                set(re.findall(r"/mnt/disks/([^ \/]+)/", script_command[-1] + task_command))
-            )
-
-            # Convert start command to script.
+            # Convert start command to script. Shell script is last argument of script_command.
             script_path = get_job_scratch_file(self.gcs_scratch_prefix, job, ".redun_job.sh")
-
             File(script_path).write(DEFAULT_SHELL + "\n" + script_command[-1])
+            script_command = ["bash", script_path.replace("gs://", "/mnt/disks/")]
 
-            script_path = script_path.replace("gs://", "/mnt/disks/")
+            # Determine unique set of buckets to mount.
+            scratch_bucket = get_gs_bucket_name(self.gcs_scratch_prefix)
+            mount_buckets = list(set(get_mount_buckets(job) + [scratch_bucket]))
 
-            # GCP Batch takes script as a string and requires quoting of -c argument
-            script_command = ["bash", script_path]
             gcp_job = gcp_utils.batch_submit(
                 client=self.gcp_client,
                 job_name=f"redun-{job.id}",

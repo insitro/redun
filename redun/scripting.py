@@ -44,7 +44,8 @@ class ScriptCommand:
     """
     Class to store pre- and postprocessing information for a script command.
     """
-    def __init__(self, command: str, inputs: Any, outputs: Any, temp_path: str):
+
+    def __init__(self, command: str, inputs: Any, outputs: Any, temp_path: Optional[str]):
         self.command = command
         self.inputs = inputs
         self.outputs = outputs
