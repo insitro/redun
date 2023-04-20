@@ -1,5 +1,4 @@
 import os
-import platform
 
 from setuptools import find_packages, setup
 
@@ -28,8 +27,6 @@ requirements = [
     # packages needed to run in the glue environment.
 ]
 
-python_36_backports = ["dataclasses>=0.8", "types-dataclasses>=0.6.6"]
-
 extras = {
     "glue": ["pandas", "pyarrow", "pyspark"],
     "k8s": "kubernetes>=22.6",
@@ -40,9 +37,6 @@ if REQUIRE_POSTGRES:
     requirements.append(PSYCOPG2_VERSION)
 else:
     extras["postgres"] = [PSYCOPG2_VERSION]
-
-if "3.6" in platform.python_version():
-    requirements.append(python_36_backports)
 
 
 def get_version() -> str:
@@ -96,7 +90,7 @@ redun's key features are:
     """,
     scripts=["bin/redun"],
     include_package_data=True,
-    python_requires=">= 3.6",
+    python_requires=">= 3.7",
     install_requires=requirements,
     extras_require=extras,
 )
