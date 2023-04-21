@@ -11,7 +11,7 @@ from redun import File, Scheduler, task
 from redun.config import Config
 from redun.tests.utils import use_tempdir
 
-redun_namespace = "redun.tests.test_executors"
+redun_namespace = "redun.tests.test_conda_executor"
 
 
 @task(executor="conda")

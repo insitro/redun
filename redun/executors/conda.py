@@ -250,12 +250,15 @@ class CondaExecutor(Executor):
         assert job.task
 
         def on_done(future):
-            success, result = future.result()
-            if success:
-                self._scheduler.done_job(job, result)
-            else:
-                error, traceback = result
-                self._scheduler.reject_job(job, error, traceback)
+            try:
+                success, result = future.result()
+                if success:
+                    self._scheduler.done_job(job, result)
+                else:
+                    error, traceback = result
+                    self._scheduler.reject_job(job, error, traceback)
+            except Exception as e:
+                self._scheduler.reject_job(job, error=e)
 
         assert job.args
         args, kwargs = job.args
