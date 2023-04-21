@@ -14,8 +14,7 @@ jobs:
       - name: Build sphinx docs
         run: |
           cd docs
-          pip install -r requirements.txt
-          pip install ../
+          pip install -r requirements.txt  ../
           make api html
 
       - name: Checkout gh-pages branch
