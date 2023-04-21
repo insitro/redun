@@ -1458,9 +1458,20 @@ class Scheduler:
             else:
                 return self.done_job(job, result)
 
-        # Perform rollbacks due to Handles that conflict with past Handles.
         if not self._dryrun:
+            # Perform rollbacks due to Handles that conflict with past Handles.
             self._perform_rollbacks(args, kwargs)
+
+            # Since the result was not cached, either run it now, or reschedule for whenever
+            # the resources are available.
+            job_limits = job.get_limits()
+            if not self._is_job_within_limits(job_limits):
+                self._add_job_pending_limits(job, eval_args)
+                return
+            self._consume_resources(job_limits)
+
+        # Record that the job is actually starting.
+        self.backend.record_job_start(job)
 
         # Determine executor.
         executor_name = job.get_option("executor") or "default"
@@ -1482,17 +1493,6 @@ class Scheduler:
         # Stop short of submitting jobs during a _dryrun.
         if self._dryrun:
             return
-
-        # Since the result was not cached, either run it now, or reschedule for whenever
-        # the resources are available.
-        job_limits = job.get_limits()
-        if not self._is_job_within_limits(job_limits):
-            self._add_job_pending_limits(job, eval_args)
-            return
-        self._consume_resources(job_limits)
-
-        # Record that the job is actually starting.
-        self.backend.record_job_start(job)
 
         # Record the job as pending, since we're submitting it.
         # Note that if the CSE is disabled, this job might have the same `eval_hash` as a prior
