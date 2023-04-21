@@ -1,0 +1,635 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Configuration" href="config.html" /><link rel="prev" title="Executors" href="executors.html" />
+
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
+        <title>Scheduling redun workflows - redun documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">redun  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="_static/redun.svg" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">redun  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="values.html">Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasks.html">Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="executors.html">Executors</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Scheduling redun workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db.html">Backend and database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developing.html">Developer guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="redun/modules.html">API docs</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="redun/redun.html">redun package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="redun/redun.backends.html">redun.backends package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun/redun.backends.db.html">redun.backends.db package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun/redun.executors.html">redun.executors package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/insitro/redun">GitHub repository</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="scheduling-redun-workflows">
+<h1>Scheduling redun workflows<a class="headerlink" href="#scheduling-redun-workflows" title="Permalink to this heading">#</a></h1>
+<p>Redun attempts to allow users to naturally express complex workflows,
+while still allowing the scheduler to execute them correctly and efficiently. For many cases,
+the default settings are both safe and effective, and will “just work” as expected. However,
+caching and scheduling complex workflows is non-trivial,
+so redun offers users the ability to customize the behavior in certain ways.
+This section reviews the essential guarantees and properties of the redun scheduler,
+to assist users needing to customize or understand the execution behavior more closely.</p>
+<p>For more background on the design of the caching behavior and the scheduler, we also provide further
+(implementation notes)[implementation/graph_reduction_caching.md].</p>
+<section id="core-principles-of-the-scheduler">
+<h2>Core principles of the scheduler<a class="headerlink" href="#core-principles-of-the-scheduler" title="Permalink to this heading">#</a></h2>
+<p>The redun scheduler operates on these principles:</p>
+<ol class="arabic simple">
+<li><p>Running a workflow with caching should produce the equivalent result as running without, up to
+the cache approximation preferences of the user.</p></li>
+<li><p>The behavior of a workflow should not depend upon the computation time of the tasks involved,
+including when their computation time is effectively zero because of a cache hit.</p></li>
+<li><p>Each expression is run exactly once in an execution.</p></li>
+<li><p>When considering using a cached result from another execution, the scheduler should check
+for reactivity to changing code or to the “validity” of the cached values (up to the cache
+approximation preferences of the user). Within an execution, it does not do so.</p></li>
+</ol>
+<p>Redun implements three interrelated but distinct ideas related to the efficient execution of
+workflows:</p>
+<ol class="arabic simple">
+<li><p><strong>Unique expressions</strong>: Within a single execution of a workflow, there are some situations
+where we identify that an entire expression is reused and should only be run once.</p></li>
+<li><p><strong>Common Sub-expression Elimination (CSE)</strong>: Within a single execution of a workflow, we look
+for cases of a <code class="docutils literal notranslate"><span class="pre">Task</span></code> being rerun with identical inputs, allowing us to reuse the result.</p></li>
+<li><p><strong>Caching</strong>: We look for opportunities to reuse the results of a <code class="docutils literal notranslate"><span class="pre">Task</span></code> from a different
+execution. Additional checks are required to ensure this is appropriate.</p></li>
+</ol>
+<p>Although CSE is a form of caching/memoization, as much a possible, we reserve the term “caching”
+for cases where the result came from a different execution, whereas CSE is within a single
+execution. We explain these in detail in the following sections.</p>
+</section>
+<section id="single-vs-ultimate-reductions">
+<h2>Single vs Ultimate reductions<a class="headerlink" href="#single-vs-ultimate-reductions" title="Permalink to this heading">#</a></h2>
+<p>Before explaining the scheduler behaviors, we need to briefly introduce the concept of reductions.
+For a longer exposition, see (Graph reduction caching)[implementation/graph_reduction_caching.md].
+Consider the following snippet:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">deeply_nested</span><span class="p">():</span>
+    <span class="k">return</span> <span class="s2">&quot;hello&quot;</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">nested</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">deeply_nested</span><span class="p">()</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">nested</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>When we execute <code class="docutils literal notranslate"><span class="pre">main()</span></code>, redun will recursively evaluate the result until we get to the grounded
+result, <code class="docutils literal notranslate"><span class="pre">&quot;hello&quot;</span></code>. However, in a caching/memoization setting, there are actually two possible
+answers. First, a <strong>single reduction</strong> of <code class="docutils literal notranslate"><span class="pre">main()</span></code> is just the first round of evaluation,
+which is the expression <code class="docutils literal notranslate"><span class="pre">nested()</span></code>. Second, the <strong>ultimate reduction</strong> of <code class="docutils literal notranslate"><span class="pre">main()</span></code> is the
+result from the complete recursive evaluation, <code class="docutils literal notranslate"><span class="pre">&quot;hello&quot;</span></code>.</p>
+<p>As we will see below, redun uses both approaches. If we think about caching the value of <code class="docutils literal notranslate"><span class="pre">main()</span></code>,
+it is attractive to think about the ultimate reduction, so that we can jump straight to the final
+answer. However, redun sometimes uses single reductions, because this allows it to be more
+careful.</p>
+</section>
+<section id="unique-evaluation-of-expressions">
+<h2>Unique evaluation of expressions<a class="headerlink" href="#unique-evaluation-of-expressions" title="Permalink to this heading">#</a></h2>
+<p>To introduce expression caching, consider the following basic Python code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="nb">input</span><span class="p">):</span>
+  <span class="n">result</span> <span class="o">=</span> <span class="o">...</span>
+  <span class="k">return</span> <span class="n">result</span>
+
+<span class="nb">input</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+<span class="n">list1</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span>
+<span class="n">list2</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="p">(</span><span class="nb">input</span><span class="p">),</span> <span class="n">f</span><span class="p">(</span><span class="nb">input</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>Assuming that <code class="docutils literal notranslate"><span class="pre">f</span></code> is deterministic, these two lists would be nearly the same. However, the first
+would only invoke <code class="docutils literal notranslate"><span class="pre">f</span></code> once, and would contain two references to the same object; the second
+would invoke <code class="docutils literal notranslate"><span class="pre">f</span></code> twice and would produce two distinct objects with the same value. To ensure that
+redun behaves the same way, we ensure that each expression object is executed exactly once.</p>
+<p>Consider the following example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">rand</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+  <span class="n">x</span> <span class="o">=</span> <span class="n">rand</span><span class="p">()</span>
+  <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">rand</span><span class="p">(),</span> <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="n">rand</span><span class="p">()}</span> 
+</pre></div>
+</div>
+<p>The user clearly wants the random task to be called three time, not four, and produce a result like
+this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="mf">0.183</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">:</span> <span class="mf">0.183</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="mf">0.881</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="mf">0.354</span><span class="p">}</span> 
+</pre></div>
+</div>
+<p>If we make this a redun task:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">cache_scope</span><span class="o">=</span><span class="n">CacheScope</span><span class="o">.</span><span class="n">NONE</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">rand</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+  <span class="n">x</span> <span class="o">=</span> <span class="n">rand</span><span class="p">()</span>
+  <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">rand</span><span class="p">(),</span> <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="n">rand</span><span class="p">()}</span> 
+</pre></div>
+</div>
+<p>when the implementation of <code class="docutils literal notranslate"><span class="pre">main</span></code> is actually run, it generates a dictionary of lazy
+expression objects:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">expression</span> <span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">expression</span> <span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">expression</span> <span class="mi">2</span><span class="o">&gt;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">expression</span> <span class="mi">3</span><span class="o">&gt;</span><span class="p">}</span> 
+</pre></div>
+</div>
+<p>The scheduler will recurse through the dictionary values, looking for expressions it needs
+to run. All of these expressions have identical hashes, so they will all be deduplicated and run
+exactly once. The scheduler applies an ultimate reduction for the entire expression. This is
+quite different from the original python code, for example, we might get this result:</p>
+<p>{“x1”: 0.183, “x2”: 0.183, “y”: 0.183, “z”: 0.183}</p>
+<p>This deduplication is based on the hash of the entire expression object. There are some subtle
+scoping rules involved. Rather than trying to explain them fully, we will simply note that they
+are designed for the situation depicted in these examples, where an expression is reused in
+several places within the result returned from a task.</p>
+<p>This feature will likely change in the future so that redun produces the same output as the
+original random python example.</p>
+</section>
+<section id="common-sub-expression-elimination-cse">
+<h2>Common Sub-expression Elimination (CSE)<a class="headerlink" href="#common-sub-expression-elimination-cse" title="Permalink to this heading">#</a></h2>
+<p>Within the scope of a single redun execution, redun is careful not to rerun a <code class="docutils literal notranslate"><span class="pre">Task</span></code> with the
+same arguments.</p>
+<p>This behavior is performed at the level of <code class="docutils literal notranslate"><span class="pre">Task</span></code>s, since it allows us to correctly handle cases
+like this: <code class="docutils literal notranslate"><span class="pre">expensive_task(add(1,</span> <span class="pre">3))</span> <span class="pre">+</span> <span class="pre">expensive_task(add(2,2))</span></code>. These expressions are
+obviously different, unique expression logic would not apply. However, once we start evaluating
+the user code, we can determine that there are two identical calls to <code class="docutils literal notranslate"><span class="pre">expensive_task(4)</span></code>, which we
+only need to do once! Redun is careful to check for CSE between jobs that are still in-flight.
+The in this example, events would likely play out in this order:</p>
+<ol class="arabic simple">
+<li><p>Schedule <code class="docutils literal notranslate"><span class="pre">add(1,</span> <span class="pre">3)</span></code> for execution</p></li>
+<li><p>Schedule <code class="docutils literal notranslate"><span class="pre">add(2,</span> <span class="pre">2)</span></code> for execution</p></li>
+<li><p>Get result <code class="docutils literal notranslate"><span class="pre">add(1,</span> <span class="pre">3)</span> <span class="pre">-&gt;</span> <span class="pre">4</span></code></p></li>
+<li><p>Schedule <code class="docutils literal notranslate"><span class="pre">expensive_task(4)</span></code> for execution</p></li>
+<li><p>Get result <code class="docutils literal notranslate"><span class="pre">add(2,</span> <span class="pre">2)</span> <span class="pre">-&gt;</span> <span class="pre">4</span></code></p></li>
+<li><p>Start scheduling <code class="docutils literal notranslate"><span class="pre">expensive_task(4)</span></code> again, but realize that it’s already in-flight. We can simply wait for it!</p></li>
+<li><p>Get result <code class="docutils literal notranslate"><span class="pre">expensive_task(4)</span> <span class="pre">-&gt;</span> <span class="pre">expensive_value</span></code>, which we will use twice</p></li>
+<li><p>Schedule <code class="docutils literal notranslate"><span class="pre">expensive_value</span> <span class="pre">+</span> <span class="pre">expensive_value</span></code></p></li>
+</ol>
+<p>Of course, CSE will also work if the previous run is already finished.</p>
+<p>CSE applies an ultimate reduction. After all, we just computed the result ourselves, so we can
+be aggressive about reusing it. Errors will be propagated through CSE.</p>
+</section>
+<section id="task-caching">
+<h2>Task caching<a class="headerlink" href="#task-caching" title="Permalink to this heading">#</a></h2>
+<p>Task caching refers to using the redun backend to find and replaying the result of a <code class="docutils literal notranslate"><span class="pre">Task</span></code>
+from a prior execution. The redun database creates persistence for this cache, allowing caching
+to span multiple executions, processes, hosts, etc. In general, we need to be more careful than
+with CSE, that the cached value is appropriate to use.</p>
+<p>Task caching operates at the granularity of a single
+call to a <code class="docutils literal notranslate"><span class="pre">Task</span></code> with concrete arguments. Recall that the result of a <code class="docutils literal notranslate"><span class="pre">Task</span></code> might be a value,
+or another expression that needs further evaluation. In its normal mode, caching uses single
+reductions, stepping through the evaluation. See the (Results caching)[design.md#Result-caching]
+section, for more information on how this recursive checking works.</p>
+<p>Consider the following example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>
+    <span class="k">return</span> <span class="o">...</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">prep</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>
+  <span class="k">return</span> <span class="o">...</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>
+  <span class="k">return</span> <span class="n">inner</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">main</span><span class="p">(</span><span class="n">prep</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>To evaluate <code class="docutils literal notranslate"><span class="pre">out</span></code>, the following three task executions might be considered for caching:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">prep(data)</span></code>, since arguments are prepared first</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">main(prep_result)</span></code>, where <code class="docutils literal notranslate"><span class="pre">prep_result</span></code> is defined as the output from <code class="docutils literal notranslate"><span class="pre">prep(data)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">inner(prep_result)</span></code></p></li>
+</ul>
+<p>For CSE, we could simply assume that the code was identical for a task, but for caching,
+need to actually check that the code is identical, as defined by the
+(hash of the Task)[tasks.md#Task-hashing]. Since <code class="docutils literal notranslate"><span class="pre">Value</span></code> objects can represent state in addition
+to their natural values, we need to check that the output is actually valid before using a cache
+result; see (Validity)[values.md#Validity].</p>
+<p>The normal caching mode (so-called “full”) is fully recursive (i.e., uses single reductions),
+hence the scheduler must visit every node in the entire call graph produced by an expression,
+checking the Task hashes and output validity, even if every single step is cached.
+Verifying the validity of the intermediate states is a conservative approach to ensure
+that the state of the world after the workflow is identical, regardless of whether the cache was
+used.</p>
+<p>For large graphs, this means a fully-cached result can still be expensive to compute, especially
+if validity checking of the outputs is expensive. Therefore, redun offers an opt-in
+mode to approximate this computation with an ultimate reduction. Specifically, it skips
+the intermediate values and only checks the validity of the final values.
+This is called <code class="docutils literal notranslate"><span class="pre">shallow</span></code> validity checking.</p>
+<p>In shallow mode, reactivity to code more conservative:
+redun will rerun the task if there are code changes anywhere in the transitive closure of the
+called tasks, that is, the task will be rerun if the code changes for the task itself, or any
+task that is called downstream of it. Normally, changes to downstream code would only trigger
+rerunning of the directly impacted tasks, when the recursive evaluation actually reached
+that node in the call graph. Typically, if a shallow cache hit is not available, redun will
+fall back to a single reduction, so any extra conservatism does not necessarily cause
+reevaluation of the entire call graph.</p>
+<p>In shallow mode, we only check the validity of the final results, skipping over any
+intermediate results. This reduces the complexity from
+<code class="docutils literal notranslate"><span class="pre">O(#call_nodes</span> <span class="pre">+</span> <span class="pre">#intermediate_values</span> <span class="pre">+</span> <span class="pre">#output_values)</span></code> to
+<code class="docutils literal notranslate"><span class="pre">O(#distinct_tasks</span> <span class="pre">+</span> <span class="pre">#output_values)</span></code>. For deep expression trees, this savings can be significant,
+but the reduction in value reactivity may be undesirable (i.e., could lead to incorrect caching),
+especially for tasks working with files.</p>
+<p>Unlike CSE, errors are not replayed from the cache. Although some errors might make sense to
+replay, such as ones derived from deterministic code bugs, others, like out-of-memory errors,
+do not. Therefore, redun takes the conservative approach and discards errors retrieved from
+the cache and reruns the task.</p>
+</section>
+<section id="configuring-the-scheduler">
+<h2>Configuring the scheduler<a class="headerlink" href="#configuring-the-scheduler" title="Permalink to this heading">#</a></h2>
+<p>The scheduler and tasks provide a few different mechanisms for customizing the behavior of redun.</p>
+<section id="configuration-options">
+<h3>Configuration options<a class="headerlink" href="#configuration-options" title="Permalink to this heading">#</a></h3>
+<p>The most common mechanism for customizing the behavior of the scheduler is to use task options
+<code class="docutils literal notranslate"><span class="pre">check_valid</span></code> and <code class="docutils literal notranslate"><span class="pre">cache</span></code>, to switch between full and shallow validity checking, or to turn off
+caching, respectively. As an advanced option, the <code class="docutils literal notranslate"><span class="pre">cache_scope</span></code> option can disable CSE as well.
+See (task options)[tasks.md#task-options].</p>
+<p>The scheduler as a whole can be configured to disable caching, either with the <code class="docutils literal notranslate"><span class="pre">--no-cache</span></code> CLI
+flag, the <code class="docutils literal notranslate"><span class="pre">scheduler.run</span></code> argument, or with the configuration file.</p>
+<p>Users cannot customize the reused expression logic.</p>
+<p>An important detail is that all of these settings only impact our use of <strong>reading</strong> from the
+cache. Regardless of these settings, the full updates to the backend get written.
+For example, this implies that a run where the cache has been disabled is eligible to seed cache
+values for later runs. Additionally, a task that is run with full validity checking can be used
+to populate the cache for later runs of the same task with shallow validity checking.</p>
+</section>
+<section id="configuration-playbook">
+<h3>Configuration playbook<a class="headerlink" href="#configuration-playbook" title="Permalink to this heading">#</a></h3>
+<p>We conclude our discussion of the scheduler behavior by summarizing some of the most common
+situations where users might interact with these flags.</p>
+<ul class="simple">
+<li><p>In the vast majority of situations, the default <code class="docutils literal notranslate"><span class="pre">Task</span></code> options (i.e., with CSE enabled and caching
+with full validity checking) should work, and the scheduler should have cache enabled (the default).</p></li>
+<li><p>If a <code class="docutils literal notranslate"><span class="pre">Task</span></code> creates a lot of intermediate values or has a very deep call graph, so that cache hits
+are expensive, consider approximating the cache with <code class="docutils literal notranslate"><span class="pre">check_valid=&quot;shallow&quot;</span></code>.</p></li>
+<li><p>If the task is calls code that redun cannot include in the Task hash, disable the cache with
+<code class="docutils literal notranslate"><span class="pre">cache=False</span></code> to ensure that you don’t reuse a value from a different execution with different code.
+For example, redun does this for shell scripts. Leave CSE enabled, since this probably won’t
+be an issue within an execution.</p></li>
+<li><p>Similarly, if you have a task that is sensitive to the environment, perhaps depending on the OS,
+such that you can’t reuse values across executions, disable the cache with <code class="docutils literal notranslate"><span class="pre">cache=False</span></code>, but
+leave CSE enabled.</p></li>
+<li><p>If you have a non-deterministic task and never want results to be reused, disable both caching
+and CSE with `cache_scope=CacheScope.None’</p></li>
+<li><p>If you have a recursive task, be careful about disabling CSE with `cache_scope=CacheScope.None’,
+since it may be necessary for the workflow to actually terminate!</p></li>
+<li><p>Disabling the cache across the entire scheduler isn’t useful very often, it’s primarily a
+tool for debugging.</p></li>
+</ul>
+</section>
+</section>
+<section id="summary-of-evaluation-algorithm">
+<h2>Summary of evaluation algorithm<a class="headerlink" href="#summary-of-evaluation-algorithm" title="Permalink to this heading">#</a></h2>
+<p>redun’s evaluation process can be summarized with the following pseudo-code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+  <span class="mf">1.</span> <span class="n">If</span> <span class="n">we</span><span class="s1">&#39;ve already evaluated this expression, return the pre-existing result</span>
+  <span class="mf">2.</span> <span class="n">Else</span><span class="p">,</span> <span class="k">if</span> <span class="n">the</span> <span class="n">expression</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">collection</span><span class="p">:</span>
+    <span class="mf">1.</span> <span class="n">Recurse</span><span class="p">:</span> <span class="n">call</span> <span class="n">evaluate</span> <span class="n">on</span> <span class="n">each</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">collection</span> <span class="ow">and</span> <span class="k">return</span> <span class="n">the</span> <span class="n">result</span>
+  <span class="mf">3.</span> <span class="n">Else</span><span class="p">,</span> <span class="k">if</span> <span class="n">the</span> <span class="n">expression</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">concrete</span> <span class="n">value</span><span class="p">,</span> <span class="k">return</span> <span class="n">it</span><span class="p">,</span> <span class="n">we</span><span class="s1">&#39;re done.</span>
+  <span class="mf">4.</span> <span class="n">Else</span><span class="p">,</span> <span class="n">the</span> <span class="n">expression</span> <span class="n">must</span> <span class="n">be</span> <span class="n">a</span> <span class="n">single</span> <span class="n">call</span> <span class="n">to</span> <span class="n">a</span> <span class="n">task</span><span class="p">:</span>
+    <span class="mf">1.</span> <span class="n">Recurse</span><span class="p">:</span> <span class="n">Call</span> <span class="n">evaluate</span> <span class="n">on</span> <span class="n">the</span> <span class="n">arguments</span> <span class="n">of</span> <span class="n">the</span> <span class="n">expression</span> <span class="p">(</span><span class="n">to</span> <span class="n">reduce</span> <span class="n">to</span> <span class="n">concrete</span> <span class="n">values</span><span class="p">)</span>
+    <span class="mf">2.</span> <span class="n">If</span> <span class="n">the</span> <span class="n">cache</span> <span class="n">has</span> <span class="n">the</span> <span class="n">result</span> <span class="k">for</span> <span class="n">this</span> <span class="n">task</span><span class="o">+</span><span class="n">arguments</span><span class="p">,</span> <span class="k">return</span> <span class="n">it</span>
+    <span class="mf">3.</span> <span class="n">If</span> <span class="ow">not</span> <span class="n">cached</span><span class="p">,</span> <span class="n">actually</span> <span class="n">evaluate</span> <span class="n">the</span> <span class="n">task</span> <span class="n">by</span> <span class="n">submitting</span> <span class="n">to</span> <span class="n">an</span> <span class="n">executor</span>
+    <span class="mf">4.</span> <span class="n">Recurse</span><span class="p">:</span> <span class="n">Call</span> <span class="n">evaluate</span> <span class="n">on</span> <span class="n">the</span> <span class="n">result</span> <span class="p">(</span><span class="n">to</span> <span class="n">reduce</span> <span class="n">to</span> <span class="n">concrete</span> <span class="n">values</span><span class="p">)</span>
+    <span class="mf">5.</span> <span class="n">Return</span> <span class="n">the</span> <span class="n">final</span> <span class="n">value</span>
+</pre></div>
+</div>
+<p>To provide some examples:</p>
+<ul class="simple">
+<li><p>Concrete values might be numbers <code class="docutils literal notranslate"><span class="pre">1.23</span></code>, strings <code class="docutils literal notranslate"><span class="pre">&quot;hello&quot;</span></code>, or simple objects</p></li>
+<li><p>A collection might be a list, tuple, or dictionary.</p></li>
+<li><p>A call to a task might be <code class="docutils literal notranslate"><span class="pre">foo(1)</span></code></p></li>
+<li><p>An expression might be recursive: <code class="docutils literal notranslate"><span class="pre">foo(foo(1)</span> <span class="pre">+</span> <span class="pre">foo(2))</span></code>. The outer call to <code class="docutils literal notranslate"><span class="pre">foo</span></code> can’t be resolved until the inner arguments have been reduced.</p></li>
+<li><p>An expression may be a collection of other expressions: <code class="docutils literal notranslate"><span class="pre">[foo(1),</span> <span class="pre">foo(2</span> <span class="pre">+</span> <span class="pre">foo(3))]</span></code> or <code class="docutils literal notranslate"><span class="pre">{1:</span> <span class="pre">foo(1),</span> <span class="pre">2:</span> <span class="pre">foo(2)}</span></code></p></li>
+</ul>
+<p>In order to comply with the principle that the execution duration does not impact the behavior
+of a workflow, a particular Task execution is eligible to provide a cache result from the moment
+that it is scheduled. While the evaluation is pending, the scheduler does not actually have the
+result yet, but it will merely wait until the already-scheduled computation finishes; it will
+not run it twice merely because the result is not finished yet. Getting a cache hit from
+a still-pending task improves both performance and consistency of the scheduler. Likewise,
+each expression object is only evaluated once, regardless of whether it is finished running.
+The scheduler implementation has to specially handle these behaviors.</p>
+</section>
+<section id="scheduler-tasks">
+<h2>Scheduler tasks<a class="headerlink" href="#scheduler-tasks" title="Permalink to this heading">#</a></h2>
+<p>“Scheduler tasks” provide a method for extending and altering the scheduler. When working
+with scheduler tasks, be sure to carefully consult their documentation for any changes.</p>
+<p>Scheduler tasks are not subject to CSE or caching, but can be involved in unique expression
+deduplication.</p>
+</section>
+<section id="scheduler-overhead">
+<h2>Scheduler overhead<a class="headerlink" href="#scheduler-overhead" title="Permalink to this heading">#</a></h2>
+<p>The scheduler implementation makes every effort to be performant, but the scheduler does
+impose some costs, as compared to the equivalent python code.</p>
+<p>Redun adds several other run-time penalties, such as needing to hash values and source code,
+check for value validity, and upload/download results and bookkeeping to/from the backend.
+These operations are memoized wherever possible and typically scale linearly with the size of
+the call graphs produced by workflows.</p>
+<p>The redun scheduler also imposes non-trivial memory overhead, since
+it needs to maintain in-memory caches of expressions and tasks and their outputs.
+However, redun tasks are usually designed not to directly handle large values with in-memory
+objects, because of the combination of time, space, and network overheads, and the impact
+on the size of the central database. Offloading large objects to opaque value types, like files,
+reduces this penalty in practice.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="config.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Configuration</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="executors.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Executors</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2020, Matt Rasmussen
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Scheduling redun workflows</a><ul>
+<li><a class="reference internal" href="#core-principles-of-the-scheduler">Core principles of the scheduler</a></li>
+<li><a class="reference internal" href="#single-vs-ultimate-reductions">Single vs Ultimate reductions</a></li>
+<li><a class="reference internal" href="#unique-evaluation-of-expressions">Unique evaluation of expressions</a></li>
+<li><a class="reference internal" href="#common-sub-expression-elimination-cse">Common Sub-expression Elimination (CSE)</a></li>
+<li><a class="reference internal" href="#task-caching">Task caching</a></li>
+<li><a class="reference internal" href="#configuring-the-scheduler">Configuring the scheduler</a><ul>
+<li><a class="reference internal" href="#configuration-options">Configuration options</a></li>
+<li><a class="reference internal" href="#configuration-playbook">Configuration playbook</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#summary-of-evaluation-algorithm">Summary of evaluation algorithm</a></li>
+<li><a class="reference internal" href="#scheduler-tasks">Scheduler tasks</a></li>
+<li><a class="reference internal" href="#scheduler-overhead">Scheduler overhead</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/scripts/furo.js"></script>
+    </body>
+</html>

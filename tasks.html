@@ -2,12 +2,13 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Executors" href="executors.html" /><link rel="prev" title="Design overview" href="design.html" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Executors" href="executors.html" /><link rel="prev" title="Values" href="values.html" />
 
-    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
-        <title>Tasks - redun</title>
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
+        <title>Tasks - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -122,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">redun</div></a>
+      <a href="index.html"><div class="brand">redun  documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -144,8 +145,11 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="_static/redun.svg" alt="Logo"/>
+  </div>
   
-  <span class="sidebar-brand-text">redun</span>
+  <span class="sidebar-brand-text">redun  documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -153,21 +157,29 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul class="current">
+  <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="values.html">Values</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Tasks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduling redun workflows</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="db.html">Database repo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db.html">Backend and database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="developing.html">Developer guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -217,13 +229,179 @@
           </label>
         </div>
         <article role="main">
-          <div class="section" id="tasks">
+          <section id="tasks">
 <h1>Tasks<a class="headerlink" href="#tasks" title="Permalink to this heading">#</a></h1>
-<p>Tasks are the basic unit of work in a redun workflow. For a review of their basic features see <a class="reference internal" href="design.html#tasks-as-pure-functions"><span class="std std-doc">Tasks as pure functions</span></a>, <a class="reference internal" href="design.html#task-hashing"><span class="std std-doc">Task hashing</span></a>, and <a class="reference internal" href="design.html#task-naming"><span class="std std-doc">Task naming</span></a>.</p>
-<div class="section" id="task-options">
+<p>Tasks are the basic unit of work in a redun workflow.</p>
+<section id="task-naming">
+<h2>Task naming<a class="headerlink" href="#task-naming" title="Permalink to this heading">#</a></h2>
+<p>Every task has a name and namespace that uniquely identifies it within and across workflows. Task names and namespaces are also used as part of <a class="reference internal" href="#task-hashing">task hashing</a> to ensure unique hashes. Typically, the name of a task can be automatically inferred from the function’s name (e.g. <code class="docutils literal notranslate"><span class="pre">func.__name__</span></code>) and the namespace can be set once at the top of a module (<code class="docutils literal notranslate"><span class="pre">redun_namespace</span></code>). For example, in this workflow</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="c1"># workflow.py</span>
+<span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span>
+
+<span class="n">redun_namespace</span> <span class="o">=</span> <span class="s2">&quot;my_workflow&quot;</span>
+
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">my_task</span><span class="p">():</span>
+    <span class="c1"># ... task definition</span>
+</pre></div>
+</div>
+<p>the task <code class="docutils literal notranslate"><span class="pre">my_task()</span></code> has name <code class="docutils literal notranslate"><span class="pre">my_task</span></code> and namespace <code class="docutils literal notranslate"><span class="pre">my_workflow</span></code>. From the command line, you can run <code class="docutils literal notranslate"><span class="pre">my_task</span></code> as</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>workflow.py<span class="w"> </span>my_task
+</pre></div>
+</div>
+<p>or with its fully qualified name:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>workflow.py<span class="w"> </span>my_workflow.my_task
+</pre></div>
+</div>
+<p>If needed, task name and workflow can be defined directly in the <code class="docutils literal notranslate"><span class="pre">&#64;task</span></code> decorator:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;cool_task&quot;</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;acme&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">my_task</span><span class="p">():</span>
+    <span class="c1"># ... task definition</span>
+</pre></div>
+</div>
+<p>Namespaces are especially important for distinguishing tasks when call graphs recorded from different workflows are combined into one database.</p>
+</section>
+<section id="tasks-as-pure-functions">
+<h2>Tasks as pure functions<a class="headerlink" href="#tasks-as-pure-functions" title="Permalink to this heading">#</a></h2>
+<p>In order for redun to safely cache results and execute tasks in parallel, a few restrictions must be followed when writing a task. Primarily, tasks must be written such that they are “effectively <a class="reference external" href="https://en.wikipedia.org/wiki/Pure_function">pure functions</a>”. That is, given the same arguments, a task should always return (effectively) the same result. redun does not try to enforce strict purity, so minor side-effects such logging, or caching, are not an issue. A task can even be stochastic as long as the user is ok with using cached results from previous executions.</p>
+<p>Tasks are allowed to call other tasks, just like one would write a function to call other functions. In fact, this is the encouraged way of building up a workflow program. Tasks are also allowed to call plain Python functions, as long as the net result of the task is effectively pure. You may also call tasks from plain Python functions as well. In fact, this often occurs when using functions such as <code class="docutils literal notranslate"><span class="pre">map()</span></code>.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">small_helper</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="c1"># Small plain Python code...</span>
+    <span class="k">return</span> <span class="n">item2</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">process_item</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="c1"># Process an item...</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">small_helper</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">process_items</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">process_item</span><span class="p">,</span> <span class="n">items</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>One point of caution about using plain Python functions is that redun cannot hash the contents of a plain Python function, such as <code class="docutils literal notranslate"><span class="pre">small_helper</span></code> above. So changes to that function will not trigger re-execution. It becomes the responsibility of the user to force re-execution if needed, perhaps by bumping the version of the calling task or explicitly indicating the dependency to Redun (see <a class="reference internal" href="#task-hashing">Task Hashing</a> for more).</p>
+<p>See <a class="reference internal" href="#redun-tasks-are-not-general-python">Redun tasks are not general python</a> below, for more.</p>
+</section>
+<section id="task-hashing">
+<h2>Task hashing<a class="headerlink" href="#task-hashing" title="Permalink to this heading">#</a></h2>
+<p>As with general <code class="docutils literal notranslate"><span class="pre">Value</span></code>s, redun relies on hashing tasks to identify whether two tasks are the same. Among other things, this allows us to identify if a past computation used the “same” task, and hence might be a suitable cache result.</p>
+<p>For Tasks, redun provides multiple ways to determine a hash. By default, Tasks are hashed by their name, namespace, and source code. You can inspect this process yourself with <code class="docutils literal notranslate"><span class="pre">Task.source</span></code> and <code class="docutils literal notranslate"><span class="pre">Task.hash</span></code> attributes:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">step1</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
+<span class="c1"># &quot;&quot;&quot;def step1(a, b):</span>
+<span class="c1">#     return a + b</span>
+<span class="c1"># &quot;&quot;&quot;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">step1</span><span class="o">.</span><span class="n">hash</span><span class="p">)</span>
+<span class="c1"># &#39;3f50b2a534c0bf3f1a977afbe1d89ba04501a6f0&#39;</span>
+</pre></div>
+</div>
+<p>Hashing based on the source of a Task function is very convenient for iterative development. Simply by changing the code of a Task, redun will detect that it will need to re-execute it.</p>
+<p>Sometimes, a user may want to refactor a Task without triggering re-execution. This can be done by manually versioning tasks, and only bumping the version when a meaningful change is made to the Task. Any string can be used as a task version. No order is assumed with versions, redun only checks task version equality.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+</pre></div>
+</div>
+<p>Users may also want to tether a task hash to other objects. This can be done with the <code class="docutils literal notranslate"><span class="pre">hash_includes</span></code> argument in the task decorator, which is especially useful to force re-execution of a task if its plain Python helper functions change. Note that this will override versioning.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">helper</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+  <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span>
+
+<span class="nd">@task</span><span class="p">(</span><span class="n">hash_includes</span><span class="o">=</span><span class="p">[</span><span class="n">helper</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">helper</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="nested-values">
+<h2>Nested values<a class="headerlink" href="#nested-values" title="Permalink to this heading">#</a></h2>
+<p>It is common in workflow frameworks to allow a task to have multiple outputs. This is useful when different outputs need to be routed to their own downstream tasks. redun aims to be pythonic, and in Python functions return one value. However, return values can be container types such as lists, tuples, dict, etc. In that spirit, redun gives special treatment to the built-in Python containers (list, tuple, dict, namedtuple, set, dataclass) in order to provide features like multiple outputs and inputs. In redun, we call a value built up from possibly multiple nested container types, a <em>nested value</em>. Take the following code for example:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">run_calculation</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="c1"># Perform calculation...</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s1">&#39;output1&#39;</span><span class="p">:</span> <span class="n">output1</span><span class="p">,</span>
+        <span class="s1">&#39;output_list&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">output_a</span><span class="p">,</span> <span class="n">output_b</span><span class="p">,</span> <span class="n">output_c</span><span class="p">]</span>
+    <span class="p">}</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">step2</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="c1"># Process item...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">step3</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+    <span class="c1"># Process items...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="c1"># Get data from somewhere...</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">run_calculation</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">result2</span> <span class="o">=</span> <span class="n">step2</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s1">&#39;output1&#39;</span><span class="p">])</span>
+    <span class="n">result3</span> <span class="o">=</span> <span class="n">step3</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s1">&#39;output_list&#39;</span><span class="p">][:</span><span class="mi">2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">result2</span><span class="p">,</span> <span class="n">result3</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>From the lazy-evaluation section, we know that <code class="docutils literal notranslate"><span class="pre">run_calculation(data)</span></code> returns an Expression, which we usually have to pass to another task in order to obtain a resolved concrete value (i.e. “look inside”). However, redun allows lazy attribute access for nested values (such as dict). For example, the above <code class="docutils literal notranslate"><span class="pre">outputs['output1']</span></code> returns another Expression:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+<span class="c1"># TaskExpression(&#39;run_calculation&#39;, (data,), {})</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s1">&#39;output1&#39;</span><span class="p">])</span>
+<span class="c1"># SimpleExpression(</span>
+<span class="c1">#   &#39;getitem&#39;,</span>
+<span class="c1">#   (</span>
+<span class="c1">#     TaskExpression(&#39;run_calculation&#39;, (data,), {}),</span>
+<span class="c1">#     &#39;output1&#39;</span>
+<span class="c1">#   ),</span>
+<span class="c1">#   {}</span>
+<span class="c1"># )</span>
+</pre></div>
+</div>
+<p>By the time this expression is passed to <code class="docutils literal notranslate"><span class="pre">step2()</span></code> it will evaluate to the concrete value <code class="docutils literal notranslate"><span class="pre">output1</span></code> from <code class="docutils literal notranslate"><span class="pre">run_calculation()</span></code>. redun implements a number of builtin simple expressions, such as ‘getitem’ (<code class="docutils literal notranslate"><span class="pre">expr[key]</span></code>), ‘getattr’ (<code class="docutils literal notranslate"><span class="pre">expr.attr</span></code>), and ‘call’ (<code class="docutils literal notranslate"><span class="pre">expr(arg1,</span> <span class="pre">arg2)</span></code>).</p>
+<p>Also, multiple lazy calls can be chained such as <code class="docutils literal notranslate"><span class="pre">outputs['output_list'][:2]</span></code>. This lazy-evaluation technique allows us to define dataflows even in the case of multiple outputs.</p>
+<p>In the <code class="docutils literal notranslate"><span class="pre">main()</span></code> task, we return a nested value that contains Expression, <code class="docutils literal notranslate"><span class="pre">result2</span></code> and <code class="docutils literal notranslate"><span class="pre">result3</span></code>. redun will recurse into nested values to detect additional Expressions that must be resolved before <code class="docutils literal notranslate"><span class="pre">main()</span></code> can fully resolve.</p>
+<p>Expressions can also be nested in arguments:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">task1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">adder</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">task1</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">adder</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Notice that <code class="docutils literal notranslate"><span class="pre">values</span></code> in <code class="docutils literal notranslate"><span class="pre">main()</span></code> is actually a list of Expressions. The redun scheduler knows to wait on the evaluation of all expressions within a nested value before using it as an argument to a task (<code class="docutils literal notranslate"><span class="pre">adder</span></code>).</p>
+</section>
+<section id="recursion">
+<h2>Recursion<a class="headerlink" href="#recursion" title="Permalink to this heading">#</a></h2>
+<p>Another example of the generality of our call graph recording technique is the ability to define workflows with recursion, which many workflow engines cannot express. Take the following example:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">add</span><span class="p">(</span><span class="n">fib</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">fib</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>This computes the n<sup>th</sup> <a class="reference external" href="https://en.wikipedia.org/wiki/Fibonacci_number">Fibonacci number</a> using recursion. redun doesn’t prevent a task from calling itself, and in fact, due to the memoization, this calculation will be done in linear time instead of exponential.</p>
+</section>
+<section id="task-options">
 <h2>Task options<a class="headerlink" href="#task-options" title="Permalink to this heading">#</a></h2>
-<p>Tasks can be configured in many ways to adjust how they are executed and cached. For example, the <a class="reference internal" href="#executor"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">executor</span></code></span></a> task option defines which <a class="reference internal" href="executors.html"><span class="doc std std-doc">executor</span></a> system (local, AWS Batch, etc) the task should execute on, and the <a class="reference internal" href="#cache"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">cache</span></code></span></a> task option defines whether the cache can be used to fast forward through the task.</p>
-<p>The most common way to configure a task is with the <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">&#64;task</span></code></span> decorator. For example, this task runs on AWS Batch with 4Gb of memory and without using caching:</p>
+<p>Tasks can be configured in many ways to adjust how they are executed and cached. For example, the <a class="reference internal" href="#executor"><code class="docutils literal notranslate"><span class="pre">executor</span></code></a> task option defines which <a class="reference internal" href="executors.html"><span class="std std-doc">executor</span></a> system (local, AWS Batch, etc) the task should execute on, and the [<code class="docutils literal notranslate"><span class="pre">cache</span></code>] task option defines whether the cache can be used to fast-forward through the task (see <a class="reference internal" href="scheduler.html"><span class="std std-doc">Scheduler</span></a> for more information on caching).</p>
+<p>The most common way to configure a task is with the <a class="reference internal" href="redun/redun.html#redun.task.task" title="redun.task.task"><span class="xref myst py py-func"><code class="docutils literal notranslate"><span class="pre">&#64;task</span></code></span></a> decorator. For example, this task runs on AWS Batch with 4Gb of memory and without using caching:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">,</span> <span class="n">memory</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">process_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
     <span class="n">dataset2</span> <span class="o">=</span> <span class="p">[</span>
@@ -234,7 +412,7 @@
     <span class="k">return</span> <span class="n">dataset2</span>
 </pre></div>
 </div>
-<p>Tasks options can also be overridden at call-time using <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">Task.options()</span></code></span>. For example, we could dynamically set the memory required for an AWS Batch task based on the dataset size.</p>
+<p>Tasks options can also be overridden at call-time using <a class="reference internal" href="redun/redun.html#redun.task.Task" title="redun.task.Task"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">Task.options()</span></code></span></a>. For example, we could dynamically set the memory required for an AWS Batch task based on the dataset size.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="nb">input</span><span class="p">:</span> <span class="n">File</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">read_input</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
@@ -245,17 +423,32 @@
     <span class="k">return</span> <span class="n">dataset2</span>
 </pre></div>
 </div>
-<p>Lastly, several task options, such as <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">image</span></code></span> or <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">memory</span></code></span>, can be inherited by the <a class="reference internal" href="config.html#executors"><span class="std std-doc">executor configuration</span></a>.</p>
-<div class="section" id="cache">
+<p>Lastly, several task options, such as <a class="reference internal" href="config.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">image</span></code></span></a> or <a class="reference internal" href="config.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">memory</span></code></span></a>, can be inherited by the <a class="reference internal" href="config.html#executors"><span class="std std-ref">executor configuration</span></a>.</p>
+<section id="allowed-cache-results">
+<h3><code class="docutils literal notranslate"><span class="pre">allowed_cache_results</span></code><a class="headerlink" href="#allowed-cache-results" title="Permalink to this heading">#</a></h3>
+<p>Generally not a user-facing option, this is a <code class="docutils literal notranslate"><span class="pre">Optional[Set[CacheResult]]</span></code> specifying an upper bound on which kind of cache results are may be used (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>, indicating that any are allowed).</p>
+</section>
+<section id="cache">
 <h3><code class="docutils literal notranslate"><span class="pre">cache</span></code><a class="headerlink" href="#cache" title="Permalink to this heading">#</a></h3>
-<p>A bool (default: true) that defines whether the cache can be used to fast forward through the task’s execution. If set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the task will run every time the task is called in a workflow.</p>
-</div>
-<div class="section" id="check-valid">
+<p>A bool (default: <code class="docutils literal notranslate"><span class="pre">true</span></code>) that defines whether the backend cache can be used to fast-forward through the task’s execution. See <a class="reference internal" href="scheduler.html#Configuration-options"><span class="std std-ref">Scheduler</span></a> for more explanation.
+A value of <code class="docutils literal notranslate"><span class="pre">true</span></code> is implemented by setting <code class="docutils literal notranslate"><span class="pre">cache_scope=CacheScope.BACKEND</span></code> and <code class="docutils literal notranslate"><span class="pre">false</span></code> by setting <code class="docutils literal notranslate"><span class="pre">cache_scope=CacheScope.CSE</span></code>.</p>
+</section>
+<section id="cache-scope">
+<h3><code class="docutils literal notranslate"><span class="pre">cache_scope</span></code><a class="headerlink" href="#cache-scope" title="Permalink to this heading">#</a></h3>
+<p>A <code class="docutils literal notranslate"><span class="pre">CacheScope</span></code> enum value (default: <code class="docutils literal notranslate"><span class="pre">CacheScope.BACKEND</span></code>) that indicates the upper bound on what scope a cache result may come from. See <a class="reference internal" href="scheduler.html#Configuration-options"><span class="std std-ref">Scheduler</span></a> for more explanation.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">NONE</span></code>: Disable both CSE and cache hits</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CSE</span></code>: Only reuse computations from within this execution</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BACKEND</span></code>: Allow cache hits from any evaluation known to the backend</p></li>
+</ul>
+</section>
+<section id="check-valid">
 <h3><code class="docutils literal notranslate"><span class="pre">check_valid</span></code><a class="headerlink" href="#check-valid" title="Permalink to this heading">#</a></h3>
-<p>A string (default: <code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code>) that defines whether cached results are checked for validity in the entire subtree
-beneath this task (<code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code>) or whether just this task’s results need to be valid (<code class="docutils literal notranslate"><span class="pre">&quot;shallow&quot;</span></code>). This can be used to dramatically speed up resuming large workflows.</p>
-</div>
-<div class="section" id="config-args">
+<p>An enum value <code class="docutils literal notranslate"><span class="pre">CacheCheckValid</span></code> (or a string that can be coerced, default: <code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code>) that defines whether the entire subtree
+of results is checked for validity (<code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code>) or whether just this task’s ultimate results need to be valid (<code class="docutils literal notranslate"><span class="pre">&quot;shallow&quot;</span></code>). This can be used to dramatically speed up resuming large workflows.
+See <a class="reference internal" href="scheduler.html#Configuration-options"><span class="std std-ref">Scheduler</span></a> for more explanation.</p>
+</section>
+<section id="config-args">
 <h3><code class="docutils literal notranslate"><span class="pre">config_args</span></code><a class="headerlink" href="#config-args" title="Permalink to this heading">#</a></h3>
 <p>A list of strings defining config args for this task.
 Config args will be ignored when hashing a task meaning that changes in config args’ values will not cause tasks to re-evaluate.
@@ -267,34 +460,34 @@ For example, consider:</p>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">memory</span></code> arg in <code class="docutils literal notranslate"><span class="pre">task1</span></code> will be ignored when hashing a task and changing that value will not trigger re-evaluation of the task.</p>
-</div>
-<div class="section" id="executor">
+</section>
+<section id="executor">
 <h3><code class="docutils literal notranslate"><span class="pre">executor</span></code><a class="headerlink" href="#executor" title="Permalink to this heading">#</a></h3>
-<p>A string (default: <code class="docutils literal notranslate"><span class="pre">default</span></code>) that defines which executor the task executes on. See <a class="reference internal" href="executors.html"><span class="doc std std-doc">Executors</span></a> for more information.</p>
-</div>
-<div class="section" id="hash-includes">
+<p>A string (default: <code class="docutils literal notranslate"><span class="pre">default</span></code>) that defines which executor the task executes on. See <a class="reference internal" href="executors.html"><span class="std std-doc">Executors</span></a> for more information.</p>
+</section>
+<section id="hash-includes">
 <h3><code class="docutils literal notranslate"><span class="pre">hash_includes</span></code><a class="headerlink" href="#hash-includes" title="Permalink to this heading">#</a></h3>
 <p>A list of data to include in the task hash. Changing the hash will invalidate cached execution results.</p>
-</div>
-<div class="section" id="limits">
+</section>
+<section id="limits">
 <h3><code class="docutils literal notranslate"><span class="pre">limits</span></code><a class="headerlink" href="#limits" title="Permalink to this heading">#</a></h3>
-<p>A list or dict of resources needed for this task to execute. See the <a class="reference internal" href="config.html#limits"><span class="std std-doc">Limits</span></a> feature for more information.</p>
-</div>
-<div class="section" id="load-module">
+<p>A list or dict of resources needed for this task to execute. See the <a class="reference internal" href="config.html#limits"><span class="std std-ref">Limits</span></a> feature for more information.</p>
+</section>
+<section id="load-module">
 <h3><code class="docutils literal notranslate"><span class="pre">load_module</span></code><a class="headerlink" href="#load-module" title="Permalink to this heading">#</a></h3>
 <p>The name of a python module that can be loaded to recreate this task. For example, this is part of how a remote worker is instructed to initialize itself, in preparation for running a task.</p>
-</div>
-<div class="section" id="name">
+</section>
+<section id="name">
 <h3><code class="docutils literal notranslate"><span class="pre">name</span></code><a class="headerlink" href="#name" title="Permalink to this heading">#</a></h3>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">func.__name__</span></code>) naming the task. Task name must use only alphanumeric characters and underscore ‘_’.</p>
-<p>Every task in a workflow needs a unique name. By default, this is automatically inferred from the function’s name (e.g. <code class="docutils literal notranslate"><span class="pre">func.__name__</span></code>). However, the user may use the <code class="docutils literal notranslate"><span class="pre">name</span></code> task option to explicitly set a task’s name. See <a class="reference internal" href="design.html#task-naming"><span class="std std-doc">Task naming</span></a> for more.</p>
-</div>
-<div class="section" id="namespace">
+<p>Every task in a workflow needs a unique name. By default, this is automatically inferred from the function’s name (e.g. <code class="docutils literal notranslate"><span class="pre">func.__name__</span></code>). However, the user may use the <code class="docutils literal notranslate"><span class="pre">name</span></code> task option to explicitly set a task’s name. See <a class="reference internal" href="#task-naming">Task naming</a> for more.</p>
+</section>
+<section id="namespace">
 <h3><code class="docutils literal notranslate"><span class="pre">namespace</span></code><a class="headerlink" href="#namespace" title="Permalink to this heading">#</a></h3>
 <p>A string defining the namespace for a task. Task namespace must use only alphanumeric characters, underscore ‘_’, and dot ‘.’, and may not start with a dot.</p>
-<p>Ideally, tasks should be uniquely identified across workflows by their fullname, which is a combination of their namespace and name. Typically, the namespace is set for the entire python module using the <code class="docutils literal notranslate"><span class="pre">redun_namespace</span></code> global variable (See <a class="reference internal" href="design.html#task-naming"><span class="std std-doc">Task naming</span></a> for more). However, the namespace can also be configured explicitly using this task option.</p>
-</div>
-<div class="section" id="nout">
+<p>Ideally, tasks should be uniquely identified across workflows by their fullname, which is a combination of their namespace and name. Typically, the namespace is set for the entire python module using the <code class="docutils literal notranslate"><span class="pre">redun_namespace</span></code> global variable (See <a class="reference internal" href="#task-naming">Task naming</a> for more). However, the namespace can also be configured explicitly using this task option.</p>
+</section>
+<section id="nout">
 <h3><code class="docutils literal notranslate"><span class="pre">nout</span></code><a class="headerlink" href="#nout" title="Permalink to this heading">#</a></h3>
 <p>An optional int (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>) that can be used for tasks that return a tuple or list of length <code class="docutils literal notranslate"><span class="pre">nout</span></code>. Typically, tasks return lazy results with unknown length (<code class="docutils literal notranslate"><span class="pre">nout=None</span></code>). This prevents users from iterating or destructuring results like they could with a normal tuple or list. Using <code class="docutils literal notranslate"><span class="pre">nout</span></code>, a user can iterate and destructure results.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">nout</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -314,18 +507,374 @@ For example, consider:</p>
     <span class="k">return</span> <span class="p">[</span><span class="n">name</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">results</span><span class="p">]</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="script">
+</section>
+<section id="script">
 <h3><code class="docutils literal notranslate"><span class="pre">script</span></code><a class="headerlink" href="#script" title="Permalink to this heading">#</a></h3>
-<p>A bool (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>) that defines whether this task is a <a class="reference internal" href="design.html#script-tasks"><span class="std std-doc">script task</span></a>.</p>
-</div>
-<div class="section" id="version">
+<p>A bool (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>) that defines whether this task is a <a class="reference internal" href="design.html#script-tasks"><span class="std std-ref">script task</span></a>.</p>
+</section>
+<section id="version">
 <h3><code class="docutils literal notranslate"><span class="pre">version</span></code><a class="headerlink" href="#version" title="Permalink to this heading">#</a></h3>
 <p>An optional string (default: None) defining the version of the task. If defined, the task version helps to determine the hash for a task. When not given, the task hash will depend on the task’s source code. Therefore, an explicit version allows the user to safely refactor a task without causing unnecessary re-execution of their pipeline.</p>
-<p>See <a class="reference internal" href="design.html#task-hashing"><span class="std std-doc">Task hashing</span></a> for more.</p>
+<p>See <a class="reference internal" href="#task-hashing">Task hashing</a> for more.</p>
+</section>
+</section>
+<section id="redun-tasks-are-not-general-python">
+<h2>Redun tasks are not general python<a class="headerlink" href="#redun-tasks-are-not-general-python" title="Permalink to this heading">#</a></h2>
+<p>Although redun tasks are designed to allow rich and natural definition of tasks in Python,
+tasks need to act as <a class="reference internal" href="#tasks-as-pure-functions">pure functions</a>. This section discusses a few potential issues in more depth.</p>
+<section id="object-references-and-uniqueness">
+<h3>Object references and uniqueness<a class="headerlink" href="#object-references-and-uniqueness" title="Permalink to this heading">#</a></h3>
+<p>As noted in (Hashing and equality)[values.md#Hashing-and-equality], redun does not distinguish
+between references to a single underlying object and values that merely have the same hash.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyObject</span><span class="p">:</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+  <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span>
+
+<span class="c1"># Make two copies of an object with equal hashes</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Consider two ways of calling `task`</span>
+<span class="n">out1</span> <span class="o">=</span> <span class="n">task</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="n">out2</span> <span class="o">=</span> <span class="n">task</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="c1"># To redun, these two are actually interchangeable, since the hash of the inputs and outputs</span>
+<span class="c1"># for both are identical. It does not care that `x` and `y` are distinct objects.</span>
+<span class="c1"># This means that if there was a cached value from `task(x, x)`, this might be returned as </span>
+<span class="c1"># the result from `task(x, y)`, even though this might seem like a bug. </span>
+</pre></div>
 </div>
+<p>Warning: Redun tasks should never rely on the identity of objects, as redun makes no effort to
+define its behavior under changes that do not impact hashing. See <a class="reference internal" href="#mutating-arguments">Mutating arguments</a>,
+below, for an example of how relying on object identity can produce unexpected behavior.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">unreliable_task</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+  <span class="c1"># This task could give completely wrong results if the value is cached. Moreover, </span>
+  <span class="c1"># if it is included in a more complex workflow, you may find that its output varies arbitrarily,</span>
+  <span class="c1"># depending upon what parts of the workflow was cached.</span>
+  <span class="k">return</span> <span class="nb">id</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="nb">id</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+</pre></div>
 </div>
+</section>
+<section id="external-state-and-non-deterministic-functions">
+<h3>External state and non-deterministic functions<a class="headerlink" href="#external-state-and-non-deterministic-functions" title="Permalink to this heading">#</a></h3>
+<p>Python code often makes use stateful imperative code, in the form of module variables, class
+members, etc. These generally need to be avoided, because Redun is designed to leverage the
+deterministic behavior of “effectively” pure functions to efficiently schedule and cache tasks
+within workflows. Functions with random or otherwise non-deterministic behavior are likewise
+problematic.</p>
+<p>Functions that are intentionally random can be used, but you need to decide what kind of cache
+behavior you intend. Consider the following task:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">rand</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+</pre></div>
 </div>
+<p>Most likely, the user does not intend this to be cached globally, because we would simply
+generate a single random number and then replay it forever. However, if the cache is disabled,
+(or limited in scope) redun will behave consistently, running the task’s implementation every time
+and recording all the output values.</p>
+<p>The following function is simple enough in ordinary python (if you remove the decorator): it
+returns an increasing value as you call it. If caching is enabled (it is by default), this will
+always return <code class="docutils literal notranslate"><span class="pre">1</span></code>. However, unlike functions that are merely random, disabling the cache
+leaves us with undefined behavior. Most non-local executors use a fresh python context for each
+task, <code class="docutils literal notranslate"><span class="pre">call_count</span></code> would be reset every time. The local executors might share this state, but
+then you are left with race conditions and potential thread safety issues.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">call_count</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">counter</span><span class="p">():</span>
+    <span class="n">call_count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">call_count</span>
+</pre></div>
+</div>
+<p>Note that redun’s unit tests sometimes use this pattern when checking the behavior of the
+scheduler. This is a subtle trick that only works because redun can’t detect the external state.</p>
+</section>
+<section id="mutating-arguments">
+<h3>Mutating arguments<a class="headerlink" href="#mutating-arguments" title="Permalink to this heading">#</a></h3>
+<p>Pure functions are generally not allowed to mutate their arguments and redun likewise relies
+on this assumption. Many functional programming languages have deep enforcement of immutability
+because this is such a crucial concept, but python does not. Therefore, it is up to the user
+not to mutate task arguments. Here, we give a brief exploration of what goes wrong.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Data</span><span class="p">:</span>
+    <span class="nb">int</span> <span class="n">x</span>
+    <span class="nb">int</span> <span class="n">y</span>
+    
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">unsafe_set_x</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Data</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Data</span><span class="p">:</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="k">return</span> <span class="n">data</span>
+    
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">unsafe_set_y</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Data</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Data</span><span class="p">:</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+    <span class="k">return</span> <span class="n">data</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="n">d1</span><span class="p">:</span> <span class="n">Data</span><span class="p">,</span> <span class="n">d2</span><span class="p">:</span> <span class="n">Data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">d1</span><span class="o">.</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">d2</span><span class="o">.</span><span class="n">y</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">incorrect_mutation</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Data</span><span class="p">:</span>
+  <span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="p">()</span>
+  <span class="n">unsafe_set_x</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+  <span class="n">unsafe_set_y</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+  <span class="c1"># If these were regular python functions, this would return `Data(x=1, y=2)` as desired.</span>
+  <span class="c1"># However, since we discarded the outputs from `unsafe_set_x` and `unsafe_set_y`, redun won&#39;t </span>
+  <span class="c1"># even bother running them! Instead, this task would construct `data` and return it.</span>
+  <span class="k">return</span> <span class="n">data</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">incorrect_mutation2</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+  <span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="p">()</span>
+  
+  <span class="c1"># This is a purely linear chain of mutations, where we&#39;ve been careful to use the resulting</span>
+  <span class="c1"># output to enforce ordering. You can get away with this, although it&#39;s very fragile.</span>
+  <span class="n">data1</span> <span class="o">=</span> <span class="n">unsafe_set_x</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+  <span class="n">data2</span> <span class="o">=</span> <span class="n">unsafe_set_y</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+  
+  <span class="c1"># To understand why this is fragile, ask whether `data` and `data2` refer to the same</span>
+  <span class="c1"># object? In ordinary python, they would. However, in redun, they may or may not,</span>
+  <span class="c1"># it will depend on caching and the executors involved. Either of the steps above might </span>
+  <span class="c1"># return us a new object with the result. Hence, of the two mutations above, `data` might have</span>
+  <span class="c1"># either, both, or none. </span>
+  <span class="k">return</span> <span class="n">compare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data2</span><span class="p">)</span>
+  
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">safe_set_x</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Data</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Data</span><span class="p">:</span>
+    <span class="c1"># A safe approach is to make a deep copy and then modify and return the copy. </span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="k">return</span> <span class="n">data</span>
+</pre></div>
+</div>
+<p>Redun cannot detect mutation to input arguments and cannot reason about it. As discussed above,
+redun does not define its behavior with regards to object identity, which means that most
+input mutation is likewise undefined. Hence, as we show above, the behavior of tasks that mutate
+their arguments is fragile, and this is best avoided altogether.</p>
+</section>
+</section>
+<section id="advanced-topics">
+<h2>Advanced topics<a class="headerlink" href="#advanced-topics" title="Permalink to this heading">#</a></h2>
+<section id="tasks-as-first-class-values">
+<h3>Tasks as first class values<a class="headerlink" href="#tasks-as-first-class-values" title="Permalink to this heading">#</a></h3>
+<p>As we saw in the recursion section, redun can handle complex dataflows, such as recursion. It also can implement higher order tasks (tasks that receive or return other tasks) in order to provide very reusable workflow components.</p>
+<p>As an example, let’s say we had a pipeline of steps:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">step2</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">step3</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">pipeline</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">step1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">step2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">step3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span>
+</pre></div>
+</div>
+<p>Next, let’s say we have several possible tasks for step2 and we wanted to swap them in and out in different situations. To do that, we could make step2 an input to the pipeline.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">step2a</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">step2b</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">step3</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">pipeline</span><span class="p">(</span><span class="n">step2</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">step1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">step2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">step3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">pipeline</span><span class="p">(</span><span class="n">step2a</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span>
+        <span class="n">pipeline</span><span class="p">(</span><span class="n">step2b</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span>
+    <span class="p">]</span>
+</pre></div>
+</div>
+<p>Tasks can also be used as return values.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="c1"># def step1, step2a, step2b, step3, pipeline</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">pick_step2</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">step2a</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">step2b</span>
+
+<span class="nd">@task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">step2</span> <span class="o">=</span> <span class="n">pick_step</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pipeline</span><span class="p">(</span><span class="n">step2</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="task-wrapping">
+<h3>Task wrapping<a class="headerlink" href="#task-wrapping" title="Permalink to this heading">#</a></h3>
+<p>We provide a mechanism for wrapping tasks, which is a powerful mechanism for altering
+the run-time behavior of a task. Conceptually inspired by <code class="docutils literal notranslate"><span class="pre">&#64;functools.wraps</span></code>, which makes it easier
+to create decorators that enclose functions. As a motivating example, consider a task that needs
+to operate in parallel processes on the worker that executes the task. We can partition the
+implementation into a generic wrapper that launches parallel processes and an inner task
+that operates within that context.</p>
+<p>Specifically, this helps us create a decorator that accepts a task and wraps it. The task
+passed in is moved into an inner namespace, hiding it. Then a new task is created from the
+wrapper implementation that assumes its identity; the wrapper is given access to both the run-time
+arguments and the hidden task definition. Since <code class="docutils literal notranslate"><span class="pre">Tasks</span></code> may be wrapped repeatedly,
+the hiding step is recursive.</p>
+<p>A simple usage example is a new decorator <code class="docutils literal notranslate"><span class="pre">&#64;doubled_task</span></code>, which simply runs the original
+task and multiplies by two.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">doubled_task</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Func</span><span class="p">],</span> <span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]]:</span>
+
+    <span class="c1"># The name of this inner function is used to create the nested namespace,</span>
+    <span class="c1"># so idiomatically, use the same name as the decorator with a leading underscore.</span>
+    <span class="nd">@wraps_task</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">_doubled_task</span><span class="p">(</span><span class="n">inner_task</span><span class="p">:</span> <span class="n">Task</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]],</span> <span class="n">Func</span><span class="p">]:</span>
+
+        <span class="c1"># The behavior when the task is run. Note we have both the task and the</span>
+        <span class="c1"># runtime args.</span>
+        <span class="k">def</span> <span class="nf">do_doubling</span><span class="p">(</span><span class="o">*</span><span class="n">task_args</span><span class="p">,</span> <span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">inner_task</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">task_args</span><span class="p">,</span> <span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">do_doubling</span>
+    <span class="k">return</span> <span class="n">_doubled_task</span>
+
+<span class="c1"># Create the task implicitly</span>
+<span class="nd">@doubled_task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">value_task</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">x</span>
+
+<span class="c1"># Or we can do it manually</span>
+<span class="nd">@doubled_task</span><span class="p">()</span>
+<span class="nd">@task</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;renamed&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">value_task2</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">x</span>
+
+<span class="c1"># We can keep going</span>
+<span class="nd">@doubled_task</span><span class="p">()</span>
+<span class="nd">@doubled_task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">value_task3</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">x</span>
+</pre></div>
+</div>
+<p>This mechanism might be used to alter the runtime behavior, such as by retrying the task
+if it fails or running it in parallel. We suggest that users prefer other approaches for
+defining their tasks, and only use this technique when access to the <code class="docutils literal notranslate"><span class="pre">Task</span></code> object itself is
+needed.</p>
+<p>There is an additional subtlety if the wrapper itself accepts arguments. These must be passed
+along to the wrapper so they are visible to the scheduler. Needing to do this manually is
+the cost of the extra powers we have.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># An example of arguments consumed by the wrapper</span>
+<span class="k">def</span> <span class="nf">wrapper_with_args</span><span class="p">(</span><span class="n">wrapper_arg</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Func</span><span class="p">],</span> <span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]]:</span>
+
+    <span class="c1"># WARNING: Be sure to pass the extra data for hashing so it participates in the cache </span>
+    <span class="c1"># evaluation</span>
+    <span class="nd">@wraps_task</span><span class="p">(</span><span class="n">wrapper_extra_hash_data</span><span class="o">=</span><span class="p">[</span><span class="n">wrapper_arg</span><span class="p">])</span>
+    <span class="k">def</span> <span class="nf">_wrapper_with_args</span><span class="p">(</span><span class="n">inner_task</span><span class="p">:</span> <span class="n">Task</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]],</span> <span class="n">Func</span><span class="p">]:</span>
+
+        <span class="k">def</span> <span class="nf">do_wrapper_with_args</span><span class="p">(</span><span class="o">*</span><span class="n">task_args</span><span class="p">,</span> <span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">wrapper_arg</span> <span class="o">*</span> <span class="n">inner_task</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">task_args</span><span class="p">,</span> <span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">do_wrapper_with_args</span>
+    <span class="k">return</span> <span class="n">_wrapper_with_args</span>
+</pre></div>
+</div>
+</section>
+<section id="subrun">
+<h3>Subrun<a class="headerlink" href="#subrun" title="Permalink to this heading">#</a></h3>
+<p>Redun provides the <code class="docutils literal notranslate"><span class="pre">subrun</span></code> scheduler task, which is able to start a nested scheduler within
+the body of a task.</p>
+<p>To see why this is useful, imagine
+a task graph <code class="docutils literal notranslate"><span class="pre">main</span> <span class="pre">-&gt;</span> <span class="pre">f</span> <span class="pre">-&gt;</span> <span class="pre">g</span></code>, where you would like both of <code class="docutils literal notranslate"><span class="pre">f,</span> <span class="pre">g</span></code> to occur on one AWS Batch
+node, and <code class="docutils literal notranslate"><span class="pre">main</span></code> to occur locally. This is not possible without subrun, because the redun
+<code class="docutils literal notranslate"><span class="pre">batch</span></code> executor uses a CLI command called <code class="docutils literal notranslate"><span class="pre">oneshot</span></code> to launch a single task at a time on the
+batch node, without actually launching a scheduler. Hence, that if the task was implemented like
+this, then the <code class="docutils literal notranslate"><span class="pre">f</span></code> oneshot would return the unevaluated expression <code class="docutils literal notranslate"><span class="pre">g</span></code>, which the original
+scheduler would deploy to another execution.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">exectutor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">g</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+  <span class="k">return</span> <span class="s2">&quot;value&quot;</span> <span class="o">+</span> <span class="n">x</span>
+
+<span class="nd">@task</span><span class="p">(</span><span class="n">exectutor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+  <span class="k">return</span> <span class="n">g</span><span class="p">(</span><span class="s2">&quot;str&quot;</span><span class="p">)</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="c1"># Results in two batch executions, one for `f`, then another for `g`.</span>
+    <span class="k">return</span> <span class="n">f</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We can accomplish the desired outcome by using subrun to push the entire execution onto one worker:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">g</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+  <span class="k">return</span> <span class="s2">&quot;value&quot;</span> <span class="o">+</span> <span class="n">x</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+  <span class="k">return</span> <span class="n">g</span><span class="p">(</span><span class="s2">&quot;str&quot;</span><span class="p">)</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="c1"># Only invokes batch once because it starts a scheduler that handles the resolution of</span>
+    <span class="c1"># both `f` and `g`</span>
+    <span class="k">return</span> <span class="n">subrun</span><span class="p">(</span><span class="n">f</span><span class="p">(),</span> <span class="n">executor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See the example <code class="docutils literal notranslate"><span class="pre">examples/subrun</span></code> for more information.</p>
+</section>
+<section id="federated-task">
+<h3>Federated task<a class="headerlink" href="#federated-task" title="Permalink to this heading">#</a></h3>
+<p>Generally redun requires access to the code implementing a task in order to execute that task.
+Federated tasks provide a mechanism to invoke a task without having local access to the code.</p>
+<p>The typical scenario is that we have two python repositories, a <code class="docutils literal notranslate"><span class="pre">local</span></code> one we are currently working in,
+and a <code class="docutils literal notranslate"><span class="pre">remote</span></code> one containing a task we wish to call, but do not wish to import.
+Broadly, we’re going to accomplish this by publishing the <code class="docutils literal notranslate"><span class="pre">remote</span></code> repository as a docker image
+containing both redun and the package, and we’ll provide configuration data explaining how to do so.</p>
+<p>We can create <code class="docutils literal notranslate"><span class="pre">federated_tasks</span></code> in the config file that indicates the task by name and how to
+import it. It also defers to an executor that can make the code available, which will typically
+be one based on Docker, but need not be. This data is termed an “entrypoint”, and is identified
+by name; there is no namespacing, but incorporating repository identifiers into the entrypoint
+name and associated executors may be a useful strategy. This federated entrypoint is wrapped into
+a task within the <code class="docutils literal notranslate"><span class="pre">local</span></code> repository and can be used like an ordinary task.</p>
+<p>Furthermore, we might wish for these federated tasks and their executors to be provided by the
+authors of the <code class="docutils literal notranslate"><span class="pre">remote</span></code> repository. Therefore, the configuration file can indicate <code class="docutils literal notranslate"><span class="pre">federated_imports</span></code>,
+which are additional config files that are allowed to specify additional <code class="docutils literal notranslate"><span class="pre">federated_tasks</span></code> and
+<code class="docutils literal notranslate"><span class="pre">executors</span></code>. These can be shared out-of-band, for example, by placing them on a shared file system.</p>
+<p>In addition to primary federated tasks, we provide tools to support REST-based proxy.
+See <code class="docutils literal notranslate"><span class="pre">redun.federated_tasks.rest_federated_task</span></code> and <code class="docutils literal notranslate"><span class="pre">redun.federated_tasks.launch_federated_task</span></code>.
+The proxy has two main features. First, it is designed to help facilitate a fire-and-forget approach
+to launching jobs (see <a class="reference internal" href="design.html#Running-without-a-scheduler"><span class="std std-ref">Running without a scheduler</span></a> ),
+which is useful in implementing a UI. Second, it can help arrange for permissions, such as
+facilitating AWS role switches.</p>
+<p>See the example <code class="docutils literal notranslate"><span class="pre">examples/federated_task</span></code> for more information.</p>
+</section>
+</section>
+</section>
 
         </article>
       </div>
@@ -341,14 +890,14 @@ For example, consider:</p>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="design.html">
+          <a class="prev-page" href="values.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Design overview</div>
+                <div class="title">Values</div>
                 
               </div>
             </a>
@@ -383,8 +932,15 @@ For example, consider:</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Tasks</a><ul>
+<li><a class="reference internal" href="#task-naming">Task naming</a></li>
+<li><a class="reference internal" href="#tasks-as-pure-functions">Tasks as pure functions</a></li>
+<li><a class="reference internal" href="#task-hashing">Task hashing</a></li>
+<li><a class="reference internal" href="#nested-values">Nested values</a></li>
+<li><a class="reference internal" href="#recursion">Recursion</a></li>
 <li><a class="reference internal" href="#task-options">Task options</a><ul>
+<li><a class="reference internal" href="#allowed-cache-results"><code class="docutils literal notranslate"><span class="pre">allowed_cache_results</span></code></a></li>
 <li><a class="reference internal" href="#cache"><code class="docutils literal notranslate"><span class="pre">cache</span></code></a></li>
+<li><a class="reference internal" href="#cache-scope"><code class="docutils literal notranslate"><span class="pre">cache_scope</span></code></a></li>
 <li><a class="reference internal" href="#check-valid"><code class="docutils literal notranslate"><span class="pre">check_valid</span></code></a></li>
 <li><a class="reference internal" href="#config-args"><code class="docutils literal notranslate"><span class="pre">config_args</span></code></a></li>
 <li><a class="reference internal" href="#executor"><code class="docutils literal notranslate"><span class="pre">executor</span></code></a></li>
@@ -396,6 +952,19 @@ For example, consider:</p>
 <li><a class="reference internal" href="#nout"><code class="docutils literal notranslate"><span class="pre">nout</span></code></a></li>
 <li><a class="reference internal" href="#script"><code class="docutils literal notranslate"><span class="pre">script</span></code></a></li>
 <li><a class="reference internal" href="#version"><code class="docutils literal notranslate"><span class="pre">version</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#redun-tasks-are-not-general-python">Redun tasks are not general python</a><ul>
+<li><a class="reference internal" href="#object-references-and-uniqueness">Object references and uniqueness</a></li>
+<li><a class="reference internal" href="#external-state-and-non-deterministic-functions">External state and non-deterministic functions</a></li>
+<li><a class="reference internal" href="#mutating-arguments">Mutating arguments</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#advanced-topics">Advanced topics</a><ul>
+<li><a class="reference internal" href="#tasks-as-first-class-values">Tasks as first class values</a></li>
+<li><a class="reference internal" href="#task-wrapping">Task wrapping</a></li>
+<li><a class="reference internal" href="#subrun">Subrun</a></li>
+<li><a class="reference internal" href="#federated-task">Federated task</a></li>
 </ul>
 </li>
 </ul>
@@ -410,9 +979,6 @@ For example, consider:</p>
     </aside>
   </div>
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/scripts/furo.js"></script>

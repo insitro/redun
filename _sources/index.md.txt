@@ -45,15 +45,19 @@ The above assumes the following dependencies are installed:
 * `gcc` (on ubuntu or similar `sudo apt-get install gcc`)
 
 ```{toctree}
+:caption: User guide
 :hidden:
 
 design
+values
 tasks
 executors
+scheduler
 config
 db
 spark
 typing
+visualization
 FAQ
 ```
 
@@ -62,8 +66,15 @@ FAQ
 :hidden:
 
 developing
-visualization
 CHANGELOG
+```
+
+```{toctree}
+:caption: Implementation notes
+:hidden:
+
+implementation/hashing
+implementation/graph_reduction_caching
 ```
 
 ```{toctree}

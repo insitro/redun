@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.14.0
+March 13, 2023
+
+This release primarily introduces "federated tasks", a mechanism for working with tasks 
+where you do not have to import the implementation code.
+
+* `#261` - Provide integration code for redun and a proxy
+* `#277` - Add task_def option to federated_task config
+* `#247` - Publish federated tasks
+* `#270` - DE-8068 Pass through missing aws batch options
+
+## 0.13.0
+February 27, 2023
+
+* `#272` - DE-7556: Update job definition sanitizing to be recursive 
+* `#182` - Check CSE even for completed jobs 
+* `#269` - Bump SQLAlchemy to 2.0, use future=True flag 
+* `#268` - Follow-up on SQLAlchemy 2.0 compatibility 
+* `#266` - DE-7776 Upgrade sqlalchemy to 1.4 and fix deprecation warnings 
+* `#22` - Add k8s executor 
+* `#253` - Try to clarify and document Value and Handle 
+* `#63` - remove develop mode for installing redun during docs build 
+* `#254` - DE-7282 Simplify job arguments and JobArrayer 
+* `#255` - Clarify role arn and fix for sphinx 6.0 
+* `#61` - Pass AWS_DEFAULT_REGION env variable to container
+* `#244` - DE-6763 Add IFile and ContentFile
+* `#60` - Fix import statements with lowercase config 
+
 ## 0.12.0
 November 29, 2022
 

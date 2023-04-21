@@ -3,13 +3,13 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Changelog" href="CHANGELOG.html" /><link rel="prev" title="FAQ" href="FAQ.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Graph reduction caching" href="graph_reduction_caching.html" /><link rel="prev" title="Changelog" href="../CHANGELOG.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
-        <title>Developer guide - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
+        <title>Content addressable hashing summary - redun documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
 
@@ -123,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">redun  documentation</div></a>
+      <a href="../index.html"><div class="brand">redun  documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -134,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -143,15 +143,15 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
   
   <div class="sidebar-logo-container">
-    <img class="sidebar-logo" src="_static/redun.svg" alt="Logo"/>
+    <img class="sidebar-logo" src="../_static/redun.svg" alt="Logo"/>
   </div>
   
   <span class="sidebar-brand-text">redun  documentation</span>
   
-</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
@@ -159,37 +159,37 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="values.html">Values</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tasks.html">Tasks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="executors.html">Executors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduling redun workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="db.html">Backend and database</a></li>
-<li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
-<li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
-<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
-<li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../values.html">Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tasks.html">Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduler.html">Scheduling redun workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../db.html">Backend and database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../spark.html">Spark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
-<ul class="current">
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Developer guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">Changelog</a></li>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../developing.html">Developer guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CHANGELOG.html">Changelog</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="implementation/hashing.html">Content addressable hashing summary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
+<ul class="current">
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="graph_reduction_caching.html">Graph reduction caching</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="redun/modules.html">API docs</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="redun/redun.html">redun package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l3 has-children"><a class="reference internal" href="redun/redun.backends.html">redun.backends package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="redun/redun.backends.db.html">redun.backends.db package</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../redun/modules.html">API docs</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../redun/redun.html">redun package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../redun/redun.backends.html">redun.backends package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../redun/redun.backends.db.html">redun.backends.db package</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="redun/redun.executors.html">redun.executors package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../redun/redun.executors.html">redun.executors package</a></li>
 </ul>
 </li>
 </ul>
@@ -223,46 +223,39 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          <section id="developer-guide">
-<h1>Developer guide<a class="headerlink" href="#developer-guide" title="Permalink to this heading">#</a></h1>
-<section id="development-installation">
-<h2>Development installation<a class="headerlink" href="#development-installation" title="Permalink to this heading">#</a></h2>
-<p>If you have postgres available, (perhaps with <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">postgresql</span></code> on macOS), you can prepare
-an editable installation and run the tests:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>setup
-.<span class="w"> </span>.venv/bin/activate
-pytest<span class="w"> </span>redun
-
-<span class="c1"># Other targets</span>
-make<span class="w"> </span>black
-make<span class="w"> </span>mypy
-make<span class="w"> </span>lint
-make<span class="w"> </span>isort
-</pre></div>
-</div>
-</section>
-<section id="release">
-<h2>Release<a class="headerlink" href="#release" title="Permalink to this heading">#</a></h2>
-<p>Redun releases are done via the <code class="docutils literal notranslate"><span class="pre">redun-release-auto</span></code> <a class="reference external" href="https://us-west-2.console.aws.amazon.com/codesuite/codebuild/projects/redun-release-auto/">codebuild pipeline</a>.</p>
-<section id="release-steps">
-<h3>Release Steps<a class="headerlink" href="#release-steps" title="Permalink to this heading">#</a></h3>
-<ol class="arabic simple">
-<li><p>Prepare a release branch and make a PR from this branch with an updated:</p>
+          <section id="content-addressable-hashing-summary">
+<h1>Content addressable hashing summary<a class="headerlink" href="#content-addressable-hashing-summary" title="Permalink to this heading">#</a></h1>
+<p>redun uses hashing to create deterministic ids for many records in the redun data model. The design of this hashing scheme has several properties:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/insitro/redun/blob/0cd06c8147700f67b777b5a43a6d3e3925274bff/redun/__init__.py#L21"><code class="docutils literal notranslate"><span class="pre">__version__</span></code></a> - new version number should follow semantic versioning rules (see <a class="reference external" href="https://semver.org/">semver.org</a> for details)</p></li>
-<li><p>and <a class="reference external" href="https://github.com/insitro/redun/blob/main/docs/source/CHANGELOG.md"><code class="docutils literal notranslate"><span class="pre">CHANGELOG</span></code></a> e.g. https://github.com/insitro/redun/pull/107. Use <a class="reference internal" href="#docs/release_notes.py"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">release_notes.py</span></code></span></a> script to generate the release notes (see that script for usage).</p></li>
+<li><p>Every hash is unique across all records.</p>
+<ul>
+<li><p>While a cryptographically secure hash function can be assumed to not produce hash collisions, we can still have collisions on pre-image data if we are not careful. For example, a CallNode could have the same hash as a file that contains a pickle of a CallNode, if the hashing schema is not carefully designed.</p></li>
+<li><p>To achieve this property, every pre-image is prefixed with a record type, such as ‘Task’, ‘CallNode’, etc.</p></li>
+<li><p>It is also easy to have pre-image collisions if arguments to a hash are not well escaped (e.g. if tab is used as an argument delimiter, you need to always escape tabs in string arguments). We solve this systematically by defining a consistent way of efficiently serializing structures using bittorrent encoding format (bencode).</p></li>
 </ul>
 </li>
-<li><p>Merge the release branch to both branches <code class="docutils literal notranslate"><span class="pre">main</span></code> and <code class="docutils literal notranslate"><span class="pre">insitro-private</span></code>. The codebuild pipeline will trigger automatically based on the latter branch. If the version has been updated, it will initiate the release process. If the CHANGELOG is not updated to reflect the new version, the codebuild will terminate without releasing.</p></li>
-</ol>
-</section>
-</section>
+<li><p>When one parental record refers to a child record, the child record’s hash is included in the parent’s hash.</p>
+<ul>
+<li><p>This forms a <a class="reference external" href="https://en.wikipedia.org/wiki/Merkle_tree">Merkle Tree</a> that gives unique hashes to nodes in the resulting DAG.</p></li>
+</ul>
+</li>
+<li><p>Hashes are represented by hex strings instead of bytes to aid easy debugging and display.</p>
+<ul>
+<li><p>If greater hashing efficiency is desired, hashes could be kept in their binary byte representation.</p></li>
+</ul>
+</li>
+<li><p>Hashes are truncated to 40 hex bytes for easier display.</p>
+<ul>
+<li><p>If the reduced hash space is a concern this truncation could be removed.</p></li>
+</ul>
+</li>
+</ul>
 </section>
 
         </article>
@@ -270,23 +263,23 @@ make<span class="w"> </span>isort
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="CHANGELOG.html">
+          <a class="next-page" href="graph_reduction_caching.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Changelog</div>
+                <div class="title">Graph reduction caching</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="FAQ.html">
+          <a class="prev-page" href="../CHANGELOG.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">FAQ</div>
+                <div class="title">Changelog</div>
                 
               </div>
             </a>
@@ -308,38 +301,15 @@ make<span class="w"> </span>isort
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">Developer guide</a><ul>
-<li><a class="reference internal" href="#development-installation">Development installation</a></li>
-<li><a class="reference internal" href="#release">Release</a><ul>
-<li><a class="reference internal" href="#release-steps">Release Steps</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
-    <script src="_static/scripts/furo.js"></script>
+</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/scripts/furo.js"></script>
     </body>
 </html>

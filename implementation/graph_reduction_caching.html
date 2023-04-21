@@ -1,0 +1,722 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun" href="../redun/modules.html" /><link rel="prev" title="Content addressable hashing summary" href="hashing.html" />
+
+    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
+        <title>Graph reduction caching - redun documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">redun  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/redun.svg" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">redun  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../values.html">Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tasks.html">Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduler.html">Scheduling redun workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../db.html">Backend and database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../spark.html">Spark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">FAQ</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../developing.html">Developer guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CHANGELOG.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Graph reduction caching</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../redun/modules.html">API docs</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../redun/redun.html">redun package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../redun/redun.backends.html">redun.backends package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../redun/redun.backends.db.html">redun.backends.db package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../redun/redun.executors.html">redun.executors package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/insitro/redun">GitHub repository</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="graph-reduction-caching">
+<h1>Graph reduction caching<a class="headerlink" href="#graph-reduction-caching" title="Permalink to this heading">#</a></h1>
+<p>redun’s use of <a class="reference external" href="https://en.wikipedia.org/wiki/Graph_reduction">graph reduction</a> and caching techniques
+are central to the architecture.</p>
+<section id="consequences">
+<h2>Consequences<a class="headerlink" href="#consequences" title="Permalink to this heading">#</a></h2>
+<p>redun uses graph reduction to execute a workflow. This provides a clear and established framework for deciding how various execution steps should occur and how their results should propagate. In contrast, other workflow engines, such as Airflow, view workflow execution as simply executing tasks in topological sort order along a directed acyclic graph (DAG). While simple, this approach leaves unaddressed questions about which kinds of caching or graph optimizations (e.g. Common Subexpression Elimination, task composition/fusion) are safe to perform.</p>
+<p>Consider, for example, workflow caching, where we fast forward through tasks that have been previously executed. Viewing workflow execution as graph reduction, allows us to consider when we would prefer caching <em>single reductions</em> versus <em>ultimate reductions</em>, and the consequences of those options. It also allows us to think through how <a class="reference external" href="https://en.wikipedia.org/wiki/Common_subexpression_elimination">Common Subexpression Elimination</a> (CSE) can be used to provide the benefits for pull-style workflow engines within a broad push-style approach.</p>
+<p>Going forward, our decisions on caching and CSE will likely play a role in how we design subschedulers (<code class="docutils literal notranslate"><span class="pre">subrun</span></code>) and federate workflows.</p>
+</section>
+<section id="design-details">
+<h2>Design details<a class="headerlink" href="#design-details" title="Permalink to this heading">#</a></h2>
+<section id="review-of-redun-s-reduction-and-caching-process">
+<h3>Review of redun’s reduction and caching process<a class="headerlink" href="#review-of-redun-s-reduction-and-caching-process" title="Permalink to this heading">#</a></h3>
+<p>Here, we review redun’s workflow evaluation process, as well as how redun uses several
+caching mechanisms to provide <a class="reference external" href="https://en.wikipedia.org/wiki/Incremental_computing">incremental compute</a> commonly seen in other workflow engines.
+The different caching mechnisms are used together in order to blend the best behaviors of
+push- and pull-style workflow engines, as well as provide a balance between rigorous reactivity
+(code and data) and user opt-in optimizations.</p>
+<section id="graph-reduction">
+<h4>Graph reduction<a class="headerlink" href="#graph-reduction" title="Permalink to this heading">#</a></h4>
+<p>redun represents a workflow as a large Expression Graph and uses
+<a class="reference external" href="https://en.wikipedia.org/wiki/Graph_reduction">graph reduction</a> to recursively evaluate the graph
+until workflow completion. For example, consider the following workflow:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">add4</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">add</span><span class="p">(</span><span class="n">add</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">),</span> <span class="n">add</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Now, let’s walk through what happens when the redun Scheduler, <code class="docutils literal notranslate"><span class="pre">scheduler</span></code>, is used to evaluate a workflow:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">add4</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>When <code class="docutils literal notranslate"><span class="pre">add4</span></code> is called, it immediately returns an Expression that represents the task call, specifically:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add4&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>This node represents the initial state of our Expression Graph. In practice, as we perform reductions on
+the Expression Graph, it will expand and contract until it reduces down to a single concrete value (i.e.
+anything other than an unevaluated Expression). In this example, the redun scheduler will notice that all four
+arguments are already concrete and will then call the function <code class="docutils literal notranslate"><span class="pre">add4</span></code> with the arguments <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4)</span></code>. As we can
+see in the workflow above, <code class="docutils literal notranslate"><span class="pre">add4</span></code> itself returns more expressions, specifically a tree of expressions:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">TaskExpression</span><span class="p">(</span>
+  <span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span>
+     <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+     <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span>
+  <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>This expression tree will subsitute into a our Expression Graph, replacing the previous <code class="docutils literal notranslate"><span class="pre">add4</span></code> node. After subsitution,
+the redun Scheduler will recursively evaluate this expression. Specifically, the following reductions will occur:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Let</span> <span class="n">e1</span> <span class="o">=</span> <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add4&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+
+<span class="n">Reduce</span> <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add4&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span> <span class="n">to</span> <span class="n">TaskExpression</span><span class="p">(</span>
+  <span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span>
+     <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+     <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span>
+  <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">Substituting</span> <span class="n">that</span> <span class="n">result</span> <span class="n">back</span> <span class="n">into</span> <span class="n">the</span> <span class="n">graph</span> <span class="n">gives</span> <span class="n">us</span><span class="p">:</span>
+
+<span class="n">e2</span> <span class="o">=</span> <span class="n">TaskExpression</span><span class="p">(</span>
+  <span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span>
+     <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+     <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span>
+  <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">Reduce</span> <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="n">to</span> <span class="mi">3</span>
+
+<span class="n">Reduce</span> <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span> <span class="n">to</span> <span class="mi">7</span>
+
+<span class="n">Substituting</span> <span class="n">those</span> <span class="n">results</span> <span class="n">back</span> <span class="n">into</span> <span class="n">e2</span> <span class="n">give</span> <span class="n">us</span><span class="p">:</span>
+
+<span class="n">e3</span> <span class="o">=</span> <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
+
+<span class="n">Reduce</span> <span class="n">TaskExpression</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span> <span class="n">to</span> <span class="mi">10</span>
+
+<span class="n">Substituting</span> <span class="n">that</span> <span class="n">result</span> <span class="n">back</span> <span class="n">into</span> <span class="n">e3</span> <span class="n">gives</span> <span class="n">us</span><span class="p">:</span>
+
+<span class="n">e4</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="n">We</span> <span class="n">now</span> <span class="n">have</span> <span class="n">a</span> <span class="n">single</span> <span class="n">concrete</span> <span class="n">value</span> <span class="ow">and</span> <span class="n">the</span> <span class="n">workflow</span> <span class="n">concludes</span><span class="o">.</span>
+</pre></div>
+</div>
+</section>
+<section id="the-redun-expression-graph-language">
+<h4>The redun Expression Graph language<a class="headerlink" href="#the-redun-expression-graph-language" title="Permalink to this heading">#</a></h4>
+<p>Here, we define a full <a class="reference external" href="https://en.wikipedia.org/wiki/Formal_grammar">grammar</a> describing the redun Expression Graph structure.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">e</span> <span class="o">=</span> <span class="n">TaskExpression</span><span class="p">(</span><span class="n">task_name</span><span class="p">,</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">),</span> <span class="p">{</span><span class="n">arg_key</span><span class="p">:</span> <span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span> <span class="n">options</span><span class="p">)</span>
+  <span class="o">|</span> <span class="n">SchedulerExpression</span><span class="p">(</span><span class="n">task_name</span><span class="p">,</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">),</span> <span class="p">{</span><span class="n">arg_key</span><span class="p">:</span> <span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span> <span class="n">options</span><span class="p">)</span>
+  <span class="o">|</span> <span class="n">SimpleExpression</span><span class="p">(</span><span class="n">op_name</span><span class="p">,</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">),</span> <span class="p">{</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">})</span>
+  <span class="o">|</span> <span class="n">nested_value</span>
+  <span class="o">|</span> <span class="n">concrete_value</span>
+
+<span class="n">nested_value</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+             <span class="o">|</span> <span class="p">{</span><span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+             <span class="o">|</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+             <span class="o">|</span> <span class="p">{</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+             <span class="o">|</span> <span class="n">named_tuple_cls</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+             <span class="o">|</span> <span class="n">dataclass_cls</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+
+<span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">concrete_value</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+  <span class="n">where</span> <span class="n">key</span> <span class="ow">is</span> <span class="n">an</span> <span class="n">option</span> <span class="n">name</span>
+
+<span class="n">named_tuple_cls</span> <span class="o">=</span> <span class="n">User</span> <span class="n">defined</span> <span class="n">NamedTuple</span>
+<span class="n">dataclass_cls</span> <span class="o">=</span> <span class="n">User</span> <span class="n">defined</span> <span class="n">dataclass</span>
+
+<span class="n">task_name</span> <span class="o">=</span> <span class="n">Task</span> <span class="n">name</span> <span class="n">string</span>
+<span class="n">arg_key</span> <span class="o">=</span> <span class="n">task</span> <span class="n">argument</span> <span class="n">name</span> <span class="n">string</span>
+
+<span class="n">op_name</span> <span class="o">=</span> <span class="s2">&quot;add&quot;</span>
+        <span class="o">|</span> <span class="s2">&quot;mult&quot;</span>
+        <span class="o">|</span> <span class="s2">&quot;div&quot;</span>
+        <span class="o">|</span> <span class="o">...</span> <span class="n">name</span> <span class="n">of</span> <span class="nb">any</span> <span class="n">supported</span> <span class="n">Python</span> <span class="n">operator</span>
+
+<span class="n">concrete_value</span> <span class="o">=</span> <span class="n">Any</span> <span class="n">other</span> <span class="n">python</span> <span class="n">value</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;hello&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>And these are the rules for evaluating an Expression Graph.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>eval(TaskExpression(task_name, args, kwargs, options), p) =&gt; eval(f(*eval(args, p), **eval(kwargs, p)), j)
+  where f = function associated with task t with name task_name.
+        p = parent job of the TaskExpression or None if this the root Expression.
+        j = job created for evaluating the TaskExpression
+        j.options = t.options | options  # configuration to customize the execution environment of f
+        options = configuration option overrides specific to this TaskExpression
+
+eval(SchedulerExpression(task_name, args, kwargs, options), p) =&gt; eval(f(scheduler, p, s, *args, **kwargs))
+  where scheduler = redun scheduler
+        s = SchedulerExpression(task_name, args, kwargs)
+        p = parent job of the SchedulerExpression
+        options = configuration to customize the execution environment of f
+
+eval(SimpleExpression(op_name, args, kwargs), p) = op(*args, **kwargs)
+  where op = an operation associated with operation name `op_name`, such as
+             `add`, `sub`, `__call__`, `__getitem__`, etc.
+        p = parent job of the SimpleExpression
+
+eval(ValueExpression(concrete_value), p) =&gt; concrete_value
+   where p = parent job of the ValueExpression
+
+eval([a, b, ...], p) =&gt; [eval(a, p), eval(b, p), ...]
+eval({a: b, c: d, ...}, p) =&gt; {eval(a, p): eval(b, p), eval(c, p): eval(d, p), ...}
+eval((a, b, ...), p) =&gt; (eval(a, p), eval(b, p), ...)
+eval({a, b, ...}, p) =&gt; {eval(a, p), eval(b, p), ...}
+eval(named_tuple_cls(a, b, ...), p) =&gt; named_tuple_cls(eval(a, p), eval(b, p), ...)
+eval(dataclass_cls(a, b, ...), p) =&gt; dataclass_cls(eval(a, p), eval(b, p), ...)
+
+eval(concrete_value, p) =&gt; concrete_value
+</pre></div>
+</div>
+<p>Note:</p>
+<ul class="simple">
+<li><p>We only create new Job <code class="docutils literal notranslate"><span class="pre">j</span></code> for evaluating TaskExpressions. We do not create new Jobs for evaluating the other expression types. This design choice was made to record provenance at an appropriate level of detail.</p></li>
+<li><p>We propagate the parent jobs through the evaluation in order to facilitate CallGraph recording and to pass down environment like data to child Jobs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">j.options</span></code> is a merge of the task options <code class="docutils literal notranslate"><span class="pre">t.options</span></code> and the overrides <code class="docutils literal notranslate"><span class="pre">options</span></code> from the TaskExpression.</p></li>
+<li><p>When evaluating a <code class="docutils literal notranslate"><span class="pre">SchedulerExpression</span></code>, we pass the positional arguments <code class="docutils literal notranslate"><span class="pre">args</span></code> and keywords arguments <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> unevaluated into <code class="docutils literal notranslate"><span class="pre">f</span></code>. This allows <code class="docutils literal notranslate"><span class="pre">f</span></code> to customize how to evaluate the arguments, if at all.</p></li>
+</ul>
+</section>
+<section id="speeding-up-graph-reduction-with-caching">
+<h4>Speeding up graph reduction with caching<a class="headerlink" href="#speeding-up-graph-reduction-with-caching" title="Permalink to this heading">#</a></h4>
+<p>Let us now consider how caching could help us in speeding up reductions. Calling a task’s function could be
+an expensive operation, taking seconds to hours of compute time depending on the task. Therefore, prior
+to calling any task’s function, we would like to consult a cache to see if we have ever performed this reduction before,
+and if so, “replay” the substitution. Notice, we could chose to cache either a <em>single reduction</em>, such as <code class="docutils literal notranslate"><span class="pre">e1</span> <span class="pre">-&gt;</span> <span class="pre">e2</span></code>
+(from the example reduction process above), or the <em>ultimate reduction</em>, such as <code class="docutils literal notranslate"><span class="pre">e1</span> <span class="pre">-&gt;</span> <span class="pre">e4</span></code>.</p>
+<p>Given, completely pure and immutable functions and values, it would be completely safe and fastest to always perform
+an ultimate reduction cache replay. However, in redun’s use case, there are a few factors where it is safer to
+replay single reductions most of the time, and only use ultimate reduction caching as an opt-in optimization.
+To give some intuition, consider that we must handle using a cache across workflow executions, where the task
+definitions (i.e. code) may have changed in between. We also have external values, such as <code class="docutils literal notranslate"><span class="pre">File</span></code>s, whose contents
+are stored externally (such as a file system, or object store), and we must check whether their value has
+changed since previous use. Overall, an ideal caching approach should produce the same results as if the workflow
+ran with no caching. We use the terms “code reactivity” and “data reactivity” to describe a caching approach that
+properly considers the possible ways tasks and external values can change between executions.</p>
+<p>To account for task definition changes, we could define a hashing scheme for tasks and use the task hash as part
+of the cache key for fetching cache results. redun by default hashes the source code of a task.
+However, notice that the value of an ultimate reduction of <code class="docutils literal notranslate"><span class="pre">add4(1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4)</span></code> depends on not just the
+code within in the definition of top-level task <code class="docutils literal notranslate"><span class="pre">add4</span></code>, but also on the code in all other tasks (such as <code class="docutils literal notranslate"><span class="pre">add</span></code>) that
+are called directly or indirectly. Ideally, when hashing as task, we could statically analyze the source code and
+determine the full closure of tasks that could be called, and include all of their code in the top-level task’s hash.
+In fact, this is the approach of the <a class="reference external" href="https://www.unison-lang.org/">unison</a> programming language.</p>
+<p>However, given the very dynamic nature of Python and the challenges of discovering the right level of reactivity
+to defined across user code, library code, and compiled code, we have chosen to not attempt static analysis. Instead, if
+we only perform single reduction caching, we only need to consider the source code of the top-level task.
+For example, when performing the reduction of <code class="docutils literal notranslate"><span class="pre">TaskExpression(&quot;add&quot;,</span> <span class="pre">(1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4))</span></code>, the single reduction
+result <code class="docutils literal notranslate"><span class="pre">TE(&quot;add&quot;,</span> <span class="pre">(TE(&quot;add&quot;,</span> <span class="pre">(1,</span> <span class="pre">2)),</span> <span class="pre">TE(&quot;add&quot;,</span> <span class="pre">(3,</span> <span class="pre">4))))</span></code> only depends on the code of <code class="docutils literal notranslate"><span class="pre">add4</span></code> and the
+arguments <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4)</span></code>. If there are code changes to child tasks, such as <code class="docutils literal notranslate"><span class="pre">add</span></code> we will consider them in the
+later reductions. This is the approach taken by the <a class="reference external" href="https://redo.readthedocs.io/en/latest/">redo</a> build system.</p>
+<p>We also have an opportunity to inspect the hashes of each value being used as an argument or a result,
+which allows us to implement proper external value reactivity. If a File (or any other external value) is used as
+an argument to a task, we will naturally consider changes to its contents when constructing the cache key
+<code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> (see more below), since <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> includes the hash of all arguments. However, if a task returns an
+external value as part of its result, a cached File reference might be stale, in that it refers to a version of a File
+that might have changed due to external manipulation (e.g. user deleted or altered the file) since the previous execution.
+For such values, redun defines a validity check (<code class="docutils literal notranslate"><span class="pre">value.is_valid()</span></code>) to determine if the recorded hash still matches
+the current hash of a value. Non-external values, such as pure in-memory values like ints, strings, and DataFrames,
+are always “valid” by this definition.</p>
+<p>In summary, redun’s caching process follows the following steps:</p>
+<ul>
+<li><p>Let <code class="docutils literal notranslate"><span class="pre">expr</span></code> represent a <code class="docutils literal notranslate"><span class="pre">TaskExpression(task_name,</span> <span class="pre">args,</span> <span class="pre">kwargs)</span></code> that we wish to reduce.</p></li>
+<li><p>Let <code class="docutils literal notranslate"><span class="pre">task</span></code> represent the currently defined task with name <code class="docutils literal notranslate"><span class="pre">task_name</span></code>.</p></li>
+<li><p>Determine a cache key <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> using the following hashing approach:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">eval_hash</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">([</span>
+  <span class="nb">hash</span><span class="p">(</span><span class="n">task</span><span class="p">),</span>
+  <span class="p">[</span><span class="nb">hash</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">],</span>
+  <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="nb">hash</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="p">])</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check whether <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> corresponds to an ongoing reduction (see CSE below)</p>
+<ul class="simple">
+<li><p>If yes, return the promise of the ongoing reduction.</p></li>
+</ul>
+</li>
+<li><p>Check whether <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> exists in the single reduction cache table (<code class="docutils literal notranslate"><span class="pre">Evaluation</span></code>).</p>
+<ul class="simple">
+<li><p>If no, treat this as a cache miss and perform the reduction by calling the task.</p></li>
+</ul>
+</li>
+<li><p>Let <code class="docutils literal notranslate"><span class="pre">result</span></code> be the deserialized cached value.</p></li>
+<li><p>Check whether <code class="docutils literal notranslate"><span class="pre">result</span></code> is still valid to use by calling <code class="docutils literal notranslate"><span class="pre">result.is_valid()</span></code>.</p>
+<ul class="simple">
+<li><p>If yes, replay <code class="docutils literal notranslate"><span class="pre">result</span></code> as the result of the reduction.</p></li>
+<li><p>If no, treat this as a cache miss and perform the reduction by calling the task.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="review-of-push-and-pull-workflow-engines">
+<h4>Review of push and pull workflow engines<a class="headerlink" href="#review-of-push-and-pull-workflow-engines" title="Permalink to this heading">#</a></h4>
+<p>Workflow engines can be categorized by whether their execution can be seen as “pushing” values as arguments into tasks
+or “pulling” results from tasks. Here are a few examples:</p>
+<ul class="simple">
+<li><p>Push workflow engines:</p>
+<ul>
+<li><p><a class="reference external" href="https://github.com/apache/airflow">Airflow</a></p></li>
+<li><p><a class="reference external" href="https://www.prefect.io/">Prefect</a></p></li>
+<li><p><a class="reference external" href="https://flyte.org/">Flyte</a></p></li>
+<li><p><a class="reference external" href="https://www.nextflow.io/">Nextflow</a></p></li>
+<li><p><a class="reference external" href="https://github.com/openwdl/wdl">WDL</a></p></li>
+<li><p><a class="reference external" href="https://github.com/insitro/redun">redun</a></p></li>
+</ul>
+</li>
+<li><p>Pull workflow engines:</p>
+<ul>
+<li><p><a class="reference external" href="https://www.gnu.org/software/make/">Make</a></p></li>
+<li><p><a class="reference external" href="https://snakemake.readthedocs.io/en/stable/">SnakeMake</a></p></li>
+<li><p><a class="reference external" href="https://github.com/spotify/luigi">Luigi</a></p></li>
+<li><p>Dagster’s notion of <a class="reference external" href="https://docs.dagster.io/guides/dagster/software-defined-assets">software-defined assets</a></p></li>
+</ul>
+</li>
+</ul>
+<p>Briefly, push-style workflow engines look the most similar to typical programming languages where one calls a
+function (or task) with arguments and receives back a result
+(see <a class="reference external" href="https://en.wikipedia.org/wiki/Applicative_programming_language">Applicative programming language</a>).</p>
+<p>In contrast, pull-style workflow engines typically take a workflow defined as a series of rules that describe how
+to create a value from several dependent values. For example, a Makefile for compiling C programs uses rules like
+the following:</p>
+<div class="highlight-make notranslate"><div class="highlight"><pre><span></span><span class="nf">prog1.o</span><span class="o">:</span><span class="w"> </span><span class="n">prog</span>1.<span class="n">c</span>
+<span class="w">    </span>gcc<span class="w"> </span>-c<span class="w"> </span>prog1.c
+
+<span class="nf">prog2.o</span><span class="o">:</span><span class="w"> </span><span class="n">prog</span>2.<span class="n">c</span>
+<span class="w">    </span>gcc<span class="w"> </span>-c<span class="w"> </span>prog2.c
+
+<span class="nf">lib.o</span><span class="o">:</span><span class="w"> </span><span class="n">lib</span>.<span class="n">c</span>
+<span class="w">    </span>gcc<span class="w"> </span>-c<span class="w"> </span>lib.c
+
+<span class="nf">prog1</span><span class="o">:</span><span class="w"> </span><span class="n">prog</span>1.<span class="n">o</span> <span class="n">lib</span>.<span class="n">o</span>
+<span class="w">    </span>gcc<span class="w"> </span>-o<span class="w"> </span>prog1<span class="w"> </span>prog1.o<span class="w"> </span>lib.o
+
+<span class="nf">prog2</span><span class="o">:</span><span class="w"> </span><span class="n">prog</span>2.<span class="n">o</span> <span class="n">lib</span>.<span class="n">o</span>
+<span class="w">    </span>gcc<span class="w"> </span>-o<span class="w"> </span>prog2<span class="w"> </span>prog2.o<span class="w"> </span>lib.o
+</pre></div>
+</div>
+<p>The user then executes the workflow by asking for the last value, <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">prog1</span></code> or <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">prog2</span></code>, and the workflow engine
+recurses backwards through the rules to construct a workflow DAG of commands to execute. Here, commands play the
+role of tasks using our terminology.</p>
+<p>One advantage of pull-style workflow engines, is that the rule-lookup process allows the workflow engine to
+determine automatically if there is a commonly reused dependency, such as <code class="docutils literal notranslate"><span class="pre">lib.o</span></code> above, and to only build it once.
+This could be achieved in a typical push-style workflow engine, but usually the user must think ahead about all
+possible reuses and explicitly pass that dependency as an argument (possibly through many layers of task calls).</p>
+<p>The disadvantage of pull-style workflow engines is that is can be very hard to introduce dynamic logic and dependencies.
+Intuitively, this is because dynamic workflows requires seeing intermediate results and then deciding what task to
+run next, a process often referred to as “data-dependent dynamic execution”. This is natural to express in a
+workflow syntax where steps are described in chronological order. Given that the rules of a pull-style workflow engine
+are consulted backwards relative to execution flow, this can be challenging to express. It’s not impossible though,
+and workflow engines like <a class="reference external" href="https://luigi.readthedocs.io/en/stable/tasks.html?highlight=dynamic#dynamic-dependencies">Luigi</a> and <a class="reference external" href="https://snakemake.readthedocs.io/en/v5.32.1/snakefiles/rules.html#data-dependent-conditional-execution">SnakeMake</a>
+have extra syntax for expressing some of these cases. In the field, there are many claims of supporting
+“dynamic execution”, but such claims often conflate multiple forms of dynamism, ranging from true
+data-dependent dynamic execution to simply parameterizing workflow graph structure (as Airflow does) at workflow
+graph construction-time (i.e. before seeing any data).</p>
+</section>
+<section id="unifying-push-and-pull-with-common-subexpression-elimination-cse">
+<h4>Unifying push and pull with Common Subexpression Elimination (CSE)<a class="headerlink" href="#unifying-push-and-pull-with-common-subexpression-elimination-cse" title="Permalink to this heading">#</a></h4>
+<p>Given the individual advantages of push and pull workflow engines, can we develop a workflow engine that has the
+benefits of both? redun achieves this by using <a class="reference external" href="https://en.wikipedia.org/wiki/Common_subexpression_elimination">Common Subexpression Elimination (CSE)</a>.</p>
+<p>The basic idea behind CSE is to detect whether the exact same expression is being reduced multiple times within an
+execution and replace them with a single reduction. For example, if we have</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>we could compute the reduction for <code class="docutils literal notranslate"><span class="pre">add(1,</span> <span class="pre">2)</span></code> once, and reuse its result <code class="docutils literal notranslate"><span class="pre">x</span></code> multiple times such as:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>CSE can be thought of as a special case of caching, but within a single workflow execution lifetime. There are, however,
+two important situations to consider: 1) what level of caching should CSE use (single vs ultimate reduction) and 2)
+how do we deal with pending reductions?</p>
+<p>First, the goal of CSE is to collapse common computations as much as possible,
+which implies using ultimate reduction caching. Using single reductions would cause unnecessary double traversals of
+possibly large common expression subgraphs. However, is it safe to use ultimate reductions? Yes, in the case of CSEs,
+we are within the same execution lifetime as the previous reduction, and therefore we can safely assume that neither
+task nor external values have changed their hashes since.</p>
+<p>Second, we must take care in implementing cache checking, such that opportunities for CSE are not missed simply
+because of timing issues. For example, if the two reductions for <code class="docutils literal notranslate"><span class="pre">add(1,</span> <span class="pre">2)</span></code> happened at similar times in parallel
+threads, they would both have an initial cache miss and then would perform a reduction. Ideally, we would like to
+maintain a set of cache keys for <em>pending reductions</em> as well, so that the second reduction attempt would see the
+pending cache key and wait on the same promised result.</p>
+<p>Overall, by using both CSE and typical result caching, we can implement pull-style logic embedded within push-style
+workflows, such as in the example <a class="reference external" href="https://github.com/insitro/redun/blob/main/examples/02_compile/make.py">02_compile</a>.
+We believe this gives users the best of both worlds while providing the familiar semantics of “caching”.</p>
+</section>
+<section id="opt-in-ultimate-reduction-caching">
+<h4>Opt-in ultimate reduction caching<a class="headerlink" href="#opt-in-ultimate-reduction-caching" title="Permalink to this heading">#</a></h4>
+<p>As described above, we default to single reduction caching due to its ability to safely check each task hash
+and external value validity. However, there may be situations where the user is willing to ignore
+changes to external values that appear in the child task calls, and would like to opt into
+ultimate reduction caching as a faster way to replay large workflows. One common example of this is a workflow
+that deals with many (say 1000s) of intermediate files and then one mid-level task summarizes the contents of those
+files into one main result. The user may be fine skipping validity checking of those intermediate files as long
+as we have a valid result from the mid-level task.</p>
+<p>redun allows opting into such an approach using the task option <code class="docutils literal notranslate"><span class="pre">check_valid=&quot;shallow&quot;</span></code>. Here is an example use:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">process_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">File</span><span class="p">:</span>
+    <span class="c1"># Produce an intermediate file...</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">summarize_files</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">File</span><span class="p">:</span>
+    <span class="c1"># Summarize a large set of Files into main result.</span>
+
+<span class="nd">@task</span><span class="p">(</span><span class="n">check_valid</span><span class="o">=</span><span class="s2">&quot;shallow&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">process_files</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">File</span><span class="p">:</span>
+    <span class="c1"># Large fan out computation.</span>
+    <span class="n">intermediate_results</span> <span class="o">=</span> <span class="p">[</span><span class="n">process_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">]</span>
+    <span class="n">summary</span> <span class="o">=</span> <span class="n">summarize_files</span><span class="p">(</span><span class="n">intermediate_results</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">summary</span>
+</pre></div>
+</div>
+<p>When consulting the cache for the call <code class="docutils literal notranslate"><span class="pre">process_files(files)</span></code>, since we have <code class="docutils literal notranslate"><span class="pre">check_valid=&quot;shallow&quot;</span></code>, we will replay
+the ultimate reduction, which will allow us to skip checking the cache of every lower level reduction, such as
+<code class="docutils literal notranslate"><span class="pre">profile_file(file)</span></code>.</p>
+<p>Although the user may be interested in skipping external value validity checks, they likely are still interested
+in task change reactivity, and that was another benefit of the single reduction caching approach.
+In redun, we have implemented an optimization that supports task reactivity even when ultimate reduction caching is in
+use. Although we avoid performing static analysis of task source code, we rely on the past recorded CallGraphs to reveal
+what child task <em>would be</em> called for a particular reduction. As part of the CallGraph recording process, we
+consolidate the union of all tasks that are called beneath a CallNode. Although large workflows may have many 1000s
+of CallNodes, they typically only have dozens of unique tasks and so this extra bookkeeping is not expensive to maintain.
+We use the database table <code class="docutils literal notranslate"><span class="pre">CallSubtreeTask</span></code> to link a CallNode to such tasks.</p>
+<p>To summarize, when performing ultimate reduction cache checking, we do the following process:</p>
+<ul class="simple">
+<li><p>Check whether <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> exists in the ultimate reduction cache table (<code class="docutils literal notranslate"><span class="pre">CallNode</span></code>).</p>
+<ul>
+<li><p>If no, fallback to the single reduction cache checking process.</p></li>
+</ul>
+</li>
+<li><p>Check whether all task hashes in <code class="docutils literal notranslate"><span class="pre">call_node.tasks</span></code> exist in the current TaskRegistry.</p>
+<ul>
+<li><p>If no, fallback to the single reduction cache checking process.</p></li>
+</ul>
+</li>
+<li><p>Let <code class="docutils literal notranslate"><span class="pre">result</span></code> be the deserialized cached value.</p></li>
+<li><p>Check whether <code class="docutils literal notranslate"><span class="pre">result</span></code> is still valid to use by calling <code class="docutils literal notranslate"><span class="pre">result.is_valid()</span></code>.</p>
+<ul>
+<li><p>If yes, replay <code class="docutils literal notranslate"><span class="pre">result</span></code> as the result of the reduction.</p></li>
+<li><p>If no, treat this as a cache miss and perform the reduction by calling the task.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="caching-implementation">
+<h4>Caching implementation<a class="headerlink" href="#caching-implementation" title="Permalink to this heading">#</a></h4>
+<p>In terms of cache implementation, we have implemented the following database and in-memory data structures.</p>
+<p>We have implemented the <code class="docutils literal notranslate"><span class="pre">Evaluation</span></code> table which provides a mapping from <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> (our cache key) to
+<code class="docutils literal notranslate"><span class="pre">value_hash</span></code> which is the hash of a Value containing the single reduction results. We use this to perform single
+reduction cache lookup.</p>
+<p>We use the <code class="docutils literal notranslate"><span class="pre">CallNode</span></code> table to implement a mapping from <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> to <code class="docutils literal notranslate"><span class="pre">value_hash</span></code> which is a reference to the
+ultimate reduction result. We use this to perform ultimate reduction cache lookup.</p>
+<p>We an in-memory mapping <code class="docutils literal notranslate"><span class="pre">Scheduler._pending_jobs</span></code> which essentially maps an <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> to a running Job.
+We use this to perform CSE detection.</p>
+</section>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../redun/modules.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">redun</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="hashing.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Content addressable hashing summary</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2020, Matt Rasmussen
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Graph reduction caching</a><ul>
+<li><a class="reference internal" href="#consequences">Consequences</a></li>
+<li><a class="reference internal" href="#design-details">Design details</a><ul>
+<li><a class="reference internal" href="#review-of-redun-s-reduction-and-caching-process">Review of redun’s reduction and caching process</a><ul>
+<li><a class="reference internal" href="#graph-reduction">Graph reduction</a></li>
+<li><a class="reference internal" href="#the-redun-expression-graph-language">The redun Expression Graph language</a></li>
+<li><a class="reference internal" href="#speeding-up-graph-reduction-with-caching">Speeding up graph reduction with caching</a></li>
+<li><a class="reference internal" href="#review-of-push-and-pull-workflow-engines">Review of push and pull workflow engines</a></li>
+<li><a class="reference internal" href="#unifying-push-and-pull-with-common-subexpression-elimination-cse">Unifying push and pull with Common Subexpression Elimination (CSE)</a></li>
+<li><a class="reference internal" href="#opt-in-ultimate-reduction-caching">Opt-in ultimate reduction caching</a></li>
+<li><a class="reference internal" href="#caching-implementation">Caching implementation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/scripts/furo.js"></script>
+    </body>
+</html>

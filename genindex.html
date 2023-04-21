@@ -4,9 +4,9 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="#" /><link rel="search" title="Search" href="search.html" />
 
-    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 --><title>Index - redun</title>
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 --><title>Index - redun documentation</title>
 <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -121,7 +121,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">redun</div></a>
+      <a href="index.html"><div class="brand">redun  documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -143,8 +143,11 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="_static/redun.svg" alt="Logo"/>
+  </div>
   
-  <span class="sidebar-brand-text">redun</span>
+  <span class="sidebar-brand-text">redun  documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -152,21 +155,29 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul>
+  <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="values.html">Values</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tasks.html">Tasks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduling redun workflows</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="db.html">Database repo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db.html">Backend and database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="developing.html">Developer guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -254,6 +265,8 @@
           <li><a href="redun/redun.html#redun.scheduler.Execution.add_job">(redun.scheduler.Execution method)</a>
 </li>
         </ul></li>
+        <li><a href="redun/redun.html#redun.scheduler.Job.add_parent">add_parent() (redun.scheduler.Job method)</a>
+</li>
         <li><a href="redun/redun.html#redun.cli.add_value_arg_parser">add_value_arg_parser() (in module redun.cli)</a>
 </li>
         <li><a href="redun/redun.backends.html#redun.backends.base.RedunBackend.advance_handle">advance_handle() (redun.backends.base.RedunBackend method)</a>
@@ -304,10 +317,10 @@
           <li><a href="redun/redun.backends.db.html#redun.backends.db.CallNode.arg_results">(redun.backends.db.CallNode attribute)</a>
 </li>
         </ul></li>
-        <li><a href="redun/redun.html#redun.cli.ArgFormatter">ArgFormatter (class in redun.cli)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="redun/redun.html#redun.cli.ArgFormatter">ArgFormatter (class in redun.cli)</a>
+</li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.dataflow.DataflowSectionDOM.args">args (redun.backends.db.dataflow.DataflowSectionDOM attribute)</a>
 
         <ul>
@@ -376,6 +389,8 @@
   <h2>B</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="redun/redun.html#redun.task.CacheScope.BACKEND">BACKEND (redun.task.CacheScope attribute)</a>
+</li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Tag.base_key">base_key (redun.backends.db.Tag property)</a>
 </li>
         <li><a href="redun/redun.html#redun.value.FileCache.base_path">base_path (redun.value.FileCache attribute)</a>
@@ -408,16 +423,14 @@
 </li>
         <li><a href="redun/redun.html#redun.utils.CacheArgs">CacheArgs (class in redun.utils)</a>
 </li>
+        <li><a href="redun/redun.html#redun.task.CacheCheckValid">CacheCheckValid (class in redun.task)</a>
+</li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Job.cached">cached (redun.backends.db.Job attribute)</a>
 </li>
-        <li><a href="redun/redun.backends.html#redun.backends.base.calc_call_hash">calc_call_hash() (in module redun.backends.base)</a>
+        <li><a href="redun/redun.html#redun.task.CacheResult">CacheResult (class in redun.task)</a>
 </li>
-        <li><a href="redun/redun.backends.html#redun.backends.base.RedunBackend.calc_current_nodes">calc_current_nodes() (redun.backends.base.RedunBackend method)</a>
-
-        <ul>
-          <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.calc_current_nodes">(redun.backends.db.RedunBackendDb method)</a>
+        <li><a href="redun/redun.html#redun.task.CacheScope">CacheScope (class in redun.task)</a>
 </li>
-        </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.dataflow.DataflowSectionKind.CALL">CALL (redun.backends.db.dataflow.DataflowSectionKind attribute)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Argument.call_hash">call_hash (redun.backends.db.Argument attribute)</a>
@@ -459,7 +472,7 @@
         <li><a href="redun/redun.backends.db.html#redun.backends.db.CallNode">CallNode (class in redun.backends.db)</a>
 
         <ul>
-          <li><a href="redun/redun.backends.html#redun.backends.base.TagEntityType.CallNode">(redun.backends.base.TagEntityType attribute)</a>
+          <li><a href="redun/redun.backends.html#redun.backends.base.TagEntity.CallNode">(redun.backends.base.TagEntity attribute)</a>
 </li>
         </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.serializers.CallNodeSerializer">CallNodeSerializer (class in redun.backends.db.serializers)</a>
@@ -482,6 +495,12 @@
         </ul></li>
         <li><a href="redun/redun.html#redun.scheduler.catch_all">catch_all() (in module redun.scheduler)</a>
 </li>
+        <li><a href="redun/redun.backends.html#redun.backends.base.RedunBackend.check_cache">check_cache() (redun.backends.base.RedunBackend method)</a>
+
+        <ul>
+          <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.check_cache">(redun.backends.db.RedunBackendDb method)</a>
+</li>
+        </ul></li>
         <li><a href="redun/redun.html#redun.sphinx.TaskDocumenter.check_module">check_module() (redun.sphinx.TaskDocumenter method)</a>
 </li>
         <li><a href="redun/redun.html#redun.cli.check_version">check_version() (in module redun.cli)</a>
@@ -563,7 +582,11 @@
         <li><a href="redun/redun.html#redun.glue.clean_datacatalog_table">clean_datacatalog_table() (in module redun.glue)</a>
 </li>
         <li><a href="redun/redun.html#redun.scheduler.Job.clear">clear() (redun.scheduler.Job method)</a>
+
+        <ul>
+          <li><a href="redun/redun.html#redun.scheduler.Scheduler.clear">(redun.scheduler.Scheduler method)</a>
 </li>
+        </ul></li>
         <li><a href="redun/redun.html#redun.utils.clear_import_paths">clear_import_paths() (in module redun.utils)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.query.CallGraphQuery.clone">clone() (redun.backends.db.query.CallGraphQuery method)</a>
@@ -644,6 +667,12 @@
 </li>
         <li><a href="redun/redun.executors.html#redun.executors.code_packaging.create_zip">create_zip() (in module redun.executors.code_packaging)</a>
 </li>
+        <li><a href="redun/redun.html#redun.task.CacheResult.CSE">CSE (redun.task.CacheResult attribute)</a>
+
+        <ul>
+          <li><a href="redun/redun.html#redun.task.CacheScope.CSE">(redun.task.CacheScope attribute)</a>
+</li>
+        </ul></li>
     </ul></td>
   </tr></table>
 </section>
@@ -812,13 +841,9 @@
         </ul></li>
         <li><a href="redun/redun.html#redun.scheduler.Scheduler.evaluate">evaluate() (redun.scheduler.Scheduler method)</a>
 </li>
-        <li><a href="redun/redun.html#redun.scheduler.Scheduler.evaluate_apply">evaluate_apply() (redun.scheduler.Scheduler method)</a>
-</li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Evaluation">Evaluation (class in redun.backends.db)</a>
 </li>
         <li><a href="redun/redun.executors.html#redun.executors.scratch.ExceptionNotFoundError">ExceptionNotFoundError</a>
-</li>
-        <li><a href="redun/redun.html#redun.scheduler.Scheduler.exec_job">exec_job() (redun.scheduler.Scheduler method)</a>
 </li>
         <li><a href="redun/redun.html#redun.scripting.exec_script">exec_script() (in module redun.scripting)</a>
 </li>
@@ -826,10 +851,10 @@
 </li>
         <li><a href="redun/redun.executors.html#redun.executors.local.exec_task">exec_task() (in module redun.executors.local)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.query.CallGraphQuery.ExecTag">ExecTag (redun.backends.db.query.CallGraphQuery attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.html#redun.cli.RedunClient.execute">execute() (redun.cli.RedunClient method)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Execution">Execution (class in redun.backends.db)</a>
@@ -837,7 +862,7 @@
         <ul>
           <li><a href="redun/redun.html#redun.scheduler.Execution">(class in redun.scheduler)</a>
 </li>
-          <li><a href="redun/redun.backends.html#redun.backends.base.TagEntityType.Execution">(redun.backends.base.TagEntityType attribute)</a>
+          <li><a href="redun/redun.backends.html#redun.backends.base.TagEntity.Execution">(redun.backends.base.TagEntity attribute)</a>
 </li>
         </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Job.execution">execution (redun.backends.db.Job attribute)</a>
@@ -890,6 +915,12 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.executors.html#redun.executors.aws_utils.JobStatus.failure">failure (redun.executors.aws_utils.JobStatus attribute)</a>
 </li>
+        <li><a href="redun/redun.html#redun.federated_tasks.federated_task">federated_task() (in module redun.federated_tasks)</a>
+
+        <ul>
+          <li><a href="redun/redun.html#redun.scheduler.federated_task">(in module redun.scheduler)</a>
+</li>
+        </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.File">File (class in redun.backends.db)</a>
 
         <ul>
@@ -1036,6 +1067,8 @@
 </li>
         <li><a href="redun/redun.html#redun.file.FTPFileSystem">FTPFileSystem (class in redun.file)</a>
 </li>
+        <li><a href="redun/redun.html#redun.task.CacheCheckValid.FULL">FULL (redun.task.CacheCheckValid attribute)</a>
+</li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Handle.fullname">fullname (redun.backends.db.Handle attribute)</a>
 
         <ul>
@@ -1072,7 +1105,7 @@
           <li><a href="redun/redun.html#redun.utils.MultiMap.get">(redun.utils.MultiMap method)</a>
 </li>
         </ul></li>
-        <li><a href="redun/redun.html#redun.cli.get_abs_db_uri">get_abs_db_uri() (in module redun.cli)</a>
+        <li><a href="redun/redun.html#redun.scheduler_config.get_abs_db_uri">get_abs_db_uri() (in module redun.scheduler_config)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.get_abs_path">get_abs_path() (in module redun.backends.db)</a>
 
@@ -1080,7 +1113,7 @@
           <li><a href="redun/redun.html#redun.cli.get_abs_path">(in module redun.cli)</a>
 </li>
         </ul></li>
-        <li><a href="redun/redun.html#redun.cli.get_abs_url">get_abs_url() (in module redun.cli)</a>
+        <li><a href="redun/redun.html#redun.scheduler_config.get_abs_url">get_abs_url() (in module redun.scheduler_config)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.get_all_db_versions">get_all_db_versions() (redun.backends.db.RedunBackendDb static method)</a>
 </li>
@@ -1104,20 +1137,10 @@
 </li>
         <li><a href="redun/redun.executors.html#redun.executors.aws_batch.get_batch_job_options">get_batch_job_options() (in module redun.executors.aws_batch)</a>
 </li>
-        <li><a href="redun/redun.backends.html#redun.backends.base.RedunBackend.get_cache">get_cache() (redun.backends.base.RedunBackend method)</a>
-
-        <ul>
-          <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.get_cache">(redun.backends.db.RedunBackendDb method)</a>
+        <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.get_call_cache">get_call_cache() (redun.backends.db.RedunBackendDb method)</a>
 </li>
-          <li><a href="redun/redun.html#redun.scheduler.Scheduler.get_cache">(redun.scheduler.Scheduler method)</a>
+        <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.get_call_hash">get_call_hash() (redun.backends.db.RedunBackendDb method)</a>
 </li>
-        </ul></li>
-        <li><a href="redun/redun.backends.html#redun.backends.base.RedunBackend.get_call_hash">get_call_hash() (redun.backends.base.RedunBackend method)</a>
-
-        <ul>
-          <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.get_call_hash">(redun.backends.db.RedunBackendDb method)</a>
-</li>
-        </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.get_call_node_child_edges">get_call_node_child_edges() (in module redun.backends.db)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.dataflow.get_callnode_arguments">get_callnode_arguments() (in module redun.backends.db.dataflow)</a>
@@ -1164,17 +1187,15 @@
 </li>
         <li><a href="redun/redun.executors.html#redun.executors.docker.get_docker_job_options">get_docker_job_options() (in module redun.executors.docker)</a>
 </li>
-        <li><a href="redun/redun.backends.html#redun.backends.base.RedunBackend.get_eval_cache">get_eval_cache() (redun.backends.base.RedunBackend method)</a>
-
-        <ul>
-          <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.get_eval_cache">(redun.backends.db.RedunBackendDb method)</a>
-</li>
-        </ul></li>
-        <li><a href="redun/redun.html#redun.scheduler.Scheduler.get_eval_hash">get_eval_hash() (redun.scheduler.Scheduler method)</a>
+        <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.get_eval_cache">get_eval_cache() (redun.backends.db.RedunBackendDb method)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.get_execution_child_edges">get_execution_child_edges() (in module redun.backends.db)</a>
 </li>
+        <li><a href="redun/redun.executors.html#redun.executors.scratch.get_execution_scratch_file">get_execution_scratch_file() (in module redun.executors.scratch)</a>
+</li>
         <li><a href="redun/redun.executors.html#redun.executors.base.get_executor_class">get_executor_class() (in module redun.executors.base)</a>
+</li>
+        <li><a href="redun/redun.executors.html#redun.executors.base.get_executor_from_config">get_executor_from_config() (in module redun.executors.base)</a>
 </li>
         <li><a href="redun/redun.executors.html#redun.executors.base.get_executors_from_config">get_executors_from_config() (in module redun.executors.base)</a>
 </li>
@@ -1234,12 +1255,12 @@
         </ul></li>
         <li><a href="redun/redun.executors.html#redun.executors.aws_batch.get_hash_from_job_name">get_hash_from_job_name() (in module redun.executors.aws_batch)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.html#redun.scheduler.get_ignore_warnings_from_config">get_ignore_warnings_from_config() (in module redun.scheduler)</a>
 </li>
         <li><a href="redun/redun.html#redun.utils.get_import_paths">get_import_paths() (in module redun.utils)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.backends.html#redun.backends.base.RedunBackend.get_job">get_job() (redun.backends.base.RedunBackend method)</a>
 
         <ul>
@@ -1466,11 +1487,15 @@
           <li><a href="redun/redun.html#redun.file.ShardedS3Dataset.hash">(redun.file.ShardedS3Dataset property)</a>
 </li>
         </ul></li>
+        <li><a href="redun/redun.html#redun.task.hash_args_eval">hash_args_eval() (in module redun.task)</a>
+</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.html#redun.hashing.hash_arguments">hash_arguments() (in module redun.hashing)</a>
 </li>
         <li><a href="redun/redun.html#redun.hashing.hash_bytes">hash_bytes() (in module redun.hashing)</a>
+</li>
+        <li><a href="redun/redun.html#redun.hashing.hash_call_node">hash_call_node() (in module redun.hashing)</a>
 </li>
         <li><a href="redun/redun.html#redun.hashing.hash_eval">hash_eval() (in module redun.hashing)</a>
 </li>
@@ -1552,9 +1577,9 @@
 </li>
         <li><a href="redun/redun.html#redun.cli.RedunClient.init_command">init_command() (redun.cli.RedunClient method)</a>
 </li>
-        <li><a href="redun/redun.backends.db.html#redun.backends.db.init_db">init_db() (in module redun.backends.db)</a>
-</li>
         <li><a href="redun/redun.html#redun.value.InvalidValueError">InvalidValueError</a>
+</li>
+        <li><a href="redun/redun.html#redun.federated_tasks.InvocationException">InvocationException</a>
 </li>
         <li><a href="redun/redun.executors.html#redun.executors.aws_batch.is_array_job_name">is_array_job_name() (in module redun.executors.aws_batch)</a>
 </li>
@@ -1573,6 +1598,8 @@
         <li><a href="redun/redun.html#redun.cli.is_port_in_use">is_port_in_use() (in module redun.cli)</a>
 </li>
         <li><a href="redun/redun.html#redun.cli.is_python_filename">is_python_filename() (in module redun.cli)</a>
+</li>
+        <li><a href="redun/redun.html#redun.scheduler.Scheduler.is_running">is_running (redun.scheduler.Scheduler property)</a>
 </li>
         <li><a href="redun/redun.html#redun.value.is_unknown_function">is_unknown_function() (in module redun.value)</a>
 </li>
@@ -1613,8 +1640,6 @@
 </li>
         </ul></li>
         <li><a href="redun/redun.html#redun.value.TypeRegistry.is_valid_nested">is_valid_nested() (redun.value.TypeRegistry method)</a>
-</li>
-        <li><a href="redun/redun.html#redun.scheduler.Scheduler.is_valid_value">is_valid_value() (redun.scheduler.Scheduler method)</a>
 </li>
         <li><a href="redun/redun.html#redun.file.File.isdir">isdir() (redun.file.File method)</a>
 
@@ -1701,7 +1726,7 @@
         <ul>
           <li><a href="redun/redun.html#redun.scheduler.Job">(class in redun.scheduler)</a>
 </li>
-          <li><a href="redun/redun.backends.html#redun.backends.base.TagEntityType.Job">(redun.backends.base.TagEntityType attribute)</a>
+          <li><a href="redun/redun.backends.html#redun.backends.base.TagEntity.Job">(redun.backends.base.TagEntity attribute)</a>
 </li>
         </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Execution.job">job (redun.backends.db.Execution attribute)</a>
@@ -1766,7 +1791,13 @@
   <h2>L</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="redun/redun.html#redun.federated_tasks.lambda_federated_task">lambda_federated_task() (in module redun.federated_tasks)</a>
+</li>
         <li><a href="redun/redun.html#redun.cli.RedunClient.launch_command">launch_command() (redun.cli.RedunClient method)</a>
+</li>
+        <li><a href="redun/redun.html#redun.federated_tasks.launch_federated_task">launch_federated_task() (in module redun.federated_tasks)</a>
+</li>
+        <li><a href="redun/redun.executors.html#redun.executors.launch.launch_script">launch_script() (in module redun.executors.launch)</a>
 </li>
         <li><a href="redun/redun.html#redun.expression.lazy_operation">lazy_operation() (in module redun.expression)</a>
 </li>
@@ -1798,12 +1829,12 @@
 </li>
         <li><a href="redun/redun.html#redun.file.ShardedS3Dataset.load_spark">load_spark() (redun.file.ShardedS3Dataset method)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.executors.html#redun.executors.base.load_task_module">load_task_module() (in module redun.executors.base)</a>
 </li>
         <li><a href="redun/redun.executors.html#redun.executors.local.LocalExecutor">LocalExecutor (class in redun.executors.local)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.html#redun.file.LocalFileSystem">LocalFileSystem (class in redun.file)</a>
 </li>
         <li><a href="redun/redun.html#redun.scheduler.Frame.locals">locals (redun.scheduler.Frame attribute)</a>
@@ -1888,6 +1919,8 @@
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.DBVersionInfo.minor">minor (redun.backends.db.DBVersionInfo attribute)</a>
 </li>
+        <li><a href="redun/redun.html#redun.task.CacheResult.MISS">MISS (redun.task.CacheResult attribute)</a>
+</li>
         <li><a href="redun/redun.html#redun.file.Dir.mkdir">mkdir() (redun.file.Dir method)</a>
 
         <ul>
@@ -1900,6 +1933,8 @@
           <li><a href="redun/redun.html#redun.file.S3FileSystem.mkdir">(redun.file.S3FileSystem method)</a>
 </li>
         </ul></li>
+        <li><a href="redun/redun.backends.db.html#redun.backends.db.query.CallGraphQuery.MODEL_CLASSES">MODEL_CLASSES (redun.backends.db.query.CallGraphQuery attribute)</a>
+</li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.query.CallGraphQuery.MODEL_NAMES">MODEL_NAMES (redun.backends.db.query.CallGraphQuery attribute)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.query.CallGraphQuery.MODEL_PKS">MODEL_PKS (redun.backends.db.query.CallGraphQuery attribute)</a>
@@ -1952,11 +1987,15 @@
 </li>
           <li><a href="redun/redun.executors.html#module-redun.executors.docker">redun.executors.docker</a>
 </li>
+          <li><a href="redun/redun.executors.html#module-redun.executors.launch">redun.executors.launch</a>
+</li>
           <li><a href="redun/redun.executors.html#module-redun.executors.local">redun.executors.local</a>
 </li>
           <li><a href="redun/redun.executors.html#module-redun.executors.scratch">redun.executors.scratch</a>
 </li>
           <li><a href="redun/redun.html#module-redun.expression">redun.expression</a>
+</li>
+          <li><a href="redun/redun.html#module-redun.federated_tasks">redun.federated_tasks</a>
 </li>
           <li><a href="redun/redun.html#module-redun.file">redun.file</a>
 </li>
@@ -1977,6 +2016,8 @@
           <li><a href="redun/redun.html#module-redun.promise">redun.promise</a>
 </li>
           <li><a href="redun/redun.html#module-redun.scheduler">redun.scheduler</a>
+</li>
+          <li><a href="redun/redun.html#module-redun.scheduler_config">redun.scheduler_config</a>
 </li>
           <li><a href="redun/redun.html#module-redun.scripting">redun.scripting</a>
 </li>
@@ -2059,11 +2100,11 @@
           <li><a href="redun/redun.backends.db.html#redun.backends.db.dataflow.DataflowRouting.node_display">(redun.backends.db.dataflow.DataflowRouting attribute)</a>
 </li>
         </ul></li>
-        <li><a href="redun/redun.html#redun.scheduler.Job.notify_parent">notify_parent() (redun.scheduler.Job method)</a>
+        <li><a href="redun/redun.html#redun.task.CacheScope.NONE">NONE (redun.task.CacheScope attribute)</a>
 </li>
         <li><a href="redun/redun.html#redun.task.Task.nout">nout (redun.task.Task property)</a>
 </li>
-        <li><a href="redun/redun.backends.html#redun.backends.base.TagEntityType.Null">Null (redun.backends.base.TagEntityType attribute)</a>
+        <li><a href="redun/redun.backends.html#redun.backends.base.TagEntity.Null">Null (redun.backends.base.TagEntity attribute)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -2215,6 +2256,8 @@
           <li><a href="redun/redun.html#redun.task.Task.partial">(redun.task.Task method)</a>
 </li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.html#redun.task.PartialTask">PartialTask (class in redun.task)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.File.path">path (redun.backends.db.File attribute)</a>
@@ -2223,11 +2266,7 @@
           <li><a href="redun/redun.html#redun.file.ShardedS3Dataset.path">(redun.file.ShardedS3Dataset property)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.executors.html#redun.executors.aws_utils.JobStatus.pending">pending (redun.executors.aws_utils.JobStatus attribute)</a>
-</li>
-        <li><a href="redun/redun.html#redun.scheduler.Scheduler.perform_rollbacks">perform_rollbacks() (redun.scheduler.Scheduler method)</a>
 </li>
         <li><a href="redun/redun.html#redun.utils.pickle_dump">pickle_dump() (in module redun.utils)</a>
 </li>
@@ -2263,9 +2302,7 @@
           <li><a href="redun/redun.html#redun.value.Value.postprocess">(redun.value.Value method)</a>
 </li>
         </ul></li>
-        <li><a href="redun/redun.html#redun.cli.postprocess_config">postprocess_config() (in module redun.cli)</a>
-</li>
-        <li><a href="redun/redun.html#redun.scheduler.Scheduler.postprocess_result">postprocess_result() (redun.scheduler.Scheduler method)</a>
+        <li><a href="redun/redun.html#redun.scheduler_config.postprocess_config">postprocess_config() (in module redun.scheduler_config)</a>
 </li>
         <li><a href="redun/redun.html#redun.scripting.postprocess_script">postprocess_script() (in module redun.scripting)</a>
 </li>
@@ -2287,8 +2324,6 @@
           <li><a href="redun/redun.html#redun.value.Value.preprocess">(redun.value.Value method)</a>
 </li>
         </ul></li>
-        <li><a href="redun/redun.html#redun.scheduler.Scheduler.preprocess_args">preprocess_args() (redun.scheduler.Scheduler method)</a>
-</li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Value.preview">preview (redun.backends.db.Value property)</a>
 </li>
         <li><a href="redun/redun.html#redun.utils.PreviewClass">PreviewClass (class in redun.utils)</a>
@@ -2300,8 +2335,6 @@
         <li><a href="redun/redun.backends.db.html#redun.backends.db.PreviewValue">PreviewValue (class in redun.backends.db)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.JSON.process_bind_param">process_bind_param() (redun.backends.db.JSON method)</a>
-</li>
-        <li><a href="redun/redun.html#redun.scheduler.Scheduler.process_events">process_events() (redun.scheduler.Scheduler method)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.JSON.process_result_value">process_result_value() (redun.backends.db.JSON method)</a>
 </li>
@@ -2361,12 +2394,6 @@
 </li>
         <li><a href="redun/redun.html#redun.task.Task.recompute_hash">recompute_hash() (redun.task.Task method)</a>
 </li>
-        <li><a href="redun/redun.backends.html#redun.backends.base.RedunBackend.record_args">record_args() (redun.backends.base.RedunBackend method)</a>
-
-        <ul>
-          <li><a href="redun/redun.backends.db.html#redun.backends.db.RedunBackendDb.record_args">(redun.backends.db.RedunBackendDb method)</a>
-</li>
-        </ul></li>
         <li><a href="redun/redun.backends.html#redun.backends.base.RedunBackend.record_call_node">record_call_node() (redun.backends.base.RedunBackend method)</a>
 
         <ul>
@@ -2555,6 +2582,13 @@
 </li>
         </ul></li>
         <li>
+    redun.executors.launch
+
+        <ul>
+          <li><a href="redun/redun.executors.html#module-redun.executors.launch">module</a>
+</li>
+        </ul></li>
+        <li>
     redun.executors.local
 
         <ul>
@@ -2573,6 +2607,13 @@
 
         <ul>
           <li><a href="redun/redun.html#module-redun.expression">module</a>
+</li>
+        </ul></li>
+        <li>
+    redun.federated_tasks
+
+        <ul>
+          <li><a href="redun/redun.html#module-redun.federated_tasks">module</a>
 </li>
         </ul></li>
         <li>
@@ -2645,6 +2686,13 @@
 
         <ul>
           <li><a href="redun/redun.html#module-redun.scheduler">module</a>
+</li>
+        </ul></li>
+        <li>
+    redun.scheduler_config
+
+        <ul>
+          <li><a href="redun/redun.html#module-redun.scheduler_config">module</a>
 </li>
         </ul></li>
         <li>
@@ -2778,7 +2826,7 @@
 </li>
         <li><a href="redun/redun.html#redun.scheduler.Job.resolve">resolve() (redun.scheduler.Job method)</a>
 </li>
-        <li><a href="redun/redun.html#redun.scheduler.Scheduler.resolve_job">resolve_job() (redun.scheduler.Scheduler method)</a>
+        <li><a href="redun/redun.html#redun.federated_tasks.rest_federated_task">rest_federated_task() (in module redun.federated_tasks)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.ArgumentResult.result_call_hash">result_call_hash (redun.backends.db.ArgumentResult attribute)</a>
 </li>
@@ -2846,6 +2894,18 @@
 </li>
         <li><a href="redun/redun.html#redun.sphinx.SchedulerTaskDocumenter">SchedulerTaskDocumenter (class in redun.sphinx)</a>
 </li>
+        <li><a href="redun/redun.executors.html#redun.executors.aws_batch.AWSBatchExecutor.scratch_root">scratch_root() (redun.executors.aws_batch.AWSBatchExecutor method)</a>
+
+        <ul>
+          <li><a href="redun/redun.executors.html#redun.executors.aws_glue.AWSGlueExecutor.scratch_root">(redun.executors.aws_glue.AWSGlueExecutor method)</a>
+</li>
+          <li><a href="redun/redun.executors.html#redun.executors.base.Executor.scratch_root">(redun.executors.base.Executor method)</a>
+</li>
+          <li><a href="redun/redun.executors.html#redun.executors.docker.DockerExecutor.scratch_root">(redun.executors.docker.DockerExecutor method)</a>
+</li>
+          <li><a href="redun/redun.executors.html#redun.executors.local.LocalExecutor.scratch_root">(redun.executors.local.LocalExecutor method)</a>
+</li>
+        </ul></li>
         <li><a href="redun/redun.executors.html#redun.executors.scratch.ScratchError">ScratchError</a>
 </li>
         <li><a href="redun/redun.html#redun.scripting.script">script() (in module redun.scripting)</a>
@@ -2942,6 +3002,8 @@
 </li>
         <li><a href="redun/redun.html#redun.cli.setup_scheduler">setup_scheduler() (in module redun.cli)</a>
 </li>
+        <li><a href="redun/redun.html#redun.task.CacheCheckValid.SHALLOW">SHALLOW (redun.task.CacheCheckValid attribute)</a>
+</li>
         <li><a href="redun/redun.html#redun.file.ShardedS3Dataset">ShardedS3Dataset (class in redun.file)</a>
 </li>
         <li><a href="redun/redun.html#redun.file.FileSystem.shell_copy">shell_copy() (redun.file.FileSystem method)</a>
@@ -2956,6 +3018,8 @@
           <li><a href="redun/redun.html#redun.file.S3FileSystem.shell_copy">(redun.file.S3FileSystem method)</a>
 </li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.html#redun.file.Dir.shell_copy_to">shell_copy_to() (redun.file.Dir method)</a>
 
         <ul>
@@ -2964,11 +3028,11 @@
         </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Task.show_source">show_source() (redun.backends.db.Task method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.html#redun.task.Task.signature">signature (redun.task.Task property)</a>
 </li>
         <li><a href="redun/redun.html#redun.expression.SimpleExpression">SimpleExpression (class in redun.expression)</a>
+</li>
+        <li><a href="redun/redun.html#redun.task.CacheResult.SINGLE">SINGLE (redun.task.CacheResult attribute)</a>
 </li>
         <li><a href="redun/redun.backends.html#redun.backends.value_store.ValueStore.size">size() (redun.backends.value_store.ValueStore method)</a>
 
@@ -3142,7 +3206,7 @@
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.TagEdit">TagEdit (class in redun.backends.db)</a>
 </li>
-        <li><a href="redun/redun.backends.html#redun.backends.base.TagEntityType">TagEntityType (class in redun.backends.base)</a>
+        <li><a href="redun/redun.backends.html#redun.backends.base.TagEntity">TagEntity (class in redun.backends.base)</a>
 </li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.CallNode.tags">tags (redun.backends.db.CallNode attribute)</a>
 
@@ -3163,7 +3227,7 @@
         <ul>
           <li><a href="redun/redun.html#redun.task.Task">(class in redun.task)</a>
 </li>
-          <li><a href="redun/redun.backends.html#redun.backends.base.TagEntityType.Task">(redun.backends.base.TagEntityType attribute)</a>
+          <li><a href="redun/redun.backends.html#redun.backends.base.TagEntity.Task">(redun.backends.base.TagEntity attribute)</a>
 </li>
         </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.CallNode.task">task (redun.backends.db.CallNode attribute)</a>
@@ -3374,6 +3438,8 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="redun/redun.html#redun.glue.udf">udf() (in module redun.glue)</a>
 </li>
+        <li><a href="redun/redun.html#redun.task.CacheResult.ULTIMATE">ULTIMATE (redun.task.CacheResult attribute)</a>
+</li>
         <li><a href="redun/redun.html#redun.task.undefined_task">undefined_task() (in module redun.task)</a>
 </li>
         <li><a href="redun/redun.html#redun.file.Staging.unstage">unstage() (redun.file.Staging method)</a>
@@ -3419,7 +3485,7 @@
         <ul>
           <li><a href="redun/redun.html#redun.value.Value">(class in redun.value)</a>
 </li>
-          <li><a href="redun/redun.backends.html#redun.backends.base.TagEntityType.Value">(redun.backends.base.TagEntityType attribute)</a>
+          <li><a href="redun/redun.backends.html#redun.backends.base.TagEntity.Value">(redun.backends.base.TagEntity attribute)</a>
 </li>
         </ul></li>
         <li><a href="redun/redun.backends.db.html#redun.backends.db.Argument.value">value (redun.backends.db.Argument attribute)</a>
@@ -3585,9 +3651,6 @@
     </aside>
   </div>
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/scripts/furo.js"></script>

@@ -53,6 +53,14 @@ redun.expression module
    :undoc-members:
    :show-inheritance:
 
+redun.federated\_tasks module
+-----------------------------
+
+.. automodule:: redun.federated_tasks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.file module
 -----------------
 
@@ -137,6 +145,14 @@ redun.scheduler module
 ----------------------
 
 .. automodule:: redun.scheduler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+redun.scheduler\_config module
+------------------------------
+
+.. automodule:: redun.scheduler_config
    :members:
    :undoc-members:
    :show-inheritance:

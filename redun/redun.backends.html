@@ -2,12 +2,13 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun.backends.db package" href="redun.backends.db.html" /><link rel="prev" title="redun package" href="redun.html" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun.backends.db package" href="redun.backends.db.html" /><link rel="prev" title="redun package" href="redun.html" />
 
-    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
-        <title>redun.backends package - redun</title>
+    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
+        <title>redun.backends package - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -122,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">redun</div></a>
+      <a href="../index.html"><div class="brand">redun  documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -144,8 +145,11 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
   
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/redun.svg" alt="Logo"/>
+  </div>
   
-  <span class="sidebar-brand-text">redun</span>
+  <span class="sidebar-brand-text">redun  documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -153,21 +157,29 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul>
+  <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../values.html">Values</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tasks.html">Tasks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduler.html">Scheduling redun workflows</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../db.html">Database repo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../db.html">Backend and database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../developing.html">Developer guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../CHANGELOG.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -217,9 +229,9 @@
           </label>
         </div>
         <article role="main">
-          <div class="section" id="redun-backends-package">
+          <section id="redun-backends-package">
 <h1>redun.backends package<a class="headerlink" href="#redun-backends-package" title="Permalink to this heading">#</a></h1>
-<div class="section" id="subpackages">
+<section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading">#</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
@@ -310,6 +322,7 @@
 <li class="toctree-l2"><a class="reference internal" href="redun.backends.db.html#module-redun.backends.db.query">redun.backends.db.query module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.ExecTag"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.ExecTag</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.MODEL_CLASSES"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.MODEL_CLASSES</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.MODEL_NAMES"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.MODEL_NAMES</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.MODEL_PKS"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.MODEL_PKS</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.all"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.all()</span></code></a></li>
@@ -544,13 +557,13 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.PreviewValue"><code class="docutils literal notranslate"><span class="pre">PreviewValue</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.advance_handle"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.advance_handle()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.calc_current_nodes"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.calc_current_nodes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.check_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.check_cache()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.clone"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.clone()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.create_engine"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.create_engine()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.delete_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.delete_tags()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.explain_cache_miss"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.explain_cache_miss()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.get_all_db_versions"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_all_db_versions()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.get_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_cache()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.get_call_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_call_cache()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.get_call_hash"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_call_hash()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.get_child_record_ids"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_child_record_ids()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.get_db_version"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_db_version()</span></code></a></li>
@@ -567,7 +580,6 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.load"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.load()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.migrate"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.migrate()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.put_records"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.put_records()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.record_args"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_args()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.record_call_node"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_call_node()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.record_execution"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_execution()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.RedunBackendDb.record_job_end"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_job_end()</span></code></a></li>
@@ -677,7 +689,6 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.get_tag_child_edges"><code class="docutils literal notranslate"><span class="pre">get_tag_child_edges()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.get_tag_entity_child_edges"><code class="docutils literal notranslate"><span class="pre">get_tag_entity_child_edges()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.get_value_child_edges"><code class="docutils literal notranslate"><span class="pre">get_value_child_edges()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.init_db"><code class="docutils literal notranslate"><span class="pre">init_db()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.parse_db_version"><code class="docutils literal notranslate"><span class="pre">parse_db_version()</span></code></a></li>
 </ul>
 </li>
@@ -685,188 +696,337 @@
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="submodules">
+</section>
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">#</a></h2>
-</div>
-<div class="section" id="module-redun.backends.base">
+</section>
+<section id="module-redun.backends.base">
 <span id="redun-backends-base-module"></span><h2>redun.backends.base module<a class="headerlink" href="#module-redun.backends.base" title="Permalink to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.base.</span></span><span class="sig-name descname"><span class="pre">RedunBackend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="redun.html#redun.value.TypeRegistry" title="redun.value.TypeRegistry"><span class="pre">TypeRegistry</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.base.RedunBackend" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.base.</span></span><span class="sig-name descname"><span class="pre">RedunBackend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.value.TypeRegistry" title="redun.value.TypeRegistry"><span class="pre">TypeRegistry</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.base.RedunBackend" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>A Backend manages the CallGraph (provenance) and cache for a Scheduler.</p>
+<p>This is the abstract backend interface. See <cite>db/__init__.py</cite> for example of
+a concrete interface for persisting data in a database.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.advance_handle">
 <span class="sig-name descname"><span class="pre">advance_handle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="redun.html#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child_handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.base.RedunBackend.advance_handle" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Record parent-child relationships between Handles.</p>
+</dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="redun.backends.base.RedunBackend.calc_current_nodes">
-<span class="sig-name descname"><span class="pre">calc_current_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_hashes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.calc_current_nodes" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="redun.backends.base.RedunBackend.check_cache">
+<span class="sig-name descname"><span class="pre">check_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execution_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scheduler_task_hashes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_scope</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.task.CacheScope" title="redun.task.CacheScope"><span class="pre">CacheScope</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_valid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.task.CacheCheckValid" title="redun.task.CacheCheckValid"><span class="pre">CacheCheckValid</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">allowed_cache_results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="redun.html#redun.task.CacheResult" title="redun.task.CacheResult"><span class="pre">CacheResult</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="redun.html#redun.task.CacheResult" title="redun.task.CacheResult"><span class="pre">CacheResult</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.check_cache" title="Permalink to this definition">#</a></dt>
+<dd><p>Check cache for recorded values.</p>
+<p>This methods checks for several types of cached values when performing
+graph reduction on the Expression Graph.</p>
+<ol class="arabic simple">
+<li><p>Common Subexpression Elimination (CSE): If there is a previously recorded
+Job in the same Execution, <cite>execution_id</cite>, that is equivalent
+(same <cite>eval_hash</cite>), its final result is replayed. This check is
+always performed first.</p></li>
+<li><p>Evaluation cache: When <cite>check_valid=”CacheCheckValid.FULL”, previous single
+reduction evaluations are consulted by their `eval_hash</cite>. If a match is found,
+the resulting single reduction is replayed. This is the most common
+cache method.</p></li>
+<li><p>Call cache: When <cite>check_valid=”CacheCheckValid.SHALLOW”</cite>, previous <em>current</em>
+CallNodes are consulted by their <cite>eval_hash</cite> (i.e. <cite>task_hash</cite> and <cite>args_hash</cite>).
+If a match is found, its final result is replayed. A CallNode is
+considered <em>current</em> only if its Task and all tasks for child CallNodes are current,
+as defined by having their task_hash in the provided set, <cite>scheduler_task_hashes</cite>.
+This cache method is typically used as an optimization, where the validity of all
+intermediate arguments and results within call subtree do not need to
+be checked (hence checking is “shallow”).</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>task_hash</strong> (<em>str</em>) – Hash of Task used in the call.</p></li>
+<li><p><strong>args_hash</strong> (<em>str</em>) – Hash of all arguments used in the call.</p></li>
+<li><p><strong>eval_hash</strong> (<em>str</em>) – A hash of the combination of the task_hash and args_hash.</p></li>
+<li><p><strong>execution_id</strong> (<em>str</em>) – ID of the current Execution. This is used to perform the CSE check.</p></li>
+<li><p><strong>scheduler_task_hashes</strong> (<a class="reference internal" href="redun.html#redun.value.Set" title="redun.value.Set"><em>Set</em></a><em>[</em><em>str</em><em>]</em>) – The set of task hashes known to the scheduler, used for checking the Call cache.</p></li>
+<li><p><strong>cache_scope</strong> (<a class="reference internal" href="redun.html#redun.task.CacheScope" title="redun.task.CacheScope"><em>CacheScope</em></a>) – What scope of cache hits to try. <cite>CacheScopeType.CSE</cite> only allows CSE, and
+<cite>CacheScopeType.NONE</cite> disables all caching.</p></li>
+<li><p><strong>check_valid</strong> (<a class="reference internal" href="redun.html#redun.task.CacheCheckValid" title="redun.task.CacheCheckValid"><em>CacheCheckValid</em></a><em>,</em>) – If set to <cite>CacheCheckValid.FULL</cite> perform Evaluation cache check or if
+<cite>CacheCheckValid.SHALLOW</cite> perform Call cache check. See above for more details.</p></li>
+<li><p><strong>allowed_cache_results</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="redun.html#redun.value.Set" title="redun.value.Set"><em>Set</em></a><em>[</em><a class="reference internal" href="redun.html#redun.task.CacheResult" title="redun.task.CacheResult"><em>CacheResult</em></a><em>]</em><em>]</em>) – If provided, further restrict the allowed types of results.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>(result, call_hash, cache_type)</strong> – <cite>result</cite> is the cached result, or None if no result was found.
+<cite>call_hash</cite> is the hash of the CallNode used if CSE or Call cache
+methods are used. <cite>cache_type</cite> specifies which cache method was used
+(CSE, SINGLE, ULTIMATE) or MISS if no cached result is found.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Any, Optional[str], <a class="reference internal" href="redun.html#redun.task.CacheResult" title="redun.task.CacheResult">CacheResult</a>]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.delete_tags">
 <span class="sig-name descname"><span class="pre">delete_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.delete_tags" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Delete tags.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.explain_cache_miss">
-<span class="sig-name descname"><span class="pre">explain_cache_miss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">BaseTask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.explain_cache_miss" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.backends.base.RedunBackend.get_cache">
-<span class="sig-name descname"><span class="pre">get_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.get_cache" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.backends.base.RedunBackend.get_call_hash">
-<span class="sig-name descname"><span class="pre">get_call_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.get_call_hash" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.backends.base.RedunBackend.get_eval_cache">
-<span class="sig-name descname"><span class="pre">get_eval_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eval_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.get_eval_cache" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">explain_cache_miss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">BaseTask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.explain_cache_miss" title="Permalink to this definition">#</a></dt>
+<dd><p>Determine the reason for a cache miss.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.get_job">
-<span class="sig-name descname"><span class="pre">get_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.get_job" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">get_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.get_job" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns details for a Job.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.get_records">
 <span class="sig-name descname"><span class="pre">get_records</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sorted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.get_records" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Returns serialized records for the given ids.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ids</strong> (<em>Iterable</em><em>[</em><em>str</em><em>]</em>) – Iterable of record ids to fetch serialized records.</p></li>
+<li><p><strong>sorted</strong> (<em>bool</em>) – If True, return records in the same order as the ids (Default: True).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.get_tags">
 <span class="sig-name descname"><span class="pre">get_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="redun.html#redun.utils.MultiMap" title="redun.utils.MultiMap"><span class="pre">MultiMap</span></a><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.get_tags" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Get the tags of an entity (Execution, Job, CallNode, Task, Value).</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.get_value">
 <span class="sig-name descname"><span class="pre">get_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.get_value" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Returns a Value from the datastore using the value content address (value_hash).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value_hash</strong> (<em>str</em>) – Hash of Value to fetch from ValueStore.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>result, is_cached</strong> – Returns the result <cite>value</cite> and <cite>is_cached=True</cite> if the value is in the
+ValueStore, otherwise returns (None, False).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Any, bool]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.is_valid_handle">
 <span class="sig-name descname"><span class="pre">is_valid_handle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.is_valid_handle" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>A handle is valid if it current or ancestral to the current handle.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.iter_record_ids">
 <span class="sig-name descname"><span class="pre">iter_record_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.iter_record_ids" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Iterate the record ids of descendants of root_ids.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">migrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.load" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">migrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.load" title="Permalink to this definition">#</a></dt>
+<dd><p>Load the backend for use.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>migrate</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em>) – If None, defer to automigration config options. If True, perform
+migration after establishing database connection.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.put_records">
 <span class="sig-name descname"><span class="pre">put_records</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">records</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.put_records" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="redun.backends.base.RedunBackend.record_args">
-<span class="sig-name descname"><span class="pre">record_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_args" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Writes records to the database and returns number of new records written.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.record_call_node">
 <span class="sig-name descname"><span class="pre">record_call_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child_call_hashes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_call_node" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Record a completed CallNode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>task_name</strong> (<em>str</em>) – Fullname (with namespace) of task.</p></li>
+<li><p><strong>task_hash</strong> (<em>str</em>) – Hash of task.</p></li>
+<li><p><strong>args_hash</strong> (<em>str</em>) – Hash of all arguments of the call.</p></li>
+<li><p><strong>expr_args</strong> (<em>Tuple</em><em>[</em><em>Tuple</em><em>, </em><em>dict</em><em>]</em>) – Original expressions for the task arguments. These expressions are used
+to record the full upstream dataflow.</p></li>
+<li><p><strong>eval_args</strong> (<em>Tuple</em><em>[</em><em>Tuple</em><em>, </em><em>dict</em><em>]</em>) – The fully evaluated arguments of the task arguments.</p></li>
+<li><p><strong>result_hash</strong> (<em>str</em>) – Hash of the result value of the call.</p></li>
+<li><p><strong>child_call_hashes</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – call_hashes of any child task calls.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The call_hash of the new CallNode.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.record_execution">
-<span class="sig-name descname"><span class="pre">record_execution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_execution" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">record_execution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exec_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_execution" title="Permalink to this definition">#</a></dt>
+<dd><p>Records an Execution to the backend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>exec_id</strong> (<em>str</em>) – The id of the execution.</p></li>
+<li><p><strong>args</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – Arguments used on the command line to start Execution.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>UUID of new Execution.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.record_job_end">
-<span class="sig-name descname"><span class="pre">record_job_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.scheduler.Job" title="redun.scheduler.Job"><span class="pre">Job</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">datetime</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_job_end" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">record_job_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.scheduler.Job" title="redun.scheduler.Job"><span class="pre">Job</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_job_end" title="Permalink to this definition">#</a></dt>
+<dd><p>Records the end of a Job.</p>
+<p>Create the job if needed, in which case the job will be recorded with
+<cite>start_time==end_time</cite></p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.record_job_start">
-<span class="sig-name descname"><span class="pre">record_job_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.scheduler.Job" title="redun.scheduler.Job"><span class="pre">Job</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">datetime</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_job_start" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">record_job_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.scheduler.Job" title="redun.scheduler.Job"><span class="pre">Job</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_job_start" title="Permalink to this definition">#</a></dt>
+<dd><p>Records the start of a new Job.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.record_tags">
-<span class="sig-name descname"><span class="pre">record_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.base.TagEntityType" title="redun.backends.base.TagEntityType"><span class="pre">TagEntityType</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_tags" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">record_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.base.TagEntity" title="redun.backends.base.TagEntity"><span class="pre">TagEntity</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_tags" title="Permalink to this definition">#</a></dt>
+<dd><p>Record tags for an entity (Execution, Job, CallNode, Task, Value).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entity_type</strong> (<a class="reference internal" href="#redun.backends.base.TagEntity" title="redun.backends.base.TagEntity"><em>TagEntity</em></a>) – The type of the tagged entity (Execution, Job, etc).</p></li>
+<li><p><strong>entity_id</strong> (<em>str</em>) – The id of the tagged entity.</p></li>
+<li><p><strong>tags</strong> (<em>Iterable</em><em>[</em><em>KeyValue</em><em>]</em>) – An iterable of key-value pairs to create as tags.</p></li>
+<li><p><strong>parents</strong> (<em>Iterable</em><em>[</em><em>str</em><em>]</em>) – Ids of tags to be superseded by the new tags.</p></li>
+<li><p><strong>update</strong> (<em>bool</em>) – If True, automatically supersede any existing tags with keys matching those in <cite>tags</cite>.
+This also implies <cite>new=True</cite>.</p></li>
+<li><p><strong>new</strong> (<em>bool</em>) – If True, force tags to be current.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[(tag_hash, entity_id, key, value)]</strong> – Returns a list of the created tags.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[Tuple[str, str, str, Any]]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.record_value">
-<span class="sig-name descname"><span class="pre">record_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_value" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">record_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.record_value" title="Permalink to this definition">#</a></dt>
+<dd><p>Record a Value into the backend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>Any</em>) – A value to record.</p></li>
+<li><p><strong>data</strong> (<em>Optional</em><em>[</em><em>bytes</em><em>]</em>) – Byte stream to record. If not given, usual value serialization is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>value_hash of recorded value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.rollback_handle">
 <span class="sig-name descname"><span class="pre">rollback_handle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.handle.Handle" title="redun.handle.Handle"><span class="pre">Handle</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.rollback_handle" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Rollback all descendant handles.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.set_eval_cache">
-<span class="sig-name descname"><span class="pre">set_eval_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eval_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.base.RedunBackend.set_eval_cache" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">set_eval_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eval_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.set_eval_cache" title="Permalink to this definition">#</a></dt>
+<dd><p>Sets a new value in the Evaluation cache.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eval_hash</strong> (<em>str</em>) – A hash of the combination of the task_hash and args_hash.</p></li>
+<li><p><strong>task_hash</strong> (<em>str</em>) – Hash of Task used in the call.</p></li>
+<li><p><strong>args_hash</strong> (<em>str</em>) – Hash of all arguments used in the call.</p></li>
+<li><p><strong>value</strong> (<em>Any</em>) – Value to record in cache.</p></li>
+<li><p><strong>value_hash</strong> (<em>str</em>) – Hash of value to record in cache.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.base.RedunBackend.update_tags">
-<span class="sig-name descname"><span class="pre">update_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.base.TagEntityType" title="redun.backends.base.TagEntityType"><span class="pre">TagEntityType</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.update_tags" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">update_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.base.TagEntity" title="redun.backends.base.TagEntity"><span class="pre">TagEntity</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.base.RedunBackend.update_tags" title="Permalink to this definition">#</a></dt>
+<dd><p>Update tags.</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="redun.backends.base.TagEntityType">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.base.</span></span><span class="sig-name descname"><span class="pre">TagEntityType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.base.TagEntityType" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="redun.backends.base.TagEntity">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.base.</span></span><span class="sig-name descname"><span class="pre">TagEntity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.base.TagEntity" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
-<p>An enumeration.</p>
+<p>Entity types for a CallGraph Tag.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="redun.backends.base.TagEntityType.CallNode">
-<span class="sig-name descname"><span class="pre">CallNode</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CallNode'</span></em><a class="headerlink" href="#redun.backends.base.TagEntityType.CallNode" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="redun.backends.base.TagEntity.CallNode">
+<span class="sig-name descname"><span class="pre">CallNode</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CallNode'</span></em><a class="headerlink" href="#redun.backends.base.TagEntity.CallNode" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="redun.backends.base.TagEntityType.Execution">
-<span class="sig-name descname"><span class="pre">Execution</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Execution'</span></em><a class="headerlink" href="#redun.backends.base.TagEntityType.Execution" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="redun.backends.base.TagEntity.Execution">
+<span class="sig-name descname"><span class="pre">Execution</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Execution'</span></em><a class="headerlink" href="#redun.backends.base.TagEntity.Execution" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="redun.backends.base.TagEntityType.Job">
-<span class="sig-name descname"><span class="pre">Job</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Job'</span></em><a class="headerlink" href="#redun.backends.base.TagEntityType.Job" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="redun.backends.base.TagEntity.Job">
+<span class="sig-name descname"><span class="pre">Job</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Job'</span></em><a class="headerlink" href="#redun.backends.base.TagEntity.Job" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="redun.backends.base.TagEntityType.Null">
-<span class="sig-name descname"><span class="pre">Null</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Null'</span></em><a class="headerlink" href="#redun.backends.base.TagEntityType.Null" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="redun.backends.base.TagEntity.Null">
+<span class="sig-name descname"><span class="pre">Null</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Null'</span></em><a class="headerlink" href="#redun.backends.base.TagEntity.Null" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="redun.backends.base.TagEntityType.Task">
-<span class="sig-name descname"><span class="pre">Task</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Task'</span></em><a class="headerlink" href="#redun.backends.base.TagEntityType.Task" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="redun.backends.base.TagEntity.Task">
+<span class="sig-name descname"><span class="pre">Task</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Task'</span></em><a class="headerlink" href="#redun.backends.base.TagEntity.Task" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="redun.backends.base.TagEntityType.Value">
-<span class="sig-name descname"><span class="pre">Value</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Value'</span></em><a class="headerlink" href="#redun.backends.base.TagEntityType.Value" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="redun.backends.base.TagEntity.Value">
+<span class="sig-name descname"><span class="pre">Value</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Value'</span></em><a class="headerlink" href="#redun.backends.base.TagEntity.Value" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="redun.backends.base.calc_call_hash">
-<span class="sig-prename descclassname"><span class="pre">redun.backends.base.</span></span><span class="sig-name descname"><span class="pre">calc_call_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child_call_hashes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.backends.base.calc_call_hash" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
-
-</div>
-<div class="section" id="module-redun.backends.value_store">
+</section>
+<section id="module-redun.backends.value_store">
 <span id="redun-backends-value-store-module"></span><h2>redun.backends.value_store module<a class="headerlink" href="#module-redun.backends.value_store" title="Permalink to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.value_store.ValueStore">
@@ -909,11 +1069,11 @@ the <cite>value_store_path</cite> and <cite>value_store_min_size</cite> variable
 
 </dd></dl>
 
-</div>
-<div class="section" id="module-redun.backends">
+</section>
+<section id="module-redun.backends">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-redun.backends" title="Permalink to this heading">#</a></h2>
-</div>
-</div>
+</section>
+</section>
 
         </article>
       </div>
@@ -976,12 +1136,9 @@ the <cite>value_store_path</cite> and <cite>value_store_min_size</cite> variable
 <li><a class="reference internal" href="#module-redun.backends.base">redun.backends.base module</a><ul>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend"><code class="docutils literal notranslate"><span class="pre">RedunBackend</span></code></a><ul>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.advance_handle"><code class="docutils literal notranslate"><span class="pre">RedunBackend.advance_handle()</span></code></a></li>
-<li><a class="reference internal" href="#redun.backends.base.RedunBackend.calc_current_nodes"><code class="docutils literal notranslate"><span class="pre">RedunBackend.calc_current_nodes()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.base.RedunBackend.check_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackend.check_cache()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.delete_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackend.delete_tags()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.explain_cache_miss"><code class="docutils literal notranslate"><span class="pre">RedunBackend.explain_cache_miss()</span></code></a></li>
-<li><a class="reference internal" href="#redun.backends.base.RedunBackend.get_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackend.get_cache()</span></code></a></li>
-<li><a class="reference internal" href="#redun.backends.base.RedunBackend.get_call_hash"><code class="docutils literal notranslate"><span class="pre">RedunBackend.get_call_hash()</span></code></a></li>
-<li><a class="reference internal" href="#redun.backends.base.RedunBackend.get_eval_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackend.get_eval_cache()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.get_job"><code class="docutils literal notranslate"><span class="pre">RedunBackend.get_job()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.get_records"><code class="docutils literal notranslate"><span class="pre">RedunBackend.get_records()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.get_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackend.get_tags()</span></code></a></li>
@@ -990,7 +1147,6 @@ the <cite>value_store_path</cite> and <cite>value_store_min_size</cite> variable
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.iter_record_ids"><code class="docutils literal notranslate"><span class="pre">RedunBackend.iter_record_ids()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.load"><code class="docutils literal notranslate"><span class="pre">RedunBackend.load()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.put_records"><code class="docutils literal notranslate"><span class="pre">RedunBackend.put_records()</span></code></a></li>
-<li><a class="reference internal" href="#redun.backends.base.RedunBackend.record_args"><code class="docutils literal notranslate"><span class="pre">RedunBackend.record_args()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.record_call_node"><code class="docutils literal notranslate"><span class="pre">RedunBackend.record_call_node()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.record_execution"><code class="docutils literal notranslate"><span class="pre">RedunBackend.record_execution()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.record_job_end"><code class="docutils literal notranslate"><span class="pre">RedunBackend.record_job_end()</span></code></a></li>
@@ -1002,16 +1158,15 @@ the <cite>value_store_path</cite> and <cite>value_store_min_size</cite> variable
 <li><a class="reference internal" href="#redun.backends.base.RedunBackend.update_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackend.update_tags()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#redun.backends.base.TagEntityType"><code class="docutils literal notranslate"><span class="pre">TagEntityType</span></code></a><ul>
-<li><a class="reference internal" href="#redun.backends.base.TagEntityType.CallNode"><code class="docutils literal notranslate"><span class="pre">TagEntityType.CallNode</span></code></a></li>
-<li><a class="reference internal" href="#redun.backends.base.TagEntityType.Execution"><code class="docutils literal notranslate"><span class="pre">TagEntityType.Execution</span></code></a></li>
-<li><a class="reference internal" href="#redun.backends.base.TagEntityType.Job"><code class="docutils literal notranslate"><span class="pre">TagEntityType.Job</span></code></a></li>
-<li><a class="reference internal" href="#redun.backends.base.TagEntityType.Null"><code class="docutils literal notranslate"><span class="pre">TagEntityType.Null</span></code></a></li>
-<li><a class="reference internal" href="#redun.backends.base.TagEntityType.Task"><code class="docutils literal notranslate"><span class="pre">TagEntityType.Task</span></code></a></li>
-<li><a class="reference internal" href="#redun.backends.base.TagEntityType.Value"><code class="docutils literal notranslate"><span class="pre">TagEntityType.Value</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.base.TagEntity"><code class="docutils literal notranslate"><span class="pre">TagEntity</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.base.TagEntity.CallNode"><code class="docutils literal notranslate"><span class="pre">TagEntity.CallNode</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.base.TagEntity.Execution"><code class="docutils literal notranslate"><span class="pre">TagEntity.Execution</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.base.TagEntity.Job"><code class="docutils literal notranslate"><span class="pre">TagEntity.Job</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.base.TagEntity.Null"><code class="docutils literal notranslate"><span class="pre">TagEntity.Null</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.base.TagEntity.Task"><code class="docutils literal notranslate"><span class="pre">TagEntity.Task</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.base.TagEntity.Value"><code class="docutils literal notranslate"><span class="pre">TagEntity.Value</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#redun.backends.base.calc_call_hash"><code class="docutils literal notranslate"><span class="pre">calc_call_hash()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-redun.backends.value_store">redun.backends.value_store module</a><ul>
@@ -1038,9 +1193,6 @@ the <cite>value_store_path</cite> and <cite>value_store_min_size</cite> variable
     </aside>
   </div>
 </div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/scripts/furo.js"></script>

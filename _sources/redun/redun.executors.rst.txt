@@ -84,6 +84,14 @@ redun.executors.k8s\_utils module
    :undoc-members:
    :show-inheritance:
 
+redun.executors.launch module
+-----------------------------
+
+.. automodule:: redun.executors.launch
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.executors.local module
 ----------------------------
 

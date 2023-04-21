@@ -2,12 +2,13 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun package" href="redun.html" /><link rel="prev" title="Changelog" href="../CHANGELOG.html" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun package" href="redun.html" /><link rel="prev" title="Graph reduction caching" href="../implementation/graph_reduction_caching.html" />
 
-    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
-        <title>redun - redun</title>
+    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
+        <title>redun - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -122,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">redun</div></a>
+      <a href="../index.html"><div class="brand">redun  documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -144,8 +145,11 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
   
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/redun.svg" alt="Logo"/>
+  </div>
   
-  <span class="sidebar-brand-text">redun</span>
+  <span class="sidebar-brand-text">redun  documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -153,21 +157,29 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul>
+  <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../values.html">Values</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tasks.html">Tasks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scheduler.html">Scheduling redun workflows</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../db.html">Database repo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../db.html">Backend and database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../developing.html">Developer guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../CHANGELOG.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -217,7 +229,7 @@
           </label>
         </div>
         <article role="main">
-          <div class="section" id="redun">
+          <section id="redun">
 <h1>redun<a class="headerlink" href="#redun" title="Permalink to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
@@ -243,6 +255,7 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#module-redun.executors.docker">redun.executors.docker module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#redun-executors-k8s-module">redun.executors.k8s module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#redun-executors-k8s-utils-module">redun.executors.k8s_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.executors.html#module-redun.executors.launch">redun.executors.launch module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#module-redun.executors.local">redun.executors.local module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#module-redun.executors.scratch">redun.executors.scratch module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.executors.html#module-redun.executors">Module contents</a></li>
@@ -329,9 +342,7 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.format_setup_help"><code class="docutils literal notranslate"><span class="pre">format_setup_help()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.format_tags"><code class="docutils literal notranslate"><span class="pre">format_tags()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.format_timedelta"><code class="docutils literal notranslate"><span class="pre">format_timedelta()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.get_abs_db_uri"><code class="docutils literal notranslate"><span class="pre">get_abs_db_uri()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.get_abs_path"><code class="docutils literal notranslate"><span class="pre">get_abs_path()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.get_abs_url"><code class="docutils literal notranslate"><span class="pre">get_abs_url()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.get_anno_origin"><code class="docutils literal notranslate"><span class="pre">get_anno_origin()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.get_config_dir"><code class="docutils literal notranslate"><span class="pre">get_config_dir()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.get_config_path"><code class="docutils literal notranslate"><span class="pre">get_config_path()</span></code></a></li>
@@ -349,7 +360,6 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.parse_func_path"><code class="docutils literal notranslate"><span class="pre">parse_func_path()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.parse_setup_args"><code class="docutils literal notranslate"><span class="pre">parse_setup_args()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.parse_version"><code class="docutils literal notranslate"><span class="pre">parse_version()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.postprocess_config"><code class="docutils literal notranslate"><span class="pre">postprocess_config()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.setup_backend_db"><code class="docutils literal notranslate"><span class="pre">setup_backend_db()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.setup_config"><code class="docutils literal notranslate"><span class="pre">setup_config()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cli.setup_repo_config"><code class="docutils literal notranslate"><span class="pre">setup_repo_config()</span></code></a></li>
@@ -421,6 +431,14 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.expression.get_lazy_operation"><code class="docutils literal notranslate"><span class="pre">get_lazy_operation()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.expression.lazy_operation"><code class="docutils literal notranslate"><span class="pre">lazy_operation()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.expression.quote"><code class="docutils literal notranslate"><span class="pre">quote()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.federated_tasks">redun.federated_tasks module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.federated_tasks.InvocationException"><code class="docutils literal notranslate"><span class="pre">InvocationException</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.federated_tasks.federated_task"><code class="docutils literal notranslate"><span class="pre">federated_task</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.federated_tasks.lambda_federated_task"><code class="docutils literal notranslate"><span class="pre">lambda_federated_task</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.federated_tasks.launch_federated_task"><code class="docutils literal notranslate"><span class="pre">launch_federated_task()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.federated_tasks.rest_federated_task"><code class="docutils literal notranslate"><span class="pre">rest_federated_task</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.file">redun.file module</a><ul>
@@ -750,6 +768,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_arguments"><code class="docutils literal notranslate"><span class="pre">hash_arguments()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_bytes"><code class="docutils literal notranslate"><span class="pre">hash_bytes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_call_node"><code class="docutils literal notranslate"><span class="pre">hash_call_node()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_eval"><code class="docutils literal notranslate"><span class="pre">hash_eval()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_kwargs"><code class="docutils literal notranslate"><span class="pre">hash_kwargs()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.hashing.hash_positional_args"><code class="docutils literal notranslate"><span class="pre">hash_positional_args()</span></code></a></li>
@@ -815,12 +834,12 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.Job"><code class="docutils literal notranslate"><span class="pre">Job</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.STATUSES"><code class="docutils literal notranslate"><span class="pre">Job.STATUSES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.add_parent"><code class="docutils literal notranslate"><span class="pre">Job.add_parent()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.clear"><code class="docutils literal notranslate"><span class="pre">Job.clear()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.collapse"><code class="docutils literal notranslate"><span class="pre">Job.collapse()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.get_limits"><code class="docutils literal notranslate"><span class="pre">Job.get_limits()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.get_option"><code class="docutils literal notranslate"><span class="pre">Job.get_option()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.get_options"><code class="docutils literal notranslate"><span class="pre">Job.get_options()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.notify_parent"><code class="docutils literal notranslate"><span class="pre">Job.notify_parent()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.reject"><code class="docutils literal notranslate"><span class="pre">Job.reject()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.resolve"><code class="docutils literal notranslate"><span class="pre">Job.resolve()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.status"><code class="docutils literal notranslate"><span class="pre">Job.status</span></code></a></li>
@@ -829,24 +848,16 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.NoCurrentScheduler"><code class="docutils literal notranslate"><span class="pre">NoCurrentScheduler</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler"><code class="docutils literal notranslate"><span class="pre">Scheduler</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.add_executor"><code class="docutils literal notranslate"><span class="pre">Scheduler.add_executor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.clear"><code class="docutils literal notranslate"><span class="pre">Scheduler.clear()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.done_job"><code class="docutils literal notranslate"><span class="pre">Scheduler.done_job()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.evaluate"><code class="docutils literal notranslate"><span class="pre">Scheduler.evaluate()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.evaluate_apply"><code class="docutils literal notranslate"><span class="pre">Scheduler.evaluate_apply()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.exec_job"><code class="docutils literal notranslate"><span class="pre">Scheduler.exec_job()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.extend_run"><code class="docutils literal notranslate"><span class="pre">Scheduler.extend_run()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.get_cache"><code class="docutils literal notranslate"><span class="pre">Scheduler.get_cache()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.get_eval_hash"><code class="docutils literal notranslate"><span class="pre">Scheduler.get_eval_hash()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.get_job_status_report"><code class="docutils literal notranslate"><span class="pre">Scheduler.get_job_status_report()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.is_valid_value"><code class="docutils literal notranslate"><span class="pre">Scheduler.is_valid_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.is_running"><code class="docutils literal notranslate"><span class="pre">Scheduler.is_running</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.load"><code class="docutils literal notranslate"><span class="pre">Scheduler.load()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.log"><code class="docutils literal notranslate"><span class="pre">Scheduler.log()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.log_job_statuses"><code class="docutils literal notranslate"><span class="pre">Scheduler.log_job_statuses()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.perform_rollbacks"><code class="docutils literal notranslate"><span class="pre">Scheduler.perform_rollbacks()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.postprocess_result"><code class="docutils literal notranslate"><span class="pre">Scheduler.postprocess_result()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.preprocess_args"><code class="docutils literal notranslate"><span class="pre">Scheduler.preprocess_args()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.process_events"><code class="docutils literal notranslate"><span class="pre">Scheduler.process_events()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.reject_job"><code class="docutils literal notranslate"><span class="pre">Scheduler.reject_job()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.resolve_job"><code class="docutils literal notranslate"><span class="pre">Scheduler.resolve_job()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.run"><code class="docutils literal notranslate"><span class="pre">Scheduler.run()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler.set_cache"><code class="docutils literal notranslate"><span class="pre">Scheduler.set_cache()</span></code></a></li>
 </ul>
@@ -864,6 +875,7 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.catch"><code class="docutils literal notranslate"><span class="pre">catch</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.catch_all"><code class="docutils literal notranslate"><span class="pre">catch_all</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.cond"><code class="docutils literal notranslate"><span class="pre">cond</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.federated_task"><code class="docutils literal notranslate"><span class="pre">federated_task</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.format_arg"><code class="docutils literal notranslate"><span class="pre">format_arg()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.format_job_statuses"><code class="docutils literal notranslate"><span class="pre">format_job_statuses()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.format_task_call"><code class="docutils literal notranslate"><span class="pre">format_task_call()</span></code></a></li>
@@ -880,6 +892,12 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.settrace_patch"><code class="docutils literal notranslate"><span class="pre">settrace_patch()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.subrun"><code class="docutils literal notranslate"><span class="pre">subrun</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.throw"><code class="docutils literal notranslate"><span class="pre">throw</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.scheduler_config">redun.scheduler_config module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler_config.get_abs_db_uri"><code class="docutils literal notranslate"><span class="pre">get_abs_db_uri()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler_config.get_abs_url"><code class="docutils literal notranslate"><span class="pre">get_abs_url()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler_config.postprocess_config"><code class="docutils literal notranslate"><span class="pre">postprocess_config()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.scripting">redun.scripting module</a><ul>
@@ -938,6 +956,24 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.task">redun.task module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.CacheCheckValid"><code class="docutils literal notranslate"><span class="pre">CacheCheckValid</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.CacheCheckValid.FULL"><code class="docutils literal notranslate"><span class="pre">CacheCheckValid.FULL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.CacheCheckValid.SHALLOW"><code class="docutils literal notranslate"><span class="pre">CacheCheckValid.SHALLOW</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.CacheResult"><code class="docutils literal notranslate"><span class="pre">CacheResult</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.CacheResult.CSE"><code class="docutils literal notranslate"><span class="pre">CacheResult.CSE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.CacheResult.MISS"><code class="docutils literal notranslate"><span class="pre">CacheResult.MISS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.CacheResult.SINGLE"><code class="docutils literal notranslate"><span class="pre">CacheResult.SINGLE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.CacheResult.ULTIMATE"><code class="docutils literal notranslate"><span class="pre">CacheResult.ULTIMATE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.CacheScope"><code class="docutils literal notranslate"><span class="pre">CacheScope</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.CacheScope.BACKEND"><code class="docutils literal notranslate"><span class="pre">CacheScope.BACKEND</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.CacheScope.CSE"><code class="docutils literal notranslate"><span class="pre">CacheScope.CSE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.CacheScope.NONE"><code class="docutils literal notranslate"><span class="pre">CacheScope.NONE</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.PartialTask"><code class="docutils literal notranslate"><span class="pre">PartialTask</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.PartialTask.is_valid"><code class="docutils literal notranslate"><span class="pre">PartialTask.is_valid()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.PartialTask.options"><code class="docutils literal notranslate"><span class="pre">PartialTask.options()</span></code></a></li>
@@ -974,6 +1010,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.get_task_registry"><code class="docutils literal notranslate"><span class="pre">get_task_registry()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.get_tuple_type_length"><code class="docutils literal notranslate"><span class="pre">get_tuple_type_length()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.hash_args_eval"><code class="docutils literal notranslate"><span class="pre">hash_args_eval()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.scheduler_task"><code class="docutils literal notranslate"><span class="pre">scheduler_task()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.task"><code class="docutils literal notranslate"><span class="pre">task()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.undefined_task"><code class="docutils literal notranslate"><span class="pre">undefined_task()</span></code></a></li>
@@ -1129,7 +1166,7 @@
 </li>
 </ul>
 </div>
-</div>
+</section>
 
         </article>
       </div>
@@ -1145,14 +1182,14 @@
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../CHANGELOG.html">
+          <a class="prev-page" href="../implementation/graph_reduction_caching.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Changelog</div>
+                <div class="title">Graph reduction caching</div>
                 
               </div>
             </a>
@@ -1181,9 +1218,6 @@
     </aside>
   </div>
 </div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/scripts/furo.js"></script>

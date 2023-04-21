@@ -50,7 +50,7 @@ def main(data):
 
 ## Local executor
 
-The **Local executor** executes tasks on the same machine as the scheduler using either multiple threads or processes (configured by the [`mode` option](config.md#mode)). By default, redun defines a Local executor named "default" that is used as the default executor for tasks. Users can configure the local executor using the [configuration file](config.md#local-executor).
+The **Local executor** executes tasks on the same machine as the scheduler using either multiple threads or processes (configured by the [`mode` option](config.md#local-executor)). By default, redun defines a Local executor named "default" that is used as the default executor for tasks. Users can configure the local executor using the [configuration file](config.md#local-executor).
 
 ## Alias executor
 The `AliasExecutor` is a lazily-resolved alias for another executor, which allows 
@@ -142,18 +142,18 @@ To use AWS Batch, users must define a Docker image that contains the necessary c
 
 ### Configuration
 
-To use AWS Batch, at a minimum three options must be [configured](config.md#aws-batch-executor), a Docker image for the job ([`image`](config.md#image)), a AWS Batch queue to submit to ([`queue`](config.md#queue)), and a S3 path to store temporary files for communication between the scheduler and jobs ([`s3_scratch`](config.md#s3-scratch)).
+To use AWS Batch, at a minimum three options must be [configured](config.md#aws-batch-executor), a Docker image for the job ([`image`](config.md#aws-batch-executor)), a AWS Batch queue to submit to ([`queue`](config.md#aws-batch-executor)), and a S3 path to store temporary files for communication between the scheduler and jobs ([`s3_scratch`](config.md#aws-batch-executor)).
 
 ### S3 scratch space
 
-redun performs simple communication with AWS Batch jobs through a user defined S3 scratch space. Specifically, the arguments to a task are serialized as a python pickle and stored at a path such as `s3://{s3_scratch}/{eval_hash}/input`, where `eval_hash` is the hash of a task's hash and its arguments and `s3_scratch` is defined in the [configuration](config.md#s3-scratch). When a task completes, its output is stored similarly in a pickle file `s3://{s3_scratch}/{eval_hash}/output`. Standard output and standard error is also captured in log files within the scratch space. All of these files are temporary and can be deleted by users once a workflow is complete.
+redun performs simple communication with AWS Batch jobs through a user defined S3 scratch space. Specifically, the arguments to a task are serialized as a python pickle and stored at a path such as `s3://{s3_scratch}/{eval_hash}/input`, where `eval_hash` is the hash of a task's hash and its arguments and `s3_scratch` is defined in the [configuration](config.md#aws-batch-executor). When a task completes, its output is stored similarly in a pickle file `s3://{s3_scratch}/{eval_hash}/output`. Standard output and standard error is also captured in log files within the scratch space. All of these files are temporary and can be deleted by users once a workflow is complete.
 
 
 ### Code packaging
 
 When running regular (non-script) tasks on AWS Batch, redun needs access to the workflow python code itself within the Docker container at runtime. While one could install the workflow python code in the Docker image, rebuilding and pushing Docker images for each code change could be burdensome during quick iterative development. As a convenience, redun provides a mechanism, called code packaging, for copying code into the Docker container at runtime.
 
-By default, redun copies all files matching the pattern `**/*.py` into a tar file that is copied to the s3 scratch space. This tar file is then downloaded and unzipped within the running Docker container prior to executing the task. The specific files included in the code package can be controlled using [`code_includes` and `code_excludes` configuration options](config.md#code-includes).
+By default, redun copies all files matching the pattern `**/*.py` into a tar file that is copied to the s3 scratch space. This tar file is then downloaded and unzipped within the running Docker container prior to executing the task. The specific files included in the code package can be controlled using [`code_includes` and `code_excludes` configuration options](config.md#aws-batch-executor).
 
 ### Job reuniting
 
@@ -161,7 +161,7 @@ In certain situations, such as errors or user initiated killing, the redun sched
 
 ### Local debugging
 
-During development, it may be easier to run the Docker image locally in order to debug and interactively inspect a job. Local execution of Docker-base jobs can be achieved by using the [`debug=True` option](config.md#debug). The S3 scratch space will still be used to transfer input and output with the Docker container.
+During development, it may be easier to run the Docker image locally in order to debug and interactively inspect a job. Local execution of Docker-base jobs can be achieved by using the [`debug=True` option](config.md#aws-batch-executor). The S3 scratch space will still be used to transfer input and output with the Docker container.
 
 The docker container will run in interactive mode (e.g. `docker run --interactive ...`), allowing users to place debugging breakpoints within tasks or see task output on stdout. The task option `interactive=False` can also be used to run the Docker container without interactive mode.
 
@@ -195,13 +195,9 @@ To use AWS Glue, at a minimum you must configure a temporary location in S3 wher
 
 ### Loading and writing datasets
 
-Spark datasets are typically sharded across multiple files on disk. The `ShardedS3Dataset` class provides an interface to
+Spark datasets are typically sharded across multiple files on disk. The [`ShardedS3Dataset`](redun.file.ShardedS3Dataset) class provides an interface to
 these datasets that can be tracked and recorded by redun.
 
-```eval_rst
-.. autoclass:: redun.file.ShardedS3Dataset
-   :members:
-```
 
 ### Helper functions
 

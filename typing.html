@@ -2,12 +2,13 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="FAQ" href="FAQ.html" /><link rel="prev" title="Spark" href="spark.html" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Visualization" href="visualization.html" /><link rel="prev" title="Spark" href="spark.html" />
 
-    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
-        <title>Type checking - redun</title>
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
+        <title>Type checking - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -122,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">redun</div></a>
+      <a href="index.html"><div class="brand">redun  documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -144,8 +145,11 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="_static/redun.svg" alt="Logo"/>
+  </div>
   
-  <span class="sidebar-brand-text">redun</span>
+  <span class="sidebar-brand-text">redun  documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -153,21 +157,29 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul class="current">
+  <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="values.html">Values</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tasks.html">Tasks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduling redun workflows</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="db.html">Database repo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db.html">Backend and database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="developing.html">Developer guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -217,7 +229,7 @@
           </label>
         </div>
         <article role="main">
-          <div class="section" id="type-checking">
+          <section id="type-checking">
 <h1>Type checking<a class="headerlink" href="#type-checking" title="Permalink to this heading">#</a></h1>
 <p>redun supports type checking workflows using <a class="reference external" href="https://docs.python.org/3/library/typing.html">Python’s type hints</a> and <a class="reference external" href="https://github.com/python/mypy">mypy</a>.</p>
 <p>Consider the following example workflow:</p>
@@ -242,23 +254,23 @@
 </pre></div>
 </div>
 <p>redun tasks are lazy functions, so when we call <code class="docutils literal notranslate"><span class="pre">add</span></code> it returns immediately with an <code class="docutils literal notranslate"><span class="pre">Expression</span></code> object which represents the desire to execute the <code class="docutils literal notranslate"><span class="pre">add</span></code> task. The actual execution will happen sometime later by the redun Scheduler. In this example, the fully parameterized type is <code class="docutils literal notranslate"><span class="pre">Expression[int]</span></code>, which represents an <code class="docutils literal notranslate"><span class="pre">Expression</span></code> that will eventually evaluate to an <code class="docutils literal notranslate"><span class="pre">int</span></code>. In terms of type checking, <code class="docutils literal notranslate"><span class="pre">Expression[T]</span></code> will be considered equivalent to <code class="docutils literal notranslate"><span class="pre">T</span></code> (for any type <code class="docutils literal notranslate"><span class="pre">T</span></code>), and can be used wherever <code class="docutils literal notranslate"><span class="pre">T</span></code>s are allowed.</p>
-<div class="section" id="overly-permissive-type-checking">
+<section id="overly-permissive-type-checking">
 <h2>Overly permissive type checking<a class="headerlink" href="#overly-permissive-type-checking" title="Permalink to this heading">#</a></h2>
 <p>In general, the type checking rules defined above provide good type checking coverage, however, there is one corner case that is not fully captured currently with redun. Since <code class="docutils literal notranslate"><span class="pre">Expression[T]</span></code> will be considered equivalent to <code class="docutils literal notranslate"><span class="pre">T</span></code>, it is possible to pass an <code class="docutils literal notranslate"><span class="pre">Expression[T]</span></code> to a plain python function (not decorated by <code class="docutils literal notranslate"><span class="pre">&#64;task</span></code>) that only allows <code class="docutils literal notranslate"><span class="pre">T</span></code>. This will type check as allowed but may fail at runtime.</p>
-</div>
-</div>
+</section>
+</section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="FAQ.html">
+          <a class="next-page" href="visualization.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">FAQ</div>
+                <div class="title">Visualization</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -317,9 +329,6 @@
     </aside>
   </div>
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/scripts/furo.js"></script>

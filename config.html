@@ -2,12 +2,13 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Database repo" href="db.html" /><link rel="prev" title="Executors" href="executors.html" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Backend and database" href="db.html" /><link rel="prev" title="Scheduling redun workflows" href="scheduler.html" />
 
-    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
-        <title>Configuration - redun</title>
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
+        <title>Configuration - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -122,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">redun</div></a>
+      <a href="index.html"><div class="brand">redun  documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -144,8 +145,11 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="_static/redun.svg" alt="Logo"/>
+  </div>
   
-  <span class="sidebar-brand-text">redun</span>
+  <span class="sidebar-brand-text">redun  documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -153,21 +157,29 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul class="current">
+  <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="values.html">Values</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tasks.html">Tasks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduling redun workflows</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="db.html">Database repo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db.html">Backend and database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="developing.html">Developer guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -217,7 +229,7 @@
           </label>
         </div>
         <article role="main">
-          <div class="section" id="configuration">
+          <section id="configuration">
 <h1>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h1>
 <p>A redun workflow is configured using a configuration file called <code class="docutils literal notranslate"><span class="pre">.redun/redun.ini</span></code> which follows the <a class="reference external" href="https://en.wikipedia.org/wiki/INI_file">INI format</a>). Here is an example:</p>
 <div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[backend]</span>
@@ -234,7 +246,7 @@
 <span class="na">s3_scratch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">s3://my-bucket/my-path/</span>
 </pre></div>
 </div>
-<div class="section" id="configuration-directory">
+<section id="configuration-directory">
 <h2>Configuration directory<a class="headerlink" href="#configuration-directory" title="Permalink to this heading">#</a></h2>
 <p>The configuration directory, <code class="docutils literal notranslate"><span class="pre">.redun/</span></code>, is specified by the following (in order of precedence):</p>
 <ul class="simple">
@@ -243,28 +255,28 @@
 <li><p>Filesystem search: Find a directory named <code class="docutils literal notranslate"><span class="pre">.redun/</span></code> starting in the current working directory and proceeding to parent directories.</p></li>
 <li><p>Lastly, automatically create a configuration directory, <code class="docutils literal notranslate"><span class="pre">.redun/</span></code>, in the current working directory.</p></li>
 </ul>
-</div>
-<div class="section" id="configuration-options">
+</section>
+<section id="configuration-options">
 <h2>Configuration options<a class="headerlink" href="#configuration-options" title="Permalink to this heading">#</a></h2>
 <p>Currently, redun supports the following configuration sections and options.</p>
-<div class="section" id="scheduler">
+<section id="scheduler">
 <h3>Scheduler<a class="headerlink" href="#scheduler" title="Permalink to this heading">#</a></h3>
 <p>Scheduler options can be configured in the <code class="docutils literal notranslate"><span class="pre">[scheduler]</span></code> section.</p>
-<div class="section" id="ignore-warnings">
+<section id="ignore-warnings">
 <h4><code class="docutils literal notranslate"><span class="pre">ignore_warnings</span></code><a class="headerlink" href="#ignore-warnings" title="Permalink to this heading">#</a></h4>
 <p>A whitespace-separated string of redun warnings to suppress from logging. Current warning types include:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">namespace</span></code>: Task namespaces will be required soon. Until then, it is a warning to not define a namespace for a task.</p></li>
 </ul>
-</div>
-<div class="section" id="setup-scheduler">
+</section>
+<section id="setup-scheduler">
 <h4><code class="docutils literal notranslate"><span class="pre">setup_scheduler</span></code><a class="headerlink" href="#setup-scheduler" title="Permalink to this heading">#</a></h4>
 <p>A string that specifies the location of a user-defined function for setting up the scheduler. It should follow the syntax <code class="docutils literal notranslate"><span class="pre">{file_or_module}::{function_name}</span></code>, where</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">{file_or_module}</span></code> should be a filename relative to the <code class="docutils literal notranslate"><span class="pre">redun.ini</span></code> file (e.g. <code class="docutils literal notranslate"><span class="pre">../workflow.py</span></code>), or a python module using dot-syntax (e.g. <code class="docutils literal notranslate"><span class="pre">workflow_lib.utils.scheduler</span></code>).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">{function_name}</span></code> should the name of a function, typically <code class="docutils literal notranslate"><span class="pre">setup_scheduler</span></code>.</p></li>
 </ul>
-<p>The user function <code class="docutils literal notranslate"><span class="pre">setup_scheduler()</span></code> should take as its first argument <code class="docutils literal notranslate"><span class="pre">config</span></code> (see <span class="xref myst">Config</span>) and it should return an instantiated <code class="docutils literal notranslate"><span class="pre">scheduler</span></code> (see <span class="xref myst">Scheduler</span>).</p>
+<p>The user function <code class="docutils literal notranslate"><span class="pre">setup_scheduler()</span></code> should take as its first argument <code class="docutils literal notranslate"><span class="pre">config</span></code> (see <a class="reference internal" href="redun/redun.html#redun.config.Config" title="redun.config.Config"><span class="xref myst py py-class">Config</span></a>) and it should return an instantiated <code class="docutils literal notranslate"><span class="pre">scheduler</span></code> (see <a class="reference internal" href="redun/redun.html#redun.scheduler.Scheduler" title="redun.scheduler.Scheduler"><span class="xref myst py py-class">Scheduler</span></a>).</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun.config</span> <span class="kn">import</span> <span class="n">Config</span>
 <span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">Scheduler</span>
 
@@ -304,20 +316,40 @@
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>--setup<span class="w"> </span><span class="nv">profile</span><span class="o">=</span>dev<span class="w"> </span>run<span class="w"> </span>workflow.py<span class="w"> </span>main<span class="w"> </span>--x<span class="w"> </span><span class="m">1</span><span class="w"> </span>--y<span class="w"> </span><span class="m">2</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="job-status-interval">
+</section>
+<section id="job-status-interval">
 <h4><code class="docutils literal notranslate"><span class="pre">job_status_interval</span></code><a class="headerlink" href="#job-status-interval" title="Permalink to this heading">#</a></h4>
 <p>An integer (default: 20) of how many seconds between displays of the job status table.</p>
+</section>
+</section>
+<section id="federated-configs">
+<h3><code class="docutils literal notranslate"><span class="pre">federated_configs</span></code><a class="headerlink" href="#federated-configs" title="Permalink to this heading">#</a></h3>
+<p>A config file may mark other config files that should be imported. This is particularly useful
+for importing remote config files containing federated entrypoints and their executors.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">scheduler</span><span class="p">]</span>
+<span class="n">federated_configs</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">path</span> <span class="n">to</span> <span class="n">config_dir</span><span class="o">&gt;</span>
+</pre></div>
 </div>
+<p>or</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">scheduler</span><span class="p">]</span>
+<span class="n">federated_configs</span> <span class="o">=</span> 
+    <span class="o">&lt;</span><span class="n">path</span> <span class="n">to</span> <span class="n">config_dir_1</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">path</span> <span class="n">to</span> <span class="n">config_dir_2</span><span class="o">&gt;</span>
+</pre></div>
 </div>
-<div class="section" id="backend">
+<p>Only the <code class="docutils literal notranslate"><span class="pre">executor</span></code> and <code class="docutils literal notranslate"><span class="pre">federated_tasks</span></code> from these config file(s) are imported, all other sections
+are ignored. There is no namespacing for these imported executors and federated tasks, either
+from each other or from the rest of the scheduler’s configuration. Any duplicate names will result
+in an error being raised.</p>
+</section>
+<section id="backend">
 <h3>Backend<a class="headerlink" href="#backend" title="Permalink to this heading">#</a></h3>
 <p>Backend options, such as connecting to the redun database, can be configured in the <code class="docutils literal notranslate"><span class="pre">[backend]</span></code> section.</p>
-<div class="section" id="automigrate">
+<section id="automigrate">
 <h4><code class="docutils literal notranslate"><span class="pre">automigrate</span></code><a class="headerlink" href="#automigrate" title="Permalink to this heading">#</a></h4>
 <p>A bool indicating whether the redun client should automigrate the redun repo database to the latest schema before execution. If the database is a local sqlite file, <code class="docutils literal notranslate"><span class="pre">automigrate</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> by default for convenience. Otherwise, <code class="docutils literal notranslate"><span class="pre">automation</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> by default for safety since a central shared database likely needs a coordinated migration.</p>
-</div>
-<div class="section" id="db-aws-secret-name">
+</section>
+<section id="db-aws-secret-name">
 <h4><code class="docutils literal notranslate"><span class="pre">db_aws_secret_name</span></code><a class="headerlink" href="#db-aws-secret-name" title="Permalink to this heading">#</a></h4>
 <p>When specified, the database URI will be constructed from the data stored in the named secret.
 <strong>NOTE:</strong> This setting takes precedence over the following backend config options.
@@ -331,35 +363,35 @@ If you set this, the <code class="docutils literal notranslate"><span class="pre
 <li><p>port</p></li>
 <li><p>dbname</p></li>
 </ul>
-</div>
-<div class="section" id="db-uri">
+</section>
+<section id="db-uri">
 <h4><code class="docutils literal notranslate"><span class="pre">db_uri</span></code><a class="headerlink" href="#db-uri" title="Permalink to this heading">#</a></h4>
 <p><a class="reference external" href="https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls">URI</a> for the redun database. redun supports the <code class="docutils literal notranslate"><span class="pre">sqlite</span></code> and <code class="docutils literal notranslate"><span class="pre">postgresql</span></code> protocols. If the URI is relative, it will be interpreted as relative to the configuration directory, <code class="docutils literal notranslate"><span class="pre">.redun/</span></code>.</p>
 <p>For security reasons, username and password are not allowed in <code class="docutils literal notranslate"><span class="pre">db_uri</span></code>, since <code class="docutils literal notranslate"><span class="pre">redun.ini</span></code> files are often checked into source control. See below for alternative ways to define database credentials.</p>
-</div>
-<div class="section" id="db-username-env">
+</section>
+<section id="db-username-env">
 <h4><code class="docutils literal notranslate"><span class="pre">db_username_env</span></code><a class="headerlink" href="#db-username-env" title="Permalink to this heading">#</a></h4>
 <p>Environment variable (default: <code class="docutils literal notranslate"><span class="pre">REDUN_DB_USERNAME</span></code>) containing the username login for <code class="docutils literal notranslate"><span class="pre">db_uri</span></code>.</p>
-</div>
-<div class="section" id="db-password-env">
+</section>
+<section id="db-password-env">
 <h4><code class="docutils literal notranslate"><span class="pre">db_password_env</span></code><a class="headerlink" href="#db-password-env" title="Permalink to this heading">#</a></h4>
 <p>Environment variable (default: <code class="docutils literal notranslate"><span class="pre">REDUN_DB_PASSWORD</span></code>) containing the password login for <code class="docutils literal notranslate"><span class="pre">db_uri</span></code>.</p>
-</div>
-<div class="section" id="max-value-size">
+</section>
+<section id="max-value-size">
 <h4><code class="docutils literal notranslate"><span class="pre">max_value_size</span></code><a class="headerlink" href="#max-value-size" title="Permalink to this heading">#</a></h4>
 <p>An integer (default: <code class="docutils literal notranslate"><span class="pre">1000000000</span></code>, 1Gb) specifying the maximum number of bytes to allow for storing a single value in the cache.</p>
-</div>
-<div class="section" id="value-store-path">
+</section>
+<section id="value-store-path">
 <h4><code class="docutils literal notranslate"><span class="pre">value_store_path</span></code><a class="headerlink" href="#value-store-path" title="Permalink to this heading">#</a></h4>
 <p>Location of an optional <code class="docutils literal notranslate"><span class="pre">ValueStore</span></code>.
 If a local, non-absolute path is specified, it is assumed relative to <code class="docutils literal notranslate"><span class="pre">config_dir</span></code>.</p>
-</div>
-<div class="section" id="value-store-min-size">
+</section>
+<section id="value-store-min-size">
 <h4><code class="docutils literal notranslate"><span class="pre">value_store_min_size</span></code><a class="headerlink" href="#value-store-min-size" title="Permalink to this heading">#</a></h4>
 <p>Minimum value size in bytes beyond which values are written to the value store instead of the primary backend.</p>
-</div>
-</div>
-<div class="section" id="limits">
+</section>
+</section>
+<section id="limits">
 <h3>Limits<a class="headerlink" href="#limits" title="Permalink to this heading">#</a></h3>
 <p>redun supports limiting the parallelism of tasks using resource limits, similar to other workflow engines like <a class="reference external" href="https://luigi.readthedocs.io/en/stable/configuration.html#resources-config">Luigi</a>. For example, the following configuration:</p>
 <div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[limits]</span>
@@ -381,8 +413,8 @@ If a local, non-absolute path is specified, it is assumed relative to <code clas
 </pre></div>
 </div>
 <p>In the above example, <code class="docutils literal notranslate"><span class="pre">read_from_database()</span></code> consumes 2 units of the resource <code class="docutils literal notranslate"><span class="pre">db</span></code> for each running task.</p>
-</div>
-<div class="section" id="executors">
+</section>
+<section id="executors">
 <h3>Executors<a class="headerlink" href="#executors" title="Permalink to this heading">#</a></h3>
 <p>redun is able to perform task execution across various compute infrastructure using modules call <a class="reference internal" href="executors.html"><span class="doc std std-doc">Executors</span></a>. Each executor has its own configuration options.</p>
 <p>Executors are defined using a section with the format <code class="docutils literal notranslate"><span class="pre">executor.{executor_name}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{executor_name}</span></code> is a user-specific name for the executor, such as <code class="docutils literal notranslate"><span class="pre">default</span></code> or <code class="docutils literal notranslate"><span class="pre">batch</span></code>. The executor module is specified by the option <code class="docutils literal notranslate"><span class="pre">type</span></code>. For example, we can configure a local executor with name <code class="docutils literal notranslate"><span class="pre">local_exec</span></code> and 20 maximum threads using:</p>
@@ -397,151 +429,165 @@ If a local, non-absolute path is specified, it is assumed relative to <code clas
     <span class="c1"># ...</span>
 </pre></div>
 </div>
-<div class="section" id="type">
+<section id="type">
 <h4><code class="docutils literal notranslate"><span class="pre">type</span></code><a class="headerlink" href="#type" title="Permalink to this heading">#</a></h4>
 <p>A string that specifies the executor module (e.g. <code class="docutils literal notranslate"><span class="pre">local</span></code>, <code class="docutils literal notranslate"><span class="pre">aws_batch</span></code>, etc) to use for this executor.</p>
-</div>
-<div class="section" id="local-executor">
+</section>
+<section id="local-executor">
 <h4>Local executor<a class="headerlink" href="#local-executor" title="Permalink to this heading">#</a></h4>
-<p>The <a class="reference internal" href="executors.html#local-executor"><span class="std std-doc">Local executor</span></a> (<code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">local</span></code>) executes tasks on the local machine using either multiple threads or processes.</p>
-<div class="section" id="mode">
+<p>The <a class="reference internal" href="executors.html#local-executor"><span class="std std-ref">Local executor</span></a> (<code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">local</span></code>) executes tasks on the local machine using either multiple threads or processes.</p>
+<section id="mode">
 <h5><code class="docutils literal notranslate"><span class="pre">mode</span></code><a class="headerlink" href="#mode" title="Permalink to this heading">#</a></h5>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">thread</span></code>) that specifies whether to run tasks on new threads (<code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">thread</span></code>) or new processes (<code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">process</span></code>).</p>
-</div>
-<div class="section" id="max-workers">
+</section>
+<section id="max-workers">
 <h5><code class="docutils literal notranslate"><span class="pre">max_workers</span></code><a class="headerlink" href="#max-workers" title="Permalink to this heading">#</a></h5>
 <p>An integer (default: 20) that specifies the maximum number of workers to use in the thread/process pool for task execution.</p>
-</div>
-<div class="section" id="start-method">
+</section>
+<section id="start-method">
 <h5><code class="docutils literal notranslate"><span class="pre">start_method</span></code><a class="headerlink" href="#start-method" title="Permalink to this heading">#</a></h5>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">fork</span></code>) that specifies the <a class="reference external" href="https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods">start method</a> for new processes. Other start methods include <code class="docutils literal notranslate"><span class="pre">spawn</span></code> and <code class="docutils literal notranslate"><span class="pre">forkserver</span></code>.</p>
-</div>
-</div>
-<div class="section" id="alias-executor">
+</section>
+</section>
+<section id="alias-executor">
 <h4>Alias executor<a class="headerlink" href="#alias-executor" title="Permalink to this heading">#</a></h4>
-<p>The <a class="reference internal" href="executors.html#alias-executor"><span class="std std-doc">Alias executor</span></a> (<code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">alias</span></code>) is a “symlink” to
+<p>The <a class="reference internal" href="executors.html#alias-executor"><span class="std std-ref">Alias executor</span></a> (<code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">alias</span></code>) is a “symlink” to
 another underlying executor.</p>
-<div class="section" id="target">
+<section id="target">
 <h5><code class="docutils literal notranslate"><span class="pre">target</span></code><a class="headerlink" href="#target" title="Permalink to this heading">#</a></h5>
 <p>A string containing the  name of another executor to defer to. It is lazily resolved
 at execution time.</p>
-</div>
-</div>
-<div class="section" id="docker-executor">
+</section>
+</section>
+<section id="docker-executor">
 <h4>Docker executor<a class="headerlink" href="#docker-executor" title="Permalink to this heading">#</a></h4>
-<div class="section" id="image">
+<section id="image">
 <h5><code class="docutils literal notranslate"><span class="pre">image</span></code><a class="headerlink" href="#image" title="Permalink to this heading">#</a></h5>
 <p>A string that specifies the default Docker image. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="scratch">
+</section>
+<section id="scratch">
 <h5><code class="docutils literal notranslate"><span class="pre">scratch</span></code><a class="headerlink" href="#scratch" title="Permalink to this heading">#</a></h5>
 <p>A string that specifies the scratch path to volume mount for communicating with the Docker container. If the path is relative, it is interpreted to be relative to the redun configuration directory (e.g. <code class="docutils literal notranslate"><span class="pre">.redun/</span></code>).</p>
-</div>
-<div class="section" id="vcpus">
+</section>
+<section id="vcpus">
 <h5><code class="docutils literal notranslate"><span class="pre">vcpus</span></code><a class="headerlink" href="#vcpus" title="Permalink to this heading">#</a></h5>
 <p>An integer (default: 1) that specifies the default number of virtual CPUs required for each task. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="gpus">
+</section>
+<section id="gpus">
 <h5><code class="docutils literal notranslate"><span class="pre">gpus</span></code><a class="headerlink" href="#gpus" title="Permalink to this heading">#</a></h5>
 <p>An integer (default: 0) that specifies the default number of GPUs required for each task. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="memory">
+</section>
+<section id="memory">
 <h5><code class="docutils literal notranslate"><span class="pre">memory</span></code><a class="headerlink" href="#memory" title="Permalink to this heading">#</a></h5>
 <p>A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="interactive">
+</section>
+<section id="interactive">
 <h5><code class="docutils literal notranslate"><span class="pre">interactive</span></code><a class="headerlink" href="#interactive" title="Permalink to this heading">#</a></h5>
 <p>A bool (default: False) that specifies whether the Docker container should be run in interactive mode. This is useful for debugging a workflow since the stdout of every container will be redirected to the terminal.</p>
-</div>
-</div>
-<div class="section" id="aws-batch-executor">
+</section>
+</section>
+<section id="aws-batch-executor">
 <h4>AWS Batch executor<a class="headerlink" href="#aws-batch-executor" title="Permalink to this heading">#</a></h4>
-<p>The <a class="reference internal" href="executors.html#aws-batch-executor"><span class="std std-doc">AWS Batch executor</span></a> (<code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">aws_batch</span></code>) executes tasks on the AWS Batch compute service.</p>
-<div class="section" id="id1">
+<p>The <a class="reference internal" href="executors.html#aws-batch-executor"><span class="std std-ref">AWS Batch executor</span></a> (<code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">aws_batch</span></code>) executes tasks on the AWS Batch compute service.</p>
+<section id="id1">
 <h5><code class="docutils literal notranslate"><span class="pre">image</span></code><a class="headerlink" href="#id1" title="Permalink to this heading">#</a></h5>
 <p>A string that specifies the default Docker image to use for AWS Batch jobs. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="queue">
+</section>
+<section id="queue">
 <h5><code class="docutils literal notranslate"><span class="pre">queue</span></code><a class="headerlink" href="#queue" title="Permalink to this heading">#</a></h5>
 <p>A string that specifies the default AWS Batch queue to use for submitting jobs. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="s3-scratch">
+</section>
+<section id="s3-scratch">
 <h5><code class="docutils literal notranslate"><span class="pre">s3_scratch</span></code><a class="headerlink" href="#s3-scratch" title="Permalink to this heading">#</a></h5>
-<p>A string that specifies the <a class="reference internal" href="executors.html#s3-scratch-space"><span class="std std-doc">S3 scratch space</span></a> used to communicate with AWS Batch jobs.</p>
-</div>
-<div class="section" id="aws-region">
+<p>A string that specifies the <a class="reference internal" href="executors.html#s3-scratch-space"><span class="std std-ref">S3 scratch space</span></a> used to communicate with AWS Batch jobs.</p>
+</section>
+<section id="aws-region">
 <h5><code class="docutils literal notranslate"><span class="pre">aws_region</span></code><a class="headerlink" href="#aws-region" title="Permalink to this heading">#</a></h5>
 <p>A string that specifies the AWS region containing the user’s AWS Batch service.</p>
-</div>
-<div class="section" id="role">
+</section>
+<section id="role">
 <h5><code class="docutils literal notranslate"><span class="pre">role</span></code><a class="headerlink" href="#role" title="Permalink to this heading">#</a></h5>
 <p>A string that specifies the ARN of the IAM role that AWS Batch jobs should adopt while executing. This may be needed for jobs to have proper access to resources (S3 data, other services, etc). This can be overridden on a per task basis using task options.</p>
 <p>This key is mapped to the <a class="reference external" href="https://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html#containerProperties"><code class="docutils literal notranslate"><span class="pre">jobRoleArn</span></code> property</a> of the Batch API.</p>
-</div>
-<div class="section" id="id2">
+</section>
+<section id="id2">
 <h5><code class="docutils literal notranslate"><span class="pre">vcpus</span></code><a class="headerlink" href="#id2" title="Permalink to this heading">#</a></h5>
 <p>An integer (default: 1) that specifies the default number of virtual CPUs required for each task. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="id3">
+</section>
+<section id="id3">
 <h5><code class="docutils literal notranslate"><span class="pre">gpus</span></code><a class="headerlink" href="#id3" title="Permalink to this heading">#</a></h5>
 <p>An integer (default: 0) that specifies the default number of GPUs required for each task. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="id4">
+</section>
+<section id="id4">
 <h5><code class="docutils literal notranslate"><span class="pre">memory</span></code><a class="headerlink" href="#id4" title="Permalink to this heading">#</a></h5>
 <p>A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="retries">
+</section>
+<section id="retries">
 <h5><code class="docutils literal notranslate"><span class="pre">retries</span></code><a class="headerlink" href="#retries" title="Permalink to this heading">#</a></h5>
 <p>An integer (default: 1) that specifies the default number of retries to use for submitting a job to the AWS Batch queue. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="job-name-prefix">
+</section>
+<section id="job-name-prefix">
 <h5><code class="docutils literal notranslate"><span class="pre">job_name_prefix</span></code><a class="headerlink" href="#job-name-prefix" title="Permalink to this heading">#</a></h5>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">batch-job</span></code>) that specifies the prefix to use for AWS Batch job names. This can make it easier for users to distinguish which AWS Batch jobs correspond to their workflow.</p>
-</div>
-<div class="section" id="code-package">
+</section>
+<section id="code-package">
 <h5><code class="docutils literal notranslate"><span class="pre">code_package</span></code><a class="headerlink" href="#code-package" title="Permalink to this heading">#</a></h5>
-<p>A bool (default: True) that specifies whether to perform <a class="reference internal" href="executors.html#code-packaging"><span class="std std-doc">code packaging</span></a>.</p>
-</div>
-<div class="section" id="code-includes">
+<p>A bool (default: True) that specifies whether to perform <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code packaging</span></a>.</p>
+</section>
+<section id="code-includes">
 <h5><code class="docutils literal notranslate"><span class="pre">code_includes</span></code><a class="headerlink" href="#code-includes" title="Permalink to this heading">#</a></h5>
-<p>A string (default: <code class="docutils literal notranslate"><span class="pre">**/*.py</span></code>) that specifies a pattern for which files should be included in a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-doc">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
-</div>
-<div class="section" id="code-excludes">
+<p>A string (default: <code class="docutils literal notranslate"><span class="pre">**/*.py</span></code>) that specifies a pattern for which files should be included in a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
+</section>
+<section id="code-excludes">
 <h5><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code><a class="headerlink" href="#code-excludes" title="Permalink to this heading">#</a></h5>
-<p>A string (default: None) that specifies a pattern for which files should be excluded from a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-doc">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
-</div>
-<div class="section" id="debug">
+<p>A string (default: None) that specifies a pattern for which files should be excluded from a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
+</section>
+<section id="debug">
 <h5><code class="docutils literal notranslate"><span class="pre">debug</span></code><a class="headerlink" href="#debug" title="Permalink to this heading">#</a></h5>
-<p>A bool (default: False) that specifies whether to run the <a class="reference internal" href="executors.html#local-debugging"><span class="std std-doc">Docker container locally</span></a>.</p>
-</div>
-<div class="section" id="job-monitor-interval">
+<p>A bool (default: False) that specifies whether to run the <a class="reference internal" href="executors.html#local-debugging"><span class="std std-ref">Docker container locally</span></a>.</p>
+</section>
+<section id="job-monitor-interval">
 <h5><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code><a class="headerlink" href="#job-monitor-interval" title="Permalink to this heading">#</a></h5>
 <p>A float (default: 5.0) that specifies how often, in seconds, the AWS Batch API is queried to monitor running jobs.</p>
-</div>
-<div class="section" id="min-array-size">
+</section>
+<section id="min-array-size">
 <h5><code class="docutils literal notranslate"><span class="pre">min_array_size</span></code><a class="headerlink" href="#min-array-size" title="Permalink to this heading">#</a></h5>
 <p>Minimum number (default: 5) of equivalent tasks that will be submitted together as an AWS Batch array job. “Equivalent” means the same task and execution requirements (CPU, memory, etc), but with possibly different arguments. Set to 0 to disable array job submission. Defaults to 5.</p>
-</div>
-<div class="section" id="max-array-size">
+</section>
+<section id="max-array-size">
 <h5><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code><a class="headerlink" href="#max-array-size" title="Permalink to this heading">#</a></h5>
 <p>Maximum number (default: 1000) of equivalent tasks that will be submitted together as an AWS Batch array job. Must be greater than or equal to <code class="docutils literal notranslate"><span class="pre">min_array_size</span></code>. If greater than the AWS maximum array size (currently 10000), will be clamped to this value.</p>
-</div>
-<div class="section" id="job-stale-time">
+</section>
+<section id="job-stale-time">
 <h5><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code><a class="headerlink" href="#job-stale-time" title="Permalink to this heading">#</a></h5>
 <p>A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wait before submission to be possibly bundled into an array job.</p>
-</div>
-<div class="section" id="timeout">
+</section>
+<section id="timeout">
 <h5><code class="docutils literal notranslate"><span class="pre">timeout</span></code><a class="headerlink" href="#timeout" title="Permalink to this heading">#</a></h5>
 <p>An optional integer (default: None) that specifies the time duration in seconds (measure from job attempt’s <code class="docutils literal notranslate"><span class="pre">startedAt</span></code> timestamp) after which AWS Batch will terminate the job. For more on job timeouts, see the <a class="reference external" href="https://docs.aws.amazon.com/batch/latest/userguide/job_timeouts.html">Job Timeouts on Batch docs</a>. When not set, jobs will run indefinitely (unless on Fargate where there is a 14 day limit).</p>
-</div>
-<div class="section" id="batch-tags">
+</section>
+</section>
+<section id="privileged">
+<h4>privileged<a class="headerlink" href="#privileged" title="Permalink to this heading">#</a></h4>
+<p>An optional bool (default: False) that specifies whether to run the job in privileged mode.</p>
+</section>
+<section id="autocreate-job">
+<h4>autocreate_job<a class="headerlink" href="#autocreate-job" title="Permalink to this heading">#</a></h4>
+<p>An optional bool (default: True). If <code class="docutils literal notranslate"><span class="pre">autocreate_job</span></code> is disabled, then we require a <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code>
+to be present and lookup the job by name. If <code class="docutils literal notranslate"><span class="pre">autocreate_job</span></code> is enabled, then we will create
+a new job definition if an existing one matching <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> and required properties cannot be found.</p>
+</section>
+<section id="job-def-name">
+<h4>job_def_name<a class="headerlink" href="#job-def-name" title="Permalink to this heading">#</a></h4>
+<p>An optional str (default: None) that specifies a job definition to use. If not set, a new job definition will created.</p>
+<section id="batch-tags">
 <h5><code class="docutils literal notranslate"><span class="pre">batch_tags</span></code><a class="headerlink" href="#batch-tags" title="Permalink to this heading">#</a></h5>
 <p>An optional JSON mapping of string key-value pairs to use as Batch job tags. This could be used to track jobs or query them after execution.</p>
 <div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">batch_tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{&quot;project&quot;: &quot;acme&quot;, &quot;user&quot;: &quot;alice&quot;}</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="default-batch-tags">
+</section>
+<section id="default-batch-tags">
 <h5><code class="docutils literal notranslate"><span class="pre">default_batch_tags</span></code><a class="headerlink" href="#default-batch-tags" title="Permalink to this heading">#</a></h5>
 <p>A bool (default: True) that specifies whether redun should add default tags to all batch jobs. The default tags include:</p>
 <ul class="simple">
@@ -551,24 +597,24 @@ at execution time.</p>
 <li><p>redun_project: the project of the workflow, which is typically the root task namespace.</p></li>
 <li><p>redun_aws_user: the user as identified by sts.get_caller_identity.</p></li>
 </ul>
-</div>
-<div class="section" id="num-nodes">
+</section>
+<section id="num-nodes">
 <h5><code class="docutils literal notranslate"><span class="pre">num_nodes</span></code><a class="headerlink" href="#num-nodes" title="Permalink to this heading">#</a></h5>
 <p>If not none, use a multi-node job and set the number of workers.</p>
-</div>
-</div>
-<div class="section" id="aws-glue-executor">
+</section>
+</section>
+<section id="aws-glue-executor">
 <h4>AWS Glue executor<a class="headerlink" href="#aws-glue-executor" title="Permalink to this heading">#</a></h4>
-<p>The <span class="xref myst">AWS Glue executor</span> (<code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">aws_glue</span></code>) executes tasks on the AWS Glue compute service.</p>
-<div class="section" id="id5">
+<p>The <a class="reference internal" href="executors.html#aws-glue-spark-executor"><span class="std std-ref">AWS Glue executor</span></a> (<code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">aws_glue</span></code>) executes tasks on the AWS Glue compute service.</p>
+<section id="id5">
 <h5><code class="docutils literal notranslate"><span class="pre">s3_scratch</span></code><a class="headerlink" href="#id5" title="Permalink to this heading">#</a></h5>
-<p>A string that specifies the <a class="reference internal" href="executors.html#s3-scratch-space"><span class="std std-doc">S3 scratch space</span></a> used to communicate with AWS Glue jobs.</p>
-</div>
-<div class="section" id="workers">
+<p>A string that specifies the <a class="reference internal" href="executors.html#s3-scratch-space"><span class="std std-ref">S3 scratch space</span></a> used to communicate with AWS Glue jobs.</p>
+</section>
+<section id="workers">
 <h5><code class="docutils literal notranslate"><span class="pre">workers</span></code><a class="headerlink" href="#workers" title="Permalink to this heading">#</a></h5>
 <p>An integer that specifies the number of workers available by default to Glue jobs. Each worker provides one or more “data processing units” (DPUs). AWS defines a  DPU as “a relative measure of processing power that consists of 4 vCPUs of compute capacity and 16GB of memory.” Depending on the worker type, there will be one or more Spark executors per DPU, each with one or more spark cores. Jobs are billed by number of DPUs and time. This parameter can be overridden on a per-task basis using task options.</p>
-</div>
-<div class="section" id="worker-type">
+</section>
+<section id="worker-type">
 <h5><code class="docutils literal notranslate"><span class="pre">worker_type</span></code><a class="headerlink" href="#worker-type" title="Permalink to this heading">#</a></h5>
 <p>Choose from:</p>
 <ul class="simple">
@@ -580,144 +626,191 @@ this worker type for memory-intensive jobs or ML transforms. Note that as this w
 as expensive as the others.</p></li>
 </ul>
 <p>This can be overridden on a per-task basis using task options.</p>
-</div>
-<div class="section" id="id6">
+</section>
+<section id="id6">
 <h5><code class="docutils literal notranslate"><span class="pre">aws_region</span></code><a class="headerlink" href="#id6" title="Permalink to this heading">#</a></h5>
 <p>A string that specifies the AWS region containing the user’s AWS Glue service.</p>
-</div>
-<div class="section" id="id7">
+</section>
+<section id="id7">
 <h5><code class="docutils literal notranslate"><span class="pre">role</span></code><a class="headerlink" href="#id7" title="Permalink to this heading">#</a></h5>
 <p>A string (default: your account’s <code class="docutils literal notranslate"><span class="pre">AWSGlueServiceRole</span></code>) that specifies the ARN of the IAM role that AWS Glue jobs should adopt while executing. AWS provides a <a class="reference external" href="https://docs.aws.amazon.com/glue/latest/dg/create-service-policy.html">managed policy</a>, <code class="docutils literal notranslate"><span class="pre">AWSGlueServiceRole</span></code> that has the minimal permissions to run glue jobs, but you may need to provide access to S3 or other resources.</p>
 <p>This key is mapped to the <a class="reference external" href="https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-jobs-job.html"><code class="docutils literal notranslate"><span class="pre">Role</span></code> property</a> of the Glue API.</p>
-</div>
-<div class="section" id="glue-job-prefix">
+</section>
+<section id="glue-job-prefix">
 <h5><code class="docutils literal notranslate"><span class="pre">glue_job_prefix</span></code><a class="headerlink" href="#glue-job-prefix" title="Permalink to this heading">#</a></h5>
 <p>A string specifying the prefix for Glue job definitions created and used by redun. Defaults to <code class="docutils literal notranslate"><span class="pre">REDUN</span></code>.</p>
-</div>
-<div class="section" id="spark-history-dir">
+</section>
+<section id="spark-history-dir">
 <h5><code class="docutils literal notranslate"><span class="pre">spark_history_dir</span></code><a class="headerlink" href="#spark-history-dir" title="Permalink to this heading">#</a></h5>
 <p>String specifying an S3 path to the location where Spark will log history information that can be used by a
 Spark History Server to visualize and monitor job progress. Defaults to <code class="docutils literal notranslate"><span class="pre">f&quot;{s3_scratch_path}/glue/spark_history&quot;</span></code></p>
-</div>
-<div class="section" id="id8">
+</section>
+<section id="id8">
 <h5><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code><a class="headerlink" href="#id8" title="Permalink to this heading">#</a></h5>
 <p>Float specifying how frequently to query AWS for the status of running Glue jobs. Defaults to 10.0 seconds.</p>
-</div>
-<div class="section" id="job-retry-interval">
+</section>
+<section id="job-retry-interval">
 <h5><code class="docutils literal notranslate"><span class="pre">job_retry_interval</span></code><a class="headerlink" href="#job-retry-interval" title="Permalink to this heading">#</a></h5>
 <p>Float specifying how frequently to retry submitting Glue jobs that were not able to be started due to resource
 constraints. Five attempts will be made to submit pending jobs, and then the retry period will pass. Defaults
 to 60.0 seconds.</p>
-</div>
-<div class="section" id="id9">
+</section>
+<section id="id9">
 <h5><code class="docutils literal notranslate"><span class="pre">timeout</span></code><a class="headerlink" href="#id9" title="Permalink to this heading">#</a></h5>
 <p>Integer number of minutes to run jobs before they are killed. Defaults to 2880 (48 hours). Useful for preventing
 cost overruns.</p>
-</div>
-<div class="section" id="id10">
+</section>
+<section id="id10">
 <h5><code class="docutils literal notranslate"><span class="pre">code_package</span></code><a class="headerlink" href="#id10" title="Permalink to this heading">#</a></h5>
-<p>A bool (default: True) that specifies whether to perform <a class="reference internal" href="executors.html#code-packaging"><span class="std std-doc">code packaging</span></a>.</p>
-</div>
-<div class="section" id="id11">
+<p>A bool (default: True) that specifies whether to perform <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code packaging</span></a>.</p>
+</section>
+<section id="id11">
 <h5><code class="docutils literal notranslate"><span class="pre">code_includes</span></code><a class="headerlink" href="#id11" title="Permalink to this heading">#</a></h5>
-<p>A string (default: <code class="docutils literal notranslate"><span class="pre">**/*.py</span></code>) that specifies a pattern for which files should be included in a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-doc">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
-</div>
-<div class="section" id="id12">
+<p>A string (default: <code class="docutils literal notranslate"><span class="pre">**/*.py</span></code>) that specifies a pattern for which files should be included in a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
+</section>
+<section id="id12">
 <h5><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code><a class="headerlink" href="#id12" title="Permalink to this heading">#</a></h5>
-<p>A string (default: None) that specifies a pattern for which files should be excluded from a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-doc">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
-</div>
-</div>
-<div class="section" id="kubernetes-k8s-executor">
+<p>A string (default: None) that specifies a pattern for which files should be excluded from a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
+</section>
+</section>
+</section>
+<section id="federated-tasks">
+<h3>Federated tasks<a class="headerlink" href="#federated-tasks" title="Permalink to this heading">#</a></h3>
+<p>The following config keys are required. All other data is passed to the <code class="docutils literal notranslate"><span class="pre">subrun</span></code> that
+implements the bulk of the federated task behavior, hence they are either consumed by <code class="docutils literal notranslate"><span class="pre">subrun</span></code> directly or
+are set as task options.</p>
+<section id="namespace">
+<h4><code class="docutils literal notranslate"><span class="pre">namespace</span></code><a class="headerlink" href="#namespace" title="Permalink to this heading">#</a></h4>
+<p>The namespace of the federated task.</p>
+</section>
+<section id="task-name">
+<h4><code class="docutils literal notranslate"><span class="pre">task_name</span></code><a class="headerlink" href="#task-name" title="Permalink to this heading">#</a></h4>
+<p>The name of the federated task.</p>
+</section>
+<section id="load-module">
+<h4><code class="docutils literal notranslate"><span class="pre">load_module</span></code><a class="headerlink" href="#load-module" title="Permalink to this heading">#</a></h4>
+<p>The name of the module to load, which will ensure that the above task is actually defined.</p>
+</section>
+<section id="executor">
+<h4><code class="docutils literal notranslate"><span class="pre">executor</span></code><a class="headerlink" href="#executor" title="Permalink to this heading">#</a></h4>
+<p>The name of the executor that has the execution context for this federated task.</p>
+</section>
+<section id="config-dir">
+<h4><code class="docutils literal notranslate"><span class="pre">config_dir</span></code><a class="headerlink" href="#config-dir" title="Permalink to this heading">#</a></h4>
+<p>The path to the configuration to use for the remainder of the execution. Either an absolute
+path or relative to the executor entrypoint.</p>
+</section>
+<section id="task-signature">
+<h4><code class="docutils literal notranslate"><span class="pre">task_signature</span></code><a class="headerlink" href="#task-signature" title="Permalink to this heading">#</a></h4>
+<p>Optional. The signature of the federated task. Because the task options can be used to change the name of the task itself, task_name <em>and</em> task_signature are separate options in the config.</p>
+</section>
+<section id="description">
+<h4><code class="docutils literal notranslate"><span class="pre">description</span></code><a class="headerlink" href="#description" title="Permalink to this heading">#</a></h4>
+<p>Optional. A description of this entrypoint.</p>
+</section>
+<section id="kubernetes-k8s-executor">
 <h4>Kubernetes (k8s) executor<a class="headerlink" href="#kubernetes-k8s-executor" title="Permalink to this heading">#</a></h4>
-<p>The <a class="reference internal" href="executors.html#kubernetes-k8s-executor"><span class="std std-doc">Kubernetes executor</span></a> (<code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">k8s</span></code>) executes tasks on a Kubernetes cluster.</p>
-<div class="section" id="id13">
+<p>The <a class="reference internal" href="executors.html#kubernetes-k8s-executor"><span class="std std-ref">Kubernetes executor</span></a> (<code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">k8s</span></code>) executes tasks on a Kubernetes cluster.</p>
+<section id="id13">
 <h5><code class="docutils literal notranslate"><span class="pre">image</span></code><a class="headerlink" href="#id13" title="Permalink to this heading">#</a></h5>
 <p>A string that specifies the default Docker image. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="id14">
+</section>
+<section id="id14">
 <h5><code class="docutils literal notranslate"><span class="pre">scratch</span></code><a class="headerlink" href="#id14" title="Permalink to this heading">#</a></h5>
-<p>A string that specifies the <a class="reference internal" href="executors.html#s3-scratch-space"><span class="std std-doc">scratch space</span></a> used to communicate with k8s jobs. This can be a path on any accessible object storage system (e.g. S3, GCS, etc).</p>
-</div>
-<div class="section" id="namespace">
-<h5><code class="docutils literal notranslate"><span class="pre">namespace</span></code><a class="headerlink" href="#namespace" title="Permalink to this heading">#</a></h5>
+<p>A string that specifies the <a class="reference internal" href="executors.html#s3-scratch-space"><span class="std std-ref">scratch space</span></a> used to communicate with k8s jobs. This can be a path on any accessible object storage system (e.g. S3, GCS, etc).</p>
+</section>
+<section id="id15">
+<h5><code class="docutils literal notranslate"><span class="pre">namespace</span></code><a class="headerlink" href="#id15" title="Permalink to this heading">#</a></h5>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">default</span></code>) that specifies the k8s namespace to use for all resources.</p>
-</div>
-<div class="section" id="secret-name">
+</section>
+<section id="secret-name">
 <h5><code class="docutils literal notranslate"><span class="pre">secret_name</span></code><a class="headerlink" href="#secret-name" title="Permalink to this heading">#</a></h5>
 <p>An optional string that specifies the name of a k8s secret to use for passing AWS secrets.</p>
-</div>
-<div class="section" id="import-aws-secrets">
+</section>
+<section id="import-aws-secrets">
 <h5><code class="docutils literal notranslate"><span class="pre">import_aws_secrets</span></code><a class="headerlink" href="#import-aws-secrets" title="Permalink to this heading">#</a></h5>
 <p>A bool (default: True) that specifies whether to import the local AWS environment variable secrets into the k8s jobs via a k8s secret (see <code class="docutils literal notranslate"><span class="pre">secret_name</span></code>).</p>
-</div>
-<div class="section" id="secret-env-vars">
+</section>
+<section id="secret-env-vars">
 <h5><code class="docutils literal notranslate"><span class="pre">secret_env_vars</span></code><a class="headerlink" href="#secret-env-vars" title="Permalink to this heading">#</a></h5>
 <p>A whitespace separated list of environment variables to import into the k8s jobs via a k8s secret (see <code class="docutils literal notranslate"><span class="pre">secret_name</span></code>).</p>
-</div>
-<div class="section" id="id15">
-<h5><code class="docutils literal notranslate"><span class="pre">vcpus</span></code><a class="headerlink" href="#id15" title="Permalink to this heading">#</a></h5>
+</section>
+<section id="id16">
+<h5><code class="docutils literal notranslate"><span class="pre">vcpus</span></code><a class="headerlink" href="#id16" title="Permalink to this heading">#</a></h5>
 <p>An integer (default: 1) that specifies the default number of virtual CPUs required for each task. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="id16">
-<h5><code class="docutils literal notranslate"><span class="pre">memory</span></code><a class="headerlink" href="#id16" title="Permalink to this heading">#</a></h5>
+</section>
+<section id="id17">
+<h5><code class="docutils literal notranslate"><span class="pre">memory</span></code><a class="headerlink" href="#id17" title="Permalink to this heading">#</a></h5>
 <p>A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="id17">
-<h5><code class="docutils literal notranslate"><span class="pre">retries</span></code><a class="headerlink" href="#id17" title="Permalink to this heading">#</a></h5>
+</section>
+<section id="id18">
+<h5><code class="docutils literal notranslate"><span class="pre">retries</span></code><a class="headerlink" href="#id18" title="Permalink to this heading">#</a></h5>
 <p>An integer (default: 1) that specifies the default number of retries to use for submitting a job to the AWS Batch queue. This can be overridden on a per task basis using task options.</p>
-</div>
-<div class="section" id="id18">
-<h5><code class="docutils literal notranslate"><span class="pre">job_name_prefix</span></code><a class="headerlink" href="#id18" title="Permalink to this heading">#</a></h5>
+</section>
+<section id="id19">
+<h5><code class="docutils literal notranslate"><span class="pre">job_name_prefix</span></code><a class="headerlink" href="#id19" title="Permalink to this heading">#</a></h5>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">batch-job</span></code>) that specifies the prefix to use for AWS Batch job names. This can make it easier for users to distinguish which AWS Batch jobs correspond to their workflow.</p>
-</div>
-<div class="section" id="service-account-name">
+</section>
+<section id="service-account-name">
 <h5><code class="docutils literal notranslate"><span class="pre">service_account_name</span></code><a class="headerlink" href="#service-account-name" title="Permalink to this heading">#</a></h5>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">default</span></code>) that specifices the k8s <a class="reference external" href="https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/">service account</a> to use.</p>
-</div>
-<div class="section" id="annotations">
+</section>
+<section id="annotations">
 <h5><code class="docutils literal notranslate"><span class="pre">annotations</span></code><a class="headerlink" href="#annotations" title="Permalink to this heading">#</a></h5>
 <p>An optional JSON object that specifies k8s annotations to apply to each job.</p>
-</div>
-<div class="section" id="k8s-labels">
+</section>
+<section id="k8s-labels">
 <h5><code class="docutils literal notranslate"><span class="pre">k8s_labels</span></code><a class="headerlink" href="#k8s-labels" title="Permalink to this heading">#</a></h5>
 <p>An optional JSON object that specifies k8s labels to apply to each job.</p>
-</div>
-<div class="section" id="default-k8s-labels">
+</section>
+<section id="default-k8s-labels">
 <h5><code class="docutils literal notranslate"><span class="pre">default_k8s_labels</span></code><a class="headerlink" href="#default-k8s-labels" title="Permalink to this heading">#</a></h5>
 <p>A bool (default: True) that specifies whether to add default k8s labels to jobs, such as <code class="docutils literal notranslate"><span class="pre">redun_job_id</span></code>, <code class="docutils literal notranslate"><span class="pre">redun_task_name</span></code>, etc.</p>
-</div>
-<div class="section" id="id19">
-<h5><code class="docutils literal notranslate"><span class="pre">code_package</span></code><a class="headerlink" href="#id19" title="Permalink to this heading">#</a></h5>
-<p>A bool (default: True) that specifies whether to perform <a class="reference internal" href="executors.html#code-packaging"><span class="std std-doc">code packaging</span></a>.</p>
-</div>
-<div class="section" id="id20">
-<h5><code class="docutils literal notranslate"><span class="pre">code_includes</span></code><a class="headerlink" href="#id20" title="Permalink to this heading">#</a></h5>
-<p>A string (default: <code class="docutils literal notranslate"><span class="pre">**/*.py</span></code>) that specifies a pattern for which files should be included in a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-doc">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
-</div>
-<div class="section" id="id21">
-<h5><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code><a class="headerlink" href="#id21" title="Permalink to this heading">#</a></h5>
-<p>A string (default: None) that specifies a pattern for which files should be excluded from a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-doc">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
-</div>
-<div class="section" id="id22">
-<h5><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code><a class="headerlink" href="#id22" title="Permalink to this heading">#</a></h5>
+</section>
+<section id="id20">
+<h5><code class="docutils literal notranslate"><span class="pre">code_package</span></code><a class="headerlink" href="#id20" title="Permalink to this heading">#</a></h5>
+<p>A bool (default: True) that specifies whether to perform <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code packaging</span></a>.</p>
+</section>
+<section id="id21">
+<h5><code class="docutils literal notranslate"><span class="pre">code_includes</span></code><a class="headerlink" href="#id21" title="Permalink to this heading">#</a></h5>
+<p>A string (default: <code class="docutils literal notranslate"><span class="pre">**/*.py</span></code>) that specifies a pattern for which files should be included in a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
+</section>
+<section id="id22">
+<h5><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code><a class="headerlink" href="#id22" title="Permalink to this heading">#</a></h5>
+<p>A string (default: None) that specifies a pattern for which files should be excluded from a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
+</section>
+<section id="id23">
+<h5><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code><a class="headerlink" href="#id23" title="Permalink to this heading">#</a></h5>
 <p>A float (default: 5.0) that specifies how often, in seconds, the k8s API is queried to monitor running jobs.</p>
-</div>
-<div class="section" id="id23">
-<h5><code class="docutils literal notranslate"><span class="pre">min_array_size</span></code><a class="headerlink" href="#id23" title="Permalink to this heading">#</a></h5>
+</section>
+<section id="id24">
+<h5><code class="docutils literal notranslate"><span class="pre">min_array_size</span></code><a class="headerlink" href="#id24" title="Permalink to this heading">#</a></h5>
 <p>Minimum number (default: 5) of equivalent tasks that will be submitted together as an <a class="reference external" href="https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/">array job</a>. “Equivalent” means the same task and execution requirements (CPU, memory, etc), but with possibly different arguments. Set to 0 to disable array job submission.</p>
-</div>
-<div class="section" id="id24">
-<h5><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code><a class="headerlink" href="#id24" title="Permalink to this heading">#</a></h5>
+</section>
+<section id="id25">
+<h5><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code><a class="headerlink" href="#id25" title="Permalink to this heading">#</a></h5>
 <p>Maximum number (default: 1000) of equivalent tasks that will be submitted together as an array job. Must be greater than or equal to <code class="docutils literal notranslate"><span class="pre">min_array_size</span></code>.</p>
-</div>
-<div class="section" id="id25">
-<h5><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code><a class="headerlink" href="#id25" title="Permalink to this heading">#</a></h5>
+</section>
+<section id="id26">
+<h5><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code><a class="headerlink" href="#id26" title="Permalink to this heading">#</a></h5>
 <p>A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wait before submission to be possibly bundled into an array job.</p>
-</div>
-</div>
-</div>
-</div>
-<div class="section" id="configuration-variables">
+</section>
+<section id="share-id">
+<h5><code class="docutils literal notranslate"><span class="pre">share_id</span></code><a class="headerlink" href="#share-id" title="Permalink to this heading">#</a></h5>
+<p>Queues with Scheduling Policies require all jobs be assigned a Fair Share
+Scheduling <code class="docutils literal notranslate"><span class="pre">shareIdentifier</span></code>. Can be further overridden on a per-task basis using task options.</p>
+</section>
+<section id="scheduling-priority-override">
+<h5><code class="docutils literal notranslate"><span class="pre">scheduling_priority_override</span></code><a class="headerlink" href="#scheduling-priority-override" title="Permalink to this heading">#</a></h5>
+<p>Queues with Scheduling Policies require that all job definitions specify a <code class="docutils literal notranslate"><span class="pre">schedulingPriority</span></code>
+Alternatively, if the batch job definition does <em>not</em> configure a <code class="docutils literal notranslate"><span class="pre">schedulingPriority</span></code>, you
+must provide a <code class="docutils literal notranslate"><span class="pre">schedulingPriorityOverride</span></code> by setting this variable.
+Can be further overridden on a per-task basis using task options.</p>
+</section>
+</section>
+</section>
+</section>
+<section id="configuration-variables">
 <h2>Configuration variables<a class="headerlink" href="#configuration-variables" title="Permalink to this heading">#</a></h2>
 <p>The redun configuration file supports <a class="reference external" href="https://docs.python.org/3/library/configparser.html#configparser.ExtendedInterpolation">variable interpolation</a>. When using the <code class="docutils literal notranslate"><span class="pre">${var}</span></code> variable reference syntax, redun will replace the variable reference with the value of the variable <code class="docutils literal notranslate"><span class="pre">var</span></code> from one of these sources (in descreasing precedence):</p>
 <ul class="simple">
@@ -734,8 +827,8 @@ cost overruns.</p>
 <span class="na">role</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">${REDUN_ROLE}</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
         </article>
       </div>
@@ -747,18 +840,18 @@ cost overruns.</p>
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Database repo</div>
+                <div class="title">Backend and database</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="executors.html">
+          <a class="prev-page" href="scheduler.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Executors</div>
+                <div class="title">Scheduling redun workflows</div>
                 
               </div>
             </a>
@@ -801,6 +894,7 @@ cost overruns.</p>
 <li><a class="reference internal" href="#job-status-interval"><code class="docutils literal notranslate"><span class="pre">job_status_interval</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#federated-configs"><code class="docutils literal notranslate"><span class="pre">federated_configs</span></code></a></li>
 <li><a class="reference internal" href="#backend">Backend</a><ul>
 <li><a class="reference internal" href="#automigrate"><code class="docutils literal notranslate"><span class="pre">automigrate</span></code></a></li>
 <li><a class="reference internal" href="#db-aws-secret-name"><code class="docutils literal notranslate"><span class="pre">db_aws_secret_name</span></code></a></li>
@@ -854,6 +948,11 @@ cost overruns.</p>
 <li><a class="reference internal" href="#max-array-size"><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code></a></li>
 <li><a class="reference internal" href="#job-stale-time"><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code></a></li>
 <li><a class="reference internal" href="#timeout"><code class="docutils literal notranslate"><span class="pre">timeout</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#privileged">privileged</a></li>
+<li><a class="reference internal" href="#autocreate-job">autocreate_job</a></li>
+<li><a class="reference internal" href="#job-def-name">job_def_name</a><ul>
 <li><a class="reference internal" href="#batch-tags"><code class="docutils literal notranslate"><span class="pre">batch_tags</span></code></a></li>
 <li><a class="reference internal" href="#default-batch-tags"><code class="docutils literal notranslate"><span class="pre">default_batch_tags</span></code></a></li>
 <li><a class="reference internal" href="#num-nodes"><code class="docutils literal notranslate"><span class="pre">num_nodes</span></code></a></li>
@@ -875,28 +974,40 @@ cost overruns.</p>
 <li><a class="reference internal" href="#id12"><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code></a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li><a class="reference internal" href="#federated-tasks">Federated tasks</a><ul>
+<li><a class="reference internal" href="#namespace"><code class="docutils literal notranslate"><span class="pre">namespace</span></code></a></li>
+<li><a class="reference internal" href="#task-name"><code class="docutils literal notranslate"><span class="pre">task_name</span></code></a></li>
+<li><a class="reference internal" href="#load-module"><code class="docutils literal notranslate"><span class="pre">load_module</span></code></a></li>
+<li><a class="reference internal" href="#executor"><code class="docutils literal notranslate"><span class="pre">executor</span></code></a></li>
+<li><a class="reference internal" href="#config-dir"><code class="docutils literal notranslate"><span class="pre">config_dir</span></code></a></li>
+<li><a class="reference internal" href="#task-signature"><code class="docutils literal notranslate"><span class="pre">task_signature</span></code></a></li>
+<li><a class="reference internal" href="#description"><code class="docutils literal notranslate"><span class="pre">description</span></code></a></li>
 <li><a class="reference internal" href="#kubernetes-k8s-executor">Kubernetes (k8s) executor</a><ul>
 <li><a class="reference internal" href="#id13"><code class="docutils literal notranslate"><span class="pre">image</span></code></a></li>
 <li><a class="reference internal" href="#id14"><code class="docutils literal notranslate"><span class="pre">scratch</span></code></a></li>
-<li><a class="reference internal" href="#namespace"><code class="docutils literal notranslate"><span class="pre">namespace</span></code></a></li>
+<li><a class="reference internal" href="#id15"><code class="docutils literal notranslate"><span class="pre">namespace</span></code></a></li>
 <li><a class="reference internal" href="#secret-name"><code class="docutils literal notranslate"><span class="pre">secret_name</span></code></a></li>
 <li><a class="reference internal" href="#import-aws-secrets"><code class="docutils literal notranslate"><span class="pre">import_aws_secrets</span></code></a></li>
 <li><a class="reference internal" href="#secret-env-vars"><code class="docutils literal notranslate"><span class="pre">secret_env_vars</span></code></a></li>
-<li><a class="reference internal" href="#id15"><code class="docutils literal notranslate"><span class="pre">vcpus</span></code></a></li>
-<li><a class="reference internal" href="#id16"><code class="docutils literal notranslate"><span class="pre">memory</span></code></a></li>
-<li><a class="reference internal" href="#id17"><code class="docutils literal notranslate"><span class="pre">retries</span></code></a></li>
-<li><a class="reference internal" href="#id18"><code class="docutils literal notranslate"><span class="pre">job_name_prefix</span></code></a></li>
+<li><a class="reference internal" href="#id16"><code class="docutils literal notranslate"><span class="pre">vcpus</span></code></a></li>
+<li><a class="reference internal" href="#id17"><code class="docutils literal notranslate"><span class="pre">memory</span></code></a></li>
+<li><a class="reference internal" href="#id18"><code class="docutils literal notranslate"><span class="pre">retries</span></code></a></li>
+<li><a class="reference internal" href="#id19"><code class="docutils literal notranslate"><span class="pre">job_name_prefix</span></code></a></li>
 <li><a class="reference internal" href="#service-account-name"><code class="docutils literal notranslate"><span class="pre">service_account_name</span></code></a></li>
 <li><a class="reference internal" href="#annotations"><code class="docutils literal notranslate"><span class="pre">annotations</span></code></a></li>
 <li><a class="reference internal" href="#k8s-labels"><code class="docutils literal notranslate"><span class="pre">k8s_labels</span></code></a></li>
 <li><a class="reference internal" href="#default-k8s-labels"><code class="docutils literal notranslate"><span class="pre">default_k8s_labels</span></code></a></li>
-<li><a class="reference internal" href="#id19"><code class="docutils literal notranslate"><span class="pre">code_package</span></code></a></li>
-<li><a class="reference internal" href="#id20"><code class="docutils literal notranslate"><span class="pre">code_includes</span></code></a></li>
-<li><a class="reference internal" href="#id21"><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code></a></li>
-<li><a class="reference internal" href="#id22"><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code></a></li>
-<li><a class="reference internal" href="#id23"><code class="docutils literal notranslate"><span class="pre">min_array_size</span></code></a></li>
-<li><a class="reference internal" href="#id24"><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code></a></li>
-<li><a class="reference internal" href="#id25"><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code></a></li>
+<li><a class="reference internal" href="#id20"><code class="docutils literal notranslate"><span class="pre">code_package</span></code></a></li>
+<li><a class="reference internal" href="#id21"><code class="docutils literal notranslate"><span class="pre">code_includes</span></code></a></li>
+<li><a class="reference internal" href="#id22"><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code></a></li>
+<li><a class="reference internal" href="#id23"><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code></a></li>
+<li><a class="reference internal" href="#id24"><code class="docutils literal notranslate"><span class="pre">min_array_size</span></code></a></li>
+<li><a class="reference internal" href="#id25"><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code></a></li>
+<li><a class="reference internal" href="#id26"><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code></a></li>
+<li><a class="reference internal" href="#share-id"><code class="docutils literal notranslate"><span class="pre">share_id</span></code></a></li>
+<li><a class="reference internal" href="#scheduling-priority-override"><code class="docutils literal notranslate"><span class="pre">scheduling_priority_override</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -916,9 +1027,6 @@ cost overruns.</p>
     </aside>
   </div>
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/scripts/furo.js"></script>

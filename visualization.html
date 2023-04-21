@@ -2,12 +2,13 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Changelog" href="CHANGELOG.html" /><link rel="prev" title="Developer guide" href="developing.html" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="FAQ" href="FAQ.html" /><link rel="prev" title="Type checking" href="typing.html" />
 
-    <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
-        <title>Visualization - redun</title>
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
+        <title>Visualization - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -122,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">redun</div></a>
+      <a href="index.html"><div class="brand">redun  documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -144,8 +145,11 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="_static/redun.svg" alt="Logo"/>
+  </div>
   
-  <span class="sidebar-brand-text">redun</span>
+  <span class="sidebar-brand-text">redun  documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -153,21 +157,29 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul>
+  <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="values.html">Values</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tasks.html">Tasks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduling redun workflows</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="db.html">Database repo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db.html">Backend and database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="developing.html">Developer guide</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -217,10 +229,10 @@
           </label>
         </div>
         <article role="main">
-          <div class="section" id="visualization">
+          <section id="visualization">
 <h1>Visualization<a class="headerlink" href="#visualization" title="Permalink to this heading">#</a></h1>
 <p>Visualizing the call graph of redun executions can help developers understand the evaluation and fan out/in patterns of redun programs, making them a useful debugging tool.</p>
-<div class="section" id="configuring-visualizations">
+<section id="configuring-visualizations">
 <h2>Configuring visualizations<a class="headerlink" href="#configuring-visualizations" title="Permalink to this heading">#</a></h2>
 <p>Similar to logging, we can visualize <code class="docutils literal notranslate"><span class="pre">Execution</span></code>, <code class="docutils literal notranslate"><span class="pre">Job</span></code>, <code class="docutils literal notranslate"><span class="pre">CallNode</span></code>, and <code class="docutils literal notranslate"><span class="pre">Value</span></code> objects by hash.
 The basic command to do so is <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">viz</span> <span class="pre">&lt;id_or_hash_prefix&gt;</span></code>.
@@ -228,7 +240,7 @@ Note that <code class="docutils literal notranslate"><span class="pre">Task</spa
 If in the future we support expression graph visualization, we can include explicit task visualization that is decoupled from jobs.</p>
 <p><code class="docutils literal notranslate"><span class="pre">Value</span></code> queries are treated slightly differently from the other objects, with a greater focus on their upstream lineage.
 We will cover each of these two visualization scenarios separately, along with each of their relevant flags.</p>
-<div class="section" id="visualizing-non-value-objects">
+<section id="visualizing-non-value-objects">
 <h3>Visualizing non-<code class="docutils literal notranslate"><span class="pre">Value</span></code> objects<a class="headerlink" href="#visualizing-non-value-objects" title="Permalink to this heading">#</a></h3>
 <p>The graphs discussed here will correspond to the example below.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
@@ -325,8 +337,8 @@ Both the aforementioned flags can be used together as well. Note that these grap
 <p><code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">viz</span> <span class="pre">&lt;job-id</span> <span class="pre">/</span> <span class="pre">call-node-id&gt;</span></code> <br />
 We can also plot jobs or CallNodes, which both will yield a CallNode and its immediate local context.</p>
 <img src="_static/make-call-node.png" width="50%"/>
-</div>
-<div class="section" id="visualizing-value-objects">
+</section>
+<section id="visualizing-value-objects">
 <h3>Visualizing <code class="docutils literal notranslate"><span class="pre">Value</span></code> objects<a class="headerlink" href="#visualizing-value-objects" title="Permalink to this heading">#</a></h3>
 <p>The graph for a value query depicts all the upstream calls and values that were required to generate the value.
 Note that the value object is taken as is and not deconstructed.
@@ -374,37 +386,37 @@ Note that this a direct visual analog of the equivalent <code class="docutils li
 Use this flag to condense the routing CallNodes.
 This flag makes routing calls more informative because it displays not only the fact that the given value is passed to some set of CallNodes, but also how these CallNodes themselves are nested relative to each other in the hierarchy of calls.</p>
 <img src="_static/make-subvalue-wrap.png" width="50%"/>
-</div>
-<div class="section" id="final-notes">
+</section>
+<section id="final-notes">
 <h3>Final Notes<a class="headerlink" href="#final-notes" title="Permalink to this heading">#</a></h3>
 <p>The image generated may vary between calls. If the graph generated is difficult to read, utilize the flags to remove job nodes, shift to a horizontal layout, or simply try rerunning again.</p>
 <p>For convenience, the flags are broken down by when they are appropriate to use.</p>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="CHANGELOG.html">
+          <a class="next-page" href="FAQ.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Changelog</div>
+                <div class="title">FAQ</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="developing.html">
+          <a class="prev-page" href="typing.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Developer guide</div>
+                <div class="title">Type checking</div>
                 
               </div>
             </a>
@@ -457,9 +469,6 @@ This flag makes routing calls more informative because it displays not only the 
     </aside>
   </div>
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/scripts/furo.js"></script>
