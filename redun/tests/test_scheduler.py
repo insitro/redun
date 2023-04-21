@@ -13,6 +13,7 @@ from redun import Scheduler, task
 from redun.backends.db import Execution
 from redun.backends.db import Job as JobDb
 from redun.backends.db import RedunBackendDb
+from redun.backends.db import Task as TaskDb
 from redun.config import Config
 from redun.expression import SchedulerExpression
 from redun.promise import Promise
@@ -817,6 +818,23 @@ def test_cse_no_validity(scheduler: Scheduler) -> None:
     task_calls = []
     scheduler.run([task1(), task2()])
     assert task_calls == ["task1"]
+
+
+def test_bad_executor(scheduler: Scheduler, session: Session) -> None:
+    """
+    Scheduler should fail gracefully with an undefined executor.
+    """
+
+    @task(executor="unknown")
+    def task1():
+        return 10
+
+    with pytest.raises(SchedulerError):
+        scheduler.run(task1())
+
+    # Job and task should still be recorded.
+    assert session.query(JobDb).one()
+    assert session.query(TaskDb).filter(TaskDb.hash == task1.hash).one()
 
 
 def test_job_options() -> None:
