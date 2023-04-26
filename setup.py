@@ -1,5 +1,4 @@
 import os
-import platform
 
 from setuptools import find_packages, setup
 
@@ -19,13 +18,14 @@ requirements = [
     "botocore>=1.22.8,<1.28.0",
     "gcsfs>=2021.4.0",
     "s3fs>=2021.11.1",
-    "sqlalchemy>=1.3.17,<2",
+    # Using 2.1 instead of 3.0 in case future 2.x versions drop support
+    # for some legacy APIs still supported in 2.0
+    "sqlalchemy>=1.4.0,<2.1",
     "python-dateutil>=2.8",
+    "requests>=2.27.1",
     # If updating this list, check executors/aws_glue.py stays up to date with
     # packages needed to run in the glue environment.
 ]
-
-python_36_backports = ["dataclasses>=0.8", "types-dataclasses>=0.6.6"]
 
 extras = {
     "glue": ["pandas", "pyarrow", "pyspark"],
@@ -38,9 +38,6 @@ if REQUIRE_POSTGRES:
     requirements.append(PSYCOPG2_VERSION)
 else:
     extras["postgres"] = [PSYCOPG2_VERSION]
-
-if "3.6" in platform.python_version():
-    requirements.append(python_36_backports)
 
 
 def get_version() -> str:
@@ -94,7 +91,7 @@ redun's key features are:
     """,
     scripts=["bin/redun"],
     include_package_data=True,
-    python_requires=">= 3.6",
+    python_requires=">= 3.7",
     install_requires=requirements,
     extras_require=extras,
 )

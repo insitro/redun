@@ -42,14 +42,14 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, backref, relationship, sessionmaker
+from sqlalchemy.orm import Session, backref, declarative_base, relationship, sessionmaker
 from sqlalchemy.orm.session import object_session
 from sqlalchemy.schema import Index
+from sqlalchemy.sql import exists
 from sqlalchemy.sql.expression import cast as sa_cast
 from sqlalchemy.types import TypeDecorator
 
-from redun.backends.base import KeyValue, RedunBackend, TagEntityType, TagMap, calc_call_hash
+from redun.backends.base import KeyValue, RedunBackend, TagEntity, TagMap
 from redun.backends.db import serializers
 from redun.backends.value_store import ValueStore
 from redun.config import Section, create_config_section
@@ -58,8 +58,9 @@ from redun.expression import AnyExpression, Expression, SchedulerExpression, Tas
 from redun.file import File as BaseFile
 from redun.file import get_proto
 from redun.handle import Handle as BaseHandle
-from redun.hashing import hash_struct, hash_tag
+from redun.hashing import hash_call_node, hash_struct, hash_tag
 from redun.logging import logger as _logger
+from redun.task import CacheCheckValid, CacheResult, CacheScope
 from redun.task import Task as BaseTask
 from redun.utils import (
     MultiMap,
@@ -72,6 +73,7 @@ from redun.utils import (
     with_pickle_preview,
 )
 from redun.value import MIME_TYPE_PICKLE, InvalidValueError
+from redun.value import TypeError as RedunTypeError
 
 if typing.TYPE_CHECKING:
     from redun.scheduler import Job as BaseJob
@@ -613,37 +615,31 @@ class CallNode(Base):
         else:
             # New style available in sqlalchemy>=1.4.0
             # https://docs.sqlalchemy.org/en/14/changelog/migration_20.html#joinedload-not-uniqued
-            child_nodes = object_session(self).execute(
-                select(CallNode)
-                .join(CallEdge, CallEdge.child_id == CallNode.call_hash)
-                .filter(CallEdge.parent_id == self.call_hash)
-                .order_by(CallEdge.call_order)
+            child_nodes = (
+                object_session(self)
+                .execute(
+                    select(CallNode, CallEdge.call_order)
+                    .join(CallEdge, CallEdge.child_id == CallNode.call_hash)
+                    .filter(CallEdge.parent_id == self.call_hash)
+                    .order_by(CallEdge.call_order)
+                )
+                .columns(CallNode)
             )
             return [node for (node,) in child_nodes]
 
     @property
     def parents(self) -> List["CallNode"]:
-        if sa.__version__.startswith("1.3."):
-            parent_nodes = (
-                object_session(self)
-                .query(CallNode)
-                .join(CallEdge, CallEdge.parent_id == CallNode.call_hash)
-                .filter(CallEdge.child_id == self.call_hash)
-            )
-            # https://github.com/sqlalchemy/sqlalchemy/issues/4395
-            parent_nodes._has_mapper_entities = False
-            return parent_nodes.all()
-
-        else:
-            # New style available in sqlalchemy>=1.4.0
-            # https://docs.sqlalchemy.org/en/14/changelog/migration_20.html#joinedload-not-uniqued
-            parent_nodes = object_session(self).execute(
-                select(CallNode)
+        parent_nodes = (
+            object_session(self)
+            .execute(
+                select(CallNode, CallEdge.call_order)
                 .join(CallEdge, CallEdge.parent_id == CallNode.call_hash)
                 .filter(CallEdge.child_id == self.call_hash)
                 .order_by(CallEdge.call_order)
             )
-            return [node for (node,) in parent_nodes]
+            .columns(CallNode)
+        )
+        return [node for (node,) in parent_nodes]
 
     @property
     def args_display(self) -> str:
@@ -919,7 +915,7 @@ class Tag(Base):
     __tablename__ = "tag"
 
     tag_hash = Column(String(HASH_LEN), primary_key=True)
-    entity_type = Column(Enum(TagEntityType))
+    entity_type = Column(Enum(TagEntity))
     entity_id = Column(String, index=True)
     key = Column(String, index=True)
     value = Column(JSON, index=True)
@@ -953,19 +949,19 @@ class Tag(Base):
     @property
     def entity(self) -> Union[Execution, Job, CallNode, Task, Value]:
         session = object_session(self)
-        if self.entity_type == TagEntityType.Execution:
+        if self.entity_type == TagEntity.Execution:
             return session.query(Execution).filter_by(id=self.entity_id).one()
 
-        elif self.entity_type == TagEntityType.Job:
+        elif self.entity_type == TagEntity.Job:
             return session.query(Job).filter_by(id=self.entity_id).one()
 
-        elif self.entity_type == TagEntityType.CallNode:
+        elif self.entity_type == TagEntity.CallNode:
             return session.query(CallNode).filter_by(call_hash=self.entity_id).one()
 
-        elif self.entity_type == TagEntityType.Task:
+        elif self.entity_type == TagEntity.Task:
             return session.query(Task).filter_by(hash=self.entity_id).one()
 
-        elif self.entity_type == TagEntityType.Value:
+        elif self.entity_type == TagEntity.Value:
             return session.query(Value).filter_by(value_hash=self.entity_id).one()
 
         else:
@@ -989,7 +985,7 @@ class Tag(Base):
         """
         return Tag(
             tag_hash="",  # Hash should be computed by caller.
-            entity_type=TagEntityType.Null,
+            entity_type=TagEntity.Null,
             entity_id="",
             key="",
             value=None,
@@ -1072,13 +1068,13 @@ def get_tag_child_edges(session: Session, ids: Iterable[str]) -> Iterable[Record
 
 
 def get_tag_entity_child_edges(session: Session, ids: Iterable[str]) -> Iterable[RecordEdgeType]:
+    """
+    Iterates through the child edges for Tags of a set of entity ids.
+    """
+
     # Get current Entity Tags.
     for (tag_hash,) in filter_in(session.query(Tag.tag_hash), Tag.entity_id, ids):
         yield "Entity.tag", Tag, tag_hash
-
-
-def init_db(engine):
-    Base.metadata.create_all(bind=engine)
 
 
 def get_abs_path(root_dir: str, path: str) -> str:
@@ -1104,13 +1100,20 @@ class RedunSession(Session):
 
 
 class RedunBackendDb(RedunBackend):
+    """
+    A database-based Backend for managing the CallGraph (provenance) and cache for a Scheduler.
+
+    This backend makes use of SQLAlchemy to provide support for both a sqlite and postgresql
+    databases.
+    """
+
     def __init__(
         self,
         db_uri: Optional[str] = None,
         config: Optional[Section] = None,
         logger: Optional[Any] = None,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
 
@@ -1145,7 +1148,6 @@ class RedunBackendDb(RedunBackend):
 
         # Execution state.
         self.current_execution: Optional[Execution] = None
-        self.current_task_hashes: Set[str] = set()
 
         # User can use redun.ini set a smaller max size.
         self._max_value_size: int = int(config.get("max_value_size", str(DEFAULT_MAX_VALUE_SIZE)))
@@ -1170,8 +1172,11 @@ class RedunBackendDb(RedunBackend):
             )
 
     def create_engine(self) -> Engine:
+        """
+        Initializes a database connection.
+        """
         self.engine = create_engine(
-            self.db_uri, connect_args=self.connect_args, echo=self._db_echo
+            self.db_uri, connect_args=self.connect_args, echo=self._db_echo, future=True
         )
         self.Session = sessionmaker(bind=self.engine, class_=RedunSession)
         self.session = self.Session(backend=self)
@@ -1306,7 +1311,7 @@ class RedunBackendDb(RedunBackend):
 
         Parameters
         ----------
-        migrate: Optional[bool]
+        migrate : Optional[bool]
             If None, defer to automigration config options. If True, perform
             migration after establishing database connection.
         """
@@ -1327,56 +1332,6 @@ class RedunBackendDb(RedunBackend):
         # Setup serializer.
         self._record_serializer = serializers.RecordSerializer(version)
 
-    def calc_current_nodes(self, task_hashes: Iterable[str]) -> None:
-        """
-        Update the current call graph based on the currently registered tasks.
-
-        A CallNode is current if its task_hash matches a currently registered
-        task and all of its children are also current.
-        """
-        self.current_task_hashes = set(task_hashes)
-
-    def _get_call_node(self, task_hash: str, args_hash: str) -> Optional[CallNode]:
-        assert self.session
-
-        # NOTE: For pure functions, there should not be two current CallNodes
-        # with the same task_hash and args_hash. However, if we have re-executed
-        # a CallNode because its previous result is now invalid (File or Handle)
-        # then we prefer the results of the most recent CallNode.
-        call_nodes = (
-            self.session.query(CallNode)
-            .filter_by(task_hash=task_hash, args_hash=args_hash)
-            .order_by(CallNode.timestamp.desc())
-        )
-
-        # Intersect call_node task_hashes with current task hashes.
-        call_hashes = {call_node.call_hash for call_node in call_nodes}
-        call_task_pairs = filter_in(
-            self.session.query(CallSubtreeTask), CallSubtreeTask.call_hash, call_hashes
-        )
-        call_node2task_hashes = defaultdict(set)
-        for pair in call_task_pairs:
-            call_node2task_hashes[pair.call_hash].add(pair.task_hash)
-
-        current_call_nodes = [
-            call_node
-            for call_node in call_nodes
-            if call_node2task_hashes[call_node.call_hash] <= self.current_task_hashes
-        ]
-
-        if current_call_nodes:
-            # Use the newest CallNode.
-            return current_call_nodes[0]
-        else:
-            return None
-
-    def get_call_hash(self, task_hash: str, args_hash: str) -> Optional[str]:
-        call_node = self._get_call_node(task_hash, args_hash)
-        if call_node:
-            return call_node.call_hash
-        else:
-            return None
-
     def record_call_node(
         self,
         task_name: str,
@@ -1389,10 +1344,33 @@ class RedunBackendDb(RedunBackend):
     ) -> str:
         """
         Record a completed CallNode.
+
+        Parameters
+        ----------
+        task_name : str
+            Fullname (with namespace) of task.
+        task_hash : str
+            Hash of task.
+        args_hash : str
+            Hash of all arguments of the call.
+        expr_args : Tuple[Tuple, dict]
+            Original expressions for the task arguments. These expressions are used
+            to record the full upstream dataflow.
+        eval_args : Tuple[Tuple, dict]
+            The fully evaluated arguments of the task arguments.
+        result_hash : str
+            Hash of the result value of the call.
+        child_call_hashes: List[str]
+            call_hashes of any child task calls.
+
+        Returns
+        -------
+        str
+            The call_hash of the new CallNode.
         """
         assert self.session
 
-        call_hash = calc_call_hash(task_hash, args_hash, result_hash, child_call_hashes)
+        call_hash = hash_call_node(task_hash, args_hash, result_hash, child_call_hashes)
 
         if not self.session.query(CallNode).filter_by(call_hash=call_hash).first():
             self.session.add(
@@ -1411,7 +1389,7 @@ class RedunBackendDb(RedunBackend):
                 )
             self.session.commit()
 
-            self.record_args(call_hash, expr_args, eval_args)
+            self._record_args(call_hash, expr_args, eval_args)
 
             self._record_call_subtree_tasks(task_hash, call_hash, child_call_hashes)
         return call_hash
@@ -1464,11 +1442,21 @@ class RedunBackendDb(RedunBackend):
                 # Recurse into arguments of Simple and Scheduler Expressions.
                 yield from self._find_arg_upstreams(value._upstreams)
 
-    def record_args(
+    def _record_args(
         self, call_hash: str, expr_args: Tuple[Tuple, dict], eval_args: Tuple[Tuple, dict]
     ) -> None:
         """
         Record the Arguments for a CallNode.
+
+        Parameters
+        ----------
+        call_hash : str
+            Hash of CallNode of these arguments.
+        expr_args : Tuple[Tuple, dict]
+            Original expressions for the task arguments. These expressions are used
+            to record the full upstream dataflow.
+        eval_args : Tuple[Tuple, dict]
+            The fully evaluated arguments of the task arguments.
         """
         assert self.session
 
@@ -1519,7 +1507,19 @@ class RedunBackendDb(RedunBackend):
 
     def record_value(self, value: Any, data: Optional[bytes] = None) -> str:
         """
-        Return a Value into the datastore.
+        Record a Value into the backend.
+
+        Parameters
+        ----------
+        value : Any
+            A value to record.
+        data : Optional[bytes]
+            Byte stream to record. If not given, usual value serialization is used.
+
+        Returns
+        -------
+        str
+            value_hash of recorded value.
         """
         assert self.session
 
@@ -1607,7 +1607,6 @@ class RedunBackendDb(RedunBackend):
                 )
             elif isinstance(value, BaseTask) and value_hash not in existing_task_hashes:
                 existing_task_hashes.add(value_hash)
-                self.current_task_hashes.add(value.hash)
                 new_inserts = True
                 self.session.add(
                     Task(
@@ -1737,6 +1736,17 @@ class RedunBackendDb(RedunBackend):
     def get_value(self, value_hash: str) -> Tuple[Any, bool]:
         """
         Returns a Value from the datastore using the value content address (value_hash).
+
+        Parameters
+        ----------
+        value_hash : str
+            Hash of Value to fetch from ValueStore.
+
+        Returns
+        -------
+        result, is_cached : Tuple[Any, bool]
+            Returns the result `value` and `is_cached=True` if the value is in the
+            ValueStore, otherwise returns (None, False).
         """
         assert self.session
         value_row = self.session.query(Value).filter_by(value_hash=value_hash).one_or_none()
@@ -1744,22 +1754,92 @@ class RedunBackendDb(RedunBackend):
             return None, False
         return self._get_value(value_row)
 
-    def get_cache(self, call_hash: str) -> Tuple[Any, bool]:
+    def check_cache(
+        self,
+        task_hash: str,
+        args_hash: str,
+        eval_hash: str,
+        execution_id: str,
+        scheduler_task_hashes: Set[str],
+        cache_scope: CacheScope,
+        check_valid: CacheCheckValid,
+        allowed_cache_results: Optional[Set[CacheResult]] = None,
+    ) -> Tuple[Any, Optional[str], CacheResult]:
         """
-        Returns a Value that has been cached as a result for a CallNode with call_hash.
+        See parent method.
         """
+
+        if allowed_cache_results is None:
+            allowed_cache_results = set(CacheResult)
+
         assert self.session
-        value_row = (
-            self.session.query(Value)
-            .join(CallNode, Value.value_hash == CallNode.value_hash)
-            .filter(CallNode.call_hash == call_hash)
-            .one_or_none()
-        )
-        if not value_row:
-            return None, False
-        return self._get_value(value_row)
+
+        is_cached = False
+        result = None
+        call_hash: Optional[str] = None
+        cache_type = CacheResult.MISS
+
+        if cache_scope == CacheScope.NONE:
+            return None, None, CacheResult.MISS
+
+        if CacheResult.CSE in allowed_cache_results:
+            # Check for CSE (Equivalent Job in same execution).
+            call_node: CallNode = (
+                self.session.query(CallNode)
+                .join(Job, CallNode.call_hash == Job.call_hash)
+                .filter(
+                    Job.task_hash == task_hash,
+                    Job.execution_id == execution_id,
+                    CallNode.args_hash == args_hash,
+                )
+                .order_by(Job.start_time.desc())
+                .first()
+            )
+            if call_node:
+                result, is_cached = self.get_call_cache(call_node.call_hash)
+                if is_cached:
+                    return result, call_node.call_hash, CacheResult.CSE
+
+        if (
+            cache_scope == CacheScope.BACKEND
+            and check_valid == CacheCheckValid.SHALLOW
+            and CacheResult.ULTIMATE in allowed_cache_results
+        ):
+            # Check ultimate reduction cache.
+            call_hash = self.get_call_hash(task_hash, args_hash, scheduler_task_hashes)
+            if call_hash:
+                result, is_cached = self.get_call_cache(call_hash)
+                cache_type = CacheResult.ULTIMATE
+
+        if (
+            not is_cached
+            and cache_scope == CacheScope.BACKEND
+            and CacheResult.SINGLE in allowed_cache_results
+        ):
+            # Fallback to single reduction cache.
+            result, is_cached = self.get_eval_cache(eval_hash)
+            cache_type = CacheResult.SINGLE
+
+        if is_cached:
+            return result, call_hash, cache_type
+        else:
+            return None, None, CacheResult.MISS
 
     def get_eval_cache(self, eval_hash: str) -> Tuple[Any, bool]:
+        """
+        Checks the Evaluation cache for a cached result.
+
+        Parameters
+        ----------
+        eval_hash : str
+            Hash of the task and arguments used for call.
+
+        Returns
+        -------
+        (result, is_cached) : Tuple[Any, bool]
+            `result` is the cached result, or None if no result was found.
+            `is_cached` is True if cache hit, otherwise is False.
+        """
         assert self.session
         value_row = (
             self.session.query(Value)
@@ -1774,10 +1854,28 @@ class RedunBackendDb(RedunBackend):
     def set_eval_cache(
         self, eval_hash: str, task_hash: str, args_hash: str, value: Any, value_hash: str = None
     ) -> None:
+        """
+        Sets a new value in the Evaluation cache.
+
+        Parameters
+        ----------
+        eval_hash : str
+            A hash of the combination of the task_hash and args_hash.
+        task_hash : str
+            Hash of Task used in the call.
+        args_hash : str
+            Hash of all arguments used in the call.
+        value : Any
+            Value to record in cache.
+        value_hash : str
+            Hash of value to record in cache.
+        """
         assert self.session
+        # Ensure value is recorded.
         if not value_hash:
             value_hash = self.record_value(value)
 
+        # Update or create Evaluation entry.
         eval_row = self.session.query(Evaluation).filter_by(eval_hash=eval_hash).one_or_none()
         if eval_row:
             if eval_row.value_hash != value_hash:
@@ -1797,9 +1895,97 @@ class RedunBackendDb(RedunBackend):
             except sa.exc.IntegrityError:
                 # If eval_hash has recently been added, do update instead.
                 self.session.rollback()
-                eval_row = self.session.query(Evaluation).get(eval_hash)
+                eval_row = self.session.get(Evaluation, eval_hash)
                 eval_row.value_hash = value_hash
                 self.session.commit()
+
+    def _get_call_node(
+        self, task_hash: str, args_hash: str, scheduler_task_hashes: Set[str]
+    ) -> Optional[CallNode]:
+        assert self.session
+
+        # NOTE: For pure functions, there should not be two current CallNodes
+        # with the same task_hash and args_hash. However, if we have re-executed
+        # a CallNode because its previous result is now invalid (File or Handle)
+        # then we prefer the results of the most recent CallNode.
+        call_nodes = (
+            self.session.query(CallNode)
+            .filter_by(task_hash=task_hash, args_hash=args_hash)
+            .order_by(CallNode.timestamp.desc())
+        )
+
+        # Intersect call_node task_hashes with current task hashes.
+        call_hashes = {call_node.call_hash for call_node in call_nodes}
+        call_task_pairs = filter_in(
+            self.session.query(CallSubtreeTask), CallSubtreeTask.call_hash, call_hashes
+        )
+        call_node2task_hashes = defaultdict(set)
+        for pair in call_task_pairs:
+            call_node2task_hashes[pair.call_hash].add(pair.task_hash)
+
+        current_call_nodes = [
+            call_node
+            for call_node in call_nodes
+            if call_node2task_hashes[call_node.call_hash] <= scheduler_task_hashes
+        ]
+
+        if current_call_nodes:
+            # Use the newest CallNode.
+            return current_call_nodes[0]
+        else:
+            return None
+
+    def get_call_hash(
+        self, task_hash: str, args_hash: str, scheduler_task_hashes: Set[str]
+    ) -> Optional[str]:
+        """
+        Returns the call_hash of a current CallNode with matching task and arg hashes.
+
+        A CallNode is considered *current* only if its Task is currently in the
+        TaskRegistry (same task_hash) and all its child CallNodes are current.
+
+        Parameters
+        ----------
+        task_hash : str
+            Hash of Task used in the call.
+        args_hash : str
+            Hash of all arguments used in the call.
+
+        Returns
+        -------
+        Optional[str]
+            Hash of the found CallNode, or None.
+        """
+        call_node = self._get_call_node(task_hash, args_hash, scheduler_task_hashes)
+        if call_node:
+            return call_node.call_hash
+        else:
+            return None
+
+    def get_call_cache(self, call_hash: str) -> Tuple[Any, bool]:
+        """
+        Returns the result of a previously recorded CallNode.
+
+        Parameters
+        ----------
+        call_hash : str
+            Hash of a CallNode.
+
+        Returns
+        -------
+        Any
+            Recorded final result of a CallNode.
+        """
+        assert self.session
+        value_row = (
+            self.session.query(Value)
+            .join(CallNode, Value.value_hash == CallNode.value_hash)
+            .filter(CallNode.call_hash == call_hash)
+            .one_or_none()
+        )
+        if not value_row:
+            return None, False
+        return self._get_value(value_row)
 
     def explain_cache_miss(self, task: "BaseTask", args_hash: str) -> Optional[Dict[str, Any]]:
         """
@@ -1972,18 +2158,38 @@ class RedunBackendDb(RedunBackend):
         """
         assert self.session
         (is_valid,) = (
-            self.session.query(Handle.is_valid).filter_by(hash=handle.__handle__.hash).one()
+            self.session.query(Handle.is_valid)
+            .filter_by(hash=handle.__handle__.hash)
+            .one_or_none()
         )
-        return is_valid
+        # If handle isn't recorded, it is not valid.
+        return is_valid is True
 
-    def record_execution(self, args: List[str]) -> str:
+    def record_execution(self, exec_id: str, args: List[str]) -> None:
+        """
+        Records an Execution to the backend.
+
+        Parameters
+        ----------
+        exec_id : str
+            The id of the execution.
+        args : List[str]
+            Arguments used on the command line to start Execution.
+
+        Returns
+        -------
+        str
+            UUID of new Execution.
+        """
         self.current_execution = Execution(
-            id=str(uuid.uuid4()),
+            id=exec_id,
             args=json.dumps(args),
         )
-        return self.current_execution.id
 
     def record_job_start(self, job: "BaseJob", now: Optional[datetime] = None) -> Job:
+        """
+        Records the start of a new Job.
+        """
         assert self.session
 
         task = job.task
@@ -2002,6 +2208,7 @@ class RedunBackendDb(RedunBackend):
 
         if not now:
             now = datetime.now()
+
         db_job = Job(
             id=job.id,
             start_time=now,
@@ -2017,6 +2224,12 @@ class RedunBackendDb(RedunBackend):
     def record_job_end(
         self, job: "BaseJob", now: Optional[datetime] = None, status: Optional[str] = None
     ) -> None:
+        """
+        Records the end of a Job.
+
+        Create the job if needed, in which case the job will be recorded with
+        `start_time==end_time`
+        """
         assert self.session
 
         # Currently, we denote failed Jobs by not recording the end_time.
@@ -2049,7 +2262,7 @@ class RedunBackendDb(RedunBackend):
 
     def record_tags(
         self,
-        entity_type: TagEntityType,
+        entity_type: TagEntity,
         entity_id: str,
         tags: Iterable[KeyValue],
         parents: Iterable[str] = (),
@@ -2061,7 +2274,7 @@ class RedunBackendDb(RedunBackend):
 
         Parameters
         ----------
-        entity_type : TagEntityType
+        entity_type : TagEntity
             The type of the tagged entity (Execution, Job, etc).
         entity_id : str
             The id of the tagged entity.
@@ -2074,6 +2287,12 @@ class RedunBackendDb(RedunBackend):
             This also implies `new=True`.
         new : bool
             If True, force tags to be current.
+
+        Returns
+        -------
+
+        [(tag_hash, entity_id, key, value)] : List[Tuple[str, str, str, Any]]
+            Returns a list of the created tags.
         """
         if not tags:
             return []
@@ -2212,7 +2431,7 @@ class RedunBackendDb(RedunBackend):
 
     def update_tags(
         self,
-        entity_type: TagEntityType,
+        entity_type: TagEntity,
         entity_id: str,
         old_keys: Iterable[str],
         new_tags: Iterable[KeyValue],
@@ -2263,9 +2482,9 @@ class RedunBackendDb(RedunBackend):
 
         Parameters
         ----------
-        ids: Iterable[str]
+        ids : Iterable[str]
             Iterable of record ids to fetch serialized records.
-        sorted: bool
+        sorted : bool
             If True, return records in the same order as the ids (Default: True).
         """
         assert self.session
@@ -2339,8 +2558,7 @@ class RedunBackendDb(RedunBackend):
 
     def put_records(self, records: Iterable[dict]) -> int:
         """
-        Writes records to the database.
-        Returns number of new records written
+        Writes records to the database and returns number of new records written.
         """
         assert self.session
         assert self._record_serializer
@@ -2381,7 +2599,7 @@ class RedunBackendDb(RedunBackend):
             self.session.query(Tag)
             .filter(
                 Tag.tag_hash
-                == select([TagEdit.parent_id])
+                == select(TagEdit.parent_id)
                 .where(TagEdit.parent_id == Tag.tag_hash)
                 .scalar_subquery()
             )

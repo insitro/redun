@@ -1,7 +1,7 @@
 repos:
   # Isort: Python import linter/formatter
   - repo: https://github.com/pycqa/isort
-    rev: 5.10.1
+    rev: 5.12.0
     hooks:
       - id: isort
         name: isort (python)
@@ -26,4 +26,4 @@ repos:
       - id: mypy
         args: ['--show-error-codes', '--warn-unused-ignores']
         exclude: 'bin/|docs/|examples/|experimental/|redun_server/|setup.py'
-        additional_dependencies: [types-freezegun, types-python-dateutil]
+        additional_dependencies: [types-freezegun, types-python-dateutil, types-requests]

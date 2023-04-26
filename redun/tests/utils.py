@@ -17,7 +17,9 @@ from aiobotocore.response import StreamingBody
 from botocore.awsrequest import AWSResponse
 from moto import mock_s3 as _mock_s3
 from moto.core.botocore_stubber import MockRawResponse
-from urllib3.response import HTTPHeaderDict
+
+# This should be public, and will be in v2.0. Until then, live with the private import.
+from urllib3._collections import HTTPHeaderDict
 
 from redun import Scheduler
 
@@ -198,7 +200,7 @@ def assert_match_lines(patterns: List[str], lines: List[str]) -> None:
     """
     assert len(patterns) == len(lines)
     for pattern, line in zip(patterns, lines):
-        assert re.fullmatch(pattern, line)
+        assert re.fullmatch(pattern, line), f"Could not match `{pattern}` to `{line}`"
 
 
 def assert_match_text(pattern: str, text: str, wildcard: str = "*"):

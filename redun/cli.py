@@ -38,14 +38,14 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import ParseResult, urlparse, urlunparse
+from urllib.parse import ParseResult, urlparse
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
 
 import redun
-from redun.backends.base import TagEntityType
+from redun.backends.base import TagEntity
 from redun.backends.db import (
     JSON,
     Argument,
@@ -73,8 +73,8 @@ from redun.executors.aws_batch import (
     format_log_stream_event,
 )
 from redun.executors.aws_utils import iter_log_stream
-from redun.executors.base import Executor, get_executors_from_config
 from redun.executors.code_packaging import extract_tar
+from redun.executors.launch import launch_script
 from redun.expression import TaskExpression
 from redun.file import File as BaseFile
 from redun.file import copy_file, list_filesystems
@@ -87,6 +87,17 @@ from redun.scheduler import (
     Traceback,
     format_job_statuses,
     get_task_registry,
+)
+from redun.scheduler_config import (
+    DEFAULT_DB_URI,
+    DEFAULT_POSTGRESQL_PORT,
+    DEFAULT_REDUN_INI,
+    DEFAULT_REPO_NAME,
+    REDUN_CONFIG_DIR,
+    REDUN_CONFIG_ENV,
+    REDUN_INI_FILE,
+    REDUN_USER_ENV,
+    postprocess_config,
 )
 from redun.scripting import script_task
 from redun.tags import (
@@ -117,36 +128,7 @@ redun :: version {version}
 
 The redundant workflow engine.
 """
-REDUN_CONFIG_ENV = "REDUN_CONFIG"
-REDUN_USER_ENV = "REDUN_USER"
-REDUN_CONFIG_DIR = ".redun"
-REDUN_INI_FILE = "redun.ini"
-DEFAULT_REPO_NAME = "default"
-DEFAULT_DB_URI = "sqlite:///redun.db"
-DEFAULT_POSTGRESQL_PORT = 5432
-DEFAULT_REDUN_INI = """\
-# redun configuration.
 
-[backend]
-db_uri = {db_uri}
-
-[executors.default]
-type = local
-max_workers = 20
-
-# [executors.batch]
-# type = aws_batch
-#
-# # Required:
-# image =
-# queue =
-# s3_scratch =
-#
-# # Optional:
-# aws_region =
-# role =
-# debug = False
-"""
 
 PAGER = "less"
 
@@ -264,47 +246,6 @@ def get_abs_path(path: str) -> str:
         return os.path.abspath(path)
 
 
-def get_abs_url(uri: str, base: str) -> str:
-    """
-    Returns URI with absolute path.
-    """
-    if re.match(r"^[^:]+:////", uri):
-        # URI starts with four slashes, so it is already absolute.
-        return uri
-
-    # Parse db_uri.
-    url_parts = urlparse(uri)
-    if url_parts.netloc != "":
-        # Non-file based URL. Use as is.
-        return uri
-
-    # Construct absolute path.
-    path = url_parts.path[1:]
-    abs_path = os.path.join(base, path)
-
-    # Format a new URL with absolute path.
-    abs_url_parts = url_parts._replace(path=abs_path, netloc="")
-    abs_uri_prep = urlunparse(abs_url_parts)
-
-    # Fix leading slashes to match sqlalchemy scheme (4 slashes for abs path).
-    abs_uri = re.sub(r"^([^:]+):", r"\1:///", abs_uri_prep)
-    return abs_uri
-
-
-def get_abs_db_uri(db_uri: str, config_dir: str, cwd: Optional[str] = None) -> str:
-    """
-    Returns DB_URI with absolute path.
-
-    If `db_uri` is a relative path, it is assumed to be relative to `config_dir`.
-    `config_dir` itself may be relative to the current working directory (cwd).
-    """
-    if not cwd:
-        cwd = os.getcwd()
-    abs_config_dir = os.path.normpath(os.path.join(cwd, config_dir))
-    abs_db_uri = get_abs_url(db_uri, abs_config_dir)
-    return abs_db_uri
-
-
 def get_config_dir(config_dir: Optional[str] = None) -> str:
     """
     Get the redun config dir.
@@ -392,36 +333,6 @@ def get_user_setup_func(config: Config) -> Callable[..., Scheduler]:
     module = import_script(file_or_module)
     setup_func = getattr(module, func_name)
     return setup_func
-
-
-def postprocess_config(config: Config, config_dir: str) -> Config:
-    """
-    Postprocess config.
-    """
-    # Add default repository if not specified in config.
-    default_repo = create_config_section({"config_dir": config_dir})
-    if config.get("repos"):
-        config["repos"][DEFAULT_REPO_NAME] = default_repo
-    else:
-        config["repos"] = {DEFAULT_REPO_NAME: default_repo}
-
-    # Set default db_uri if not specified in config.
-    if not config.get("backend"):
-        config["backend"] = create_config_section()
-    if not config["backend"].get("db_uri"):
-        config["backend"]["db_uri"] = DEFAULT_DB_URI
-
-    # Grandfather old default db_uri.
-    if config["backend"]["db_uri"] == "sqlite:///.redun/redun.db":
-        config["backend"]["db_uri"] = DEFAULT_DB_URI
-
-    # Convert db_uri to absolute path.
-    config["backend"]["db_uri"] = get_abs_db_uri(config["backend"]["db_uri"], config_dir)
-
-    # Populate config_dir in backend section.
-    config["backend"]["config_dir"] = config_dir
-
-    return config
 
 
 def get_config_path(config_dir: Optional[str] = None) -> str:
@@ -776,10 +687,18 @@ def import_script(filename_or_module: str, add_cwd: bool = True) -> ModuleType:
 
 
 def get_task_arg_parser(
-    task: BaseTask,
+    task: BaseTask, include_defaults: bool
 ) -> Tuple[argparse.ArgumentParser, Dict[str, str]]:
     """
     Returns a CLI parser for a redun Task.
+
+    Parameters
+    ----------
+    task : BaseTask
+        The task to generate a parser for.
+    include_defaults : bool
+        If true, set defaults for the parser based on the task defaults. If false, do not.
+        This can be useful for determining if a particular argument was actually set by the user.
     """
     parser = argparse.ArgumentParser(
         prog=task.fullname, description=task.func.__doc__, formatter_class=ArgFormatter
@@ -803,7 +722,7 @@ def get_task_arg_parser(
             parser,
             param.name,
             param.annotation if param.annotation is not param.empty else None,
-            param.default if param.default is not param.empty else None,
+            param.default if include_defaults and param.default is not param.empty else None,
         )
         cli2arg[opt.dest] = param.name
 
@@ -1161,6 +1080,20 @@ class RedunClient:
         run_parser.add_argument("-u", "--user", help="Specify user tag for execution.")
         run_parser.add_argument("script", help="Python script to import.")
         run_parser.add_argument("task", help="task within script to run.")
+        run_parser.add_argument(
+            "-i",
+            "--input",
+            help="Input file for task arguments. Should be a "
+            "pickle of `Tuple, Dict` containing "
+            "`args, kwargs`. Additional variables specified as command line arguments will "
+            "override/supplement the contents of this file.",
+        )
+        run_parser.add_argument(
+            "--execution-id",
+            help="If provided, the execution id. Must be a UUID that has not been used "
+            "previously.",
+        )
+
         run_parser.set_defaults(func=self.run_command)
         run_parser.set_defaults(show_help=False)
 
@@ -1603,24 +1536,33 @@ class RedunClient:
             raise RedunClientError('Unknown task "{}"'.format(task_fullname))
 
         # Determine arguments for task.
-        task_arg_parser, cli2arg = get_task_arg_parser(task)
-        task_args = task_arg_parser.parse_args(extra_args)
+        task_arg_parser_defaults, cli2arg = get_task_arg_parser(task, include_defaults=True)
+        task_arg_parser_no_defaults, _ = get_task_arg_parser(task, include_defaults=False)
+        task_args_defaults = task_arg_parser_defaults.parse_args(extra_args)
+        task_args_no_defaults = task_arg_parser_no_defaults.parse_args(extra_args)
 
         # Determine if task-level help is needed.
-        if task_args.show_help:
-            self.display(task_arg_parser.format_help())
+        if task_args_defaults.show_help:
+            self.display(task_arg_parser_defaults.format_help())
             return None
 
         # Determine if task-level info is needed.
-        if task_args.show_info:
+        if task_args_defaults.show_info:
             self.log_task(task, show_job=False)
             return None
 
         pos_args = []
         kwargs = {}
 
+        # Determine arguments for task.
+        if args.input:
+            # Parse task args from input file.
+            input_file = BaseFile(args.input)
+            with input_file.open("rb") as infile:
+                pos_args, kwargs = pickle.load(infile)
+
         # Determine task arguments from rerun job.
-        if rerun_job:
+        elif rerun_job:
             rerun_args = sorted(
                 rerun_job.call_node.arguments, key=lambda arg: arg.arg_position or -1
             )
@@ -1630,9 +1572,13 @@ class RedunClient:
                 else:
                     pos_args.append(arg.value_parsed)
 
-        # Parse cli arguments to task arguments.
+        # Parse cli arguments to task arguments, potentially overriding other types of inputs.
         for dest, arg in cli2arg.items():
-            value = getattr(task_args, dest)
+            # Use the parsed values without defaults, because we know the python signature
+            # already includes them. Moreover, we only want to overwrite values from the prior
+            # steps with explicit user input, not defaults.
+            value = getattr(task_args_no_defaults, dest)
+
             if value is not None:
                 kwargs[arg] = value
 
@@ -1673,6 +1619,7 @@ class RedunClient:
                 dryrun=args.dryrun,
                 cache=not args.no_cache,
                 tags=tags,
+                execution_id=args.execution_id,
             )
 
         except DryRunResult:
@@ -1704,53 +1651,41 @@ class RedunClient:
         logger.info(f"redun :: version {redun.__version__}")
         logger.info(f"config dir: {get_config_dir(args.config)}")
 
-        # Determine executor.
+        config = setup_config(args.config)
         executor_name = args.executor
         if not executor_name:
             raise RedunClientError("--executor is required.")
-        config = setup_config(args.config)
-        executors = {
-            executor.name: executor
-            for executor in get_executors_from_config(config.get("executors", {}))
-        }
-        executor: Optional[Executor] = executors.get(executor_name)
-        if not executor:
-            raise RedunClientError(f"Unknown Executor {executor_name}.")
-
-        # Perpare command to execute within Executor.
-        remote_run_command = " ".join(quote(arg) for arg in extra_args)
-
-        # Setup Scheduler.
-        scheduler = self.get_scheduler(args, migrate_if_local=True)
-        executor.set_scheduler(scheduler)
 
         # Parse task options.
         task_options = dict(map(parse_tag_key_value, args.option)) if args.option else {}
         task_options["executor"] = executor_name
 
-        # Setup job for inner run command.
-        run_expr = cast(TaskExpression, script_task.options(**task_options)(remote_run_command))
-
-        logger.info(f"Run within Executor {executor_name}: {remote_run_command}")
         if args.wait:
+            # Prepare command to execute within Executor.
+            remote_run_command = " ".join(quote(arg) for arg in extra_args)
+
+            logger.info(f"Run within Executor {executor_name}: {remote_run_command}")
+
+            # Setup Scheduler.
+            scheduler = self.get_scheduler(args, migrate_if_local=True)
+
+            # Setup job for inner run command.
+            run_expr = cast(
+                TaskExpression, script_task.options(**task_options)(remote_run_command)
+            )
+
             # Run scheduler and wait for completion.
             result = scheduler.run(run_expr)
             if result is not None:
                 self.display(result, pretty=True)
 
         else:
-            # Submit directly to executor and immediately exit.
-            job = redun.scheduler.Job(script_task, run_expr)
-            script_args = ()
-            script_kwargs = {"command": remote_run_command}
-            job.eval_hash, job.args_hash = scheduler.get_eval_hash(
-                script_task, script_args, script_kwargs
+            launch_script(
+                config,
+                executor_name=executor_name,
+                script_command=extra_args,
+                task_options=task_options,
             )
-            job.args = script_args, script_kwargs
-
-            # Submit job to executor.
-            executor.submit_script(job)
-            executor.stop()  # stop the monitor thread.
 
     def infer_file_path(self, path: str) -> Optional[Base]:
         """
@@ -2423,16 +2358,20 @@ class RedunClient:
         # joining with Files.
         query = query.clone(values=session.query(Value.value_hash))
         value_cte = query.build()._values.cte()
-        value_subquery = sa.select(["*"]).select_from(value_cte)
-        files = (
-            session.query(File)
-            .filter(File.value_hash.in_(value_subquery))
-            .order_by(File.path)
-            .all()
+        value_subquery = sa.select("*").select_from(value_cte)
+        files, value_hashes = zip(
+            *(
+                (file, file.value_hash)
+                for file, _ in (
+                    session.query(File, File.path)
+                    .filter(File.value_hash.in_(value_subquery))
+                    .order_by(File.path)
+                    .all()
+                )
+            )
         )
 
         # Build query file tags.
-        value_hashes = [file.value_hash for file in files]
         tags = session.query(Tag).filter(Tag.entity_id.in_(value_hashes))
         value_hash2tags = defaultdict(list)
         for tag in tags:
@@ -2579,7 +2518,7 @@ class RedunClient:
             args, extra_args = parser.parse_known_args(argv)
             return self.log_command(args, extra_args, argv)
 
-    def _parse_entity_info(self, id_prefix: str) -> Tuple[str, TagEntityType]:
+    def _parse_entity_info(self, id_prefix: str) -> Tuple[str, TagEntity]:
         model_pks = {
             Execution: "id",
             Job: "id",
@@ -2592,7 +2531,7 @@ class RedunClient:
         full_id = getattr(entity, model_pks[type(entity)])
 
         try:
-            entity_type = TagEntityType(type(entity).__name__)
+            entity_type = TagEntity(type(entity).__name__)
         except ValueError:
             raise ValueError(
                 "Entity {} is not a taggable entity type ({}).".format(
@@ -2771,7 +2710,7 @@ class RedunClient:
 
             else:
                 # Parse task args from cli.
-                task_arg_parser, cli2arg = get_task_arg_parser(task)
+                task_arg_parser, cli2arg = get_task_arg_parser(task, include_defaults=True)
                 task_opts = task_arg_parser.parse_args(extra_args)
 
                 # Parse cli arguments to task arguments.

@@ -37,7 +37,7 @@ from redun.file import File
 from redun.job_array import JobArrayer
 from redun.scheduler import Job, Scheduler, Traceback
 from redun.scripting import get_task_command
-from redun.task import Task
+from redun.task import CacheScope, Task
 from redun.utils import json_cache_key, lru_cache_custom, merge_dicts, pickle_dump
 
 SUBMITTED = "SUBMITTED"
@@ -230,7 +230,7 @@ def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
         """Overwrite the resource properties with redactions."""
         result = copy.deepcopy(job_def)
 
-        # Ignore job definition name.
+        # Ignore some fields.
         result.pop("jobDefinitionName", None)
 
         result.setdefault("containerProperties", {}).update(no_resource_container_properties)
@@ -244,7 +244,18 @@ def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
     # Limit equality to the keys of job_def1.
     job_def1 = sanitize_job_def(job_def1)
     job_def2 = sanitize_job_def(job_def2)
-    return all(job_def1[key] == job_def2[key] for key in job_def1.keys())
+
+    def dict_eq_lhs_keys(lhs: Dict, rhs: Dict) -> bool:
+        """Recursively check that the lhs is a subset of the rhs - Batch may return more keys
+        than we set, usually to empty values, but we don't care."""
+
+        return all(
+            lhs[key] == rhs[key]
+            or (isinstance(lhs[key], dict) and dict_eq_lhs_keys(lhs[key], rhs[key]))
+            for key in lhs.keys()
+        )
+
+    return dict_eq_lhs_keys(job_def1, job_def2)
 
 
 def get_job_def_revision(job_def_name: str) -> int:
@@ -382,6 +393,8 @@ def batch_submit(
     timeout: Optional[int] = None,
     batch_tags: Optional[Dict[str, str]] = None,
     propagate_tags: bool = True,
+    share_id: Optional[str] = None,
+    scheduling_priority_override: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Actually perform job submission to AWS batch. Create or retrieve the job definition, then
     use it to submit the job.
@@ -442,6 +455,12 @@ def batch_submit(
     if batch_tags:
         batch_job_args["tags"] = batch_tags
 
+    # If provided, set batch args required by queues with Scheduling Policies
+    if share_id is not None:
+        batch_job_args["shareIdentifier"] = share_id
+    if scheduling_priority_override is not None:
+        batch_job_args["schedulingPriorityOverride"] = scheduling_priority_override
+
     # Submit to batch.
     batch_run = batch_client.submit_job(
         jobName=job_name,
@@ -491,6 +510,7 @@ def get_batch_job_options(job_options: dict) -> dict:
     """
     Returns AWS Batch-specific job options from general job options.
     """
+    # These options are usually mirrored in default_task_options for use with the redun.ini.
     keys = [
         "vcpus",
         "gpus",
@@ -505,6 +525,8 @@ def get_batch_job_options(job_options: dict) -> dict:
         "batch_tags",
         "num_nodes",
         "job_def_extra",
+        "share_id",
+        "scheduling_priority_override",
     ]
     return {key: job_options[key] for key in keys if key in job_options}
 
@@ -543,7 +565,7 @@ def submit_task(
         args,
         kwargs,
         # Suppress cache checking since output is discarded.
-        job_options={**job_options, "cache": False},
+        job_options={**job_options, "cache_scope": CacheScope.NONE},
         code_file=code_file,
         array_uuid=array_uuid,
         output_path="/dev/null",  # Let main command write to scratch file.
@@ -840,16 +862,23 @@ class AWSBatchExecutor(Executor):
         self.debug = config.getboolean("debug", fallback=False)
 
         # Default task options.
+        # Defaults should be set for all values mirrored in get_batch_job_options.
         self.default_task_options: Dict[str, Any] = {
             "vcpus": config.getint("vcpus", fallback=1),
             "gpus": config.getint("gpus", fallback=0),
             "memory": config.getfloat("memory", fallback=4),
             "shared_memory": config.getint("shared_memory", fallback=None),
+            "timeout": config.getint("timeout", fallback=None),
+            "privileged": config.getboolean("privileged", fallback=False),
+            "autocreate_job": config.getboolean("autocreate_job", fallback=True),
+            "job_def_name": config.get("job_def_name", fallback=None),
             "retries": config.getint("retries", fallback=1),
             "role": config.get("role"),
             "job_name_prefix": config.get("job_name_prefix", fallback="redun-job"),
             "num_nodes": config.getint("num_nodes", fallback=None),
             "job_def_extra": parse_nullable_json(config.get("job_def_extra", fallback=None)),
+            "share_id": config.get("share_id"),
+            "scheduling_priority_override": config.getint("scheduling_priority_override"),
         }
         if config.get("batch_tags"):
             self.default_task_options["batch_tags"] = json.loads(config.get("batch_tags"))
@@ -1198,11 +1227,11 @@ class AWSBatchExecutor(Executor):
 
         # Determine job options.
         task_options = self._get_job_options(job)
-        use_cache = task_options.get("cache", True)
+        cache_scope = CacheScope(task_options.get("cache_scope", CacheScope.BACKEND))
 
         # Determine if we can reunite with a previous Batch output or job.
         batch_job_id: Optional[str] = None
-        if use_cache and job.eval_hash in self.preexisting_batch_jobs:
+        if cache_scope == CacheScope.BACKEND and job.eval_hash in self.preexisting_batch_jobs:
             batch_job_id = self.preexisting_batch_jobs.pop(job.eval_hash)
 
             # Make sure Batch API still has a status on this job.
@@ -1444,3 +1473,6 @@ class AWSBatchExecutor(Executor):
 
         for job_id in job_ids:
             yield batch_client.terminate_job(jobId=job_id, reason=reason)
+
+    def scratch_root(self) -> str:
+        return self.s3_scratch_prefix

@@ -13,7 +13,7 @@ represented in pandas.
 
 ### Data I/O
 
-Spark datasets are typically saved as multiple files (shards) on S3. The [ShardedS3Dataset](redun/redun.html?#redun.file.ShardedS3Dataset) class represents these datasets in redun while tracking their provenance. Datasets may be
+Spark datasets are typically saved as multiple files (shards) on S3. The [ShardedS3Dataset](redun.file.ShardedS3Dataset) class represents these datasets in redun while tracking their provenance. Datasets may be
 in a variety of formats, including parquet, csv, and avro. The default is always parquet.
 
 Useful class functions, briefly:
@@ -105,7 +105,7 @@ def do_stuff():
 ### Accessing Spark contexts
 
 The `redun.glue` module contains helper functions to access the Spark Session and Context objects:
-`get_spark_context()` and `get_spark_session()`. [Full Documentation](redun/redun.md#module-redun.glue)
+`get_spark_context()` and `get_spark_session()`. [Full Documentation](spark.md)
 
 ### User-defined functions
 

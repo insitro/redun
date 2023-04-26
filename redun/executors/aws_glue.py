@@ -23,7 +23,7 @@ from redun.executors.scratch import parse_job_result
 from redun.file import File
 from redun.hashing import hash_stream, hash_text
 from redun.scheduler import Job, Scheduler, Traceback
-from redun.task import Task
+from redun.task import CacheScope, Task
 from redun.utils import pickle_dump
 
 ARGS = ["code", "script", "task", "input", "output", "error"]
@@ -48,7 +48,7 @@ DEFAULT_ADDITIONAL_PYTHON_MODULES = [
     "mako",
     "promise",
     "s3fs>=2021.11.1",
-    "sqlalchemy>=1.3.17or<2",  # Don't use commas as AWS won't parse them.
+    "sqlalchemy>=1.4.0or<2.1",  # Don't use commas as AWS won't parse them.
 ]
 
 
@@ -464,8 +464,9 @@ class AWSGlueExecutor(Executor):
 
         # Determine if we can reunite with a previous Glue output or job.
         glue_job_id: Optional[str] = None
-        use_cache = task_options.get("cache", True)
-        if use_cache and job.eval_hash in self.preexisting_glue_jobs:
+        cache_scope = CacheScope(task_options.get("cache_scope", CacheScope.BACKEND))
+
+        if cache_scope == CacheScope.BACKEND and job.eval_hash in self.preexisting_glue_jobs:
             assert self.glue_job_name
             glue_job_id = self.preexisting_glue_jobs.pop(job.eval_hash)
 
@@ -541,6 +542,9 @@ class AWSGlueExecutor(Executor):
             )
         )
         return glue_resp["JobRunId"]
+
+    def scratch_root(self) -> str:
+        return self.s3_scratch_prefix
 
 
 def submit_glue_job(

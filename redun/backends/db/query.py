@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set,
 import sqlalchemy as sa
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql.expression import cast as sa_cast
+from sqlalchemy.sql.expression import select
 
 from redun.backends.db import (
     JSON,
@@ -35,7 +36,14 @@ class CallGraphQuery:
         Value: "value_hash",
         Task: "hash",
     }
-    MODEL_NAMES = ["Execution", "Job", "CallNode", "Task", "Value"]
+    MODEL_CLASSES = {
+        "Execution": Execution,
+        "Job": Job,
+        "CallNode": CallNode,
+        "Task": Task,
+        "Value": Value,
+    }
+    MODEL_NAMES = list(MODEL_CLASSES.keys())
 
     ExecTag = sa.orm.aliased(Tag)
 
@@ -449,9 +457,9 @@ class CallGraphQuery:
             Job2 = sa.orm.aliased(Job)
             query = query.clone(
                 executions=(
-                    query._executions.join(Job2, Execution.job_id == Job2.id).order_by(
-                        Job2.start_time.desc()
-                    )
+                    query._executions.add_columns(Job2.start_time)
+                    .join(Job2, Execution.job_id == Job2.id)
+                    .order_by(Job2.start_time.desc())
                 ),
                 jobs=(query._jobs.order_by(Job.start_time.desc())),
             )
@@ -482,7 +490,14 @@ class CallGraphQuery:
 
         for record_type, subquery in query.subqueries:
             if record_type in self._filter_types:
-                yield from subquery.distinct().all()
+                # Normally, `subquery.statement.distinct()` would be enough here
+                # but the extra select() wrapper is needed when using unions.
+                # Also, select() doesn't accept string names for now, so we need to look up
+                # the actual type.
+                selectable = select(self.MODEL_CLASSES[record_type]).from_statement(
+                    subquery.statement.distinct()
+                )
+                yield from self._session.execute(selectable).scalars()
 
     def one(self) -> Base:
         """
@@ -527,7 +542,7 @@ class CallGraphQuery:
         query = self.build()
         for record_type, subquery in query.subqueries:
             if record_type in self._filter_types:
-                yield (record_type, subquery.distinct().count())
+                yield record_type, subquery.distinct().count()
 
     def select(self, *columns: Iterable[str], flat: bool = False) -> Iterator[Any]:
         """

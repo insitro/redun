@@ -64,6 +64,13 @@ def get_array_scratch_file(scratch_prefix: str, job_array_id: str, filename: str
     return os.path.join(scratch_prefix, "array_jobs", job_array_id, filename)
 
 
+def get_execution_scratch_file(scratch_prefix: str, execution_id: str, filename: str) -> str:
+    """
+    Returns an scratch path for a sending data to and from a remote execution.
+    """
+    return os.path.join(scratch_prefix, "execution", execution_id, filename)
+
+
 def parse_job_result(
     scratch_prefix: str,
     job: Job,
