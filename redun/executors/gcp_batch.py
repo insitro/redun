@@ -258,10 +258,11 @@ class GCPBatchExecutor(Executor):
             self.code_file = package_code(self.gcs_scratch_prefix, code_package)
 
         task_options = self._get_job_options(job)
-        use_cache = task_options.get("cache", True)
+        cache_scope = CacheScope(task_options.get("cache_scope", CacheScope.BACKEND))
 
+        # Determine if we can reunite with a previous Batch output or job.
         batch_task_name: Optional[str] = None
-        if use_cache and job.eval_hash in self.preexisting_batch_tasks:
+        if cache_scope == CacheScope.BACKEND and job.eval_hash in self.preexisting_batch_tasks:
             batch_task_name = self.preexisting_batch_tasks.pop(job.eval_hash)
 
             job_dir = get_job_scratch_dir(self.gcs_scratch_prefix, job)
