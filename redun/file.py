@@ -741,7 +741,7 @@ class GSFileSystem(FsspecFileSystem):
 
             if src_path and dest_path:
                 if src_proto == "gs" and dest_proto == "local":
-                    return f"ln -s {quote(src_path)} {quote(dest_path)}"
+                    return f"cp {quote(src_path)} {quote(dest_path)}"
                 if src_proto == "local" and dest_proto == "gs":
                     if not recursive:
                         return f"{mk_dest_dir} && cp {quote(src_path)} {quote(dest_path)}"
