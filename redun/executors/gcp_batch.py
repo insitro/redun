@@ -32,6 +32,7 @@ from redun.job_array import JobArrayer
 from redun.scheduler import Job as RedunJob
 from redun.scheduler import Scheduler
 from redun.scripting import DEFAULT_SHELL, get_task_command
+from redun.task import CacheScope
 from redun.utils import pickle_dump
 
 REDUN_ARRAY_JOB_PREFIX = "redun-array-"
