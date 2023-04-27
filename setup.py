@@ -29,9 +29,9 @@ python_36_backports = ["dataclasses>=0.8", "types-dataclasses>=0.6.6"]
 
 extras = {
     "glue": ["pandas", "pyarrow", "pyspark"],
-    "gbatch": ["google-cloud-batch>=0.2.0"],
     "k8s": "kubernetes>=22.6",
     "viz": "pygraphviz",
+    "google-batch": "google-cloud-batch>=0.2.0",
 }
 
 if REQUIRE_POSTGRES:
