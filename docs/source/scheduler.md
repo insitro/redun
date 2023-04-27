@@ -14,7 +14,7 @@ This section reviews the essential guarantees and properties of the redun schedu
 to assist users needing to customize or understand the execution behavior more closely.
 
 For more background on the design of the caching behavior and the scheduler, we also provide further 
-(implementation notes)[implementation/graph_reduction_caching.md].
+[implementation notes](implementation/graph_reduction_caching.md).
 
 ## Core principles of the scheduler
 
