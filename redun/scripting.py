@@ -209,7 +209,7 @@ def script_task(
     namespace="redun",
     version="1",
     check_valid="shallow",
-    config_args=["input_staging"],
+    config_args=["core_command", "input_staging"],
 )
 def _script(
     command: str,
