@@ -45,7 +45,7 @@ execution. We explain these in detail in the following sections.
 ## Single vs Ultimate reductions
 
 Before explaining the scheduler behaviors, we need to briefly introduce the concept of reductions.
-For a longer exposition, see (Graph reduction caching)[implementation/graph_reduction_caching.md].
+For a longer exposition, see [Graph reduction caching](implementation/graph_reduction_caching.md).
 Consider the following snippet:
 
 ```python
@@ -178,7 +178,7 @@ with CSE, that the cached value is appropriate to use.
 Task caching operates at the granularity of a single
 call to a `Task` with concrete arguments. Recall that the result of a `Task` might be a value,
 or another expression that needs further evaluation. In its normal mode, caching uses single
-reductions, stepping through the evaluation. See the (Results caching)[design.md#Result-caching] 
+  * [x] reductions, stepping through the evaluation. See the [Results caching](design.md#Result-caching)
 section, for more information on how this recursive checking works.
 
 Consider the following example:
@@ -206,9 +206,9 @@ To evaluate `out`, the following three task executions might be considered for c
 
 For CSE, we could simply assume that the code was identical for a task, but for caching, 
 need to actually check that the code is identical, as defined by the 
-(hash of the Task)[tasks.md#Task-hashing]. Since `Value` objects can represent state in addition 
+[hash of the Task](tasks.md#Task-hashing). Since `Value` objects can represent state in addition 
 to their natural values, we need to check that the output is actually valid before using a cache
-result; see (Validity)[values.md#Validity].
+result; see [Validity](values.md#Validity).
 
 The normal caching mode (so-called "full") is fully recursive (i.e., uses single reductions), 
 hence the scheduler must visit every node in the entire call graph produced by an expression,
@@ -253,7 +253,7 @@ The scheduler and tasks provide a few different mechanisms for customizing the b
 The most common mechanism for customizing the behavior of the scheduler is to use task options 
 `check_valid` and `cache`, to switch between full and shallow validity checking, or to turn off
 caching, respectively. As an advanced option, the `cache_scope` option can disable CSE as well.
-See (task options)[tasks.md#task-options].
+See [task options](tasks.md#task-options).
 
 The scheduler as a whole can be configured to disable caching, either with the `--no-cache` CLI 
 flag, the `scheduler.run` argument, or with the configuration file.
