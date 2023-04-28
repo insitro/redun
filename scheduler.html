@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Configuration" href="config.html" /><link rel="prev" title="Executors" href="executors.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.1.3 and Furo 2023.03.27 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 6.2.1 and Furo 2023.03.27 -->
         <title>Scheduling redun workflows - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
@@ -239,7 +239,7 @@ so redun offers users the ability to customize the behavior in certain ways.
 This section reviews the essential guarantees and properties of the redun scheduler,
 to assist users needing to customize or understand the execution behavior more closely.</p>
 <p>For more background on the design of the caching behavior and the scheduler, we also provide further
-(implementation notes)[implementation/graph_reduction_caching.md].</p>
+<a class="reference internal" href="implementation/graph_reduction_caching.html"><span class="std std-doc">implementation notes</span></a>.</p>
 <section id="core-principles-of-the-scheduler">
 <h2>Core principles of the scheduler<a class="headerlink" href="#core-principles-of-the-scheduler" title="Permalink to this heading">#</a></h2>
 <p>The redun scheduler operates on these principles:</p>
@@ -270,7 +270,7 @@ execution. We explain these in detail in the following sections.</p>
 <section id="single-vs-ultimate-reductions">
 <h2>Single vs Ultimate reductions<a class="headerlink" href="#single-vs-ultimate-reductions" title="Permalink to this heading">#</a></h2>
 <p>Before explaining the scheduler behaviors, we need to briefly introduce the concept of reductions.
-For a longer exposition, see (Graph reduction caching)[implementation/graph_reduction_caching.md].
+For a longer exposition, see <a class="reference internal" href="implementation/graph_reduction_caching.html"><span class="std std-doc">Graph reduction caching</span></a>.
 Consider the following snippet:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
 <span class="k">def</span> <span class="nf">deeply_nested</span><span class="p">():</span>
@@ -386,9 +386,11 @@ to span multiple executions, processes, hosts, etc. In general, we need to be mo
 with CSE, that the cached value is appropriate to use.</p>
 <p>Task caching operates at the granularity of a single
 call to a <code class="docutils literal notranslate"><span class="pre">Task</span></code> with concrete arguments. Recall that the result of a <code class="docutils literal notranslate"><span class="pre">Task</span></code> might be a value,
-or another expression that needs further evaluation. In its normal mode, caching uses single
-reductions, stepping through the evaluation. See the (Results caching)[design.md#Result-caching]
-section, for more information on how this recursive checking works.</p>
+or another expression that needs further evaluation. In its normal mode, caching uses single</p>
+<ul class="simple">
+<li><p>[x] reductions, stepping through the evaluation. See the <a class="reference internal" href="design.html#Result-caching"><span class="std std-ref">Results caching</span></a>
+section, for more information on how this recursive checking works.</p></li>
+</ul>
 <p>Consider the following example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
 <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>
@@ -414,9 +416,9 @@ section, for more information on how this recursive checking works.</p>
 </ul>
 <p>For CSE, we could simply assume that the code was identical for a task, but for caching,
 need to actually check that the code is identical, as defined by the
-(hash of the Task)[tasks.md#Task-hashing]. Since <code class="docutils literal notranslate"><span class="pre">Value</span></code> objects can represent state in addition
+<a class="reference internal" href="tasks.html#Task-hashing"><span class="std std-ref">hash of the Task</span></a>. Since <code class="docutils literal notranslate"><span class="pre">Value</span></code> objects can represent state in addition
 to their natural values, we need to check that the output is actually valid before using a cache
-result; see (Validity)[values.md#Validity].</p>
+result; see <a class="reference internal" href="values.html#Validity"><span class="std std-ref">Validity</span></a>.</p>
 <p>The normal caching mode (so-called “full”) is fully recursive (i.e., uses single reductions),
 hence the scheduler must visit every node in the entire call graph produced by an expression,
 checking the Task hashes and output validity, even if every single step is cached.
@@ -455,7 +457,7 @@ the cache and reruns the task.</p>
 <p>The most common mechanism for customizing the behavior of the scheduler is to use task options
 <code class="docutils literal notranslate"><span class="pre">check_valid</span></code> and <code class="docutils literal notranslate"><span class="pre">cache</span></code>, to switch between full and shallow validity checking, or to turn off
 caching, respectively. As an advanced option, the <code class="docutils literal notranslate"><span class="pre">cache_scope</span></code> option can disable CSE as well.
-See (task options)[tasks.md#task-options].</p>
+See <a class="reference internal" href="tasks.html#task-options"><span class="std std-ref">task options</span></a>.</p>
 <p>The scheduler as a whole can be configured to disable caching, either with the <code class="docutils literal notranslate"><span class="pre">--no-cache</span></code> CLI
 flag, the <code class="docutils literal notranslate"><span class="pre">scheduler.run</span></code> argument, or with the configuration file.</p>
 <p>Users cannot customize the reused expression logic.</p>
