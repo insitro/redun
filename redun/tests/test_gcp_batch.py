@@ -24,7 +24,6 @@ REGION = "region"
 GCS_SCRATCH_PREFIX = "gs://example-bucket/redun"
 
 
-@patch("redun.executors.gcp_utils.get_gcp_client", Mock())
 def mock_executor(scheduler, debug=False, code_package=True) -> GCPBatchExecutor:
     """
     Returns an GCPBatchExecutor with GCP API mocks.
@@ -70,6 +69,7 @@ def task1(x: int) -> int:
 
 @use_tempdir
 @mock_s3
+@patch("redun.executors.gcp_utils.get_gcp_client", Mock())
 @patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
 @patch("redun.executors.gcp_utils.batch_submit")
 @patch("redun.executors.gcp_utils.list_jobs")
@@ -189,6 +189,7 @@ def test_executor(
 
 @use_tempdir
 @mock_s3
+@patch("redun.executors.gcp_utils.get_gcp_client", Mock())
 @patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
 @patch("redun.executors.gcp_utils.batch_submit")
 @patch("redun.executors.gcp_utils.list_jobs")
