@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 
 import boto3
 from google.cloud import batch_v1
+from google.protobuf.json_format import MessageToDict  # type: ignore
 
 from redun import File, task
 from redun.config import Config
@@ -70,26 +71,26 @@ def task1(x: int) -> int:
 
 @use_tempdir
 @mock_s3
-@patch("redun.executors.gcp_utils.get_gcp_client", Mock())
+@patch("redun.executors.gcp_utils.get_gcp_client")
 @patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
-@patch("redun.executors.gcp_utils.batch_submit")
 @patch("redun.executors.gcp_utils.list_jobs")
 @patch("redun.executors.gcp_utils.get_task")
 def test_executor(
     get_task_mock: Mock,
     list_jobs_mock: Mock,
-    batch_submit_mock: Mock,
+    get_gcp_client_mock: Mock,
 ) -> None:
     """
     GCPBatchExecutor should run jobs.
     """
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
+    client = get_gcp_client_mock()
 
     # Prepare API mocks for job submission.
     batch_job_id = "123"
     batch_job = batch_v1.Job(task_groups=[batch_v1.TaskGroup(name=batch_job_id)])
-    batch_submit_mock.return_value = batch_job
+    client.create_job.return_value = batch_job
     list_jobs_mock.return_value = []
     get_task_mock.return_value = batch_v1.Task(
         name=f"{batch_job_id}/tasks/0",
@@ -106,43 +107,50 @@ def test_executor(
     # Let job arrayer submit job.
     wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # Ensure job options were passed correctly to docker.
+    # Ensure job was submitted correctly to Google Batch.
     scratch_dir = executor.gcs_scratch_prefix
     assert executor.code_file
-
-    assert batch_submit_mock.call_args
-    args = batch_submit_mock.call_args[1]
-    args.pop("client")
-    assert batch_submit_mock.call_args[1] == {
-        "commands": [
-            "redun",
-            "--check-version",
-            ">=0.4.1",
-            "oneshot",
-            "redun.tests.test_gcp_batch",
-            "--code",
-            executor.code_file.path,
-            "--input",
-            "gs://example-bucket/redun/jobs/eval_hash/input",
-            "--output",
-            "gs://example-bucket/redun/jobs/eval_hash/output",
-            "--error",
-            "gs://example-bucket/redun/jobs/eval_hash/error",
-            "task1",
-        ],
-        "gcs_scratch_prefix": "gs://example-bucket/redun",
-        "image": "gcr.io/gcp-project/redun",
-        "job_name": f"redun-{job.id}",
-        "labels": {"redun_hash": "eval_hash", "redun_job_type": "container"},
-        "machine_type": "e2-standard-4",
-        "memory": 16,
-        "priority": 30,
-        "project": "project",
-        "region": "project",
-        "retries": 2,
-        "service_account_email": "",
-        "task_count": 1,
-        "vcpus": 2,
+    assert MessageToDict(client.create_job.call_args[0][0]._pb) == {
+        "job": {
+            "allocationPolicy": {"instances": [{"policy": {"machineType": "e2-standard-4"}}]},
+            "labels": {"redun_hash": "eval_hash", "redun_job_type": "container"},
+            "logsPolicy": {"destination": "CLOUD_LOGGING"},
+            "priority": "30",
+            "taskGroups": [
+                {
+                    "taskCount": "1",
+                    "taskSpec": {
+                        "computeResource": {"cpuMilli": "2000", "memoryMib": "16384"},
+                        "maxRetryCount": 2,
+                        "runnables": [
+                            {
+                                "container": {
+                                    "commands": [
+                                        "redun",
+                                        "--check-version",
+                                        ">=0.4.1",
+                                        "oneshot",
+                                        "redun.tests.test_gcp_batch",
+                                        "--code",
+                                        executor.code_file.path,
+                                        "--input",
+                                        "gs://example-bucket/redun/jobs/eval_hash/input",
+                                        "--output",
+                                        "gs://example-bucket/redun/jobs/eval_hash/output",
+                                        "--error",
+                                        "gs://example-bucket/redun/jobs/eval_hash/error",
+                                        "task1",
+                                    ],
+                                    "imageUri": "gcr.io/gcp-project/redun",
+                                }
+                            }
+                        ],
+                    },
+                }
+            ],
+        },
+        "jobId": f"redun-{job.id}",
+        "parent": "projects/project/locations/project",
     }
 
     # Simulate output file created by job.
@@ -158,7 +166,7 @@ def test_executor(
     # Prepare API mocks for job submission of a failed job.
     batch_job_id = "456"
     batch_job = batch_v1.Job(task_groups=[batch_v1.TaskGroup(name=batch_job_id)])
-    batch_submit_mock.return_value = batch_job
+    client.create_job.return_value = batch_job
     list_jobs_mock.return_value = []
     get_task_mock.return_value = batch_v1.Task(
         name=f"{batch_job_id}/tasks/0",
@@ -190,27 +198,27 @@ def test_executor(
 
 @use_tempdir
 @mock_s3
-@patch("redun.executors.gcp_utils.get_gcp_client", Mock())
 @patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
-@patch("redun.executors.gcp_utils.batch_submit")
+@patch("redun.executors.gcp_utils.get_gcp_client")
 @patch("redun.executors.gcp_utils.list_jobs")
 @patch("redun.executors.gcp_utils.get_task")
 def test_executor_array(
     get_task_mock: Mock,
     list_jobs_mock: Mock,
-    batch_submit_mock: Mock,
+    get_gcp_client_mock: Mock,
 ) -> None:
     """
     GCPBatchExecutor should be able to submit array jobs.
     """
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
+    client = get_gcp_client_mock()
 
     # Suppress inflight jobs check.
     list_jobs_mock.return_value = []
 
     # Prepare API mocks for job submission.
-    batch_submit_mock.return_value = batch_v1.Job(
+    client.create_job.return_value = batch_v1.Job(
         task_groups=[
             batch_v1.TaskGroup(
                 name="123",
@@ -250,45 +258,54 @@ def test_executor_array(
     # Let job arrayer submit job.
     wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # Ensure job options were passed correctly to docker.
+    # Ensure job was submitted to correctly to Google Batch.
     scratch_dir = executor.gcs_scratch_prefix
     assert executor.code_file
 
-    assert batch_submit_mock.call_args
-    args = batch_submit_mock.call_args[1]
-    args.pop("client")
-    array_uuid = batch_submit_mock.call_args[1]["job_name"].replace("redun-array-", "")
-    assert batch_submit_mock.call_args[1] == {
-        "commands": [
-            "redun",
-            "--check-version",
-            ">=0.4.1",
-            "oneshot",
-            "redun.tests.test_gcp_batch",
-            "--code",
-            executor.code_file.path,
-            "--array-job",
-            "--input",
-            f"gs://example-bucket/redun/array_jobs/{array_uuid}/input",
-            "--output",
-            f"gs://example-bucket/redun/array_jobs/{array_uuid}/output",
-            "--error",
-            f"gs://example-bucket/redun/array_jobs/{array_uuid}/error",
-            "task1",
-        ],
-        "gcs_scratch_prefix": "gs://example-bucket/redun",
-        "image": "gcr.io/gcp-project/redun",
-        "job_name": f"redun-array-{array_uuid}",
-        "labels": {"redun_hash": f"{array_uuid}", "redun_job_type": "container"},
-        "machine_type": "e2-standard-4",
-        "memory": 16,
-        "priority": 30,
-        "project": "project",
-        "region": "project",
-        "retries": 2,
-        "service_account_email": "",
-        "task_count": 2,
-        "vcpus": 2,
+    response = MessageToDict(client.create_job.call_args[0][0]._pb)
+    array_uuid = response["jobId"].replace("redun-array-", "")
+    assert response == {
+        "job": {
+            "allocationPolicy": {"instances": [{"policy": {"machineType": "e2-standard-4"}}]},
+            "labels": {"redun_hash": array_uuid, "redun_job_type": "container"},
+            "logsPolicy": {"destination": "CLOUD_LOGGING"},
+            "priority": "30",
+            "taskGroups": [
+                {
+                    "taskCount": "2",
+                    "taskSpec": {
+                        "computeResource": {"cpuMilli": "2000", "memoryMib": "16384"},
+                        "maxRetryCount": 2,
+                        "runnables": [
+                            {
+                                "container": {
+                                    "commands": [
+                                        "redun",
+                                        "--check-version",
+                                        ">=0.4.1",
+                                        "oneshot",
+                                        "redun.tests.test_gcp_batch",
+                                        "--code",
+                                        executor.code_file.path,
+                                        "--array-job",
+                                        "--input",
+                                        f"gs://example-bucket/redun/array_jobs/{array_uuid}/input",  # noqa: E501
+                                        "--output",
+                                        f"gs://example-bucket/redun/array_jobs/{array_uuid}/output",  # noqa: E501
+                                        "--error",
+                                        f"gs://example-bucket/redun/array_jobs/{array_uuid}/error",  # noqa: E501
+                                        "task1",
+                                    ],
+                                    "imageUri": "gcr.io/gcp-project/redun",
+                                }
+                            }
+                        ],
+                    },
+                }
+            ],
+        },
+        "jobId": f"redun-array-{array_uuid}",
+        "parent": "projects/project/locations/project",
     }
 
     # Simulate output file created by job1.
@@ -311,26 +328,26 @@ def test_executor_array(
 
 @use_tempdir
 @mock_s3
-@patch("redun.executors.gcp_utils.get_gcp_client", Mock())
 @patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
-@patch("redun.executors.gcp_utils.batch_submit")
+@patch("redun.executors.gcp_utils.get_gcp_client")
 @patch("redun.executors.gcp_utils.list_jobs")
 @patch("redun.executors.gcp_utils.get_task")
 def test_executor_script(
     get_task_mock: Mock,
     list_jobs_mock: Mock,
-    batch_submit_mock: Mock,
+    get_gcp_client_mock: Mock,
 ) -> None:
     """
     GCPBatchExecutor should run script jobs.
     """
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
+    client = get_gcp_client_mock()
 
     # Prepare API mocks for job submission.
     batch_job_id = "123"
     batch_job = batch_v1.Job(task_groups=[batch_v1.TaskGroup(name=batch_job_id)])
-    batch_submit_mock.return_value = batch_job
+    client.create_job.return_value = batch_job
     list_jobs_mock.return_value = []
     get_task_mock.return_value = batch_v1.Task(
         name=f"{batch_job_id}/tasks/0",
@@ -354,31 +371,49 @@ def test_executor_script(
     # Let job arrayer submit job.
     wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # Ensure job options were passed correctly to docker.
-    scratch_dir = executor.gcs_scratch_prefix
-    assert executor.code_file
-
-    assert batch_submit_mock.call_args
-    args = batch_submit_mock.call_args[1]
-    args.pop("client")
-    assert batch_submit_mock.call_args[1] == {
-        "commands": ["bash", "/mnt/disks/example-bucket/redun/jobs/eval_hash/.redun_job.sh"],
-        "image": "gcr.io/gcp-project/redun",
-        "job_name": f"redun-{job.id}",
-        "labels": {"redun_hash": "eval_hash", "redun_job_type": "script"},
-        "machine_type": "e2-standard-4",
-        "memory": 16,
-        "mount_buckets": ["example-bucket"],
-        "priority": 30,
-        "project": "project",
-        "region": "project",
-        "retries": 2,
-        "service_account_email": "",
-        "task_count": 1,
-        "vcpus": 2,
+    # Ensure job was submitted correctly to Google Batch.
+    assert MessageToDict(client.create_job.call_args[0][0]._pb) == {
+        "job": {
+            "allocationPolicy": {"instances": [{"policy": {"machineType": "e2-standard-4"}}]},
+            "labels": {"redun_hash": "eval_hash", "redun_job_type": "script"},
+            "logsPolicy": {"destination": "CLOUD_LOGGING"},
+            "priority": "30",
+            "taskGroups": [
+                {
+                    "taskCount": "1",
+                    "taskSpec": {
+                        "computeResource": {"cpuMilli": "2000", "memoryMib": "16384"},
+                        "maxRetryCount": 2,
+                        "runnables": [
+                            {
+                                "container": {
+                                    "commands": [
+                                        "bash",
+                                        "/mnt/disks/example-bucket/redun/jobs/eval_hash/.redun_job.sh",  # noqa: E501
+                                    ],
+                                    "imageUri": "gcr.io/gcp-project/redun",
+                                    "volumes": [
+                                        "/mnt/disks/example-bucket:/mnt/disks/example-bucket"
+                                    ],
+                                }
+                            }
+                        ],
+                        "volumes": [
+                            {
+                                "gcs": {"remotePath": "example-bucket"},
+                                "mountPath": "/mnt/disks/example-bucket",
+                            }
+                        ],
+                    },
+                }
+            ],
+        },
+        "jobId": f"redun-{job.id}",
+        "parent": "projects/project/locations/project",
     }
 
     # Simulate output file created by job.
+    scratch_dir = executor.gcs_scratch_prefix
     output_file = File(f"{scratch_dir}/jobs/eval_hash/output")
     output_file.write("done")
 
@@ -391,7 +426,7 @@ def test_executor_script(
     # Prepare API mocks for job submission.
     batch_job_id = "456"
     batch_job = batch_v1.Job(task_groups=[batch_v1.TaskGroup(name=batch_job_id)])
-    batch_submit_mock.return_value = batch_job
+    client.create_job.return_value = batch_job
     list_jobs_mock.return_value = []
     get_task_mock.return_value = batch_v1.Task(
         name=f"{batch_job_id}/tasks/0",
