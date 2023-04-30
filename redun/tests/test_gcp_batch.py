@@ -29,6 +29,7 @@ def mock_executor(scheduler, debug=False, code_package=True) -> GCPBatchExecutor
     """
     Returns an GCPBatchExecutor with GCP API mocks.
     """
+    # We use a mocked s3 backend to simulate gcs.
     client = boto3.client("s3", region_name="us-east-1")
     client.create_bucket(Bucket="example-bucket")
 
@@ -44,6 +45,7 @@ def mock_executor(scheduler, debug=False, code_package=True) -> GCPBatchExecutor
                 "job_stale_time": 0.01,
                 "code_package": code_package,
                 "debug": debug,
+                "min_array_size": 2,
             }
         }
     )
@@ -53,6 +55,7 @@ def mock_executor(scheduler, debug=False, code_package=True) -> GCPBatchExecutor
 
     def executor_start():
         executor.is_running = True
+        # Prevent monitor thread from running.
         executor._thread = Mock()
 
     executor._start = executor_start  # type: ignore
@@ -171,7 +174,7 @@ def test_executor(
     # Let job arrayer submit job.
     wait_until(lambda: executor.arrayer.num_pending == 0)
 
-    # Simulate the container job failing.
+    # Simulate the job failing.
     error = ValueError("Boom")
     error_traceback = Traceback.from_error(error)
     error_file = File(f"{scratch_dir}/jobs/eval_hash2/error")
@@ -182,3 +185,123 @@ def test_executor(
 
     # Ensure job rejected to scheduler.
     assert repr(scheduler.job_errors[job.id]) == "ValueError('Boom')"
+
+
+@use_tempdir
+@mock_s3
+@patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
+@patch("redun.executors.gcp_utils.batch_submit")
+@patch("redun.executors.gcp_utils.list_jobs")
+@patch("redun.executors.gcp_utils.get_task")
+def test_executor_array(
+    get_task_mock: Mock,
+    list_jobs_mock: Mock,
+    batch_submit_mock: Mock,
+) -> None:
+    """
+    GCPBatchExecutor should be able to submit array jobs.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+
+    # Suppress inflight jobs check.
+    list_jobs_mock.return_value = []
+
+    # Prepare API mocks for job submission.
+    batch_submit_mock.return_value = batch_v1.Job(
+        task_groups=[
+            batch_v1.TaskGroup(
+                name="123",
+                task_count=2,
+            )
+        ]
+    )
+
+    def get_task(client, task_name):
+        if task_name.endswith("0"):
+            state = batch_v1.TaskStatus.State.SUCCEEDED
+        else:
+            state = batch_v1.TaskStatus.State.FAILED
+
+        return batch_v1.Task(
+            name=task_name,
+            status=batch_v1.TaskStatus(state=state),
+        )
+
+    get_task_mock.side_effect = get_task
+
+    # Submit two jobs in order to trigger array submission.
+    # Create and submit a job.
+    expr = cast(TaskExpression[int], task1(10))
+    job1 = Job(task1, expr)
+    job1.eval_hash = "eval_hash"
+    job1.args = ((10,), {})
+    executor.submit(job1)
+
+    # Create and submit a job.
+    expr = cast(TaskExpression[int], task1(11))
+    job2 = Job(task1, expr)
+    job2.eval_hash = "eval_hash2"
+    job2.args = ((11,), {})
+    executor.submit(job2)
+
+    # Let job arrayer submit job.
+    wait_until(lambda: executor.arrayer.num_pending == 0)
+
+    # Ensure job options were passed correctly to docker.
+    scratch_dir = executor.gcs_scratch_prefix
+    assert executor.code_file
+
+    assert batch_submit_mock.call_args
+    args = batch_submit_mock.call_args[1]
+    args.pop("client")
+    array_uuid = batch_submit_mock.call_args[1]["job_name"].replace("redun-array-", "")
+    assert batch_submit_mock.call_args[1] == {
+        "commands": [
+            "redun",
+            "--check-version",
+            ">=0.4.1",
+            "oneshot",
+            "redun.tests.test_gcp_batch",
+            "--code",
+            executor.code_file.path,
+            "--array-job",
+            "--input",
+            f"gs://example-bucket/redun/array_jobs/{array_uuid}/input",
+            "--output",
+            f"gs://example-bucket/redun/array_jobs/{array_uuid}/output",
+            "--error",
+            f"gs://example-bucket/redun/array_jobs/{array_uuid}/error",
+            "task1",
+        ],
+        "gcs_scratch_prefix": "gs://example-bucket/redun",
+        "image": "gcr.io/gcp-project/redun",
+        "job_name": f"redun-array-{array_uuid}",
+        "labels": {"redun_hash": f"{array_uuid}", "redun_job_type": "container"},
+        "machine_type": "e2-standard-4",
+        "memory": 16,
+        "priority": 30,
+        "project": "project",
+        "region": "project",
+        "retries": 2,
+        "service_account_email": "",
+        "task_count": 2,
+        "vcpus": 2,
+    }
+
+    # Simulate output file created by job1.
+    output_file = File(f"{scratch_dir}/jobs/eval_hash/output")
+    output_file.write(pickle_dumps(task1.func(10)), mode="wb")
+
+    # Simulate job2 failing.
+    error = ValueError("Boom")
+    error_traceback = Traceback.from_error(error)
+    error_file = File(f"{scratch_dir}/jobs/eval_hash2/error")
+    error_file.write(pickle_dumps((error, error_traceback)), mode="wb")
+
+    # Manually run monitor logic.
+    executor._monitor()
+
+    # Ensure job returns results and errors to scheduler.
+    assert scheduler.job_results[job1.id] == 10
+    assert repr(scheduler.job_errors[job2.id]) == "ValueError('Boom')"

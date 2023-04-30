@@ -372,7 +372,7 @@ class GCPBatchExecutor(Executor):
         gcp_job_task_count = gcp_job.task_groups[0].task_count
         if gcp_job_task_count != array_size:
             raise AssertionError(
-                f"Batch job task group has {len(gcp_job_task_count)} tasks "
+                f"Batch job task group has {gcp_job_task_count} tasks "
                 f"instead of requested array size {array_size}."
             )
 
