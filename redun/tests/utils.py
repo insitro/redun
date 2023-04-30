@@ -22,6 +22,7 @@ from moto.core.botocore_stubber import MockRawResponse
 from urllib3._collections import HTTPHeaderDict
 
 from redun import Scheduler
+from redun.file import FileSystem, GSFileSystem, S3FileSystem, get_filesystem_class, get_proto
 
 """
 Current moto (1.3.16) is not fully compatible with the latest s3fs (2021.11.1),
@@ -157,7 +158,19 @@ def mock_s3(func: Callable) -> Callable:
     return patch_aws(_mock_s3(func))
 
 
-from redun.file import GSFileSystem, S3FileSystem
+def get_filesystem_class_mock(
+    proto: Optional[str] = None, url: Optional[str] = None
+) -> Type[FileSystem]:
+    """
+    Mock redun filesystem lookup.
+    """
+    if not proto:
+        assert url, "Must give url or proto as argument."
+        proto = get_proto(url)
+    if proto == "gs":
+        return GSFileSystemMock
+    else:
+        return get_filesystem_class(proto, url)
 
 
 class GSFileSystemMock(GSFileSystem):

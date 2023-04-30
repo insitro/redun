@@ -1,4 +1,4 @@
-from typing import Optional, Type, cast
+from typing import cast
 from unittest.mock import Mock, patch
 
 import boto3
@@ -9,7 +9,13 @@ from redun.config import Config
 from redun.executors.gcp_batch import GCPBatchExecutor
 from redun.expression import TaskExpression
 from redun.scheduler import Job, Scheduler, Traceback
-from redun.tests.utils import mock_s3, mock_scheduler, use_tempdir, wait_until
+from redun.tests.utils import (
+    get_filesystem_class_mock,
+    mock_s3,
+    mock_scheduler,
+    use_tempdir,
+    wait_until,
+)
 from redun.utils import pickle_dumps
 
 PROJECT = "project"
@@ -81,45 +87,9 @@ def task1(x: int) -> int:
     return x
 
 
-from redun.file import get_filesystem_class as get_filesystem_class_original
-from redun.file import get_proto
-from redun.tests.utils import GSFileSystemMock
-
-
-def get_filesystem_class(
-    proto: Optional[str] = None, url: Optional[str] = None
-) -> Type["FileSystem"]:
-    """
-    Returns the corresponding FileSystem class for a given url or protocol.
-    """
-    if not proto:
-        assert url, "Must give url or proto as argument."
-        proto = get_proto(url)
-    if proto == "gs":
-        fs = GSFileSystemMock
-        return fs
-    else:
-        return get_filesystem_class_original(proto, url)
-
-
-@mock_s3
-@patch("redun.file.get_filesystem_class", get_filesystem_class)
-def test1():
-    from redun.file import File
-
-    client = boto3.client("s3", region_name="us-east-1")
-    client.create_bucket(Bucket="example-bucket")
-
-    file = File("s3://example-bucket/a")
-    file.write("hello")
-
-    file = File("gs://example-bucket/b")
-    file.write("hello")
-
-
 @use_tempdir
 @mock_s3
-@patch("redun.file.get_filesystem_class", get_filesystem_class)
+@patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
 @patch("redun.executors.gcp_utils.get_gcp_client")
 @patch("redun.executors.gcp_utils.get_task")
 @patch("redun.executors.gcp_utils.list_jobs")
@@ -166,7 +136,7 @@ def test_executor(
         executor.is_running = True
         executor._thread = Mock()
 
-    executor._start = executor_start
+    executor._start = executor_start  # type: ignore
 
     # Prepare API mocks for job submission.
     batch_job_id = "123"
