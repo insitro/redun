@@ -8,7 +8,7 @@ from redun import File, task
 from redun.config import Config
 from redun.executors.gcp_batch import GCPBatchExecutor
 from redun.expression import TaskExpression
-from redun.scheduler import Job, Scheduler, Traceback
+from redun.scheduler import Job, Traceback
 from redun.tests.utils import (
     get_filesystem_class_mock,
     mock_s3,
@@ -24,93 +24,10 @@ REGION = "region"
 GCS_SCRATCH_PREFIX = "gs://example-bucket/redun"
 
 
-def mock_executor(scheduler, debug=False, code_package=False):
+@patch("redun.executors.gcp_utils.get_gcp_client", Mock())
+def mock_executor(scheduler, debug=False, code_package=True) -> GCPBatchExecutor:
     """
     Returns an GCPBatchExecutor with GCP API mocks.
-    """
-
-    config = Config(
-        {
-            "gcp_batch": {
-                "gcs_scratch": GCS_SCRATCH_PREFIX,
-                "project": PROJECT,
-                "region": PROJECT,
-                "image": IMAGE,
-                "code_package": code_package,
-                "debug": debug,
-            }
-        }
-    )
-
-    return GCPBatchExecutor("batch", scheduler, config["gcp_batch"])
-
-
-def _test_executor_config(scheduler: Scheduler) -> None:
-    """
-    Executor should be able to parse its config.
-    """
-    # Setup executor.
-    config = Config(
-        {
-            "gcp_batch": {
-                "image": IMAGE,
-                "project": PROJECT,
-                "region": REGION,
-                "gcs_scratch": GCS_SCRATCH_PREFIX,
-            }
-        }
-    )
-    executor = GCPBatchExecutor("batch", scheduler, config["gcp_batch"])
-    assert executor.image == IMAGE
-    assert executor.project == PROJECT
-    assert executor.region == REGION
-    assert executor.gcs_scratch_prefix == GCS_SCRATCH_PREFIX
-    assert isinstance(executor.code_package, dict)
-    assert executor.debug is False
-
-
-@patch("redun.executors.gcp_utils.get_gcp_client")
-def test_executor_creation(get_gcp_client) -> None:
-    """
-    Ensure we reunite with inflight jobs
-    """
-    assert get_gcp_client.call_count == 0
-
-    scheduler = mock_scheduler()
-    mock_executor(scheduler)
-
-    assert get_gcp_client.call_count == 1
-
-
-@task
-def task1(x: int) -> int:
-    return x
-
-
-@use_tempdir
-@mock_s3
-@patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
-@patch("redun.executors.gcp_utils.get_gcp_client")
-@patch("redun.executors.gcp_utils.get_task")
-@patch("redun.executors.gcp_utils.list_jobs")
-@patch("redun.executors.gcp_utils.batch_submit")
-@patch.object(Scheduler, "done_job")
-@patch.object(Scheduler, "reject_job")
-def test_executor(
-    reject_job_mock: Mock,
-    done_job_mock: Mock,
-    batch_submit_mock: Mock,
-    list_jobs_mock: Mock,
-    get_task_mock: Mock,
-    get_gcp_client_mock: Mock,
-    scheduler: Scheduler,
-) -> None:
-    """
-    GCPBatchExecutor should run jobs.
-
-    In this test, we patch `threading.Thread` to prevent the monitor thread
-    from starting and we call the monitor code ourselves. This removes the
-    need to manage multiple threads during the test.
     """
     client = boto3.client("s3", region_name="us-east-1")
     client.create_bucket(Bucket="example-bucket")
@@ -125,6 +42,8 @@ def test_executor(
                 "image": IMAGE,
                 "job_monitor_interval": 0.05,
                 "job_stale_time": 0.01,
+                "code_package": code_package,
+                "debug": debug,
             }
         }
     )
@@ -137,6 +56,31 @@ def test_executor(
         executor._thread = Mock()
 
     executor._start = executor_start  # type: ignore
+
+    return executor
+
+
+@task
+def task1(x: int) -> int:
+    return x
+
+
+@use_tempdir
+@mock_s3
+@patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
+@patch("redun.executors.gcp_utils.batch_submit")
+@patch("redun.executors.gcp_utils.list_jobs")
+@patch("redun.executors.gcp_utils.get_task")
+def test_executor(
+    get_task_mock: Mock,
+    list_jobs_mock: Mock,
+    batch_submit_mock: Mock,
+) -> None:
+    """
+    GCPBatchExecutor should run jobs.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
 
     # Prepare API mocks for job submission.
     batch_job_id = "123"
@@ -205,9 +149,9 @@ def test_executor(
     executor._monitor()
 
     # Ensure job returns result to scheduler.
-    scheduler.done_job.assert_called_with(job, 10)  # type: ignore
+    assert scheduler.job_results[job.id] == 10
 
-    # Prepare API mocks for job submission.
+    # Prepare API mocks for job submission of a failed job.
     batch_job_id = "456"
     batch_job = batch_v1.Job(task_groups=[batch_v1.TaskGroup(name=batch_job_id)])
     batch_submit_mock.return_value = batch_job
@@ -237,4 +181,4 @@ def test_executor(
     executor._monitor()
 
     # Ensure job rejected to scheduler.
-    scheduler.reject_job.call_args[:2] == (job, error)  # type: ignore
+    assert repr(scheduler.job_errors[job.id]) == "ValueError('Boom')"

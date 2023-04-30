@@ -174,6 +174,10 @@ def get_filesystem_class_mock(
 
 
 class GSFileSystemMock(GSFileSystem):
+    """
+    This class mocks the Google Cloud Storage file system by proxying to s3 mocked by moto.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
