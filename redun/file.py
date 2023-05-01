@@ -750,7 +750,7 @@ class GSFileSystem(FsspecFileSystem):
 
             if src_path and dest_path:
                 if src_proto == "gs" and dest_proto == "local":
-                    return f"ln -s {quote(src_path)} {quote(dest_path)}"
+                    return f"cp {quote(src_path)} {quote(dest_path)}"
                 if src_proto == "local" and dest_proto == "gs":
                     if not recursive:
                         return f"{mk_dest_dir} && cp {quote(src_path)} {quote(dest_path)}"
@@ -1326,7 +1326,7 @@ class StagingFile(Staging[File]):
 
         return self.local.copy_to(self.remote)
 
-    def render_unstage(self, as_mount=False) -> str:
+    def render_unstage(self, as_mount: bool = False) -> str:
         """
         Returns a shell command for unstaging a file.
         """
@@ -1336,7 +1336,7 @@ class StagingFile(Staging[File]):
 
         return self.local.shell_copy_to(self.remote.path, as_mount=as_mount)
 
-    def render_stage(self, as_mount=False) -> str:
+    def render_stage(self, as_mount: bool = False) -> str:
         """
         Returns a shell command for staging a file.
         """
@@ -1390,7 +1390,7 @@ class StagingDir(Staging[Dir]):
 
         return self.local.copy_to(self.remote)
 
-    def render_unstage(self, as_mount=False) -> str:
+    def render_unstage(self, as_mount: bool = False) -> str:
         """
         Returns a shell command for unstaging a directory.
         """
@@ -1400,7 +1400,7 @@ class StagingDir(Staging[Dir]):
 
         return self.local.shell_copy_to(self.remote.path, as_mount=as_mount)
 
-    def render_stage(self, as_mount=False) -> str:
+    def render_stage(self, as_mount: bool = False) -> str:
         """
         Returns a shell command for staging a directory.
         """

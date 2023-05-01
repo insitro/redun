@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Dict, Iterable, List, Tuple, Union
 
+from google.api_core import gapic_v1
 from google.cloud import batch_v1
 
 
@@ -20,7 +21,14 @@ class MinCPUPlatform(Enum):
 def get_gcp_client(
     sync: bool = True,
 ) -> Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient]:
-    return batch_v1.BatchServiceClient() if sync else batch_v1.BatchServiceAsyncClient()
+    # TODO: Integrate redun version here later.
+    client_info = gapic_v1.client_info.ClientInfo(user_agent=f"redun")
+    return (
+        batch_v1.BatchServiceClient(client_info=client_info)
+        if sync
+        else batch_v1.BatchServiceAsyncClient(client_info=client_info)
+    )
+
 
 
 def gb_to_mib(gb):
@@ -76,10 +84,7 @@ def batch_submit(
         runnable.container = batch_v1.Runnable.Container()
         runnable.container.image_uri = image
         runnable.container.commands = commands
-        if volumes:
-            runnable.container.volumes = [
-                ",".join([f"{x.mount_path}:{x.mount_path}" for x in volumes])
-            ]
+        runnable.container.volumes = [f"{x.mount_path}:{x.mount_path}" for x in volumes]
 
     task = batch_v1.TaskSpec()
     task.runnables = [runnable]
