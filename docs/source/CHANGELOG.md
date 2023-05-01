@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.15.0
+May 01, 2023
+
+* `#286` - Uncap botocore to allow better dependency solving
+* `#285` - DE-8667 ensure to call record_job_start even when executor is not defiend
+* `#275` - Drop python 3.6
+* `#284` - DE-8613 make Handle.is_valid() more graceful to missing recordings
+* `#283` - Add lambda_federated_task scheduler task with tests
+* `#282` - small fix for graph reduction docs
+* `#281` - Update TaskExpression names to match code snippet
+* `#280` - [DE-8465] Fair Share Scheduling support.
+* `#278` - Release 0.14.0
+* `#261` - Provide integration code for redun and a proxy
+* `#277` - Add task_def option to federated_task config
+* `#247` - Publish federated tasks
+* `#270` - DE-8068 Pass through missing aws batch options
+
 ## 0.14.0
 March 13, 2023
 
