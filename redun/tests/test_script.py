@@ -10,6 +10,7 @@ from redun import File, Scheduler, task
 from redun.executors.aws_batch import AWSBatchExecutor
 from redun.expression import TaskExpression
 from redun.file import Dir
+from redun.hashing import hash_eval
 from redun.scripting import (
     ScriptError,
     exec_script,
@@ -18,7 +19,9 @@ from redun.scripting import (
     prepare_command,
     script,
 )
+from redun.task import get_task_registry, hash_args_eval
 from redun.tests.utils import use_tempdir
+from redun.value import get_type_registry
 
 
 @use_tempdir
@@ -432,61 +435,19 @@ def test_script_staging_input_change(scheduler: Scheduler) -> None:
     assert scheduler.run(expr).read() == "hello2"
 
 
-@mock_s3
-def _test_script_staging_s3(scheduler: Scheduler) -> None:
-    s3_client = boto3.client("s3", region_name="us-east-1")
-    s3_client.create_bucket(Bucket="example-bucket")
+def test_script_task_hash():
+    """
+    redun.script() task hash should be stable despite new ScriptCommand design.
+    """
 
-    hello_path = "s3://example-bucket/_hello.txt"
-    bye_path = "s3://example-bucket/bye.txt"
-
-    result = script(
-        """
-        #!/bin/sh
-        echo 'hello' > hello.txt
-        echo 'good bye' > bye.txt
-        """,
-        tempdir=True,
-        outputs={
-            "hello": File(hello_path).stage("hello.txt"),
-            "bye": File(bye_path).stage("bye.txt"),
-        },
+    expr = script(
+        "ls",
+        inputs=[File("s3://a/a").stage("a")],
+        outputs=File("s3://b/b").stage("b"),
     )
+    type_registry = get_type_registry()
+    task_registry = get_task_registry()
+    task_ = task_registry.get(expr.task_name)
+    eval_hash, _ = hash_args_eval(type_registry, task_, expr.args, expr.kwargs)
 
-    result = scheduler.run(result)
-
-    # Remote files should still exist.
-    assert result["hello"].exists()
-    assert result["bye"].exists()
-    assert result["hello"].path == hello_path
-    assert result["bye"].path == bye_path
-    assert result["hello"].read() == "hello\n"
-    assert result["bye"].read() == "good bye\n"
-
-
-@mock_s3
-def _test_script_task_aws_batch():
-    @task(executor="batch", script=True)
-    def task1(message):
-        return """echo Hello, {message}!""".format(message=message)
-
-    s3_client = boto3.client("s3", region_name="us-east-1")
-    s3_client.create_bucket(Bucket="example-bucket")
-
-    config = ConfigParser()
-    config.read_dict(
-        {
-            "batch": {
-                "image": "ubuntu",
-                "queue": "queue",
-                "s3_scratch": "s3://example-bucket/redun",
-                "debug": True,
-            }
-        }
-    )
-
-    executor = AWSBatchExecutor("batch", None, config=config["batch"])
-    scheduler = Scheduler()
-    scheduler.executors["batch"] = executor
-    executor.scheduler = scheduler
-    assert scheduler.run(task1, ["World"]) == b"Hello, World!\n"
+    assert eval_hash == "8b264b625248a68d5827c00258821bdff258b3bd"
