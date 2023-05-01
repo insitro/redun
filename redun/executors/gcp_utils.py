@@ -22,13 +22,12 @@ def get_gcp_client(
     sync: bool = True,
 ) -> Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient]:
     # TODO: Integrate redun version here later.
-    client_info = gapic_v1.client_info.ClientInfo(user_agent=f"redun")
+    client_info = gapic_v1.client_info.ClientInfo(user_agent="redun")
     return (
         batch_v1.BatchServiceClient(client_info=client_info)
         if sync
         else batch_v1.BatchServiceAsyncClient(client_info=client_info)
     )
-
 
 
 def gb_to_mib(gb):
