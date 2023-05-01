@@ -86,6 +86,7 @@ def test_executor_docker(
         "vcpus": 1,
         "volumes": [(scratch_dir, scratch_dir)],
         "interactive": False,
+        "include_aws_env": True,
     }
 
     # Simulate output file created by job.

@@ -78,7 +78,7 @@ from redun.executors.launch import launch_script
 from redun.expression import TaskExpression
 from redun.file import File as BaseFile
 from redun.file import copy_file, list_filesystems
-from redun.job_array import AWS_ARRAY_VAR, K8S_ARRAY_VAR
+from redun.job_array import get_job_array_index
 from redun.logging import log_levels, logger
 from redun.scheduler import (
     DryRunResult,
@@ -2645,12 +2645,11 @@ class RedunClient:
         """
         array_job_index: int = -1
         if args.array_job:
-            if AWS_ARRAY_VAR in os.environ:
-                array_job_index = int(os.environ[AWS_ARRAY_VAR])
-            elif K8S_ARRAY_VAR in os.environ:
-                array_job_index = int(os.environ[K8S_ARRAY_VAR])
-            else:
+            index = get_job_array_index()
+            if index is None:
                 raise RedunClientError("Array job environment variable not set")
+            else:
+                array_job_index = index
 
             # Get path to actual error file based on index.
             if args.error:

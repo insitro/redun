@@ -8,6 +8,7 @@ from configparser import SectionProxy
 from tempfile import mkstemp
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
 
+from redun.config import create_config_section
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
@@ -33,6 +34,14 @@ class DockerError(Exception):
     pass
 
 
+def get_docker_executor_config(config: SectionProxy) -> SectionProxy:
+    """
+    Returns a config for DockerExecutor.
+    """
+    keys = ["image", "scratch", "job_monitor_interval", "vcpus", "gpus", "memory"]
+    return create_config_section({key: config[key] for key in keys if key in config})
+
+
 def run_docker(
     command: List[str],
     image: str,
@@ -43,6 +52,7 @@ def run_docker(
     vcpus: int = 1,
     gpus: int = 0,
     shared_memory: Optional[int] = None,
+    include_aws_env: bool = False,
 ) -> str:
     """
     Run a Docker container locally.
@@ -67,29 +77,30 @@ def run_docker(
         Number of GPUs to reserve for the container.
     shared_memory : Optional[int]
         Number of GB of shared memory to reserve for the container.
+    include_aws_env : bool
+        If True, forward AWS environment variables to the container.
     """
     # Add AWS credentials to environment for docker command.
-    env = dict(os.environ)
-    if not aws_utils.is_ec2_instance():
-        env.update(aws_utils.get_aws_env_vars())
-
     common_args = []
     if cleanup:
         common_args.append("--rm")
 
-    # Environment args.
-    common_args.extend(
-        [
-            "-e",
-            "AWS_ACCESS_KEY_ID",
-            "-e",
-            "AWS_SECRET_ACCESS_KEY",
-            "-e",
-            "AWS_SESSION_TOKEN",
-            "-e",
-            "AWS_DEFAULT_REGION",
-        ]
-    )
+    env = dict(os.environ)
+    if include_aws_env and not aws_utils.is_ec2_instance():
+        # Forward AWS environment args to docker container.
+        env.update(aws_utils.get_aws_env_vars())
+        common_args.extend(
+            [
+                "-e",
+                "AWS_ACCESS_KEY_ID",
+                "-e",
+                "AWS_SECRET_ACCESS_KEY",
+                "-e",
+                "AWS_SESSION_TOKEN",
+                "-e",
+                "AWS_DEFAULT_REGION",
+            ]
+        )
 
     # Volume mounting args.
     for host, container in volumes:
@@ -143,7 +154,15 @@ def get_docker_job_options(job_options: dict, scratch_path: str) -> dict:
 
     Adds the scratch_path as a volume mount.
     """
-    keys = ["vcpus", "memory", "gpus", "shared_memory", "volumes", "interactive"]
+    keys = [
+        "vcpus",
+        "memory",
+        "gpus",
+        "shared_memory",
+        "volumes",
+        "interactive",
+        "include_aws_env",
+    ]
     options = {key: job_options[key] for key in keys if key in job_options}
     options["volumes"] = options.get("volumes", []) + [(scratch_path, scratch_path)]
     return options
@@ -158,6 +177,7 @@ def submit_task(
     kwargs: Dict[str, Any] = {},
     job_options: dict = {},
     code_file: Optional[File] = None,
+    include_aws_env: bool = False,
 ) -> Dict[str, Any]:
     """
     Submit a redun Task to Docker.
@@ -185,13 +205,16 @@ def submit_command(
     job: Job,
     command: str,
     job_options: dict = {},
+    include_aws_env: bool = False,
 ) -> dict:
     """
     Submit a shell command to Docker.
     """
     shell_command = get_script_task_command(scratch_prefix, job, command)
     container_id = run_docker(
-        shell_command, image=image, **get_docker_job_options(job_options, scratch_prefix)
+        shell_command,
+        image=image,
+        **get_docker_job_options(job_options, scratch_prefix),
     )
     return {"jobId": container_id, "redun_job_id": job.id}
 
@@ -256,6 +279,7 @@ class DockerExecutor(Executor):
             "memory": config.getint("memory", fallback=4),
             "shared_memory": config.getint("shared_memory", fallback=None),
             "interactive": config.getboolean("interactive", fallback=False),
+            "include_aws_env": config.getboolean("include_aws_env", fallback=True),
         }
 
         self._is_running = False
