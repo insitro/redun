@@ -68,6 +68,22 @@ redun.executors.docker module
    :undoc-members:
    :show-inheritance:
 
+redun.executors.gcp\_batch module
+---------------------------------
+
+.. automodule:: redun.executors.gcp_batch
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+redun.executors.gcp\_utils module
+---------------------------------
+
+.. automodule:: redun.executors.gcp_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.executors.k8s module
 --------------------------
 
