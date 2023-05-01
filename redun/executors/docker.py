@@ -263,7 +263,6 @@ class DockerExecutor(Executor):
             raise ValueError("DockerExecutor requires config.")
 
         # Required config.
-        self._executor_name = name
         self._image = config["image"]
         self._scratch_prefix_rel = config["scratch"]
         self._scratch_prefix_abs: Optional[str] = None
