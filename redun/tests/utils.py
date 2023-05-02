@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from functools import wraps
 from inspect import getmembers, getmodule, isclass, isfunction, ismethod, ismodule
 from itertools import zip_longest
-from typing import Any, Callable, Dict, Iterator, List, NamedTuple, Optional, Type
+from typing import IO, Any, Callable, Dict, Iterator, List, NamedTuple, Optional, Type
 from unittest.mock import patch
 
 import sqlalchemy.event
@@ -22,6 +22,7 @@ from moto.core.botocore_stubber import MockRawResponse
 from urllib3._collections import HTTPHeaderDict
 
 from redun import Scheduler
+from redun.file import FileSystem, GSFileSystem, S3FileSystem, get_filesystem_class, get_proto
 
 """
 Current moto (1.3.16) is not fully compatible with the latest s3fs (2021.11.1),
@@ -155,6 +156,120 @@ def mock_s3(func: Callable) -> Callable:
     compatibility fixes are in place.
     """
     return patch_aws(_mock_s3(func))
+
+
+def get_filesystem_class_mock(
+    proto: Optional[str] = None, url: Optional[str] = None
+) -> Type[FileSystem]:
+    """
+    Mock redun filesystem lookup.
+    """
+    if not proto:
+        assert url, "Must give url or proto as argument."
+        proto = get_proto(url)
+    if proto == "gs":
+        return GSFileSystemMock
+    else:
+        return get_filesystem_class(proto, url)
+
+
+class GSFileSystemMock(GSFileSystem):
+    """
+    This class mocks the Google Cloud Storage file system by proxying to s3 mocked by moto.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._s3fs = S3FileSystem()
+
+    def convert_path(self, path: str) -> str:
+        """
+        Convert path from gs to s3.
+        """
+        if path.startswith("gs://"):
+            return "s3://" + path[5:]
+        else:
+            return path
+
+    def unconvert_path(self, path: str) -> str:
+        """
+        Convert path from s3 to gs.
+        """
+        if path.startswith("s3://"):
+            return "gs://" + path[5:]
+        else:
+            return path
+
+    def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
+        """
+        Private open method for subclasses to implement.
+        """
+        path = self.convert_path(path)
+        return self._s3fs._open(path, mode, **kwargs)
+
+    def exists(self, path: str) -> bool:
+        """
+        Returns True if path exists on filesystem.
+        """
+        return self._s3fs.exists(self.convert_path(path))
+
+    def remove(self, path: str) -> None:
+        """
+        Delete a path from the filesystem.
+        """
+        return self._s3fs.remove(self.convert_path(path))
+
+    def mkdir(self, path: str) -> None:
+        """
+        Creates the directory in the filesystem.
+        """
+        return self._s3fs.mkdir(self.convert_path(path))
+
+    def rmdir(self, path: str, recursive: bool = False) -> None:
+        """
+        Removes a directory from the filesystem.
+        If `recursive`, removes all contents of the directory.
+        Otherwise, raises OSError on non-empty directories
+        """
+        return self._s3fs.rmdir(self.convert_path(path))
+
+    def get_hash(self, path: str) -> str:
+        """
+        Return a hash for the file at path.
+        """
+        return self._s3fs.get_hash(self.convert_path(path))
+
+    def copy(self, src_path: str, dest_path: str) -> None:
+        """
+        Copy a file from src_path to dest_path.
+        """
+        return self._s3fs.copy(self.convert_path(src_path), self.convert_path(dest_path))
+
+    def glob(self, pattern: str) -> List[str]:
+        """
+        Returns filenames matching pattern.
+        """
+        paths = self._s3fs.glob(self.convert_path(pattern))
+        return [self.unconvert_path(path) for path in paths]
+
+    def isfile(self, path: str) -> bool:
+        """
+        Returns True if path is a file.
+        """
+        return self._s3fs.isfile(self.convert_path(path))
+
+    def isdir(self, path: str) -> bool:
+        """
+        Returns True if path is a directory.
+        """
+        return self._s3fs.isdir(self.convert_path(path))
+
+    def filesize(self, path: str) -> int:
+        """
+        Returns file size of path in bytes.
+        """
+        return self._s3fs.filesize(self.convert_path(path))
 
 
 def clean_dir(path: str) -> None:

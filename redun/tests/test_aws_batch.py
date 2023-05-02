@@ -1462,6 +1462,7 @@ def test_executor_docker(
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
             "interactive": False,
+            "include_aws_env": True,
         }
 
         run_docker_mock.reset_mock()
@@ -1486,6 +1487,7 @@ def test_executor_docker(
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
             "interactive": False,
+            "include_aws_env": True,
         }
 
         # Simulate output file created by job.
@@ -1561,6 +1563,7 @@ def test_executor_job_debug(
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
             "interactive": False,
+            "include_aws_env": True,
         }
 
         # Simulate output file created by job.
@@ -1750,6 +1753,7 @@ def test_interactive(run_docker_mock, iter_local_job_status_mock, get_aws_user_m
         "shared_memory": None,
         "vcpus": 1,
         "volumes": [(scratch_dir, scratch_dir)],
+        "include_aws_env": True,
     }
 
     # Cleanly stop executor.

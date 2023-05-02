@@ -15,12 +15,11 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 import boto3
 
-from redun.config import create_config_section
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
 from redun.executors.command import get_oneshot_command, get_script_task_command
-from redun.executors.docker import DockerExecutor
+from redun.executors.docker import DockerExecutor, get_docker_executor_config
 from redun.executors.scratch import (
     SCRATCH_ERROR,
     SCRATCH_HASHES,
@@ -820,14 +819,6 @@ class AWSBatchJobTimeoutError(Exception):
     """
 
     pass
-
-
-def get_docker_executor_config(config: SectionProxy) -> SectionProxy:
-    """
-    Returns a config for DockerExecutor.
-    """
-    keys = ["image", "scratch", "job_monitor_interval", "vcpus", "gpus", "memory"]
-    return create_config_section({key: config[key] for key in keys if key in config})
 
 
 def parse_nullable_json(text: Optional[str]) -> Any:
