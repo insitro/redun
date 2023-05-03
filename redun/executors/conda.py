@@ -25,6 +25,19 @@ from redun.task import Task
 
 CONDA_ENV_CREATION_TIMEOUT = 5 * 60  # 5 minutes
 
+def find_conda_cmd() -> str:
+    """
+    Find the path to the conda executable.
+    """
+    supported_conda_executables = ["micromamba", "mamba", "conda"]
+    for conda_executable in supported_conda_executables:
+        conda_cmd = shutil.which(conda_executable)
+        if conda_cmd is not None:
+            return conda_cmd
+    raise RuntimeError(
+        f"Could not find conda executable. Make sure one of the following is installed: {supported_conda_executables}"
+    )
+
 class CondaEnvironment:
     """
     A class for managing a Conda environment.
@@ -49,6 +62,7 @@ class CondaEnvironment:
         self.output_dir = output_dir
 
         self.pip_requirements_files = pip_requirements_files
+        self.conda_cmd = find_conda_cmd()
         self._ensure_env_exists()
 
     def __repr__(self):
@@ -58,10 +72,8 @@ class CondaEnvironment:
         result = subprocess.run(command, capture_output=capture_output, text=True)
         return result.returncode, result.stdout, result.stderr
 
+
     def _ensure_env_exists(self):
-        env_list_code, env_list_output, _ = self._run_command(["conda", "env", "list"], capture_output=True)
-        if env_list_code != 0:
-            raise RuntimeError("Failed to list Conda environments.")
         if self.env_file:
             # Calculate the hash of the environment file
             env_hash = self._hash_file(self.env_file, self.pip_requirements_files)
@@ -92,13 +104,13 @@ class CondaEnvironment:
             # either we have conda environment files or conda lock files
             if env_path.endswith(".yml") or env_path.endswith(".yaml"):
                 create_env_code, _, create_env_error = self._run_command(
-                    ["conda", "env", "create", "-f", env_path, "-p", os.path.join(env_output_dir, ".conda")],
+                    [self.conda_cmd, "env", "create", "-f", env_path, "-p", os.path.join(env_output_dir, ".conda")],
                     capture_output=True
                 )
                 shutil.copy(env_path, os.path.join(env_output_dir, "environment.yml"))
             elif env_path.endswith(".lock"):
                 create_env_code, _, create_env_error = self._run_command(
-                    ["conda", "create", "--file", env_path, "-p", os.path.join(env_output_dir, ".conda")],
+                    [self.conda_cmd, "create", "--file", env_path, "-p", os.path.join(env_output_dir, ".conda")],
                     capture_output=True
                 )
                 shutil.copy(env_path, os.path.join(env_output_dir, "environment.lock"))
@@ -117,9 +129,9 @@ class CondaEnvironment:
                 for pip_req_file in self.pip_requirements_files:
                     pip_install_command = ["pip", "install", "-r", pip_req_file]
                     if self.env_name:
-                        pip_install_command = ["conda", "run", "-n", self.env_name, "--no-capture-output"] + pip_install_command
+                        pip_install_command = self.get_conda_command() + pip_install_command
                     elif self.env_dir:
-                        pip_install_command = ["conda", "run", "-p", self.env_dir, "--no-capture-output"] + pip_install_command
+                        pip_install_command = self.get_conda_command() + pip_install_command
 
                     pip_install_code, _, pip_install_error = self._run_command(pip_install_command, capture_output=True)
                     pip_file_name = Path(pip_req_file).name
@@ -131,6 +143,10 @@ class CondaEnvironment:
             # Create a file to indicate that the environment has been initialized
             (Path(env_output_dir) / "redun_initialized").touch()
             return
+
+        env_list_code, env_list_output, _ = self._run_command([self.conda_cmd, "env", "list"], capture_output=True)
+        if env_list_code != 0:
+            raise RuntimeError("Failed to list Conda environments.")
 
         if self.env_name and self.env_name not in env_list_output:
             raise RuntimeError(
@@ -156,10 +172,11 @@ class CondaEnvironment:
         return command_output
         
     def get_conda_command(self) -> List[str]:
+        no_capture_output = "--no-capture-output" if self.conda_cmd in {"conda", "mamba"} else ""
         if self.env_name:
-            return ["conda", "run", "--no-capture-output", "-n", self.env_name]
+            return [self.conda_cmd, "run", no_capture_output, "-n", self.env_name]
         if self.env_dir:
-            return ["conda", "run", "--no-capture-output", "-p", self.env_dir]
+            return [self.conda_cmd, "run", no_capture_output, "-p", self.env_dir]
         raise RuntimeError(f"Cannot get conda command without `env_name` or `env_dir`. {self}")
 
     def _hash_file(self, file_path: str, other_files: Optional[List[str]]) -> str:
