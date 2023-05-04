@@ -172,11 +172,11 @@ class CondaEnvironment:
         return command_output
         
     def get_conda_command(self) -> List[str]:
-        no_capture_output = "--no-capture-output" if self.conda_cmd in {"conda", "mamba"} else ""
+        no_capture_output = ["--no-capture-output"] if self.conda_cmd in {"conda", "mamba"} else []
         if self.env_name:
-            return [self.conda_cmd, "run", no_capture_output, "-n", self.env_name]
+            return [self.conda_cmd, "run", "-n", self.env_name, *no_capture_output]
         if self.env_dir:
-            return [self.conda_cmd, "run", no_capture_output, "-p", self.env_dir]
+            return [self.conda_cmd, "run", "-p", self.env_dir, *no_capture_output]
         raise RuntimeError(f"Cannot get conda command without `env_name` or `env_dir`. {self}")
 
     def _hash_file(self, file_path: str, other_files: Optional[List[str]]) -> str:
