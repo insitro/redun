@@ -29,5 +29,6 @@ from redun.scheduler import (
 )
 from redun.scripting import script
 from redun.task import PartialTask, Task, get_task_registry, task
+from redun.version import version
 
-__version__ = "0.15.0"
+__version__ = version

@@ -4,6 +4,8 @@ from typing import Dict, Iterable, List, Tuple, Union
 from google.api_core import gapic_v1
 from google.cloud import batch_v1
 
+from redun.version import version
+
 
 # List of supported available CPU Platforms
 # https://cloud.google.com/compute/docs/instances/specify-min-cpu-platform#availablezones
@@ -22,7 +24,7 @@ def get_gcp_client(
     sync: bool = True,
 ) -> Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient]:
     # TODO: Integrate redun version here later.
-    client_info = gapic_v1.client_info.ClientInfo(user_agent="redun")
+    client_info = gapic_v1.client_info.ClientInfo(user_agent=f"redun/{version}")
     return (
         batch_v1.BatchServiceClient(client_info=client_info)
         if sync
