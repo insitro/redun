@@ -46,10 +46,10 @@ def get_version() -> str:
     """
     # Technique from: https://packaging.python.org/guides/single-sourcing-package-version/
     basedir = os.path.dirname(__file__)
-    module_path = os.path.join(basedir, "redun", "__init__.py")
+    module_path = os.path.join(basedir, "redun", "version.py")
     with open(module_path) as infile:
         for line in infile:
-            if line.startswith("__version__"):
+            if line.startswith("version ="):
                 _, version, _ = line.split('"', 2)
                 return version
     assert False, "Cannot find redun package version"
