@@ -213,6 +213,14 @@ redun.value module
    :undoc-members:
    :show-inheritance:
 
+redun.version module
+--------------------
+
+.. automodule:: redun.version
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.visualize module
 ----------------------
 
