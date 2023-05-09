@@ -1,9 +1,5 @@
 docutils>=0.18
 
-# https://github.com/trek10inc/awsume/issues/219
-botocore<=1.29.63
-boto3<=1.26.101
-
 furo
 myst-parser
 pygments>=2.12.0
