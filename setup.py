@@ -14,9 +14,7 @@ requirements = [
     "aiohttp>=3.7.4,<4",
     "alembic>=1.4",
     "boto3>=1.16.63",
-    # Temporarily cap botocore version until bug is fixed
-    # https://github.com/iterative/dvc/issues/8513#issuecomment-1298761683
-    "botocore>=1.22.8,<1.28.0",
+    "botocore>=1.22.8",
     "gcsfs>=2021.4.0",
     "google-cloud-batch>=0.2.0",
     "s3fs>=2021.11.1",
