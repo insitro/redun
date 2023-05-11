@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Backend and database" href="db.html" /><link rel="prev" title="Scheduling redun workflows" href="scheduler.html" />
 
     <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.0.0 and Furo 2023.03.27 -->
@@ -507,7 +507,7 @@ at execution time.</p>
 </section>
 <section id="role">
 <h5><code class="docutils literal notranslate"><span class="pre">role</span></code><a class="headerlink" href="#role" title="Permalink to this heading">#</a></h5>
-<p>A string that specifies the ARN of the IAM role that AWS Batch jobs should adopt while executing. This may be needed for jobs to have proper access to resources (S3 data, other services, etc). This can be overridden on a per task basis using task options.</p>
+<p>A string (default: the AWS account’s <code class="docutils literal notranslate"><span class="pre">ecsTaskExecutionRole</span></code>) that specifies the ARN of the IAM role that AWS Batch jobs should adopt while executing. This may be needed for jobs to have proper access to resources (S3 data, other services, etc). This can be overridden on a per task basis using task options. To disable setting a role on the job definition use <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
 <p>This key is mapped to the <a class="reference external" href="https://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html#containerProperties"><code class="docutils literal notranslate"><span class="pre">jobRoleArn</span></code> property</a> of the Batch API.</p>
 </section>
 <section id="id2">
@@ -566,20 +566,21 @@ at execution time.</p>
 <h5><code class="docutils literal notranslate"><span class="pre">timeout</span></code><a class="headerlink" href="#timeout" title="Permalink to this heading">#</a></h5>
 <p>An optional integer (default: None) that specifies the time duration in seconds (measure from job attempt’s <code class="docutils literal notranslate"><span class="pre">startedAt</span></code> timestamp) after which AWS Batch will terminate the job. For more on job timeouts, see the <a class="reference external" href="https://docs.aws.amazon.com/batch/latest/userguide/job_timeouts.html">Job Timeouts on Batch docs</a>. When not set, jobs will run indefinitely (unless on Fargate where there is a 14 day limit).</p>
 </section>
-</section>
 <section id="privileged">
-<h4>privileged<a class="headerlink" href="#privileged" title="Permalink to this heading">#</a></h4>
+<h5>privileged<a class="headerlink" href="#privileged" title="Permalink to this heading">#</a></h5>
 <p>An optional bool (default: False) that specifies whether to run the job in privileged mode.</p>
 </section>
-<section id="autocreate-job">
-<h4>autocreate_job<a class="headerlink" href="#autocreate-job" title="Permalink to this heading">#</a></h4>
-<p>An optional bool (default: True). If <code class="docutils literal notranslate"><span class="pre">autocreate_job</span></code> is disabled, then we require a <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code>
-to be present and lookup the job by name. If <code class="docutils literal notranslate"><span class="pre">autocreate_job</span></code> is enabled, then we will create
-a new job definition if an existing one matching <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> and required properties cannot be found.</p>
+<section id="autocreate-job-def">
+<h5>autocreate_job_def<a class="headerlink" href="#autocreate-job-def" title="Permalink to this heading">#</a></h5>
+<p>An optional bool (default: True). If <code class="docutils literal notranslate"><span class="pre">autocreate_job_def</span></code> is disabled, then we require a <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code>
+to be present and lookup the job by name. If <code class="docutils literal notranslate"><span class="pre">autocreate_job_def</span></code> is enabled, then we will create
+a new job definition if an existing one matching <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> and required properties cannot be found.
+For backwards-compatibility, the deprecated <code class="docutils literal notranslate"><span class="pre">autocreate_job</span></code> is also supported.</p>
 </section>
 <section id="job-def-name">
-<h4>job_def_name<a class="headerlink" href="#job-def-name" title="Permalink to this heading">#</a></h4>
+<h5>job_def_name<a class="headerlink" href="#job-def-name" title="Permalink to this heading">#</a></h5>
 <p>An optional str (default: None) that specifies a job definition to use. If not set, a new job definition will created.</p>
+</section>
 <section id="batch-tags">
 <h5><code class="docutils literal notranslate"><span class="pre">batch_tags</span></code><a class="headerlink" href="#batch-tags" title="Permalink to this heading">#</a></h5>
 <p>An optional JSON mapping of string key-value pairs to use as Batch job tags. This could be used to track jobs or query them after execution.</p>
@@ -948,11 +949,9 @@ Can be further overridden on a per-task basis using task options.</p>
 <li><a class="reference internal" href="#max-array-size"><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code></a></li>
 <li><a class="reference internal" href="#job-stale-time"><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code></a></li>
 <li><a class="reference internal" href="#timeout"><code class="docutils literal notranslate"><span class="pre">timeout</span></code></a></li>
-</ul>
-</li>
 <li><a class="reference internal" href="#privileged">privileged</a></li>
-<li><a class="reference internal" href="#autocreate-job">autocreate_job</a></li>
-<li><a class="reference internal" href="#job-def-name">job_def_name</a><ul>
+<li><a class="reference internal" href="#autocreate-job-def">autocreate_job_def</a></li>
+<li><a class="reference internal" href="#job-def-name">job_def_name</a></li>
 <li><a class="reference internal" href="#batch-tags"><code class="docutils literal notranslate"><span class="pre">batch_tags</span></code></a></li>
 <li><a class="reference internal" href="#default-batch-tags"><code class="docutils literal notranslate"><span class="pre">default_batch_tags</span></code></a></li>
 <li><a class="reference internal" href="#num-nodes"><code class="docutils literal notranslate"><span class="pre">num_nodes</span></code></a></li>

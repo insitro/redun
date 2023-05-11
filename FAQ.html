@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Developer guide" href="developing.html" /><link rel="prev" title="Visualization" href="visualization.html" />
 
     <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.0.0 and Furo 2023.03.27 -->
@@ -238,7 +238,7 @@
 Additionally, redun will not always be on the latest version of boto3.
 So, there can be a significant delay in the time an option is introduced for a JobDefinition in AWS Batch, and it becoming available to set in the version of boto3 used by redun(sharedMemory for example).</p>
 <p>Given that potential delay, redun allows the user to create the JobDefinition themselves in AWS and then use that existing JobDefinition when running their tasks.
-To do this, set <code class="docutils literal notranslate"><span class="pre">autocreate_job=False</span></code> as a task option <em>and</em> specify a <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> in the task options.
+To do this, set <code class="docutils literal notranslate"><span class="pre">autocreate_job_def=False</span></code> as a task option <em>and</em> specify a <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> in the task options.
 You <em>must</em> set the <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> to the name of the JobDefintion you manually created in AWS Batch.
 When both the above options are set on a task, redun will look for an existing JobDefintion by name only and will raise an error if no matches are found.
 This is different from the default lookup which compares both the name and the container properties and will also create a definition if one does not exist.</p>
