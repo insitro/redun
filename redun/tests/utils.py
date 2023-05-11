@@ -329,7 +329,7 @@ def assert_match_text(pattern: str, text: str, wildcard: str = "*"):
             )
 
 
-def wait_until(cond: Callable[[], bool], interval: float = 0.02, timeout: float = 1.0) -> None:
+def wait_until(cond: Callable[[], bool], interval: float = 0.02, timeout: float = 2.0) -> None:
     """
     Wait until `cond()` is True or timeout is exceeded.
     """

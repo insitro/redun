@@ -92,18 +92,22 @@ def test_get_job_definition(get_aws_client_mock) -> None:
 @patch("redun.executors.aws_batch.get_job_definition")
 def test_required_job_def_name(get_job_definition_mock, _) -> None:
     """
-    Confirm that job_def_name is required when autocreate_job is False.
+    Confirm that job_def_name is required when autocreate_job_def is False.
     """
     # A job_def_name is required when autocreate is False.
     with pytest.raises(AssertionError):
-        batch_submit({"command": ["ls"]}, "queue", "image", autocreate_job=False)
+        batch_submit({"command": ["ls"]}, "queue", "image", autocreate_job_def=False)
 
     # When the required job_def_name is supplied, an error should be raised if a matching
     # definition cannot be found.
     get_job_definition_mock.return_value = {}
     with pytest.raises(ValueError):
         batch_submit(
-            {"command": ["ls"]}, "queue", "image", job_def_name="NONEXISTENT", autocreate_job=False
+            {"command": ["ls"]},
+            "queue",
+            "image",
+            job_def_name="NONEXISTENT",
+            autocreate_job_def=False,
         )
 
 
@@ -431,6 +435,25 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
             "privileged": False,
         },
     )
+
+
+@patch("redun.executors.aws_utils.get_aws_client")
+def test_job_definition_role(get_aws_client_mock) -> None:
+    """
+    Confirm that jobs roles are set correctly.
+    """
+
+    # The default role is the AWS account's ecsTaskExecutionRole.
+    details = get_job_details("image")
+    assert details["containerProperties"]["jobRoleArn"].endswith("role/ecsTaskExecutionRole")
+
+    # If specified, use the user's role.
+    details = get_job_details("image", role="aRole")
+    assert details["containerProperties"]["jobRoleArn"] == "aRole"
+
+    # If the "none" role is specified, do not set the role.
+    details = get_job_details("image", role="none")
+    assert "jobRoleArn" not in details["containerProperties"]
 
 
 @patch("redun.executors.aws_utils.get_aws_client")
@@ -1246,7 +1269,7 @@ def test_executor(
             "shared_memory": 5,
             "timeout": 5,
             "privileged": True,
-            "autocreate_job": True,
+            "autocreate_job_def": True,
             "job_def_name": None,
             "role": None,
             "retries": 1,
@@ -1290,7 +1313,7 @@ def test_executor(
             "shared_memory": 5,
             "timeout": 5,
             "privileged": True,
-            "autocreate_job": True,
+            "autocreate_job_def": True,
             "job_def_name": None,
             "role": None,
             "retries": 1,
@@ -1392,7 +1415,7 @@ def test_executor_multinode(
             "shared_memory": None,
             "timeout": None,
             "privileged": False,
-            "autocreate_job": True,
+            "autocreate_job_def": True,
             "job_def_name": None,
             "role": None,
             "retries": 1,

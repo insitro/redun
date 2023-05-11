@@ -310,7 +310,7 @@ A string that specifies the AWS region containing the user's AWS Batch service.
 
 ##### `role`
 
-A string that specifies the ARN of the IAM role that AWS Batch jobs should adopt while executing. This may be needed for jobs to have proper access to resources (S3 data, other services, etc). This can be overridden on a per task basis using task options.
+A string (default: the AWS account's `ecsTaskExecutionRole`) that specifies the ARN of the IAM role that AWS Batch jobs should adopt while executing. This may be needed for jobs to have proper access to resources (S3 data, other services, etc). This can be overridden on a per task basis using task options. To disable setting a role on the job definition use `None`.
 
 This key is mapped to the [`jobRoleArn` property](https://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html#containerProperties) of the Batch API.
 
@@ -370,15 +370,19 @@ A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wa
 
 An optional integer (default: None) that specifies the time duration in seconds (measure from job attempt's `startedAt` timestamp) after which AWS Batch will terminate the job. For more on job timeouts, see the [Job Timeouts on Batch docs](https://docs.aws.amazon.com/batch/latest/userguide/job_timeouts.html). When not set, jobs will run indefinitely (unless on Fargate where there is a 14 day limit).
 
-#### privileged
+##### privileged
+
 An optional bool (default: False) that specifies whether to run the job in privileged mode.
 
-#### autocreate_job
-An optional bool (default: True). If `autocreate_job` is disabled, then we require a `job_def_name`
-to be present and lookup the job by name. If `autocreate_job` is enabled, then we will create
-a new job definition if an existing one matching `job_def_name` and required properties cannot be found.
+##### autocreate_job_def
 
-#### job_def_name
+An optional bool (default: True). If `autocreate_job_def` is disabled, then we require a `job_def_name`
+to be present and lookup the job by name. If `autocreate_job_def` is enabled, then we will create
+a new job definition if an existing one matching `job_def_name` and required properties cannot be found.
+For backwards-compatibility, the deprecated `autocreate_job` is also supported.
+
+##### job_def_name
+
 An optional str (default: None) that specifies a job definition to use. If not set, a new job definition will created.
 
 ##### `batch_tags`

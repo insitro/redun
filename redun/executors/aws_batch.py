@@ -65,6 +65,7 @@ ARRAY_JOB_SUFFIX = "array"
 DOCKER_INSPECT_ERROR = "CannotInspectContainerError: Could not transition to inspecting"
 BATCH_JOB_TIMEOUT_ERROR = "Job attempt duration exceeded timeout"
 DEBUG_SCRATCH = "scratch"
+JOB_ROLE_NONE = "none"
 
 
 def get_default_registry() -> str:
@@ -174,6 +175,10 @@ def get_job_details(
     }
     if shared_memory is not None:
         container_props["linuxParameters"] = {"sharedMemorySize": int(shared_memory * 1024)}
+
+    # Don't specify a role if it's None.
+    if role.lower() == JOB_ROLE_NONE:
+        container_props.pop("jobRoleArn")
 
     if num_nodes is None:
         # Single-node job type
@@ -389,7 +394,7 @@ def batch_submit(
     job_def_extra: Optional[dict] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
     privileged: bool = False,
-    autocreate_job: bool = True,
+    autocreate_job_def: bool = True,
     timeout: Optional[int] = None,
     batch_tags: Optional[Dict[str, str]] = None,
     propagate_tags: bool = True,
@@ -410,7 +415,7 @@ def batch_submit(
     # Get or create job definition. If autocreate_job is disabled, then we require a job_def_name
     # to be present and lookup the job by name. If autocreate_job is enabled, then we will create
     # a job if an existing one matching job def name and required properties cannot be found.
-    if not autocreate_job:
+    if not autocreate_job_def:
         assert job_def_name
         job_def = get_job_definition(job_def_name, aws_region=aws_region)
         if not job_def:
@@ -520,7 +525,7 @@ def get_batch_job_options(job_options: dict) -> dict:
         "retries",
         "privileged",
         "job_def_name",
-        "autocreate_job",
+        "autocreate_job_def",
         "timeout",
         "batch_tags",
         "num_nodes",
@@ -870,7 +875,11 @@ class AWSBatchExecutor(Executor):
             "shared_memory": config.getint("shared_memory", fallback=None),
             "timeout": config.getint("timeout", fallback=None),
             "privileged": config.getboolean("privileged", fallback=False),
-            "autocreate_job": config.getboolean("autocreate_job", fallback=True),
+            "autocreate_job_def": config.getboolean(
+                "autocreate_job_def",
+                # autocreate_job is a deprecated but backwards compatible alternative.
+                fallback=config.getboolean("autocreate_job", fallback=True),
+            ),
             "job_def_name": config.get("job_def_name", fallback=None),
             "retries": config.getint("retries", fallback=1),
             "role": config.get("role"),
@@ -1162,6 +1171,10 @@ class AWSBatchExecutor(Executor):
         the executor-level (within `redun.ini`):
         """
         job_options = job.get_options()
+
+        # Normalize deprecated options.
+        if "autocreate_job" in job_options and "autocreate_job_def" not in job_options:
+            job_options["autocreate_job_def"] = job_options["autocreate_job"]
 
         task_options = {
             **self.default_task_options,

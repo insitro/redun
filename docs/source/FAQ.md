@@ -8,7 +8,7 @@ Additionally, redun will not always be on the latest version of boto3.
 So, there can be a significant delay in the time an option is introduced for a JobDefinition in AWS Batch, and it becoming available to set in the version of boto3 used by redun(sharedMemory for example).
 
 Given that potential delay, redun allows the user to create the JobDefinition themselves in AWS and then use that existing JobDefinition when running their tasks.
-To do this, set `autocreate_job=False` as a task option *and* specify a `job_def_name` in the task options.
+To do this, set `autocreate_job_def=False` as a task option *and* specify a `job_def_name` in the task options.
 You *must* set the `job_def_name` to the name of the JobDefintion you manually created in AWS Batch.
 When both the above options are set on a task, redun will look for an existing JobDefintion by name only and will raise an error if no matches are found.
 This is different from the default lookup which compares both the name and the container properties and will also create a definition if one does not exist. 
