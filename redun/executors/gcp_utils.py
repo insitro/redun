@@ -1,8 +1,9 @@
 from enum import Enum
+from functools import lru_cache
 from typing import Dict, Iterable, List, Tuple, Union
 
 from google.api_core import gapic_v1
-from google.cloud import batch_v1
+from google.cloud import batch_v1, compute_v1
 
 from redun.version import version
 
@@ -20,7 +21,7 @@ class MinCPUPlatform(Enum):
     EPYC_MILAN = "AMD Milan"
 
 
-def get_gcp_client(
+def get_gcp_batch_client(
     sync: bool = True,
 ) -> Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient]:
     # TODO: Integrate redun version here later.
@@ -263,3 +264,25 @@ def get_task(client: batch_v1.BatchServiceClient, task_name: str) -> batch_v1.Ta
         A Task object representing the specified task.
     """
     return client.get_task(name=task_name)
+
+
+def get_gcp_compute_client() -> compute_v1.MachineTypesClient:
+    return compute_v1.MachineTypesClient()
+
+
+@lru_cache(maxsize=None)
+def get_compute_machine_type(
+    client: compute_v1.MachineTypesClient, project: str, region: str, machine_type: str
+) -> compute_v1.types.MachineType:
+    """
+    Retrieve information about a Task.
+
+    Args:
+        project_id: project ID or project number of the Cloud project you want to use.
+        zone: name of the zone for the machine type.
+        machine_type: the machine type to get details about.
+    Returns:
+        A Task object representing the specified task.
+    """
+
+    return client.get(project=project, zone=f"{region}-a", machine_type=machine_type)

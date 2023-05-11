@@ -68,7 +68,8 @@ class GCPBatchExecutor(Executor):
         docker_config["include_aws_env"] = "False"
         self._docker_executor = DockerExecutor(name + "_debug", scheduler, config=docker_config)
 
-        self.gcp_client = gcp_utils.get_gcp_client()
+        self.gcp_batch_client = gcp_utils.get_gcp_batch_client()
+        self.gcp_compute_client = gcp_utils.get_gcp_compute_client()
 
         # Required config.
         self.project = config["project"]
@@ -99,8 +100,6 @@ class GCPBatchExecutor(Executor):
         # Default task options.
         self.default_task_options: Dict[str, Any] = {
             "machine_type": config.get("machine_type", fallback="e2-standard-4"),
-            "vcpus": config.getint("vcpus", fallback=2),
-            "memory": config.getint("memory", fallback=16),
             "task_count": config.getint("task_count", fallback=1),
             "retries": config.getint("retries", fallback=2),
             "priority": config.getint("priority", fallback=30),
@@ -128,7 +127,7 @@ class GCPBatchExecutor(Executor):
 
     def gather_inflight_jobs(self) -> None:
         batch_jobs = gcp_utils.list_jobs(
-            client=self.gcp_client, project_id=self.project, region=self.region
+            client=self.gcp_batch_client, project_id=self.project, region=self.region
         )
         inflight_job_statuses = [
             JobStatus.State.SCHEDULED,
@@ -170,7 +169,7 @@ class GCPBatchExecutor(Executor):
                 eval_hashes = cast(str, eval_file.read("r")).splitlines()
 
                 batch_tasks = gcp_utils.list_tasks(
-                    client=self.gcp_client, group_name=job.task_groups[0].name
+                    client=self.gcp_batch_client, group_name=job.task_groups[0].name
                 )
                 for array_index, task in enumerate(batch_tasks):
                     # Skip job if it is not in one of the 'inflight' states
@@ -198,6 +197,22 @@ class GCPBatchExecutor(Executor):
             REDUN_HASH_LABEL_KEY: array_uuid if array_uuid else job.eval_hash,
             REDUN_JOB_TYPE_LABEL_KEY: "script" if job.task.script else "container",
         }
+
+        # If either memory or CPU are not provided use the maximum available based on machine type
+        if "memory" not in task_options or "vcpus" not in task_options:
+            project = self.project
+            region = self.region
+            machine_type = task_options.get("machine_type")
+
+            compute_machine_type = gcp_utils.get_compute_machine_type(
+                self.gcp_compute_client, project, region, machine_type
+            )
+            if "memory" not in task_options:
+                # MiB to GB
+                task_options["memory"] = compute_machine_type.memory_mb / 1024
+
+            if "vcpus" not in task_options:
+                task_options["vcpus"] = compute_machine_type.guest_cpus
 
         # Merge labels if needed.
         labels: Dict[str, str] = {
@@ -267,7 +282,9 @@ class GCPBatchExecutor(Executor):
             batch_task_name = self.preexisting_batch_tasks.pop(job.eval_hash)
 
             job_dir = get_job_scratch_dir(self.gcs_scratch_prefix, job)
-            existing_task = gcp_utils.get_task(client=self.gcp_client, task_name=batch_task_name)
+            existing_task = gcp_utils.get_task(
+                client=self.gcp_batch_client, task_name=batch_task_name
+            )
 
             if existing_task:
                 self.log(
@@ -358,7 +375,7 @@ class GCPBatchExecutor(Executor):
         )
 
         gcp_job = gcp_utils.batch_submit(
-            client=self.gcp_client,
+            client=self.gcp_batch_client,
             job_name=f"{REDUN_ARRAY_JOB_PREFIX}{array_uuid}",
             project=project,
             region=region,
@@ -428,7 +445,7 @@ class GCPBatchExecutor(Executor):
             )
 
             gcp_job = gcp_utils.batch_submit(
-                client=self.gcp_client,
+                client=self.gcp_batch_client,
                 job_name=f"{REDUN_JOB_PREFIX}{job.id}",
                 project=project,
                 region=region,
@@ -462,7 +479,7 @@ class GCPBatchExecutor(Executor):
             # GCP Batch takes script as a string and requires quoting of -c argument
             script_command = ["bash", script_path]
             gcp_job = gcp_utils.batch_submit(
-                client=self.gcp_client,
+                client=self.gcp_batch_client,
                 job_name=f"redun-{job.id}",
                 project=project,
                 region=region,
@@ -520,7 +537,7 @@ class GCPBatchExecutor(Executor):
         assert self._scheduler
 
         # Need new client for thread safety
-        gcp_client = gcp_utils.get_gcp_client()
+        gcp_batch_client = gcp_utils.get_gcp_batch_client()
 
         try:
             while self.is_running and (self.pending_batch_tasks or self.arrayer.num_pending):
@@ -539,7 +556,7 @@ class GCPBatchExecutor(Executor):
                 task_names = list(self.pending_batch_tasks.keys())
                 for name in task_names:
                     try:
-                        task = gcp_utils.get_task(client=gcp_client, task_name=name)
+                        task = gcp_utils.get_task(client=gcp_batch_client, task_name=name)
                         self._process_task_status(task)
                     except NotFound:
                         # Batch Job has not instantiated tasks yet so ignore this NotFound error

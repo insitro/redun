@@ -71,21 +71,21 @@ def task1(x: int) -> int:
 
 @use_tempdir
 @mock_s3
-@patch("redun.executors.gcp_utils.get_gcp_client")
+@patch("redun.executors.gcp_utils.get_gcp_batch_client")
 @patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
 @patch("redun.executors.gcp_utils.list_jobs")
 @patch("redun.executors.gcp_utils.get_task")
 def test_executor(
     get_task_mock: Mock,
     list_jobs_mock: Mock,
-    get_gcp_client_mock: Mock,
+    get_gcp_batch_client_mock: Mock,
 ) -> None:
     """
     GCPBatchExecutor should run jobs.
     """
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
-    client = get_gcp_client_mock()
+    client = get_gcp_batch_client_mock()
 
     # Prepare API mocks for job submission.
     batch_job_id = "123"
@@ -199,20 +199,20 @@ def test_executor(
 @use_tempdir
 @mock_s3
 @patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
-@patch("redun.executors.gcp_utils.get_gcp_client")
+@patch("redun.executors.gcp_utils.get_gcp_batch_client")
 @patch("redun.executors.gcp_utils.list_jobs")
 @patch("redun.executors.gcp_utils.get_task")
 def test_executor_array(
     get_task_mock: Mock,
     list_jobs_mock: Mock,
-    get_gcp_client_mock: Mock,
+    get_gcp_batch_client_mock: Mock,
 ) -> None:
     """
     GCPBatchExecutor should be able to submit array jobs.
     """
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
-    client = get_gcp_client_mock()
+    client = get_gcp_batch_client_mock()
 
     # Suppress inflight jobs check.
     list_jobs_mock.return_value = []
@@ -329,20 +329,20 @@ def test_executor_array(
 @use_tempdir
 @mock_s3
 @patch("redun.file.get_filesystem_class", get_filesystem_class_mock)
-@patch("redun.executors.gcp_utils.get_gcp_client")
+@patch("redun.executors.gcp_utils.get_gcp_batch_client")
 @patch("redun.executors.gcp_utils.list_jobs")
 @patch("redun.executors.gcp_utils.get_task")
 def test_executor_script(
     get_task_mock: Mock,
     list_jobs_mock: Mock,
-    get_gcp_client_mock: Mock,
+    get_gcp_batch_client_mock: Mock,
 ) -> None:
     """
     GCPBatchExecutor should run script jobs.
     """
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
-    client = get_gcp_client_mock()
+    client = get_gcp_batch_client_mock()
 
     # Prepare API mocks for job submission.
     batch_job_id = "123"
