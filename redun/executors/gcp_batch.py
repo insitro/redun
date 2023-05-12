@@ -198,21 +198,30 @@ class GCPBatchExecutor(Executor):
             REDUN_JOB_TYPE_LABEL_KEY: "script" if job.task.script else "container",
         }
 
-        # If either memory or CPU are not provided use the maximum available based on machine type
-        if "memory" not in task_options or "vcpus" not in task_options:
-            project = self.project
-            region = self.region
-            machine_type = task_options.get("machine_type")
+        project = self.project
+        region = self.region
+        machine_type = task_options.get("machine_type")
 
-            compute_machine_type = gcp_utils.get_compute_machine_type(
-                self.gcp_compute_client, project, region, machine_type
-            )
-            if "memory" not in task_options:
-                # MiB to GB
-                task_options["memory"] = compute_machine_type.memory_mb / 1024
+        # If either memory or vCPUS are not provided use the maximum available based on machine
+        # type otherwise use the min of what is available and what is requested
+        compute_machine_type = gcp_utils.get_compute_machine_type(
+            self.gcp_compute_client, project, region, machine_type
+        )
 
-            if "vcpus" not in task_options:
-                task_options["vcpus"] = compute_machine_type.guest_cpus
+        requested_memory = task_options.get("memory", 0)
+        # MiB to GB
+        max_memory = compute_machine_type.memory_mb / 1024
+        if requested_memory <= 0:
+            task_options["memory"] = max_memory
+        else:
+            task_options["memory"] = min(requested_memory, max_memory)
+
+        requested_vcpus = task_options.get("vcpus", 0)
+        max_vcpus = compute_machine_type.guest_cpus
+        if requested_vcpus <= 0:
+            task_options["vcpus"] = max_vcpus
+        else:
+            task_options["vcpus"] = min(requested_vcpus, max_vcpus)
 
         # Merge labels if needed.
         labels: Dict[str, str] = {

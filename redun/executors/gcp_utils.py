@@ -275,14 +275,14 @@ def get_compute_machine_type(
     client: compute_v1.MachineTypesClient, project: str, region: str, machine_type: str
 ) -> compute_v1.types.MachineType:
     """
-    Retrieve information about a Task.
+    Retrieve information about a GCP MachineType
 
-    Args:
-        project_id: project ID or project number of the Cloud project you want to use.
-        zone: name of the zone for the machine type.
-        machine_type: the machine type to get details about.
-    Returns:
-        A Task object representing the specified task.
+     Args:
+         project_id: project ID or project number of the Cloud project you want to use.
+         zone: name of the zone for the machine type.
+         machine_type: the machine type to get details about.
+     Returns:
+        A MachineType which provides information about a machines available vCPUs and memory.
     """
 
     return client.get(project=project, zone=f"{region}-a", machine_type=machine_type)
