@@ -1,0 +1,6 @@
+name: redun_conda
+channels:
+  - conda-forge
+dependencies:
+  - redun
+  - numpy
