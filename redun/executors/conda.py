@@ -80,7 +80,7 @@ class CondaEnvironment:
             env_path = os.path.abspath(self.env_file)
             if self.output_dir is None:
                 self.output_dir = tempfile.mkdtemp(prefix="redun_conda_envs_")
-            env_output_dir = os.path.join(self.output_dir, env_hash)
+            env_output_dir = os.path.abspath(os.path.join(self.output_dir, env_hash))
             # check if the environment already exists
             if os.path.exists(os.path.join(env_output_dir, "redun_initialized")):
                 self.env_dir = os.path.join(env_output_dir, ".conda")
