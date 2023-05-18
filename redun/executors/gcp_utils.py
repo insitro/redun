@@ -47,6 +47,7 @@ def batch_submit(
     container_volumes: List[str] = [],
     container_options: List[str] = [],
     boot_disk_size_gib: int = None,
+    boot_disk_type: str = None,
     min_cpu_platform: MinCPUPlatform = None,
     accelerators: List[Tuple[str, int]] = [],
     provisioning_model: str = "standard",
@@ -134,6 +135,11 @@ def batch_submit(
         if provisioning_model == "spot"
         else batch_v1.AllocationPolicy.ProvisioningModel.STANDARD
     )
+    policy.boot_disk = batch_v1.AllocationPolicy.Disk(image="batch-cos")
+    if boot_disk_type:
+        policy.boot_disk.type_ = boot_disk_type
+    else:
+        policy.boot_disk.type_ = "pd-balanced"
 
     def create_accelerator(type, count):
         accelerator = batch_v1.AllocationPolicy.Accelerator()
