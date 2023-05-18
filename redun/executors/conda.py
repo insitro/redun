@@ -16,6 +16,8 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 
+from filelock import FileLock
+
 from redun.config import create_config_section
 from redun.executors.base import Executor, register_executor
 from redun.executors.command import get_oneshot_command
@@ -62,6 +64,8 @@ class CondaEnvironment:
         self.output_dir = output_dir
 
         self.pip_requirements_files = pip_requirements_files
+        self.conda_lockfile = FileLock('/tmp/redun.conda-executor.conda.lock')
+        self.pip_lockfile = FileLock('/tmp/redun.conda-executor.pip.lock')
         self.conda_cmd = find_conda_cmd()
         self._ensure_env_exists()
 
@@ -103,16 +107,18 @@ class CondaEnvironment:
             # Create the environment
             # either we have conda environment files or conda lock files
             if env_path.endswith(".yml") or env_path.endswith(".yaml"):
-                create_env_code, _, create_env_error = self._run_command(
-                    [self.conda_cmd, "env", "create", "-f", env_path, "-p", os.path.join(env_output_dir, ".conda")],
-                    capture_output=True
-                )
+                with self.conda_lockfile:
+                    create_env_code, _, create_env_error = self._run_command(
+                        [self.conda_cmd, "env", "create", "-f", env_path, "-p", os.path.join(env_output_dir, ".conda")],
+                        capture_output=True
+                    )
                 shutil.copy(env_path, os.path.join(env_output_dir, "environment.yml"))
             elif env_path.endswith(".lock"):
-                create_env_code, _, create_env_error = self._run_command(
-                    [self.conda_cmd, "create", "--file", env_path, "-p", os.path.join(env_output_dir, ".conda")],
-                    capture_output=True
-                )
+                with self.conda_lockfile:
+                    create_env_code, _, create_env_error = self._run_command(
+                        [self.conda_cmd, "create", "--file", env_path, "-p", os.path.join(env_output_dir, ".conda")],
+                        capture_output=True
+                    )
                 shutil.copy(env_path, os.path.join(env_output_dir, "environment.lock"))
 
             if create_env_code != 0:
@@ -133,7 +139,8 @@ class CondaEnvironment:
                     elif self.env_dir:
                         pip_install_command = self.get_conda_command() + pip_install_command
 
-                    pip_install_code, _, pip_install_error = self._run_command(pip_install_command, capture_output=True)
+                    with self.pip_lockfile:
+                        pip_install_code, _, pip_install_error = self._run_command(pip_install_command, capture_output=True)
                     pip_file_name = Path(pip_req_file).name
                     pip_file_name = os.path.splitext(pip_file_name)[0]
                     shutil.copy(pip_req_file, os.path.join(env_output_dir, f"pip_requirements.{pip_file_name}.txt"))
