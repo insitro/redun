@@ -97,6 +97,44 @@ def batch_submit(
     task.runnables = [runnable]
     task.volumes = volumes
 
+    if len(accelerators) > 0:
+        # install gpu drivers
+        gpu_install_runnable_1 = batch_v1.Runnable()
+        gpu_install_runnable_1.container = batch_v1.Runnable.Container()
+        gpu_install_runnable_1.container.image_uri = "alpine:latest"
+        gpu_install_runnable_1.container.commands = [
+            "sh",
+            "-c",
+            """tee /mnt/disks/install_gpu_drivers.sh <<EOF
+#!/bin/bash
+echo "$(date) Installing GPU drivers" | sudo tee -a /var/log/startupscript.log
+cos-extensions install gpu -- -version=latest
+# remount the driver folder as executable
+echo "$(date) Remounting driver folder as executable" | sudo tee -a /var/log/startupscript.log
+sudo mount --bind /var/lib/nvidia /var/lib/nvidia
+echo "$(date) Mounting driver folder" | sudo tee -a /var/log/startupscript.log
+echo $(mount | grep nvidia) | sudo tee -a /var/log/startupscript.log
+sudo mount -o remount,exec /var/lib/nvidia
+"""
+        ]
+        gpu_install_runnable_1.container.volumes = ["/mnt/disks:/mnt/disks"]
+
+        gpu_install_runnable_2 = batch_v1.Runnable()
+        gpu_install_runnable_2.container = batch_v1.Runnable.Container()
+        gpu_install_runnable_2.container.image_uri = "alpine:latest"
+        gpu_install_runnable_2.container.commands = [
+            "chmod",
+            "a+x",
+            "/mnt/disks/install_gpu_drivers.sh",
+        ]
+        gpu_install_runnable_2.container.volumes = ["/mnt/disks:/mnt/disks"]
+
+        gpu_install_runnable_3 = batch_v1.Runnable()
+        gpu_install_runnable_3.ignore_exit_status = True
+        gpu_install_runnable_3.script = batch_v1.Runnable.Script()
+        gpu_install_runnable_3.script.path = "/mnt/disks/install_gpu_drivers.sh"
+        task.runnables = [gpu_install_runnable_1, gpu_install_runnable_2, gpu_install_runnable_3, runnable]
+
     # We can specify what resources are requested by each task.
     resources = batch_v1.ComputeResource()
     resources.cpu_milli = vcpus * 1000  # in milliseconds per cpu-second.
@@ -122,9 +160,13 @@ def batch_submit(
     if not machine_type:
         gpus = sum([a[1] for a in accelerators])
         machine_type = find_best_matching_machine_type(
-            cpus=vcpus, memory=memory, region=region,
-            spot=provisioning_model == "spot", local_ssd=False,
-            gpus=gpus, min_cpu_platform=min_cpu_platform
+            cpus=vcpus,
+            memory=memory,
+            region=region,
+            spot=provisioning_model == "spot",
+            local_ssd=False,
+            gpus=gpus,
+            min_cpu_platform=min_cpu_platform,
         )
     allocation_policy = batch_v1.AllocationPolicy()
     policy = batch_v1.AllocationPolicy.InstancePolicy()
@@ -150,8 +192,6 @@ def batch_submit(
     policy.accelerators = list(map(lambda a: create_accelerator(a[0], a[1]), accelerators))
 
     instances = batch_v1.AllocationPolicy.InstancePolicyOrTemplate()
-    if policy.accelerators:
-        instances.install_gpu_drivers = True
     instances.policy = policy
     allocation_policy.instances = [instances]
 
@@ -306,7 +346,9 @@ def get_available_machine_types(region: str) -> List[MachineType]:
     API_URL = f"{CLOUD_INFO_API}/providers/google/services/compute/regions/{region}/products"
     request = requests.get(API_URL, timeout=30)
     if request.status_code != 200:
-        raise RuntimeError(f"Error getting machine types from url '{API_URL}'!\nSpecify machine type manually.")
+        raise RuntimeError(
+            f"Error getting machine types from url '{API_URL}'!\nSpecify machine type manually."
+        )
     result: List[Dict] = request.json()["products"]
     return [
         MachineType(
@@ -334,7 +376,9 @@ def find_best_matching_machine_type(
 ) -> str:
     if gpus > 0:
         # seqera's cloudinfo doesn't have GPU prices yet
-        raise NotImplementedError("Automatic machine type selection is not implemented yet for GPU instances. Specify machine type manually.")
+        raise NotImplementedError(
+            "Automatic machine type selection is not implemented yet for GPU instances. Specify machine type manually."
+        )
     FAMILY_COST_CORRECTION = {
         "e2": 1.0,  # Mix of processors, tend to be similar in performance to N1
         # INTEL
