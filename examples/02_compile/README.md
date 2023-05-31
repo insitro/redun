@@ -276,17 +276,17 @@ We can use the `--file` filter to show all Files touched by the workflow (i.e. u
 ```
 redun log --file
 
-File 2b6a7ce0 2021-06-18 11:41:42 r  lib.c
-File d90885ad 2021-06-18 11:41:42 rw lib.o
-File 2f43c23c 2021-06-18 11:41:42 w  prog
-File dfa3aba7 2021-06-18 10:34:28 r  prog.c
-File 4934098e 2021-06-18 10:34:28 rw prog.o
-File b4537ad7 2021-06-18 11:41:42 w  prog2
-File c748e4c7 2021-06-18 10:34:28 r  prog2.c
-File cd0b6b7e 2021-06-18 10:34:28 rw prog2.o
+File 3ff61199 lib.c
+File 2d7c16a4 lib.o
+File 40262e0c prog
+File a3a87413 prog.c
+File 54716ec9 prog.o
+File 6a3e8493 prog2
+File bdbb6de8 prog2.c
+File 07502b99 prog2.o
 ```
 
-Here, we see each file, and whether it was read, `r`, or written, `w`, by the workflow.
+Here, we see each file including its hash.
 
 We can also look at the provenance of a single file, such as `prog`:
 
