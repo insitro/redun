@@ -64,8 +64,8 @@ class CondaEnvironment:
         self.output_dir = output_dir
 
         self.pip_requirements_files = pip_requirements_files
-        self.conda_lockfile = FileLock('/tmp/redun.conda-executor.conda.lock')
-        self.pip_lockfile = FileLock('/tmp/redun.conda-executor.pip.lock')
+        self.conda_lockfile = FileLock(f'/tmp/redun.{os.getlogin()}.conda-executor.conda.lock')
+        self.pip_lockfile = FileLock(f'/tmp/redun.{os.getlogin()}.conda-executor.pip.lock')
         self.conda_cmd = find_conda_cmd()
         self._ensure_env_exists()
 
