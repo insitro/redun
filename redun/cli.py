@@ -63,7 +63,7 @@ from redun.backends.db import (
     parse_db_version,
 )
 from redun.backends.db.dataflow import display_dataflow, make_dataflow_dom, walk_dataflow
-from redun.backends.db.query import CallGraphQuery
+from redun.backends.db.query import CallGraphQuery, parse_callgraph_query, setup_query_parser
 from redun.backends.db.serializers import RecordSerializer
 from redun.config import Config, create_config_section
 from redun.executors.aws_batch import (
@@ -1123,40 +1123,10 @@ class RedunClient:
             action="store_true",
             help="Do not use pager for log output.",
         )
-        log_parser.add_argument(
-            "--all",
-            action="store_true",
-            help="Show all record types (Execution, Job, Task, CallNode, Value).",
-        )
-        log_parser.add_argument("--exec", action="store_true", help="Show related executions.")
-        log_parser.add_argument("--job", action="store_true", help="Show related jobs.")
-        log_parser.add_argument("--call-node", action="store_true", help="Show related CallNodes.")
-        log_parser.add_argument("--task", action="store_true", help="Show related tasks.")
-        log_parser.add_argument("--value", action="store_true", help="Show related values.")
-        log_parser.add_argument("--file", action="store_true", help="Show related files.")
-        log_parser.add_argument(
-            "--exec-status", help="Filter executions by status (comma separated: DONE, FAILED)."
-        )
-        log_parser.add_argument(
-            "--job-status", help="Filter jobs by status (comma separated: DONE, CACHED, FAILED)."
-        )
-        log_parser.add_argument(
-            "--task-name", action="append", help="Filter tasks and jobs by name."
-        )
-        log_parser.add_argument(
-            "--value-type", action="append", help="Filter Values by their type."
-        )
-        log_parser.add_argument("--file-path", action="append", help="Filter by File path.")
-        log_parser.add_argument("--exec-id", help="Filter by execution ids (comma separated ids).")
+        log_parser = setup_query_parser(log_parser)
         log_parser.add_argument("--count", action="store_true", help="Show record counts.")
         log_parser.add_argument(
             "--format", help="Output format.", default="text", choices=["text", "json"]
-        )
-        log_parser.add_argument(
-            "-t", "--tag", action="append", help="Filter by tag (format: key=value)."
-        )
-        log_parser.add_argument(
-            "--exec-tag", action="append", help="Filter by execution tag (format: key=value)."
         )
         log_parser.add_argument(
             "--detail",
@@ -1165,6 +1135,12 @@ class RedunClient:
             help="Show full record details.",
         )
         log_parser.set_defaults(func=self.log_command)
+
+        # Console command.
+        console_parser = subparsers.add_parser(
+            "console", help="Show information on historical runs in a TUI (Textual UI)."
+        )
+        console_parser.set_defaults(func=self.console_command)
 
         # Viz command
         if viz_is_enabled:
@@ -1794,56 +1770,39 @@ class RedunClient:
         assert isinstance(self.scheduler.backend, RedunBackendDb)
         assert self.scheduler.backend.session
 
-        query = CallGraphQuery(self.scheduler.backend.session).order_by("time")
-
         # Display defaults.
         indent = 0
         detail = args.detail
         compact = True
         display = "general"
 
-        record_types = set()
-
-        # Filter by execution status.
-        if args.exec_status:
-            record_types.add("Execution")
-            query = query.filter_execution_statuses(args.exec_status.split(","))
-
-        # Filter by job status.
-        if args.job_status:
-            record_types.add("Job")
-            query = query.filter_job_statuses(args.job_status.split(","))
-
-        # Filter by value types.
-        if args.value_type:
-            # Implies filtering by Value type.
-            record_types.add("Value")
-            query = query.filter_value_types(args.value_type)
-        if args.file_path:
-            # Implies filtering by Value type.
-            record_types.add("Value")
-            query = query.filter_file_paths(args.file_path)
-
-        # Filter by record type.
-        if args.all:
-            record_types.update(CallGraphQuery.MODEL_NAMES)
-        if args.exec:
-            record_types.add("Execution")
-        if args.job:
-            record_types.add("Job")
-        if args.call_node:
-            record_types.add("CallNode")
-        if args.task:
-            record_types.add("Task")
-        if args.value:
-            record_types.add("Value")
         if args.file:
-            record_types = {"Value"}
-            query = query.filter_value_types(["redun.File"])
             display = "file"
 
-        if record_types:
-            query = query.filter_types(record_types)
+        # Filter by execution id.
+        if args.exec_id:
+            # Replace special id into regular execution ids.
+            execs: Iterable[Execution] = list(
+                filter(
+                    lambda record: isinstance(record, Execution),
+                    [self.infer_id(exec_id) for exec_id in args.exec_id.split(",")],
+                )
+            )
+            args.exec_id = ",".join(exec.id for exec in execs)
+
+        has_type_filters = (
+            args.all
+            or args.exec
+            or args.job
+            or args.call_node
+            or args.task
+            or args.value
+            or args.file
+            or args.file_path
+        )
+
+        query = CallGraphQuery(self.scheduler.backend.session).order_by("time")
+        query = parse_callgraph_query(query, args)
 
         if extra_args:
             # Check unknown filters.
@@ -1863,33 +1822,11 @@ class RedunClient:
             # Search by entities by id.
             query = query.like_id(id)
 
-        elif not record_types:
+        elif not has_type_filters:
             # Default show executions.
             self.display("Recent executions:\n")
 
             query = query.filter_types({"Execution"})
-
-        # Filter by execution id.
-        if args.exec_id:
-            execs: Iterable[Execution] = list(
-                filter(
-                    lambda record: isinstance(record, Execution),
-                    [self.infer_id(exec_id) for exec_id in args.exec_id.split(",")],
-                )
-            )
-            query = query.filter_execution_ids(exec.id for exec in execs)
-
-        # Filter task properties.
-        if args.task_name:
-            query = query.filter_task_names(args.task_name)
-
-        # Filter by tags.
-        if args.tag:
-            tags = [parse_tag_key_value(tag, value_required=False) for tag in args.tag]
-            query = query.filter_tags(tags)
-        if args.exec_tag:
-            tags = [parse_tag_key_value(tag, value_required=False) for tag in args.exec_tag]
-            query = query.filter_execution_tags(tags)
 
         # Display results.
         with with_pager(self, args):
@@ -2392,6 +2329,16 @@ class RedunClient:
                 indent=indent,
             )
             prev_path = file.path
+
+    def console_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+        """
+        Performs the console command (CLI GUI).
+        """
+        scheduler = self.get_scheduler(args)
+
+        from redun.console.app import RedunApp
+
+        RedunApp(scheduler, args, extra_args, argv).run()
 
     def repl_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
         """

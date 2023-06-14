@@ -1,3 +1,4 @@
+import argparse
 from functools import reduce
 from itertools import islice
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
@@ -20,7 +21,120 @@ from redun.backends.db import (
     Task,
     Value,
 )
-from redun.tags import ANY_VALUE
+from redun.tags import ANY_VALUE, parse_tag_key_value
+
+
+def setup_query_parser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """
+    Add actions to an ArgumentParser to support querying a CallGraph.
+    """
+
+    # Log command.
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Show all record types (Execution, Job, Task, CallNode, Value).",
+    )
+    parser.add_argument("--exec", action="store_true", help="Show related executions.")
+    parser.add_argument("--job", action="store_true", help="Show related jobs.")
+    parser.add_argument("--call-node", action="store_true", help="Show related CallNodes.")
+    parser.add_argument("--task", action="store_true", help="Show related tasks.")
+    parser.add_argument("--value", action="store_true", help="Show related values.")
+    parser.add_argument("--file", action="store_true", help="Show related files.")
+    parser.add_argument(
+        "--exec-status", help="Filter executions by status (comma separated: DONE, FAILED)."
+    )
+    parser.add_argument(
+        "--job-status", help="Filter jobs by status (comma separated: DONE, CACHED, FAILED)."
+    )
+    parser.add_argument("--task-name", action="append", help="Filter tasks and jobs by task name.")
+    parser.add_argument("--task-hash", action="append", help="Filter tasks and jobs by task hash.")
+    parser.add_argument("--value-type", action="append", help="Filter Values by their type.")
+    parser.add_argument("--file-path", action="append", help="Filter by File path.")
+    parser.add_argument("--exec-id", help="Filter by execution ids (comma separated ids).")
+    parser.add_argument(
+        "--result", action="append", help="Filter jobs by their result value hashes."
+    )
+    parser.add_argument(
+        "--arg", action="append", help="Filter jobs by their argument value hashes."
+    )
+    parser.add_argument("-t", "--tag", action="append", help="Filter by tag (format: key=value).")
+    parser.add_argument(
+        "--exec-tag", action="append", help="Filter by execution tag (format: key=value)."
+    )
+    return parser
+
+
+def parse_callgraph_query(query: "CallGraphQuery", args: argparse.Namespace) -> "CallGraphQuery":
+    """
+    Parse an argparse.Namespace into a CallGraphQuery.
+    """
+
+    record_types = set()
+
+    # Filter by execution status.
+    if args.exec_status:
+        record_types.add("Execution")
+        query = query.filter_execution_statuses(args.exec_status.split(","))
+
+    # Filter by job status.
+    if args.job_status:
+        record_types.add("Job")
+        query = query.filter_job_statuses(args.job_status.split(","))
+
+    # Filter by value types.
+    if args.value_type:
+        # Implies filtering by Value type.
+        record_types.add("Value")
+        query = query.filter_value_types(args.value_type)
+    if args.file_path:
+        # Implies filtering by Value type.
+        record_types.add("Value")
+        query = query.filter_file_paths(args.file_path)
+
+    # Filter by record type.
+    if args.all:
+        record_types.update(CallGraphQuery.MODEL_NAMES)
+    if args.exec:
+        record_types.add("Execution")
+    if args.job:
+        record_types.add("Job")
+    if args.call_node:
+        record_types.add("CallNode")
+    if args.task:
+        record_types.add("Task")
+    if args.value:
+        record_types.add("Value")
+    if args.file:
+        record_types = {"Value"}
+        query = query.filter_value_types(["redun.File"])
+    if record_types:
+        query = query.filter_types(record_types)
+
+    # Filter by execution id.
+    if args.exec_id:
+        query = query.filter_execution_ids(args.exec_id.split(","))
+
+    # Filter task properties.
+    if args.task_name:
+        query = query.filter_task_names(args.task_name)
+    if args.task_hash:
+        query = query.filter_task_hashes(args.task_hash)
+
+    if args.result:
+        query = query.filter_results(args.result)
+    if args.arg:
+        query = query.filter_arguments(args.arg)
+
+    # Filter by tags.
+    if args.tag:
+        tags = [parse_tag_key_value(tag, value_required=False) for tag in args.tag]
+        query = query.filter_tags(tags)
+    if args.exec_tag:
+        tags = [parse_tag_key_value(tag, value_required=False) for tag in args.exec_tag]
+        query = query.filter_execution_tags(tags)
+
+    return query
 
 
 class CallGraphQuery:
@@ -314,6 +428,47 @@ class CallGraphQuery:
             filters=self._filters + [filter],
         )
 
+    def filter_task_hashes(self, task_hashes: Iterable[str]) -> "CallGraphQuery":
+        """
+        Filter by Task hashes.
+        """
+        return self.clone(
+            filter_types=self._filter_types & {"Job", "Task"},
+            jobs=self._jobs.filter(Job.task_hash.in_(task_hashes)),
+            tasks=self._tasks.filter(Task.hash.in_(task_hashes)),
+        )
+
+    def filter_arguments(self, value_hashes: List[str]) -> "CallGraphQuery":
+        """
+        Filter jobs by argument values.
+        """
+        jobs = (
+            self._jobs.join(CallNode, Job.call_hash == CallNode.call_hash)
+            .join(Argument, Argument.call_hash == CallNode.call_hash)
+            .filter(Argument.value_hash.in_(value_hashes))
+        ).union(
+            self._jobs.join(CallNode, Job.call_hash == CallNode.call_hash)
+            .join(Argument, Argument.call_hash == CallNode.call_hash)
+            .join(Subvalue, Subvalue.parent_value_hash == Argument.value_hash)
+            .filter(Subvalue.value_hash.in_(value_hashes))
+        )
+        return self.clone(filter_types=self._filter_types & {"Job"}, jobs=jobs)
+
+    def filter_results(self, value_hashes: List[str]) -> "CallGraphQuery":
+        """
+        Filter jobs by result values.
+        """
+        jobs = (
+            self._jobs.join(CallNode, Job.call_hash == CallNode.call_hash).filter(
+                CallNode.value_hash.in_(value_hashes)
+            )
+        ).union(
+            self._jobs.join(CallNode, Job.call_hash == CallNode.call_hash)
+            .join(Subvalue, Subvalue.parent_value_hash == CallNode.value_hash)
+            .filter(Subvalue.value_hash.in_(value_hashes))
+        )
+        return self.clone(filter_types=self._filter_types & {"Job"}, jobs=jobs)
+
     def filter_value_types(self, value_types: Iterable[str]) -> "CallGraphQuery":
         """
         Filter query by Value types.
@@ -534,6 +689,32 @@ class CallGraphQuery:
             values=self._values.limit(size),
         )
         yield from islice(query.all(), 0, size)
+
+    def page(self, page: int, page_size: int) -> Iterator[Base]:
+        """
+        Yields a page-worth of results from query.
+
+        page is zero-indexed.
+        """
+        offset = page * page_size
+
+        record_type2subquery = dict(self.build().subqueries)
+        returned = 0
+        seen = 0
+        for record_type, count in self.count():
+            subquery = record_type2subquery[record_type]
+
+            seen += count
+            if seen <= offset:
+                continue
+
+            remainder = offset - (seen - count)
+            if remainder > 0:
+                subquery = subquery.offset(remainder)
+
+            for record in subquery.limit(page_size - returned):
+                returned += 1
+                yield record
 
     def count(self) -> Iterator[Tuple[str, int]]:
         """

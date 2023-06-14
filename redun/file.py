@@ -938,11 +938,18 @@ class S3FileSystem(FileSystem):
         """
         Returns file size of path in bytes.
         """
-        # We call head_object ourselves so that we can avoid getting stale
-        # results from the s3fs cache.
-        _, _, bucket, key = path.split("/", 3)
-        response = self.s3_raw.head_object(Bucket=bucket, Key=key, **self.s3.req_kw)
-        return response["ContentLength"]
+        try:
+            # We call head_object ourselves so that we can avoid getting stale
+            # results from the s3fs cache.
+            _, _, bucket, key = path.split("/", 3)
+            response = self.s3_raw.head_object(Bucket=bucket, Key=key, **self.s3.req_kw)
+            return response["ContentLength"]
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "404":
+                raise FileNotFoundError(path)
+            else:
+                # Unknown error, reraise it.
+                raise
 
 
 class FileClasses:

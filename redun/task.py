@@ -121,6 +121,17 @@ def get_tuple_type_length(tuple_type: Any) -> Optional[int]:
     return None
 
 
+def split_task_fullname(task_fullname: str) -> Tuple[str, str]:
+    """
+    Split a Task fullname into a namespace and name.
+    """
+    if "." in task_fullname:
+        namespace, name = task_fullname.rsplit(".", 1)
+        return namespace, name
+    else:
+        return "", task_fullname
+
+
 class Task(Value, Generic[Func]):
     """
     A redun Task.

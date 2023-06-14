@@ -16,6 +16,7 @@ requirements = [
     # Avoid version botocore-1.28.0
     # https://github.com/iterative/dvc/issues/8513#issuecomment-1298761683
     "botocore>=1.22.8,!=1.28.0",
+    "fancycompleter>=0.9.1",
     "gcsfs>=2021.4.0",
     "s3fs>=2021.11.1",
     # Using 2.1 instead of 3.0 in case future 2.x versions drop support
@@ -23,6 +24,8 @@ requirements = [
     "sqlalchemy>=1.4.0,<2.1",
     "python-dateutil>=2.8",
     "requests>=2.27.1",
+    "rich>=13.3.5",
+    "textual>=0.24.1",
     # If updating this list, check executors/aws_glue.py stays up to date with
     # packages needed to run in the glue environment.
 ]
