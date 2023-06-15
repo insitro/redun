@@ -1560,7 +1560,9 @@ class ExecutionsScreen(RedunScreen):
         parser = argparse.ArgumentParser(prog="", exit_on_error=False)
         parser.add_argument("--id", help="Filter by Execution id prefix.")
         parser.add_argument("--namespace", help="Filter by root task namespace prefixes.")
-        parser.add_argument("--find", help="Filter by root task namespace substrings.")
+        parser.add_argument(
+            "--find", help="Filter by root task namespace and argument substrings."
+        )
         parser.add_argument("--page", type=int, default=1, help="Executions page to display.")
         return parser
 
@@ -1640,7 +1642,10 @@ class ExecutionsScreen(RedunScreen):
         elif self.args.namespace:
             query = query.filter(Task.namespace.like(self.args.namespace + "%"))
         elif self.args.find:
-            query = query.filter(Task.namespace.like("%" + self.args.find + "%"))
+            query = query.filter(
+                Task.namespace.like("%" + self.args.find + "%")
+                | Execution.args.like("%" + self.args.find + "%")
+            )
 
         self.execution_list.executions = (
             query.options(
