@@ -1505,6 +1505,17 @@ class Scheduler:
         else:
             executor.submit_script(job)
 
+    def add_job_tags(self, job: Job, tags: List[Tuple[str, Any]]) -> None:
+        """
+        Callback for adding job tags during job execution.
+        """
+        # Perform database actions on main scheduler thread.
+        self.events_queue.put(
+            lambda: self.backend.record_tags(
+                entity_type=TagEntity.Job, entity_id=job.id, tags=tags
+            )
+        )
+
     def done_job(self, job: Job, result: Any, job_tags: List[Tuple[str, Any]] = []) -> None:
         """
         Mark a :class:`Job` as successfully done with a `result`.

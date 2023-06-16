@@ -1361,6 +1361,11 @@ class AWSBatchExecutor(Executor):
             )
         )
 
+        # AWS Batch job tags at submission time.
+        assert self._scheduler
+        for i, job in enumerate(jobs):
+            self._scheduler.add_job_tags(job, [("aws_batch_job", f"{array_job_id}:{i}")])
+
         return array_uuid
 
     def _submit_single_job(self, job) -> None:
@@ -1420,6 +1425,10 @@ class AWSBatchExecutor(Executor):
         )
         batch_job_id = batch_resp["jobId"]
         self.pending_batch_jobs[batch_job_id] = job
+
+        # Add batch job tags at submission time.
+        assert self._scheduler
+        self._scheduler.add_job_tags(job, [("aws_batch_job", batch_job_id)])
 
     def _is_debug_job(self, job: Job) -> bool:
         """
