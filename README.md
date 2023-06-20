@@ -56,7 +56,7 @@ redun's general approach to defining workflows makes it a good choice for implem
 
 - [Bioinformatics](examples/06_bioinfo_batch/)
 - [Cheminformatics](examples/aws_glue/rdkit_workflow.py)
-- [Web or API data extraction](examples/scrapping/)
+- [Web or API data extraction](examples/scraping/)
 - [General data science](examples/word_count/)
 - [And much more](examples/)
 
