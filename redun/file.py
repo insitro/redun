@@ -823,7 +823,11 @@ class S3FileSystem(FileSystem):
         else:
             client = getattr(_local, "s3_raw", None)
         if not client:
-            client = _local.s3_raw = boto3.client("s3")
+            # We need to create the client using a session to avoid all clients
+            # sharing the same global session.
+            # See: https://github.com/boto/boto3/issues/801#issuecomment-440942144
+            session = boto3.session.Session()
+            client = _local.s3_raw = session.client("s3")
         return client
 
     def exists(self, path: str) -> bool:
