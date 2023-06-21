@@ -19,7 +19,6 @@ from contextlib import contextmanager
 from itertools import chain, islice
 from pprint import pprint
 from shlex import quote
-from shutil import which
 from socket import gethostname, socket
 from textwrap import dedent
 from types import ModuleType
@@ -40,6 +39,7 @@ from typing import (
 )
 from urllib.parse import ParseResult, urlparse
 
+import botocore
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
@@ -78,7 +78,12 @@ from redun.executors.aws_batch import (
     aws_describe_jobs,
     format_log_stream_event,
 )
-from redun.executors.aws_utils import iter_log_stream
+from redun.executors.aws_utils import (
+    get_aws_user,
+    get_default_region,
+    get_simple_aws_user,
+    iter_log_stream,
+)
 from redun.executors.code_packaging import extract_tar
 from redun.executors.launch import launch_script
 from redun.expression import TaskExpression
@@ -774,45 +779,80 @@ def format_tags(tags: List[Tag], max_length: int = 50) -> str:
     return f"({tag_list})"
 
 
-def get_default_execution_tags() -> List[Tuple[str, Any]]:
+def run_command(argv: List[str]) -> Optional[str]:
+    """
+    Run a command and return its output.
+    """
+    try:
+        return subprocess.check_output(argv, stderr=subprocess.STDOUT).decode("ascii").strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
+def get_gcp_user() -> Optional[str]:
+    """
+    Returns the user account for any active GCP logins, otherwise None.
+    """
+    return run_command(
+        ["gcloud", "auth", "list", "--filter=status:ACTIVE", "--format=value(account)"]
+    )
+
+
+def get_default_execution_tags(
+    user: Optional[str] = None,
+    project: Optional[str] = None,
+    doc: Optional[str] = None,
+    exclude_users: List[str] = [],
+) -> List[Tuple[str, Any]]:
     """
     Get default tags for the Execution.
     """
-    default_tags: List[Tuple[str, Any]] = []
+    tags: List[Tuple[str, Any]] = []
 
-    is_git_installed = bool(which("git"))
-    if not is_git_installed:
-        return default_tags
+    # Redun version.
+    tags.append((VERSION_KEY, redun.__version__))
 
-    # Git commit hash
-    try:
-        git_commit = (
-            subprocess.check_output(
-                ["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT
-            )
-            .decode("ascii")
-            .strip()
-        )
-    except subprocess.CalledProcessError:
-        pass
-    else:
-        default_tags.append(("git_commit", git_commit))
+    # Git commit hash.
+    git_commit = os.environ.get("REDUN_GIT_COMMIT") or run_command(
+        ["git", "rev-parse", "--verify", "HEAD"]
+    )
+    if git_commit:
+        tags.append(("git_commit", git_commit))
 
-    # Git origin URL
-    try:
-        git_origin_url = (
-            subprocess.check_output(
-                ["git", "remote", "get-url", "origin"], stderr=subprocess.STDOUT
-            )
-            .decode("ascii")
-            .strip()
-        )
-    except subprocess.CalledProcessError:
-        pass
-    else:
-        default_tags.append(("git_origin_url", git_origin_url))
+    # Git origin URL.
+    git_origin_url = os.environ.get("REDUN_GIT_ORIGIN_URL") or run_command(
+        ["git", "remote", "get-url", "origin"]
+    )
+    if git_origin_url:
+        tags.append(("git_origin_url", git_origin_url))
 
-    return default_tags
+    # User tag.
+    tags.append((USER_KEY, user or get_username()))
+
+    # AWS user tags.
+    if "aws" not in exclude_users:
+        aws_region = get_default_region()
+        try:
+            tags.append(("user_aws_arn", get_aws_user(aws_region)))
+            tags.append(("user_aws", get_simple_aws_user(aws_region)))
+        except (botocore.exceptions.NoCredentialsError, botocore.exceptions.ClientError):
+            pass
+
+    # GCP user tags.
+    if "gcp" not in exclude_users:
+        gcp_user = get_gcp_user()
+        if gcp_user and "WARNING" not in gcp_user:
+            tags.append(("user_gcp", gcp_user))
+
+    # Project tag.
+    if project:
+        tags.append((PROJECT_KEY, project))
+
+    # Doc tag.
+    if doc:
+        tags.append((DOC_KEY, doc))
+
+    return tags
 
 
 class RedunClient:
@@ -993,6 +1033,12 @@ class RedunClient:
         )
         run_parser.add_argument("--doc", help="Specify a documentation tag for the execution.")
         run_parser.add_argument("-u", "--user", help="Specify user tag for execution.")
+        run_parser.add_argument(
+            "--exclude-user",
+            action="append",
+            default=[],
+            help="Exclude adding a specific user tag (e.g. aws, gcp).",
+        )
         run_parser.add_argument("script", help="Python script to import.")
         run_parser.add_argument("task", help="task within script to run.")
         run_parser.add_argument(
@@ -1479,27 +1525,14 @@ class RedunClient:
             task = task.options(**task_options)
 
         # Determine execution tags.
-        tags: List[Tuple[str, Any]] = get_default_execution_tags()
+        tags: List[Tuple[str, Any]] = get_default_execution_tags(
+            user=args.user,
+            project=args.project or infer_project_name(task),
+            doc=args.doc,
+            exclude_users=args.exclude_user,
+        )
         if args.tag:
             tags.extend(map(parse_tag_key_value, args.tag))
-
-        if not any(key == VERSION_KEY for key, _ in tags):
-            tags.append((VERSION_KEY, redun.__version__))
-
-        if args.project:
-            tags.append((PROJECT_KEY, args.project))
-        elif not any(key == PROJECT_KEY for key, _ in tags):
-            project = infer_project_name(task)
-            if project:
-                tags.append((PROJECT_KEY, project))
-
-        if args.user:
-            tags.append((USER_KEY, args.user))
-        else:
-            tags.append((USER_KEY, get_username()))
-
-        if args.doc:
-            tags.append((DOC_KEY, args.doc))
 
         # Run the task.
         expr = task(*pos_args, **kwargs)

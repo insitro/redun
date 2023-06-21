@@ -100,6 +100,28 @@ def get_aws_user(aws_region: str = DEFAULT_AWS_REGION) -> str:
     return response["Arn"]
 
 
+def get_simple_aws_user(aws_region: str = DEFAULT_AWS_REGION) -> str:
+    """
+    Returns the current AWS user simplified.
+
+    By full AWS identify has the format:
+
+      arn:aws:sts::ACCOUNT_ID:USER_NAME
+      arn:aws:sts::ACCOUNT_ID:assumed-role/ROLE_NAME/USER_NAME
+
+    This function will return USER_NAME as a simplification.
+    """
+    user_arn_parts = get_aws_user(aws_region).split(":")
+    resource_id = user_arn_parts[5]
+    if "/" not in resource_id:
+        return resource_id
+
+    resource_type, username = resource_id.split("/", 1)
+    if resource_type == "assumed-role":
+        role_name, username = username.split("/", 1)
+    return username
+
+
 def iter_log_stream(
     log_group_name: str,
     log_stream: str,

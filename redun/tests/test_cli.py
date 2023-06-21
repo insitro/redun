@@ -9,6 +9,7 @@ from typing import Any, List, cast
 from unittest.mock import Mock, patch
 
 import boto3
+import botocore
 import pytest
 from freezegun import freeze_time
 from moto import mock_logs
@@ -968,7 +969,10 @@ def task1(x: int):
 
 
 @use_tempdir
-def test_run_tags() -> None:
+@patch("redun.cli.get_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
+@patch("redun.cli.get_simple_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
+@patch("redun.cli.get_gcp_user", lambda: None)
+def test_run_tags(get_simple_aws_user_mock: Mock, get_aws_user_mock: Mock) -> None:
     """
     Run tags should be recorded on the execution.
     """
@@ -1227,6 +1231,40 @@ def task1(x: int):
     execution = backend.session.query(Execution).one()
     tags = backend.get_tags([execution.id])[execution.id]
     assert tags["project"] == ["my-project"]
+
+
+@use_tempdir
+def test_cloud_user_tags() -> None:
+    """
+    Run cloud (AWS, GCP) user tags should be recorded on the execution.
+    """
+    file = File("workflow.py")
+    file.write(
+        """
+from redun import task
+
+@task()
+def task1(x: int):
+    return x + 1
+"""
+    )
+
+    with patch("redun.cli.get_aws_user", lambda _: "arn:::::alice"), patch(
+        "redun.cli.get_simple_aws_user", lambda _: "alice"
+    ), patch("redun.cli.get_gcp_user", lambda: "alice@gmail.com"):
+        client = RedunClient()
+        client.execute(["redun", "run", "workflow.py", "task1", "--x", "10"])
+
+    scheduler = setup_scheduler()
+    assert scheduler.backend
+    backend = cast(RedunBackendDb, scheduler.backend)
+    assert backend.session
+
+    execution = backend.session.query(Execution).one()
+    tags = backend.get_tags([execution.id])[execution.id]
+    assert tags["user_aws"] == ["alice"]
+    assert tags["user_aws_arn"] == ["arn:::::alice"]
+    assert tags["user_gcp"] == ["alice@gmail.com"]
 
 
 def test_query(scheduler: Scheduler, backend: RedunBackendDb, session: Session) -> None:
@@ -1669,7 +1707,10 @@ def main(x: int):
 
 
 @use_tempdir
-def test_cli_log_tags() -> None:
+@patch("redun.cli.get_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
+@patch("redun.cli.get_simple_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
+@patch("redun.cli.get_gcp_user", lambda: None)
+def test_cli_log_tags(get_simple_aws_user_mock: Mock, get_aws_user_mock: Mock) -> None:
     """
     cli should allow querying the CallGraph for tags.
     """
@@ -1694,7 +1735,18 @@ def main(x: int) -> int:
 
     # Run example workflow.
     client = RedunClient()
-    client.execute(["redun", "run", "--user", "alice", "workflow.py", "task1", "--x", "10"])
+    client.execute(
+        [
+            "redun",
+            "run",
+            "--user",
+            "alice",
+            "workflow.py",
+            "task1",
+            "--x",
+            "10",
+        ]
+    )
 
     scheduler = setup_scheduler()
     assert scheduler.backend
