@@ -152,6 +152,11 @@ Label {
     height: auto;
 }
 
+#job-traceback {
+    height: auto;
+    color: #ff5555;
+}
+
 UpstreamDataflowScreen, .dataflow {
     link-color: #ccccff;
     link-style: none;

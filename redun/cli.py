@@ -63,7 +63,13 @@ from redun.backends.db import (
     parse_db_version,
 )
 from redun.backends.db.dataflow import display_dataflow, make_dataflow_dom, walk_dataflow
-from redun.backends.db.query import CallGraphQuery, parse_callgraph_query, setup_query_parser
+from redun.backends.db.query import (
+    CallGraphQuery,
+    infer_id,
+    infer_specialty_id,
+    parse_callgraph_query,
+    setup_query_parser,
+)
 from redun.backends.db.serializers import RecordSerializer
 from redun.config import Config, create_config_section
 from redun.executors.aws_batch import (
@@ -727,97 +733,6 @@ def get_task_arg_parser(
         cli2arg[opt.dest] = param.name
 
     return parser, cli2arg
-
-
-def find_file(backend: RedunBackendDb, path: str) -> Optional[Tuple[File, Job, str]]:
-    """
-    Find a File by its path.
-
-    - Prefer instance of File as result from a Task.
-      - Amongst result, prefer the most recent.
-    - Otherwise, search for File as argument to a Task.
-      - Amongst arguments, prefer the most recent.
-
-    - For both results and arguments, also search whether File was a Subvalue
-      (e.g. a value within a list, dict, etc).
-
-    - We prefer the most recent, since it has the best chance of still being valid.
-    """
-    assert backend.session
-
-    # Search for File as a Value resulting from a Task.
-    row = (
-        backend.session.query(File, Job)
-        .join(CallNode, CallNode.value_hash == File.value_hash)
-        .join(Job, CallNode.call_hash == Job.call_hash)
-        .filter(File.path == path)
-        .order_by(Job.end_time.desc())
-        .first()
-    )
-
-    # Search for File as a Subvalue resulting from a Task.
-    row2 = (
-        backend.session.query(File, Job)
-        .join(Subvalue, File.value_hash == Subvalue.value_hash)
-        .join(CallNode, Subvalue.parent_value_hash == CallNode.value_hash)
-        .join(Job, CallNode.call_hash == Job.call_hash)
-        .filter(File.path == path)
-        .order_by(Job.end_time.desc())
-        .first()
-    )
-
-    if row or row2:
-        # Return the most recent file and job reference.
-        if not row:
-            return (row2[0], row2[1], "result")
-        elif not row2:
-            return (row[0], row[1], "result")
-        else:
-            _, job = row
-            _, job2 = row2
-            if job.end_time > job2.end_time:
-                return (row[0], row[1], "result")
-            else:
-                return (row2[0], row2[1], "result")
-
-    # Search for File as a Argument to a Task.
-    row3 = (
-        backend.session.query(File, Job)
-        .join(Argument, File.value_hash == Argument.value_hash)
-        .join(CallNode, Argument.call_hash == CallNode.call_hash)
-        .join(Job, CallNode.call_hash == Job.call_hash)
-        .filter(File.path == path)
-        .order_by(Job.start_time.desc())
-        .first()
-    )
-
-    # Search for File as a Argument to a Task.
-    row4 = (
-        backend.session.query(File, Job)
-        .join(Subvalue, File.value_hash == Subvalue.value_hash)
-        .join(Argument, Subvalue.parent_value_hash == Argument.value_hash)
-        .join(CallNode, Argument.call_hash == CallNode.call_hash)
-        .join(Job, CallNode.call_hash == Job.call_hash)
-        .filter(File.path == path)
-        .order_by(Job.start_time.desc())
-        .first()
-    )
-
-    if row3 or row4:
-        # Return the most recent file and job reference.
-        if not row3:
-            return (row4[0], row4[1], "arg")
-        elif not row4:
-            return (row3[0], row3[1], "arg")
-        else:
-            _, job3 = row3
-            _, job4 = row4
-            if job3.end_time > job4.end_time:
-                return (row3[0], row3[1], "arg")
-            else:
-                return (row4[0], row4[1], "arg")
-
-    return None
 
 
 @contextmanager
@@ -1697,40 +1612,9 @@ class RedunClient:
         assert isinstance(self.scheduler.backend, RedunBackendDb)
         assert self.scheduler.backend.session
 
-        record = self.infer_specialty_id(id, include_files=include_files)
-        if record:
-            return record
-
-        query = CallGraphQuery(self.scheduler.backend.session).like_id(id)
-        if required:
-            return query.one()
-        else:
-            return query.first()
-
-    def infer_specialty_id(self, id: str, include_files: bool = True) -> Any:
-        """
-        Try to infer the record based on speciality id (e.g. file paths, `-` shorthand).
-        """
-        assert self.scheduler
-        assert isinstance(self.scheduler.backend, RedunBackendDb)
-        assert self.scheduler.backend.session
-
-        if include_files and (os.path.exists(id) or ":" in id):
-            # Looks like a local path.
-            file_info = find_file(self.scheduler.backend, id)
-            if file_info:
-                return file_info
-
-        if id == "-":
-            # Most recent execution.
-            return (
-                self.scheduler.backend.session.query(Execution)
-                .join(Job, Job.id == Execution.job_id)
-                .order_by(Job.start_time.desc())
-                .first()
-            )
-
-        return None
+        return infer_id(
+            self.scheduler.backend.session, id, include_files=include_files, required=required
+        )
 
     def viz_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
         """
@@ -1813,7 +1697,7 @@ class RedunClient:
             # Search for specialty ids first.
             id = extra_args[0]
             detail = True
-            record = self.infer_specialty_id(id)
+            record = infer_specialty_id(self.scheduler.backend.session, id)
             if record:
                 with with_pager(self, args):
                     self.log_record(record, indent=indent, detail=detail, format=args.format)

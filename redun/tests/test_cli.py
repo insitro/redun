@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 import redun
 from redun import File, Scheduler, task
 from redun.backends.db import CallNode, Execution, Job, RedunBackendDb, Value
+from redun.backends.db.query import find_file
 from redun.cli import (
     REDUN_CONFIG_ENV,
     CallGraphQuery,
@@ -24,7 +25,6 @@ from redun.cli import (
     RedunClientError,
     check_version,
     find_config_dir,
-    find_file,
     get_config_dir,
     import_script,
     is_port_in_use,
@@ -754,7 +754,7 @@ setup_scheduler = workflow::setup_scheduler
 
 
 @use_tempdir
-def test_find_file(scheduler: Scheduler) -> None:
+def test_find_file(scheduler: Scheduler, session: Session) -> None:
     @task()
     def task1():
         file = File("out.txt")
@@ -763,8 +763,7 @@ def test_find_file(scheduler: Scheduler) -> None:
 
     scheduler.run(task1())
 
-    assert isinstance(scheduler.backend, RedunBackendDb)
-    row = find_file(scheduler.backend, "out.txt")
+    row = find_file(session, "out.txt")
     assert row
     file, job, kind = row
     assert file.path == "out.txt"
@@ -772,7 +771,7 @@ def test_find_file(scheduler: Scheduler) -> None:
 
 
 @use_tempdir
-def test_find_file_as_subvalue(scheduler: Scheduler) -> None:
+def test_find_file_as_subvalue(scheduler: Scheduler, session: Session) -> None:
     """
     We should be able to find Files that are subvalues.
     """
@@ -786,8 +785,7 @@ def test_find_file_as_subvalue(scheduler: Scheduler) -> None:
 
     scheduler.run(task1())
 
-    assert isinstance(scheduler.backend, RedunBackendDb)
-    result = find_file(scheduler.backend, "out.txt")
+    result = find_file(session, "out.txt")
     assert result
     file, job, kind = result
     assert file.path == "out.txt"
@@ -795,7 +793,7 @@ def test_find_file_as_subvalue(scheduler: Scheduler) -> None:
 
 
 @use_tempdir
-def test_find_file_arg(scheduler: Scheduler) -> None:
+def test_find_file_arg(scheduler: Scheduler, session: Session) -> None:
     """
     Find a File given as an Argument to a Task.
     """
@@ -812,8 +810,7 @@ def test_find_file_arg(scheduler: Scheduler) -> None:
 
     scheduler.run(main())
 
-    assert isinstance(scheduler.backend, RedunBackendDb)
-    result = find_file(scheduler.backend, "out.txt")
+    result = find_file(session, "out.txt")
     assert result
     file, job, kind = result
     assert file.path == "out.txt"
@@ -821,7 +818,7 @@ def test_find_file_arg(scheduler: Scheduler) -> None:
 
 
 @use_tempdir
-def test_find_file_arg_subvalue(scheduler: Scheduler) -> None:
+def test_find_file_arg_subvalue(scheduler: Scheduler, session: Session) -> None:
     """
     Find a File given as a Subvalue in an Argument to a Task.
     """
@@ -838,8 +835,7 @@ def test_find_file_arg_subvalue(scheduler: Scheduler) -> None:
 
     scheduler.run(main())
 
-    assert isinstance(scheduler.backend, RedunBackendDb)
-    result = find_file(scheduler.backend, "out.txt")
+    result = find_file(session, "out.txt")
     assert result
     file, job, kind = result
     assert file.path == "out.txt"

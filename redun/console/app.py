@@ -11,7 +11,7 @@ from textual.widgets import Label, ListItem, ListView
 from redun.backends.db import CallNode, Execution
 from redun.backends.db import File as DbFile
 from redun.backends.db import Job, RedunBackendDb, Task, Value
-from redun.backends.db.query import CallGraphQuery
+from redun.backends.db.query import infer_id
 from redun.console.screens import (
     ExecutionScreen,
     ExecutionsNamespaceScreen,
@@ -173,7 +173,10 @@ class RedunApp(App):
         path = argv[0] if argv else "executions"
 
         # Determine if path represents a record id.
-        obj = CallGraphQuery(self.session).like_id(path).first()
+        try:
+            obj = infer_id(self.session, path, include_files=False)
+        except ValueError:
+            obj = None
         if obj:
             # Determine if we can redirect to a supported Screen.
             if isinstance(obj, Execution):
@@ -186,10 +189,9 @@ class RedunApp(App):
                     path = f"jobs/{obj.jobs[0].id}"
             elif isinstance(obj, Task):
                 path = f"tasks/{obj.hash}"
-            elif isinstance(obj, Value):
+            elif isinstance(obj, (Value, DbFile)):
                 path = f"values/{obj.value_hash}"
-            else:
-                # Default to displaying record in the repl.
+            elif isinstance(obj, CallNode):
                 path = f"repl/{path}"
 
         # Determine if path corresponds to a routable screen.

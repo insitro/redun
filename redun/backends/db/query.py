@@ -1,9 +1,12 @@
 import argparse
+import os
+import re
 from functools import reduce
 from itertools import islice
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 import sqlalchemy as sa
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql.expression import cast as sa_cast
 from sqlalchemy.sql.expression import select
@@ -747,3 +750,144 @@ class CallGraphQuery:
                 yield value
             else:
                 yield tuple(row)
+
+
+def infer_id(session: Session, id: str, include_files: bool = True, required: bool = False) -> Any:
+    """
+    Try to infer the record based on an id prefix.
+    """
+
+    record = infer_specialty_id(session, id, include_files=include_files)
+    if record:
+        return record
+
+    query = CallGraphQuery(session).like_id(id)
+    if required:
+        return query.one()
+    else:
+        return query.first()
+
+
+def infer_specialty_id(session: Session, id: str, include_files: bool = True) -> Any:
+    """
+    Try to infer the record based on speciality id (e.g. file paths, `-` shorthand).
+    """
+
+    if include_files and (os.path.exists(id) or ":" in id):
+        # Looks like a local path.
+        file_info = find_file(session, id)
+        if file_info:
+            return file_info
+
+    # Determine if id is an Execution shorthand.
+    executions = (
+        session.query(Execution)
+        .join(Job, Job.id == Execution.job_id)
+        .order_by(Job.start_time.desc())
+    )
+
+    if id == "-":
+        # Most recent execution.
+        return executions.first()
+
+    elif re.match(r"^~\d+", id):
+        # Recent execution by index ~1, ~2, etc.
+        index = int(id[1:])
+        if index == 0:
+            raise ValueError("Execution index should >= 1.")
+        try:
+            return executions[index - 1]
+        except IndexError:
+            raise ValueError(f"Execution index too high: {index}")
+
+    return None
+
+
+def find_file(session: Session, path: str) -> Optional[Tuple[File, Job, str]]:
+    """
+    Find a File by its path.
+
+    - Prefer instance of File as result from a Task.
+      - Amongst result, prefer the most recent.
+    - Otherwise, search for File as argument to a Task.
+      - Amongst arguments, prefer the most recent.
+
+    - For both results and arguments, also search whether File was a Subvalue
+      (e.g. a value within a list, dict, etc).
+
+    - We prefer the most recent, since it has the best chance of still being valid.
+    """
+
+    # Search for File as a Value resulting from a Task.
+    row = (
+        session.query(File, Job)
+        .join(CallNode, CallNode.value_hash == File.value_hash)
+        .join(Job, CallNode.call_hash == Job.call_hash)
+        .filter(File.path == path)
+        .order_by(Job.end_time.desc())
+        .first()
+    )
+
+    # Search for File as a Subvalue resulting from a Task.
+    row2 = (
+        session.query(File, Job)
+        .join(Subvalue, File.value_hash == Subvalue.value_hash)
+        .join(CallNode, Subvalue.parent_value_hash == CallNode.value_hash)
+        .join(Job, CallNode.call_hash == Job.call_hash)
+        .filter(File.path == path)
+        .order_by(Job.end_time.desc())
+        .first()
+    )
+
+    if row or row2:
+        # Return the most recent file and job reference.
+        if not row:
+            return (row2[0], row2[1], "result")
+        elif not row2:
+            return (row[0], row[1], "result")
+        else:
+            _, job = row
+            _, job2 = row2
+            if job.end_time > job2.end_time:
+                return (row[0], row[1], "result")
+            else:
+                return (row2[0], row2[1], "result")
+
+    # Search for File as a Argument to a Task.
+    row3 = (
+        session.query(File, Job)
+        .join(Argument, File.value_hash == Argument.value_hash)
+        .join(CallNode, Argument.call_hash == CallNode.call_hash)
+        .join(Job, CallNode.call_hash == Job.call_hash)
+        .filter(File.path == path)
+        .order_by(Job.start_time.desc())
+        .first()
+    )
+
+    # Search for File as a Argument to a Task.
+    row4 = (
+        session.query(File, Job)
+        .join(Subvalue, File.value_hash == Subvalue.value_hash)
+        .join(Argument, Subvalue.parent_value_hash == Argument.value_hash)
+        .join(CallNode, Argument.call_hash == CallNode.call_hash)
+        .join(Job, CallNode.call_hash == Job.call_hash)
+        .filter(File.path == path)
+        .order_by(Job.start_time.desc())
+        .first()
+    )
+
+    if row3 or row4:
+        # Return the most recent file and job reference.
+        if not row3:
+            return (row4[0], row4[1], "arg")
+        elif not row4:
+            return (row3[0], row3[1], "arg")
+        else:
+            _, job3 = row3
+            _, job4 = row4
+            if job3.end_time > job4.end_time:
+                return (row3[0], row3[1], "arg")
+            else:
+                return (row4[0], row4[1], "arg")
+
+    return None

@@ -36,6 +36,7 @@ from redun.console.widgets import (
     TagLinks,
     ValueSpan,
 )
+from redun.scheduler import ErrorValue
 from redun.scheduler import Job as SchedulerJob
 from redun.task import split_task_fullname
 from redun.utils import trim_string
@@ -966,6 +967,7 @@ class JobScreen(RedunScreen):
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("escape", "back", "Back"),
+        ("p", "parent", "Parent job"),
         ("c", "children", "Child jobs"),
         ("r", "repl", "REPL"),
     ]
@@ -984,6 +986,16 @@ class JobScreen(RedunScreen):
 
     def get_path(self) -> str:
         return f"jobs/{self.job_id}"
+
+    def action_parent(self) -> None:
+        """
+        Callback for showing parent job.
+        """
+        assert self.job
+        if self.job.parent_id:
+            self.app.route([f"jobs/{self.job.parent_id}"])
+        else:
+            self.app.route([f"executions/{self.job.execution_id}"])
 
     def action_children(self) -> None:
         """
@@ -1081,14 +1093,29 @@ class JobScreen(RedunScreen):
                 )
                 for arg in arguments
             ]
-            result = ValueSpan(
-                self.job.call_node.value,
-                "[bold]Result:[/] {value}",
-                on_click=self.action_click_value,
-            )
+
+            if self.job.status == "FAILED":
+                error_value = self.job.call_node.value.value_parsed
+                error = error_value if isinstance(error_value, ErrorValue) else "Unknown"
+                result = Static(f"[bold]Raised:[/] {error}")
+
+                lines = ["", "[bold]Traceback:[/]"]
+                if isinstance(error_value, ErrorValue) and error_value.traceback:
+                    for line in error_value.traceback.format():
+                        lines.append(line.rstrip("\n"))
+                traceback = [Static("\n".join(lines))]
+            else:
+                result = ValueSpan(
+                    self.job.call_node.value,
+                    "[bold]Result:[/] {value}",
+                    on_click=self.action_click_value,
+                )
+                traceback = []
+
         else:
             args = []
             result = Static("[bold]Result:[/b] Unknown")
+            traceback = []
 
         source = self.job.task.source
 
@@ -1109,6 +1136,7 @@ class JobScreen(RedunScreen):
                 Static("[bold]Args:[/]"),
                 Vertical(*args, id="job-args-list"),
                 result,
+                Vertical(*traceback, id="job-traceback"),
                 Static(),
                 Static(
                     f"[@click=screen.click_task][bold]Task[/] {self.job.task_hash} "
@@ -1167,6 +1195,7 @@ class ExecutionScreen(RedunScreen):
         ("g", "unfocus", "Unfocus job"),
         ("/", "filter", "Filter"),
         ("r", "repl", "REPL"),
+        ("ctrl+r", "refresh", "Refresh"),
     ]
 
     def __init__(self, execution_id: str):
@@ -1264,6 +1293,9 @@ class ExecutionScreen(RedunScreen):
             obj_id=self.execution.id,
         )
         self.app.push_screen(screen)
+
+    async def action_refresh(self) -> None:
+        await self.load_jobs()
 
     async def load_jobs(self):
         if not self.execution:
@@ -1543,6 +1575,7 @@ class ExecutionsScreen(RedunScreen):
         ("p", "prev", "Previous page"),
         ("/", "filter", "Filter"),
         ("r", "repl", "REPL"),
+        ("ctrl+r", "refresh", "Refresh"),
     ]
 
     def __init__(self):
@@ -1582,6 +1615,9 @@ class ExecutionsScreen(RedunScreen):
         # Reload executions.
         self.execution_list.executions = None
         self.call_after_refresh(self.load_executions)
+
+    async def action_refresh(self) -> None:
+        await self.load_executions()
 
     def on_screen_resume(self, message: Message) -> None:
         """
