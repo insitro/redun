@@ -34,7 +34,7 @@ extras = {
     "glue": ["pandas", "pyarrow", "pyspark"],
     "k8s": "kubernetes>=22.6",
     "viz": "pygraphviz",
-    "google-batch": "google-cloud-batch>=0.2.0",
+    "google-batch": ["google-cloud-batch>=0.2.0", "google-cloud-compute>=1.11.0"],
 }
 
 if REQUIRE_POSTGRES:
