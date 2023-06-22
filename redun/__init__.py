@@ -5,12 +5,12 @@ from redun.executors.docker import DockerExecutor
 
 try:
     from redun.executors.k8s import K8SExecutor
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError):
     # Skip k8s executor if kubernetes is not installed.
     pass
 try:
     from redun.executors.gcp_batch import GCPBatchExecutor
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError):
     # Skip gcp_batch executor if google-cloud-batch is not installed.
     pass
 from redun.executors.local import LocalExecutor

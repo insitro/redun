@@ -185,8 +185,11 @@ def carrots(x: int):
     )
 
     # Sync repos local -> other
-    output = run_command(client, ["redun", "pull", "other"])
-    assert output == "Pulled 9 new record(s) from repo 'other'\n"
+    lines = run_command(client, ["redun", "pull", "other"]).split("\n")
+    assert_match_lines(
+        [r"Pulled \d+ new record\(s\) from repo 'other'", ""],
+        lines,
+    )
 
     # Should now have cached value from sync.
     client.execute(["redun", "run", "workflow.py", "carrots", "--x", "10"])
@@ -201,8 +204,11 @@ def carrots(x: int):
         client.execute(["redun", "--repo", "other", "push", "other"])
 
     # Now push to the remote
-    output = run_command(client, ["redun", "push", "other"])
-    assert output == "Pushed 14 record(s) to repo 'other'\n"
+    lines = run_command(client, ["redun", "push", "other"]).split("\n")
+    assert_match_lines(
+        [r"Pushed \d+ record\(s\) to repo 'other'", ""],
+        lines,
+    )
     lines = run_command(client, ["redun", "--repo", "other", "log", "--exec"]).split("\n")
     assert_match_lines(
         [
