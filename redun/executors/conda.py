@@ -36,6 +36,8 @@ def find_conda_cmd() -> str:
         conda_cmd = shutil.which(conda_executable)
         if conda_cmd is not None:
             return conda_executable
+    if os.environ.get("CONDA_EXE"):
+        return os.environ["CONDA_EXE"]
     raise RuntimeError(
         f"Could not find conda executable. Make sure one of the following is installed: {supported_conda_executables}"
     )
