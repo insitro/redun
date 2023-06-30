@@ -189,6 +189,7 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html">redun.backends.db package</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="redun.console.html">redun.console package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.executors.html">redun.executors package</a></li>
 </ul>
 </li>
@@ -330,13 +331,16 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.clone"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.clone()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.count"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.count()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.empty"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.empty()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_arguments"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_arguments()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_execution_ids"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_execution_ids()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_execution_statuses"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_execution_statuses()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_execution_tags"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_execution_tags()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_file_paths"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_file_paths()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_ids"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_ids()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_job_statuses"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_job_statuses()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_results"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_results()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_tags"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_tags()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_task_hashes"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_task_hashes()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_task_names"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_task_names()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_types"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_types()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.filter_value_types"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_value_types()</span></code></a></li>
@@ -346,10 +350,16 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.one"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.one()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.one_or_none"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.one_or_none()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.order_by"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.order_by()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.page"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.page()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.select"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.select()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.CallGraphQuery.subqueries"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.subqueries</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.find_file"><code class="docutils literal notranslate"><span class="pre">find_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.infer_id"><code class="docutils literal notranslate"><span class="pre">infer_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.infer_specialty_id"><code class="docutils literal notranslate"><span class="pre">infer_specialty_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.parse_callgraph_query"><code class="docutils literal notranslate"><span class="pre">parse_callgraph_query()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.backends.db.html#redun.backends.db.query.setup_query_parser"><code class="docutils literal notranslate"><span class="pre">setup_query_parser()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.backends.db.html#module-redun.backends.db.serializers">redun.backends.db.serializers module</a><ul>

@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun.executors package" href="redun.executors.html" /><link rel="prev" title="redun.backends package" href="redun.backends.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun.console package" href="redun.console.html" /><link rel="prev" title="redun.backends package" href="redun.backends.html" />
 
     <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
         <title>redun.backends.db package - redun documentation</title>
@@ -189,6 +189,7 @@
 <li class="toctree-l4 current current-page"><a class="current reference internal" href="#">redun.backends.db package</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="redun.console.html">redun.console package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.executors.html">redun.executors package</a></li>
 </ul>
 </li>
@@ -922,7 +923,7 @@ like this:</p>
 <p>Query class for efficiently querying across all models in a CallGraph.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.ExecTag">
-<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7fdda3591150;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7f0d9b751a50;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -971,6 +972,12 @@ like this:</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.filter_arguments">
+<span class="sig-name descname"><span class="pre">filter_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value_hashes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery" title="redun.backends.db.query.CallGraphQuery"><span class="pre">CallGraphQuery</span></a></span></span><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.filter_arguments" title="Permalink to this definition">#</a></dt>
+<dd><p>Filter jobs by argument values.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.filter_execution_ids">
 <span class="sig-name descname"><span class="pre">filter_execution_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">execution_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery" title="redun.backends.db.query.CallGraphQuery"><span class="pre">CallGraphQuery</span></a></span></span><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.filter_execution_ids" title="Permalink to this definition">#</a></dt>
 <dd><p>Filter query by Execution ids.</p>
@@ -1008,9 +1015,21 @@ like this:</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.filter_results">
+<span class="sig-name descname"><span class="pre">filter_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value_hashes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery" title="redun.backends.db.query.CallGraphQuery"><span class="pre">CallGraphQuery</span></a></span></span><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.filter_results" title="Permalink to this definition">#</a></dt>
+<dd><p>Filter jobs by result values.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.filter_tags">
 <span class="sig-name descname"><span class="pre">filter_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery" title="redun.backends.db.query.CallGraphQuery"><span class="pre">CallGraphQuery</span></a></span></span><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.filter_tags" title="Permalink to this definition">#</a></dt>
 <dd><p>Filter by tags.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.filter_task_hashes">
+<span class="sig-name descname"><span class="pre">filter_task_hashes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_hashes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery" title="redun.backends.db.query.CallGraphQuery"><span class="pre">CallGraphQuery</span></a></span></span><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.filter_task_hashes" title="Permalink to this definition">#</a></dt>
+<dd><p>Filter by Task hashes.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1072,6 +1091,13 @@ like this:</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.page">
+<span class="sig-name descname"><span class="pre">page</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">page</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">Base</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.page" title="Permalink to this definition">#</a></dt>
+<dd><p>Yields a page-worth of results from query.</p>
+<p>page is zero-indexed.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.select">
 <span class="sig-name descname"><span class="pre">select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">columns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.select" title="Permalink to this definition">#</a></dt>
 <dd><p>Select columns to return in query.</p>
@@ -1088,6 +1114,45 @@ like this:</p>
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.backends.db.query.find_file">
+<span class="sig-prename descclassname"><span class="pre">redun.backends.db.query.</span></span><span class="sig-name descname"><span class="pre">find_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.backends.db.File" title="redun.backends.db.File"><span class="pre">File</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.Job" title="redun.backends.db.Job"><span class="pre">Job</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.db.query.find_file" title="Permalink to this definition">#</a></dt>
+<dd><p>Find a File by its path.</p>
+<ul class="simple">
+<li><p>Prefer instance of File as result from a Task.
+- Amongst result, prefer the most recent.</p></li>
+<li><p>Otherwise, search for File as argument to a Task.
+- Amongst arguments, prefer the most recent.</p></li>
+<li><p>For both results and arguments, also search whether File was a Subvalue
+(e.g. a value within a list, dict, etc).</p></li>
+<li><p>We prefer the most recent, since it has the best chance of still being valid.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.backends.db.query.infer_id">
+<span class="sig-prename descclassname"><span class="pre">redun.backends.db.query.</span></span><span class="sig-name descname"><span class="pre">infer_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">required</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.backends.db.query.infer_id" title="Permalink to this definition">#</a></dt>
+<dd><p>Try to infer the record based on an id prefix.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.backends.db.query.infer_specialty_id">
+<span class="sig-prename descclassname"><span class="pre">redun.backends.db.query.</span></span><span class="sig-name descname"><span class="pre">infer_specialty_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.backends.db.query.infer_specialty_id" title="Permalink to this definition">#</a></dt>
+<dd><p>Try to infer the record based on speciality id (e.g. file paths, <cite>-</cite> shorthand).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.backends.db.query.parse_callgraph_query">
+<span class="sig-prename descclassname"><span class="pre">redun.backends.db.query.</span></span><span class="sig-name descname"><span class="pre">parse_callgraph_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery" title="redun.backends.db.query.CallGraphQuery"><span class="pre">CallGraphQuery</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery" title="redun.backends.db.query.CallGraphQuery"><span class="pre">CallGraphQuery</span></a></span></span><a class="headerlink" href="#redun.backends.db.query.parse_callgraph_query" title="Permalink to this definition">#</a></dt>
+<dd><p>Parse an argparse.Namespace into a CallGraphQuery.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.backends.db.query.setup_query_parser">
+<span class="sig-prename descclassname"><span class="pre">redun.backends.db.query.</span></span><span class="sig-name descname"><span class="pre">setup_query_parser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ArgumentParser</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ArgumentParser</span></span></span><a class="headerlink" href="#redun.backends.db.query.setup_query_parser" title="Permalink to this definition">#</a></dt>
+<dd><p>Add actions to an ArgumentParser to support querying a CallGraph.</p>
 </dd></dl>
 
 </section>
@@ -2956,12 +3021,12 @@ This also implies <cite>new=True</cite>.</p></li>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="redun.executors.html">
+          <a class="next-page" href="redun.console.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">redun.executors package</div>
+                <div class="title">redun.console package</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -3101,13 +3166,16 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.clone"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.clone()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.count"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.count()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.empty"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.empty()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_arguments"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_arguments()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_execution_ids"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_execution_ids()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_execution_statuses"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_execution_statuses()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_execution_tags"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_execution_tags()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_file_paths"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_file_paths()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_ids"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_ids()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_job_statuses"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_job_statuses()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_results"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_results()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_tags"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_tags()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_task_hashes"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_task_hashes()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_task_names"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_task_names()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_types"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_types()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.filter_value_types"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.filter_value_types()</span></code></a></li>
@@ -3117,10 +3185,16 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.one"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.one()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.one_or_none"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.one_or_none()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.order_by"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.order_by()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.page"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.page()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.select"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.select()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.query.CallGraphQuery.subqueries"><code class="docutils literal notranslate"><span class="pre">CallGraphQuery.subqueries</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#redun.backends.db.query.find_file"><code class="docutils literal notranslate"><span class="pre">find_file()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.infer_id"><code class="docutils literal notranslate"><span class="pre">infer_id()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.infer_specialty_id"><code class="docutils literal notranslate"><span class="pre">infer_specialty_id()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.parse_callgraph_query"><code class="docutils literal notranslate"><span class="pre">parse_callgraph_query()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.query.setup_query_parser"><code class="docutils literal notranslate"><span class="pre">setup_query_parser()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-redun.backends.db.serializers">redun.backends.db.serializers module</a><ul>

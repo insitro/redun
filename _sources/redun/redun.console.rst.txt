@@ -1,0 +1,61 @@
+redun.console package
+=====================
+
+Submodules
+----------
+
+redun.console.app module
+------------------------
+
+.. automodule:: redun.console.app
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+redun.console.parser module
+---------------------------
+
+.. automodule:: redun.console.parser
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+redun.console.screens module
+----------------------------
+
+.. automodule:: redun.console.screens
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+redun.console.upstream\_screen module
+-------------------------------------
+
+.. automodule:: redun.console.upstream_screen
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+redun.console.utils module
+--------------------------
+
+.. automodule:: redun.console.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+redun.console.widgets module
+----------------------------
+
+.. automodule:: redun.console.widgets
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: redun.console
+   :members:
+   :undoc-members:
+   :show-inheritance:

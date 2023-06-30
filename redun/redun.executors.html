@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="prev" title="redun.backends.db package" href="redun.backends.db.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="prev" title="redun.console package" href="redun.console.html" />
 
     <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
         <title>redun.executors package - redun documentation</title>
@@ -189,6 +189,7 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html">redun.backends.db package</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="redun.console.html">redun.console package</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">redun.executors package</a></li>
 </ul>
 </li>
@@ -797,6 +798,18 @@ Returns the path to the file on S3.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="redun.executors.aws_utils.get_simple_aws_user">
+<span class="sig-prename descclassname"><span class="pre">redun.executors.aws_utils.</span></span><span class="sig-name descname"><span class="pre">get_simple_aws_user</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aws_region</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'us-west-2'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.executors.aws_utils.get_simple_aws_user" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the current AWS user simplified.</p>
+<p>By full AWS identify has the format:</p>
+<blockquote>
+<div><p>arn:aws:sts::ACCOUNT_ID:USER_NAME
+arn:aws:sts::ACCOUNT_ID:assumed-role/ROLE_NAME/USER_NAME</p>
+</div></blockquote>
+<p>This function will return USER_NAME as a simplification.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="redun.executors.aws_utils.is_ec2_instance">
 <span class="sig-prename descclassname"><span class="pre">redun.executors.aws_utils.</span></span><span class="sig-name descname"><span class="pre">is_ec2_instance</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.executors.aws_utils.is_ec2_instance" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns True if this process is running on an EC2 instance.</p>
@@ -1228,14 +1241,14 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
         
         <div class="related-pages">
           
-          <a class="prev-page" href="redun.backends.db.html">
+          <a class="prev-page" href="redun.console.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">redun.backends.db package</div>
+                <div class="title">redun.console package</div>
                 
               </div>
             </a>
@@ -1366,6 +1379,7 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 <li><a class="reference internal" href="#redun.executors.aws_utils.get_aws_env_vars"><code class="docutils literal notranslate"><span class="pre">get_aws_env_vars()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.aws_utils.get_aws_user"><code class="docutils literal notranslate"><span class="pre">get_aws_user()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.aws_utils.get_default_region"><code class="docutils literal notranslate"><span class="pre">get_default_region()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.aws_utils.get_simple_aws_user"><code class="docutils literal notranslate"><span class="pre">get_simple_aws_user()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.aws_utils.is_ec2_instance"><code class="docutils literal notranslate"><span class="pre">is_ec2_instance()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.aws_utils.iter_log_stream"><code class="docutils literal notranslate"><span class="pre">iter_log_stream()</span></code></a></li>
 </ul>

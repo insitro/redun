@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.16.0
+June 21, 2023
+
+* `#303` - Fix boto thread safe
+* `#300` - Console extras
+* `#301` - Fix scrapping typo
+* `#299` - Add batch job tags at subission time
+* `#297` - broaden the scope of console executions --find to include args
+* `#294` - Add TUI Console to redun cli
+* `#295` - Update stale example output
+* `#293` - Example of running conda in a docker container
+* `#292` - Allow setting no role for aws batch jobs
+* `#291` - Removed pinned boto version for doc requirements
+* `#73` - split out version into it's own module
+* `#68` - GCP batch support v2
+* `#72` - Fix link on the "Scheduling redun workflows" docs page
+* use legacy solver for docs publishing
+* fix sphinx docs building
+* `#71` - Update design.md
+
 ## 0.15.0
 May 01, 2023
 

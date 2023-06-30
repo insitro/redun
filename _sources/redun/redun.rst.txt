@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    redun.backends
+   redun.console
    redun.executors
 
 Submodules
