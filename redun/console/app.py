@@ -4,6 +4,7 @@ from typing import Any, List, Type, cast
 
 import sqlalchemy as sa
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.screen import Screen
 from textual.widget import Widget
 from textual.widgets import Label, ListItem, ListView
@@ -71,10 +72,12 @@ class RedunApp(App):
     Top-level redun console App.
     """
 
+    TITLE = "redun"
     CSS_PATH = "style.css"
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("m", "push_screen('MenuScreen')", "Menu"),
+        Binding("ctrl+p", "print_screen", "Print screen", show=False),
     ]
     SCREENS = {
         "MenuScreen": MenuScreen,
@@ -118,6 +121,9 @@ class RedunApp(App):
             r"https://console.aws.amazon.com/batch/home?#jobs/detail/{{aws_batch_job}}",
             r"https://console.aws.amazon.com/cloudwatch/home?#logEventViewer:group=/aws/batch/job;stream={{aws_log_stream}}",  # noqa: E501
         ]
+
+    def action_print_screen(self) -> None:
+        self.save_screenshot(path="./")
 
     def on_mount(self) -> None:
         # Default base screen.

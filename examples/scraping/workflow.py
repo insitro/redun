@@ -11,7 +11,7 @@ from redun import File, cond, task
 from redun.functools import flat_map, flatten
 from redun.tools import render_template
 
-redun_namesapce = "redun.examples.scraper"
+redun_namespace = "redun.examples.scraper"
 
 S = TypeVar("S")
 T = TypeVar("T")

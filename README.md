@@ -300,6 +300,12 @@ Notice, two of the compile jobs are cached (`prog.c` and `prog2.c`), but compili
 
 Check out the [examples](examples/) for more example workflows and features of redun. Also, see the [design notes](https://insitro.github.io/redun/design.html) for more information on redun's design.
 
+## Data provenance exploration
+
+All workflow executions are recorded into a database that can be explored using the [Console (TUI)](https://insitro.github.io/redun/design.html#call-graphs). The Console is convenient for debugging large complex workflows, as well as understanding how to reproduce and extend past work.
+
+<a href="docs/source/_static/console-execution.svg"><img width="45%" src="docs/source/_static/console-execution.svg"> <a href="docs/source/_static/console-job.svg"><img width="45%" src="docs/source/_static/console-job.svg">
+
 ## Mixed compute backends
 
 In the above example, each task ran in its own thread. However, more generally each task can run in its own process, Docker container, [AWS Batch job](examples/05_aws_batch), or [Spark job](examples/aws_glue). With [minimal configuration](examples/05_aws_batch/.redun/redun.ini), users can lightly annotate where they would like each task to run. redun will automatically handle the data and code movement as well as backend scheduling:
