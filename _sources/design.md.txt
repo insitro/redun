@@ -575,7 +575,7 @@ def main():
 
 Depicted above is an example call graph and job tree (left) for an execution of a workflow (right). When each task is called, a CallNode is recorded along with all the Values used as arguments and return values. As tasks (`main`) call child tasks, children CallNodes are recorded (`task1` and `task2`). "Horizontal" dataflow is also recorded between sibling tasks, such as `task1` and `task2`. Each node in the call graph is identified by a unique hash and each Job and Execution is identified by a unique UUID. This information is stored by default in the redun database `.redun/redun.db`.
 
-The redun backend database provides a durable record of these call graphs for every execution redun performs. This not only provides the backend storage for caching, it is directly queryable by users to explore the call graph, using the `redun log` and `redun repl` commands. For example, if we know that a file `/tmp/data` was produced by redun, we can find out exactly which execution did so, and hence can retrieve information about the code and inputs used to do so. See [querying call graphs](db.md#Querying-call-graphs) for more.
+The redun backend database provides a durable record of these call graphs for every execution redun performs. This not only provides the backend storage for caching, it also is queryable by users to explore the call graph, using the `redun log`, `redun console`, and `redun repl` commands. For example, if we know that a file `/tmp/data` was produced by redun, we can find out exactly which execution did so, and hence can retrieve information about the code and inputs used to do so. See [querying call graphs](db.md#Querying-call-graphs) for more.
 
 ## Advanced topics
 

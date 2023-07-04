@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Developer guide" href="developing.html" /><link rel="prev" title="Visualization" href="visualization.html" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Visualization" href="visualization.html" /><link rel="prev" title="Type checking" href="typing.html" />
 
     <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
-        <title>FAQ - redun documentation</title>
+        <title>Console (TUI) - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -168,9 +168,9 @@
 <li class="toctree-l1"><a class="reference internal" href="db.html">Backend and database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
-<li class="toctree-l1"><a class="reference internal" href="console.html">Console (TUI)</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Console (TUI)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
@@ -231,62 +231,58 @@
           </label>
         </div>
         <article role="main">
-          <section id="faq">
-<h1>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading">#</a></h1>
-<p>A collection of gotchas, how-to’s, and other common questions.</p>
-<section id="how-can-i-use-an-existing-jobdefinition-in-aws-batch-executor">
-<h2>How can I use an existing JobDefinition in AWS Batch Executor?<a class="headerlink" href="#how-can-i-use-an-existing-jobdefinition-in-aws-batch-executor" title="Permalink to this heading">#</a></h2>
-<p>New options and features are added to the JobDefintions in AWS Batch long before they make their way to boto3.
-Additionally, redun will not always be on the latest version of boto3.
-So, there can be a significant delay in the time an option is introduced for a JobDefinition in AWS Batch, and it becoming available to set in the version of boto3 used by redun(sharedMemory for example).</p>
-<p>Given that potential delay, redun allows the user to create the JobDefinition themselves in AWS and then use that existing JobDefinition when running their tasks.
-To do this, set <code class="docutils literal notranslate"><span class="pre">autocreate_job_def=False</span></code> as a task option <em>and</em> specify a <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> in the task options.
-You <em>must</em> set the <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> to the name of the JobDefintion you manually created in AWS Batch.
-When both the above options are set on a task, redun will look for an existing JobDefintion by name only and will raise an error if no matches are found.
-This is different from the default lookup which compares both the name and the container properties and will also create a definition if one does not exist.</p>
+          <section id="console-tui">
+<h1>Console (TUI)<a class="headerlink" href="#console-tui" title="Permalink to this heading">#</a></h1>
+<p>redun has a <a class="reference external" href="https://en.wikipedia.org/wiki/Text-based_user_interface">Text-based User Interface (TUI)</a> called Console, which provides a convenient way to interactively explore the <a class="reference internal" href="design.html#provenance-and-call-graphs"><span class="std std-ref">data provenance</span></a> recorded by past redun executions.</p>
+<p>For example, running the command</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>console
+</pre></div>
+</div>
+<p>will bring up the redun Console showing all the past Executions recorded in the redun database repo:</p>
+<p><a href="_static/console-executions.svg"><img src="_static/console-executions.svg"></a></p>
+<p>This provides similar information as the <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">log</span></code> command, but also supports interactive exploration using keyboard navigation (e.g. arrow keys, cycling focus using tab) and mouse (e.g. clicking, dragging, mouse wheel). This is made possible by the powerful <a class="reference external" href="https://github.com/textualize/textual/">Textual</a> Python library.</p>
+<section id="console-walk-through">
+<h2>Console walk-through<a class="headerlink" href="#console-walk-through" title="Permalink to this heading">#</a></h2>
+<p>To highlight some of the key features of the Console, we’ll explore the data provenance recorded by executing several of the <a class="reference external" href="https://github.com/insitro/redun/tree/main/examples">workflow examples</a> provided in the redun source repo.</p>
+<section id="executions-screen">
+<h3>Executions screen<a class="headerlink" href="#executions-screen" title="Permalink to this heading">#</a></h3>
+<p>As we showed above, the Console can be started using the command <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">console</span></code>. The first screen is a list of the past Executions.</p>
+<p><a href="_static/console-executions.svg"><img src="_static/console-executions.svg"></a></p>
+<p>Let’s review some features on this first screen. First, on the bottom, we have a list of actions we can take along with hotkeys for invoking them. For example, pressing the <code class="docutils literal notranslate"><span class="pre">q</span></code> key will quit the Console application. Another important key, the <code class="docutils literal notranslate"><span class="pre">Escape</span></code> key, acts like a web browser back button as we navigate to other screens in the Console app. The <code class="docutils literal notranslate"><span class="pre">m</span></code> hotkey provides a menu of the top-level screens of the Console.</p>
+<p><a href="_static/console-menu.svg"><img src="_static/console-menu.svg"></a></p>
 </section>
-<section id="how-do-i-read-a-portion-of-a-file-without-downloading-reading-it-all">
-<h2>How do I read a portion of a file without downloading/reading it all?<a class="headerlink" href="#how-do-i-read-a-portion-of-a-file-without-downloading-reading-it-all" title="Permalink to this heading">#</a></h2>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun.file</span> <span class="kn">import</span> <span class="n">File</span>
-<span class="n">input_file</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="s2">&quot;&lt;path_to_file&gt;&quot;</span><span class="p">)</span>
-<span class="n">stream</span> <span class="o">=</span> <span class="n">input_file</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
-<span class="n">stream</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># Move to the 101st byte</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># Read the next 10 bytes</span>
-</pre></div>
-</div>
+<section id="execution-screen">
+<h3>Execution screen<a class="headerlink" href="#execution-screen" title="Permalink to this heading">#</a></h3>
+<p>Selecting an Execution in the executions list will take us to a screen providing information specific to one Execution. Here, we see the provenance recorded by running the <a class="reference external" href="https://github.com/insitro/redun/tree/main/examples/scraping">web scraping example</a>.</p>
+<p><a href="_static/console-execution.svg"><img src="_static/console-execution.svg"></a></p>
+<p><strong>Header.</strong> First, notice that the header has changed to <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">console</span> <span class="pre">executions/5174a516-dfaf-4b81-978c-b6ec948160a6</span></code>. This a valid shell command that can be used to return to this specific screen in the Console app. You can think of it like a URL for your terminal. For example, you could <a class="reference external" href="https://github.com/Textualize/textual/blob/main/FAQ.md#how-can-i-select-and-copy-text-in-a-textual-app">copy</a> this command and share it with collaborators who have access to the same redun repo.</p>
+<p><strong>Execution details.</strong> Below the header, we have high-level information about the Execution, such as the start time, duration, and original command-line arguments. We also see the <em>Tags</em> that redun has automatically attached to the Execution, such as the related github repo, redun version, and user name. Some tags, such as <code class="docutils literal notranslate"><span class="pre">git_commit</span></code>, <code class="docutils literal notranslate"><span class="pre">git_origin_url</span></code>, and <code class="docutils literal notranslate"><span class="pre">aws_batch_job</span></code>, will automatically be rendered as links to Github, AWS Console, etc.</p>
+<p><strong>Job status table.</strong> Next, we see an overview of the Execution’s Jobs organized by task and status (e.g. DONE, FAILED, CACHED). In addition to providing a quick overview of the Jobs, it provides Job filtering. Clicking and pressing enter on any cell of the table allows filtering to jobs matching that task and/or status.</p>
+<p><a href="_static/console-execution-filter-jobs.svg"><img src="_static/console-execution-filter-jobs.svg"></a></p>
+<p><strong>Job tree.</strong> Lastly, on the bottom half of the screen we see the Execution’s Job tree. We can see which tasks were executed along with a brief summary of the argument values. The <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">p</span></code> hotkeys can be used to move through <em>next</em> and <em>previous pages</em> in the Job tree. Pressing <code class="docutils literal notranslate"><span class="pre">Enter</span></code> on any Job will navigate the to the <em>Job screen</em>.</p>
+<p><strong>Filter commands.</strong> You may have noticed that filtering jobs updated the header’s command line options, such as <code class="docutils literal notranslate"><span class="pre">--status</span></code> and <code class="docutils literal notranslate"><span class="pre">--task</span></code>. Using the <code class="docutils literal notranslate"><span class="pre">/</span></code> hotkey, these filters can be edited directly. Many of the screens in Console provide this hotkey.</p>
+<p><a href="_static/console-execution-filter.svg"><img src="_static/console-execution-filter.svg"></a></p>
 </section>
-<section id="gotcha-when-modifying-file-passed-as-task-arg">
-<h2>Gotcha when modifying file passed as task arg<a class="headerlink" href="#gotcha-when-modifying-file-passed-as-task-arg" title="Permalink to this heading">#</a></h2>
-<p>Let’s say we had the following task which adds a string to the end of the input file:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun.file</span> <span class="kn">import</span> <span class="n">File</span>
-<span class="kn">from</span> <span class="nn">redun.task</span> <span class="kn">import</span> <span class="n">task</span>
-
-<span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">add_footer</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">File</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">File</span>
-   <span class="k">with</span> <span class="n">f</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
-       <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;EOF&quot;</span><span class="p">)</span>
-   <span class="k">return</span> <span class="n">f</span>
-</pre></div>
-</div>
-<p>The issue with the above is that by writing to the file, we have changed the file hash and thus invalidated the input of the task we just ran.
-If you called the task again, it would run again because the hash of the file has changed.
-In cases where you plan on modifying a file within a task, it often makes sense to pass a file path rather than a <code class="docutils literal notranslate"><span class="pre">File</span></code>.
-So, the above example could be rewritten as:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun.file</span> <span class="kn">import</span> <span class="n">File</span>
-<span class="kn">from</span> <span class="nn">redun.task</span> <span class="kn">import</span> <span class="n">task</span>
-
-<span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">add_footer</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">File</span>
-   <span class="n">f</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
-   <span class="k">with</span> <span class="n">f</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
-       <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;EOF&quot;</span><span class="p">)</span>
-   <span class="k">return</span> <span class="n">f</span>
-</pre></div>
-</div>
-<p>In the above example, we still end up with the same output.
-However, if we rerun the task, it will not rerun as the <code class="docutils literal notranslate"><span class="pre">file_path</span></code> is unchanged so redun will find the past run in the cache and will not rerun.</p>
-<p>In the case where your task is processing a file purely for reading (no writing), <code class="docutils literal notranslate"><span class="pre">File</span></code> is the ideal task argument type to use. By using <code class="docutils literal notranslate"><span class="pre">File</span></code> as a task argument type, the data provenance record the file hash, and the workflow will properly react (rerun) due to changes in the input file.</p>
-<p>In summary, input <code class="docutils literal notranslate"><span class="pre">File</span></code> should be arguments, and output <code class="docutils literal notranslate"><span class="pre">File</span></code> should be return results.</p>
+<section id="job-screen">
+<h3>Job screen<a class="headerlink" href="#job-screen" title="Permalink to this heading">#</a></h3>
+<p>Selecting a specific job, we navigate to the Job screen.</p>
+<p><a href="_static/console-job.svg"><img src="_static/console-job.svg"></a></p>
+<p><strong>Header.</strong> Similar to the Execution screen, the header provides basic information of the Job. In particular the <code class="docutils literal notranslate"><span class="pre">Trackback:</span></code> line allows quick navigation to the Execution, parent Job, and child Jobs. Job and Execution-specific tags are also displayed.</p>
+<p><strong>CallNode, arguments, result.</strong> In this section, we see details on the actual arguments provided in this Job and well as the return value. Inspecting these values can be very helpful in the debugging process. Clicking on these values will navigate to the <em>Value screen</em>, which provides value-specific details.</p>
+<p><strong>Task.</strong> Lastly, we have a rendering of the original Task for the Job. Clicking on the Task link will navigate to the <em>Task screen</em>, where all versions of the Task can be inspected.</p>
+<p><strong>REPL.</strong> One common need when inspecting a job is to more deeply inspect the Job’s arguments or result. This can be done by pressing the <code class="docutils literal notranslate"><span class="pre">r</span></code> hotkey, which will navigate to the built-in <a class="reference external" href="https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop">Read-Eval-Print-Loop (REPL)</a> screen. The <code class="docutils literal notranslate"><span class="pre">r</span></code> hotkey is provided on many screens, and pressing it will inject local variables into the REPL specific to the originating screen. In this case, we will inject the <code class="docutils literal notranslate"><span class="pre">job</span></code>, <code class="docutils literal notranslate"><span class="pre">args</span></code>, <code class="docutils literal notranslate"><span class="pre">kwargs</span></code>, and <code class="docutils literal notranslate"><span class="pre">result</span></code> values (see below).</p>
+</section>
+<section id="repl-screen">
+<h3>REPL screen<a class="headerlink" href="#repl-screen" title="Permalink to this heading">#</a></h3>
+<p>The REPL screen provides a <a class="reference external" href="https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop">Read-Eval-Print-Loop (REPL)</a> for inspecting data provenance directly in a Python REPL. redun uses <a class="reference external" href="https://www.sqlalchemy.org/">SQLAlchemy</a> to lazily load Python values from the redun database into memory.</p>
+<p><a href="_static/console-repl.svg"><img src="_static/console-repl.svg"></a></p>
+<p>Values used in the workflow will deserialize from the database using pickle and will default to pickle previews (mock-like objects) for any value with an unknown class (i.e. not currently importable).</p>
+<p><strong>Builtin classes and functions.</strong> There are several classes and functions automatically imported into the local environment to ease inspection. Some of the most helpful ones are summarized during REPL startup, such as <code class="docutils literal notranslate"><span class="pre">query()</span></code> and <code class="docutils literal notranslate"><span class="pre">console()</span></code>. <code class="docutils literal notranslate"><span class="pre">query()</span></code> provides access to the SQLAlchemy ORM for navigating the Call Graph models in the redun database. <code class="docutils literal notranslate"><span class="pre">console()</span></code> provides an easy way to navigating to the screen of a specific model, such as Execution, Job, Task, etc.</p>
+</section>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this heading">#</a></h2>
+<p>In summary, we have gone through a quick walk-through of the redun Console and how it can be used for inspecting data provenance and debugging workflow executions. There are many more screens that allow inspecting Files, Values, and more that can be found in the main menu (hotkey <code class="docutils literal notranslate"><span class="pre">m</span></code>) as well as navigating between screens via links. Overall, the app acts similar a web app by providing a header that updates with a shell command for navigating directly back to any screen, much like a web page URL.</p>
 </section>
 </section>
 
@@ -295,23 +291,23 @@ However, if we rerun the task, it will not rerun as the <code class="docutils li
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="developing.html">
+          <a class="next-page" href="visualization.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Developer guide</div>
+                <div class="title">Visualization</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="visualization.html">
+          <a class="prev-page" href="typing.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Visualization</div>
+                <div class="title">Type checking</div>
                 
               </div>
             </a>
@@ -345,10 +341,15 @@ However, if we rerun the task, it will not rerun as the <code class="docutils li
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">FAQ</a><ul>
-<li><a class="reference internal" href="#how-can-i-use-an-existing-jobdefinition-in-aws-batch-executor">How can I use an existing JobDefinition in AWS Batch Executor?</a></li>
-<li><a class="reference internal" href="#how-do-i-read-a-portion-of-a-file-without-downloading-reading-it-all">How do I read a portion of a file without downloading/reading it all?</a></li>
-<li><a class="reference internal" href="#gotcha-when-modifying-file-passed-as-task-arg">Gotcha when modifying file passed as task arg</a></li>
+<li><a class="reference internal" href="#">Console (TUI)</a><ul>
+<li><a class="reference internal" href="#console-walk-through">Console walk-through</a><ul>
+<li><a class="reference internal" href="#executions-screen">Executions screen</a></li>
+<li><a class="reference internal" href="#execution-screen">Execution screen</a></li>
+<li><a class="reference internal" href="#job-screen">Job screen</a></li>
+<li><a class="reference internal" href="#repl-screen">REPL screen</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#conclusion">Conclusion</a></li>
 </ul>
 </li>
 </ul>

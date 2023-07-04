@@ -14,7 +14,7 @@ See the [backend configuration](config.md#backend) section for details.
 
 ## Querying call graphs
 
-Every time redun executes a workflow, it records the execution as a CallGraph. The `redun log` command can be used to query past executions and walk through the CallGraph. Here we'll walk through the `examples/compile/` example. The workflow script should look something like this:
+Every time redun executes a workflow, it records the execution as a CallGraph. The `redun log` command can be used to query past executions and walk through the CallGraph (see also the [Console (TUI)](console.md)). Here we'll walk through the `examples/compile/` example. The workflow script should look something like this:
 
 ```py
 import os

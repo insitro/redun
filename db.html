@@ -168,6 +168,7 @@
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Backend and database</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="console.html">Console (TUI)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
 </ul>
@@ -239,7 +240,7 @@ Additionally, users may specify an <a class="reference internal" href="#optional
 See the <a class="reference internal" href="config.html#backend"><span class="std std-ref">backend configuration</span></a> section for details.</p>
 <section id="querying-call-graphs">
 <h2>Querying call graphs<a class="headerlink" href="#querying-call-graphs" title="Permalink to this heading">#</a></h2>
-<p>Every time redun executes a workflow, it records the execution as a CallGraph. The <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">log</span></code> command can be used to query past executions and walk through the CallGraph. Here we’ll walk through the <code class="docutils literal notranslate"><span class="pre">examples/compile/</span></code> example. The workflow script should look something like this:</p>
+<p>Every time redun executes a workflow, it records the execution as a CallGraph. The <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">log</span></code> command can be used to query past executions and walk through the CallGraph (see also the <a class="reference internal" href="console.html"><span class="std std-doc">Console (TUI)</span></a>). Here we’ll walk through the <code class="docutils literal notranslate"><span class="pre">examples/compile/</span></code> example. The workflow script should look something like this:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
 
@@ -722,7 +723,7 @@ See <code class="docutils literal notranslate"><span class="pre">ValueStore</spa
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2020, Matt Rasmussen
+                Copyright &#169; 2023, insitro
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             

@@ -57,6 +57,7 @@ config
 db
 spark
 typing
+console
 visualization
 FAQ
 ```
