@@ -806,7 +806,10 @@ class GSFileSystem(FsspecFileSystem):
                 else:
                     # dest_path is a gs path
                     # list all files and folders and copy them to the destination
-                    return f"find {quote(src_path)} -mindepth 1 -maxdepth 1 | gcloud storage cp -r -I {quote(dest_path)}"
+                    return f"""
+                        find {quote(src_path)} -mindepth 1 -maxdepth 1 | \
+                            gcloud storage cp -r -I {quote(dest_path)}
+                    """
         elif recursive:
             raise ValueError("recursive is not supported with stdin or stdout.")
         elif src_path:

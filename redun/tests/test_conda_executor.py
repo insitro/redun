@@ -6,8 +6,6 @@ from pathlib import Path
 from textwrap import dedent
 from typing import List
 
-import pytest
-
 from redun import File, Scheduler, task
 from redun.config import Config
 from redun.tests.utils import use_tempdir

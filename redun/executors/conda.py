@@ -40,8 +40,8 @@ def find_conda_cmd() -> str:
     if os.environ.get("CONDA_EXE"):
         return os.environ["CONDA_EXE"]
     raise RuntimeError(
-        f"Could not find conda executable. "
-        "Make sure one of the following is installed: {supported_conda_executables}"
+        "Could not find conda executable. "
+        f"Make sure one of the following is installed: {supported_conda_executables}"
     )
 
 
@@ -80,7 +80,7 @@ class CondaEnvironment:
         self._ensure_env_exists()
 
     def __repr__(self):
-        return f"CondaEnvironment(env_name={self.env_name}, env_file={self.env_file}, env_dir={self.env_dir}, output_dir={self.output_dir})" # noqa
+        return f"CondaEnvironment(env_name={self.env_name}, env_file={self.env_file}, env_dir={self.env_dir}, output_dir={self.output_dir})"  # noqa
 
     def _run_command(self, command: List[str], capture_output: bool) -> Tuple[int, str, str]:
         result = subprocess.run(command, capture_output=capture_output, text=True)
@@ -100,7 +100,8 @@ class CondaEnvironment:
                 return
 
             if os.path.exists(env_output_dir):
-                # TODO: this can happen if the environment is currently being created, need to decide how to handle this
+                # TODO: this can happen if the environment is currently being created,
+                # need to decide how to handle this
                 # for now wait for the environment to be created
                 for _ in range(CONDA_ENV_CREATION_TIMEOUT):
                     if os.path.exists(os.path.join(env_output_dir, "redun_initialized")):
@@ -108,7 +109,8 @@ class CondaEnvironment:
                         return
                     time.sleep(1)
                 raise RuntimeError(
-                    f"Conda environment directory `{env_output_dir}` already exists, but is not a valid environment. Consider deleting it and trying again."
+                    f"Conda environment directory `{env_output_dir}` already exists, "
+                    "but is not a valid environment. Consider deleting it and trying again."
                 )
             else:
                 os.makedirs(env_output_dir)
@@ -149,7 +151,8 @@ class CondaEnvironment:
                 # environment creation failed - remove it
                 shutil.rmtree(env_output_dir)
                 raise RuntimeError(
-                    f"Failed to create Conda environment `{env_output_dir}` from file: {create_env_error}"
+                    f"Failed to create Conda environment `{env_output_dir}` "
+                    f"from file: {create_env_error}"
                 )
 
             self.env_dir = os.path.join(env_output_dir, ".conda")
@@ -175,7 +178,8 @@ class CondaEnvironment:
                     )
                     if pip_install_code != 0:
                         raise RuntimeError(
-                            f"Failed to install pip requirements for conda environment `{env_output_dir}: {pip_install_error}"
+                            "Failed to install pip requirements for conda environment "
+                            f"`{env_output_dir}: {pip_install_error}"
                         )
 
             # Create a file to indicate that the environment has been initialized
@@ -190,12 +194,14 @@ class CondaEnvironment:
 
         if self.env_name and self.env_name not in env_list_output:
             raise RuntimeError(
-                f"Conda environment {self.env_name} does not exist.\nFound environments: {env_list_output}"
+                f"Conda environment {self.env_name} does not exist.\n"
+                f"Found environments: {env_list_output}"
             )
 
         elif self.env_dir and self.env_dir not in env_list_output:
             raise RuntimeError(
-                f"Conda environment in directory {self.env_dir} does not exist.\nFound environments: {env_list_output}"
+                f"Conda environment in directory {self.env_dir} does not exist.\n"
+                f"Found environments: {env_list_output}"
             )
 
     def run_command(self, command: List[str], capture_output: bool = False) -> str:
@@ -230,8 +236,12 @@ class CondaExecutor(Executor):
     """
     Executor that runs tasks and scripts in a local conda environment.
     Tasks accept the following options:
-        - conda: Path to a conda environment file (either .yml or .lock), or a conda environment name
-        - pip: Path to a pip requirements file, python package name, or a list of python package names. Optional.
+        - conda:
+            Path to a conda environment file (either .yml or .lock),
+            or a conda environment name
+        - pip:
+            Path to a pip requirements file, python package name,
+            or a list of python package names. Optional.
     """
 
     def __init__(
@@ -363,7 +373,8 @@ def get_job_conda_environment(job: Job, env_base_path: Optional[str]) -> CondaEn
             is_list_of_str = all(isinstance(x, str) for x in pip_arg)
             if not is_list_of_lists and not is_list_of_str:
                 raise ValueError(
-                    f"pip option must be a string, a list of strings or a list of lists of strings: {pip_arg}"
+                    "pip option must be a string, a list of strings "
+                    f"or a list of lists of strings: {pip_arg}"
                 )
 
             if is_list_of_lists:

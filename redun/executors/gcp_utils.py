@@ -5,6 +5,7 @@ from statistics import mean
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import requests
+from google.api_core import gapic_v1
 from google.cloud import batch_v1
 
 from redun.version import version
@@ -336,7 +337,8 @@ def get_task(client: batch_v1.BatchServiceClient, task_name: str) -> batch_v1.Ta
     return client.get_task(name=task_name)
 
 
-# largely based on nextflow's implementation: https://github.com/nextflow-io/nextflow/blob/master/plugins/nf-google/src/main/nextflow/cloud/google/batch/GoogleBatchMachineTypeSelector.groovy
+# largely based on nextflow's implementation:
+# https://github.com/nextflow-io/nextflow/blob/master/plugins/nf-google/src/main/nextflow/cloud/google/batch/GoogleBatchMachineTypeSelector.groovy
 @dataclass
 class MachineType:
     type: str
@@ -385,7 +387,8 @@ def find_best_matching_machine_type(
     if gpus > 0:
         # seqera's cloudinfo doesn't have GPU prices yet
         raise NotImplementedError(
-            "Automatic machine type selection is not implemented yet for GPU instances. Specify machine type manually."
+            "Automatic machine type selection is not implemented yet for GPU instances. "
+            "Specify machine type manually."
         )
     FAMILY_COST_CORRECTION = {
         "e2": 1.0,  # Mix of processors, tend to be similar in performance to N1
