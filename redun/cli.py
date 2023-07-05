@@ -19,7 +19,6 @@ from contextlib import contextmanager
 from itertools import chain, islice
 from pprint import pprint
 from shlex import quote
-from shutil import which
 from socket import gethostname, socket
 from textwrap import dedent
 from types import ModuleType
@@ -38,14 +37,15 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import ParseResult, urlparse, urlunparse
+from urllib.parse import ParseResult, urlparse
 
+import botocore
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
 
 import redun
-from redun.backends.base import TagEntityType
+from redun.backends.base import TagEntity
 from redun.backends.db import (
     JSON,
     Argument,
@@ -63,22 +63,34 @@ from redun.backends.db import (
     parse_db_version,
 )
 from redun.backends.db.dataflow import display_dataflow, make_dataflow_dom, walk_dataflow
-from redun.backends.db.query import CallGraphQuery
+from redun.backends.db.query import (
+    CallGraphQuery,
+    infer_id,
+    infer_specialty_id,
+    parse_callgraph_query,
+    setup_query_parser,
+)
 from redun.backends.db.serializers import RecordSerializer
 from redun.config import Config, create_config_section
+from redun.executors.base import get_executors_from_config, Executor
 from redun.executors.aws_batch import (
     BATCH_LOG_GROUP,
     AWSBatchExecutor,
     aws_describe_jobs,
     format_log_stream_event,
 )
-from redun.executors.aws_utils import iter_log_stream
-from redun.executors.base import Executor, get_executors_from_config
+from redun.executors.aws_utils import (
+    get_aws_user,
+    get_default_region,
+    get_simple_aws_user,
+    iter_log_stream,
+)
 from redun.executors.code_packaging import extract_tar
+from redun.executors.launch import launch_script
 from redun.expression import TaskExpression
 from redun.file import File as BaseFile
 from redun.file import copy_file, list_filesystems
-from redun.job_array import AWS_ARRAY_VAR, GCP_ARRAY_VAR, K8S_ARRAY_VAR
+from redun.job_array import get_job_array_index
 from redun.logging import log_levels, logger
 from redun.scheduler import (
     DryRunResult,
@@ -87,6 +99,17 @@ from redun.scheduler import (
     Traceback,
     format_job_statuses,
     get_task_registry,
+)
+from redun.scheduler_config import (
+    DEFAULT_DB_URI,
+    DEFAULT_POSTGRESQL_PORT,
+    DEFAULT_REDUN_INI,
+    DEFAULT_REPO_NAME,
+    REDUN_CONFIG_DIR,
+    REDUN_CONFIG_ENV,
+    REDUN_INI_FILE,
+    REDUN_USER_ENV,
+    postprocess_config,
 )
 from redun.scripting import script_task
 from redun.tags import (
@@ -117,36 +140,7 @@ redun :: version {version}
 
 The redundant workflow engine.
 """
-REDUN_CONFIG_ENV = "REDUN_CONFIG"
-REDUN_USER_ENV = "REDUN_USER"
-REDUN_CONFIG_DIR = ".redun"
-REDUN_INI_FILE = "redun.ini"
-DEFAULT_REPO_NAME = "default"
-DEFAULT_DB_URI = "sqlite:///redun.db"
-DEFAULT_POSTGRESQL_PORT = 5432
-DEFAULT_REDUN_INI = """\
-# redun configuration.
 
-[backend]
-db_uri = {db_uri}
-
-[executors.default]
-type = local
-max_workers = 20
-
-# [executors.batch]
-# type = aws_batch
-#
-# # Required:
-# image =
-# queue =
-# s3_scratch =
-#
-# # Optional:
-# aws_region =
-# role =
-# debug = False
-"""
 
 PAGER = "less"
 
@@ -264,47 +258,6 @@ def get_abs_path(path: str) -> str:
         return os.path.abspath(path)
 
 
-def get_abs_url(uri: str, base: str) -> str:
-    """
-    Returns URI with absolute path.
-    """
-    if re.match(r"^[^:]+:////", uri):
-        # URI starts with four slashes, so it is already absolute.
-        return uri
-
-    # Parse db_uri.
-    url_parts = urlparse(uri)
-    if url_parts.netloc != "":
-        # Non-file based URL. Use as is.
-        return uri
-
-    # Construct absolute path.
-    path = url_parts.path[1:]
-    abs_path = os.path.join(base, path)
-
-    # Format a new URL with absolute path.
-    abs_url_parts = url_parts._replace(path=abs_path, netloc="")
-    abs_uri_prep = urlunparse(abs_url_parts)
-
-    # Fix leading slashes to match sqlalchemy scheme (4 slashes for abs path).
-    abs_uri = re.sub(r"^([^:]+):", r"\1:///", abs_uri_prep)
-    return abs_uri
-
-
-def get_abs_db_uri(db_uri: str, config_dir: str, cwd: Optional[str] = None) -> str:
-    """
-    Returns DB_URI with absolute path.
-
-    If `db_uri` is a relative path, it is assumed to be relative to `config_dir`.
-    `config_dir` itself may be relative to the current working directory (cwd).
-    """
-    if not cwd:
-        cwd = os.getcwd()
-    abs_config_dir = os.path.normpath(os.path.join(cwd, config_dir))
-    abs_db_uri = get_abs_url(db_uri, abs_config_dir)
-    return abs_db_uri
-
-
 def get_config_dir(config_dir: Optional[str] = None) -> str:
     """
     Get the redun config dir.
@@ -392,36 +345,6 @@ def get_user_setup_func(config: Config) -> Callable[..., Scheduler]:
     module = import_script(file_or_module)
     setup_func = getattr(module, func_name)
     return setup_func
-
-
-def postprocess_config(config: Config, config_dir: str) -> Config:
-    """
-    Postprocess config.
-    """
-    # Add default repository if not specified in config.
-    default_repo = create_config_section({"config_dir": config_dir})
-    if config.get("repos"):
-        config["repos"][DEFAULT_REPO_NAME] = default_repo
-    else:
-        config["repos"] = {DEFAULT_REPO_NAME: default_repo}
-
-    # Set default db_uri if not specified in config.
-    if not config.get("backend"):
-        config["backend"] = create_config_section()
-    if not config["backend"].get("db_uri"):
-        config["backend"]["db_uri"] = DEFAULT_DB_URI
-
-    # Grandfather old default db_uri.
-    if config["backend"]["db_uri"] == "sqlite:///.redun/redun.db":
-        config["backend"]["db_uri"] = DEFAULT_DB_URI
-
-    # Convert db_uri to absolute path.
-    config["backend"]["db_uri"] = get_abs_db_uri(config["backend"]["db_uri"], config_dir)
-
-    # Populate config_dir in backend section.
-    config["backend"]["config_dir"] = config_dir
-
-    return config
 
 
 def get_config_path(config_dir: Optional[str] = None) -> str:
@@ -776,10 +699,18 @@ def import_script(filename_or_module: str, add_cwd: bool = True) -> ModuleType:
 
 
 def get_task_arg_parser(
-    task: BaseTask,
+    task: BaseTask, include_defaults: bool
 ) -> Tuple[argparse.ArgumentParser, Dict[str, str]]:
     """
     Returns a CLI parser for a redun Task.
+
+    Parameters
+    ----------
+    task : BaseTask
+        The task to generate a parser for.
+    include_defaults : bool
+        If true, set defaults for the parser based on the task defaults. If false, do not.
+        This can be useful for determining if a particular argument was actually set by the user.
     """
     parser = argparse.ArgumentParser(
         prog=task.fullname, description=task.func.__doc__, formatter_class=ArgFormatter
@@ -803,102 +734,11 @@ def get_task_arg_parser(
             parser,
             param.name,
             param.annotation if param.annotation is not param.empty else None,
-            param.default if param.default is not param.empty else None,
+            param.default if include_defaults and param.default is not param.empty else None,
         )
         cli2arg[opt.dest] = param.name
 
     return parser, cli2arg
-
-
-def find_file(backend: RedunBackendDb, path: str) -> Optional[Tuple[File, Job, str]]:
-    """
-    Find a File by its path.
-
-    - Prefer instance of File as result from a Task.
-      - Amongst result, prefer the most recent.
-    - Otherwise, search for File as argument to a Task.
-      - Amongst arguments, prefer the most recent.
-
-    - For both results and arguments, also search whether File was a Subvalue
-      (e.g. a value within a list, dict, etc).
-
-    - We prefer the most recent, since it has the best chance of still being valid.
-    """
-    assert backend.session
-
-    # Search for File as a Value resulting from a Task.
-    row = (
-        backend.session.query(File, Job)
-        .join(CallNode, CallNode.value_hash == File.value_hash)
-        .join(Job, CallNode.call_hash == Job.call_hash)
-        .filter(File.path == path)
-        .order_by(Job.end_time.desc())
-        .first()
-    )
-
-    # Search for File as a Subvalue resulting from a Task.
-    row2 = (
-        backend.session.query(File, Job)
-        .join(Subvalue, File.value_hash == Subvalue.value_hash)
-        .join(CallNode, Subvalue.parent_value_hash == CallNode.value_hash)
-        .join(Job, CallNode.call_hash == Job.call_hash)
-        .filter(File.path == path)
-        .order_by(Job.end_time.desc())
-        .first()
-    )
-
-    if row or row2:
-        # Return the most recent file and job reference.
-        if not row:
-            return (row2[0], row2[1], "result")
-        elif not row2:
-            return (row[0], row[1], "result")
-        else:
-            _, job = row
-            _, job2 = row2
-            if job.end_time > job2.end_time:
-                return (row[0], row[1], "result")
-            else:
-                return (row2[0], row2[1], "result")
-
-    # Search for File as a Argument to a Task.
-    row3 = (
-        backend.session.query(File, Job)
-        .join(Argument, File.value_hash == Argument.value_hash)
-        .join(CallNode, Argument.call_hash == CallNode.call_hash)
-        .join(Job, CallNode.call_hash == Job.call_hash)
-        .filter(File.path == path)
-        .order_by(Job.start_time.desc())
-        .first()
-    )
-
-    # Search for File as a Argument to a Task.
-    row4 = (
-        backend.session.query(File, Job)
-        .join(Subvalue, File.value_hash == Subvalue.value_hash)
-        .join(Argument, Subvalue.parent_value_hash == Argument.value_hash)
-        .join(CallNode, Argument.call_hash == CallNode.call_hash)
-        .join(Job, CallNode.call_hash == Job.call_hash)
-        .filter(File.path == path)
-        .order_by(Job.start_time.desc())
-        .first()
-    )
-
-    if row3 or row4:
-        # Return the most recent file and job reference.
-        if not row3:
-            return (row4[0], row4[1], "arg")
-        elif not row4:
-            return (row3[0], row3[1], "arg")
-        else:
-            _, job3 = row3
-            _, job4 = row4
-            if job3.end_time > job4.end_time:
-                return (row3[0], row3[1], "arg")
-            else:
-                return (row4[0], row4[1], "arg")
-
-    return None
 
 
 @contextmanager
@@ -940,45 +780,80 @@ def format_tags(tags: List[Tag], max_length: int = 50) -> str:
     return f"({tag_list})"
 
 
-def get_default_execution_tags() -> List[Tuple[str, Any]]:
+def run_command(argv: List[str]) -> Optional[str]:
+    """
+    Run a command and return its output.
+    """
+    try:
+        return subprocess.check_output(argv, stderr=subprocess.STDOUT).decode("ascii").strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
+def get_gcp_user() -> Optional[str]:
+    """
+    Returns the user account for any active GCP logins, otherwise None.
+    """
+    return run_command(
+        ["gcloud", "auth", "list", "--filter=status:ACTIVE", "--format=value(account)"]
+    )
+
+
+def get_default_execution_tags(
+    user: Optional[str] = None,
+    project: Optional[str] = None,
+    doc: Optional[str] = None,
+    exclude_users: List[str] = [],
+) -> List[Tuple[str, Any]]:
     """
     Get default tags for the Execution.
     """
-    default_tags: List[Tuple[str, Any]] = []
+    tags: List[Tuple[str, Any]] = []
 
-    is_git_installed = bool(which("git"))
-    if not is_git_installed:
-        return default_tags
+    # Redun version.
+    tags.append((VERSION_KEY, redun.__version__))
 
-    # Git commit hash
-    try:
-        git_commit = (
-            subprocess.check_output(
-                ["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT
-            )
-            .decode("ascii")
-            .strip()
-        )
-    except subprocess.CalledProcessError:
-        pass
-    else:
-        default_tags.append(("git_commit", git_commit))
+    # Git commit hash.
+    git_commit = os.environ.get("REDUN_GIT_COMMIT") or run_command(
+        ["git", "rev-parse", "--verify", "HEAD"]
+    )
+    if git_commit:
+        tags.append(("git_commit", git_commit))
 
-    # Git origin URL
-    try:
-        git_origin_url = (
-            subprocess.check_output(
-                ["git", "remote", "get-url", "origin"], stderr=subprocess.STDOUT
-            )
-            .decode("ascii")
-            .strip()
-        )
-    except subprocess.CalledProcessError:
-        pass
-    else:
-        default_tags.append(("git_origin_url", git_origin_url))
+    # Git origin URL.
+    git_origin_url = os.environ.get("REDUN_GIT_ORIGIN_URL") or run_command(
+        ["git", "remote", "get-url", "origin"]
+    )
+    if git_origin_url:
+        tags.append(("git_origin_url", git_origin_url))
 
-    return default_tags
+    # User tag.
+    tags.append((USER_KEY, user or get_username()))
+
+    # AWS user tags.
+    if "aws" not in exclude_users:
+        aws_region = get_default_region()
+        try:
+            tags.append(("user_aws_arn", get_aws_user(aws_region)))
+            tags.append(("user_aws", get_simple_aws_user(aws_region)))
+        except (botocore.exceptions.NoCredentialsError, botocore.exceptions.ClientError):
+            pass
+
+    # GCP user tags.
+    if "gcp" not in exclude_users:
+        gcp_user = get_gcp_user()
+        if gcp_user and "WARNING" not in gcp_user:
+            tags.append(("user_gcp", gcp_user))
+
+    # Project tag.
+    if project:
+        tags.append((PROJECT_KEY, project))
+
+    # Doc tag.
+    if doc:
+        tags.append((DOC_KEY, doc))
+
+    return tags
 
 
 class RedunClient:
@@ -1165,8 +1040,28 @@ class RedunClient:
         )
         run_parser.add_argument("--doc", help="Specify a documentation tag for the execution.")
         run_parser.add_argument("-u", "--user", help="Specify user tag for execution.")
+        run_parser.add_argument(
+            "--exclude-user",
+            action="append",
+            default=[],
+            help="Exclude adding a specific user tag (e.g. aws, gcp).",
+        )
         run_parser.add_argument("script", help="Python script to import.")
         run_parser.add_argument("task", help="task within script to run.")
+        run_parser.add_argument(
+            "-i",
+            "--input",
+            help="Input file for task arguments. Should be a "
+            "pickle of `Tuple, Dict` containing "
+            "`args, kwargs`. Additional variables specified as command line arguments will "
+            "override/supplement the contents of this file.",
+        )
+        run_parser.add_argument(
+            "--execution-id",
+            help="If provided, the execution id. Must be a UUID that has not been used "
+            "previously.",
+        )
+
         run_parser.set_defaults(func=self.run_command)
         run_parser.set_defaults(show_help=False)
 
@@ -1196,40 +1091,10 @@ class RedunClient:
             action="store_true",
             help="Do not use pager for log output.",
         )
-        log_parser.add_argument(
-            "--all",
-            action="store_true",
-            help="Show all record types (Execution, Job, Task, CallNode, Value).",
-        )
-        log_parser.add_argument("--exec", action="store_true", help="Show related executions.")
-        log_parser.add_argument("--job", action="store_true", help="Show related jobs.")
-        log_parser.add_argument("--call-node", action="store_true", help="Show related CallNodes.")
-        log_parser.add_argument("--task", action="store_true", help="Show related tasks.")
-        log_parser.add_argument("--value", action="store_true", help="Show related values.")
-        log_parser.add_argument("--file", action="store_true", help="Show related files.")
-        log_parser.add_argument(
-            "--exec-status", help="Filter executions by status (comma separated: DONE, FAILED)."
-        )
-        log_parser.add_argument(
-            "--job-status", help="Filter jobs by status (comma separated: DONE, CACHED, FAILED)."
-        )
-        log_parser.add_argument(
-            "--task-name", action="append", help="Filter tasks and jobs by name."
-        )
-        log_parser.add_argument(
-            "--value-type", action="append", help="Filter Values by their type."
-        )
-        log_parser.add_argument("--file-path", action="append", help="Filter by File path.")
-        log_parser.add_argument("--exec-id", help="Filter by execution ids (comma separated ids).")
+        log_parser = setup_query_parser(log_parser)
         log_parser.add_argument("--count", action="store_true", help="Show record counts.")
         log_parser.add_argument(
             "--format", help="Output format.", default="text", choices=["text", "json"]
-        )
-        log_parser.add_argument(
-            "-t", "--tag", action="append", help="Filter by tag (format: key=value)."
-        )
-        log_parser.add_argument(
-            "--exec-tag", action="append", help="Filter by execution tag (format: key=value)."
         )
         log_parser.add_argument(
             "--detail",
@@ -1238,6 +1103,12 @@ class RedunClient:
             help="Show full record details.",
         )
         log_parser.set_defaults(func=self.log_command)
+
+        # Console command.
+        console_parser = subparsers.add_parser(
+            "console", help="Show information on historical runs in a TUI (Textual UI)."
+        )
+        console_parser.set_defaults(func=self.console_command)
 
         # Viz command
         if viz_is_enabled:
@@ -1609,24 +1480,33 @@ class RedunClient:
             raise RedunClientError('Unknown task "{}"'.format(task_fullname))
 
         # Determine arguments for task.
-        task_arg_parser, cli2arg = get_task_arg_parser(task)
-        task_args = task_arg_parser.parse_args(extra_args)
+        task_arg_parser_defaults, cli2arg = get_task_arg_parser(task, include_defaults=True)
+        task_arg_parser_no_defaults, _ = get_task_arg_parser(task, include_defaults=False)
+        task_args_defaults = task_arg_parser_defaults.parse_args(extra_args)
+        task_args_no_defaults = task_arg_parser_no_defaults.parse_args(extra_args)
 
         # Determine if task-level help is needed.
-        if task_args.show_help:
-            self.display(task_arg_parser.format_help())
+        if task_args_defaults.show_help:
+            self.display(task_arg_parser_defaults.format_help())
             return None
 
         # Determine if task-level info is needed.
-        if task_args.show_info:
+        if task_args_defaults.show_info:
             self.log_task(task, show_job=False)
             return None
 
         pos_args = []
         kwargs = {}
 
+        # Determine arguments for task.
+        if args.input:
+            # Parse task args from input file.
+            input_file = BaseFile(args.input)
+            with input_file.open("rb") as infile:
+                pos_args, kwargs = pickle.load(infile)
+
         # Determine task arguments from rerun job.
-        if rerun_job:
+        elif rerun_job:
             rerun_args = sorted(
                 rerun_job.call_node.arguments, key=lambda arg: arg.arg_position or -1
             )
@@ -1636,9 +1516,13 @@ class RedunClient:
                 else:
                     pos_args.append(arg.value_parsed)
 
-        # Parse cli arguments to task arguments.
+        # Parse cli arguments to task arguments, potentially overriding other types of inputs.
         for dest, arg in cli2arg.items():
-            value = getattr(task_args, dest)
+            # Use the parsed values without defaults, because we know the python signature
+            # already includes them. Moreover, we only want to overwrite values from the prior
+            # steps with explicit user input, not defaults.
+            value = getattr(task_args_no_defaults, dest)
+
             if value is not None:
                 kwargs[arg] = value
 
@@ -1648,27 +1532,14 @@ class RedunClient:
             task = task.options(**task_options)
 
         # Determine execution tags.
-        tags: List[Tuple[str, Any]] = get_default_execution_tags()
+        tags: List[Tuple[str, Any]] = get_default_execution_tags(
+            user=args.user,
+            project=args.project or infer_project_name(task),
+            doc=args.doc,
+            exclude_users=args.exclude_user,
+        )
         if args.tag:
             tags.extend(map(parse_tag_key_value, args.tag))
-
-        if not any(key == VERSION_KEY for key, _ in tags):
-            tags.append((VERSION_KEY, redun.__version__))
-
-        if args.project:
-            tags.append((PROJECT_KEY, args.project))
-        elif not any(key == PROJECT_KEY for key, _ in tags):
-            project = infer_project_name(task)
-            if project:
-                tags.append((PROJECT_KEY, project))
-
-        if args.user:
-            tags.append((USER_KEY, args.user))
-        else:
-            tags.append((USER_KEY, get_username()))
-
-        if args.doc:
-            tags.append((DOC_KEY, args.doc))
 
         # Run the task.
         expr = task(*pos_args, **kwargs)
@@ -1679,6 +1550,7 @@ class RedunClient:
                 dryrun=args.dryrun,
                 cache=not args.no_cache,
                 tags=tags,
+                execution_id=args.execution_id,
             )
 
         except DryRunResult:
@@ -1737,29 +1609,32 @@ class RedunClient:
         task_options = dict(map(parse_tag_key_value, args.option)) if args.option else {}
         task_options["executor"] = executor_name
 
-        # Setup job for inner run command.
-        run_expr = cast(TaskExpression, script_task.options(**task_options)(remote_run_command))
-
-        logger.info(f"Run within Executor {executor_name}: {remote_run_command}")
         if args.wait:
+            # Prepare command to execute within Executor.
+            remote_run_command = " ".join(quote(arg) for arg in extra_args)
+
+            logger.info(f"Run within Executor {executor_name}: {remote_run_command}")
+
+            # Setup Scheduler.
+            scheduler = self.get_scheduler(args, migrate_if_local=True)
+
+            # Setup job for inner run command.
+            run_expr = cast(
+                TaskExpression, script_task.options(**task_options)(remote_run_command)
+            )
+
             # Run scheduler and wait for completion.
             result = scheduler.run(run_expr)
             if result is not None:
                 self.display(result, pretty=True)
 
         else:
-            # Submit directly to executor and immediately exit.
-            job = redun.scheduler.Job(script_task, run_expr)
-            script_args = ()
-            script_kwargs = {"command": remote_run_command}
-            job.eval_hash, job.args_hash = scheduler.get_eval_hash(
-                script_task, script_args, script_kwargs
+            launch_script(
+                config,
+                executor_name=executor_name,
+                script_command=extra_args,
+                task_options=task_options,
             )
-            job.args = script_args, script_kwargs
-
-            # Submit job to executor.
-            executor.submit_script(job)
-            executor.stop()  # stop the monitor thread.
 
     def infer_file_path(self, path: str) -> Optional[Base]:
         """
@@ -1795,40 +1670,9 @@ class RedunClient:
         assert isinstance(self.scheduler.backend, RedunBackendDb)
         assert self.scheduler.backend.session
 
-        record = self.infer_specialty_id(id, include_files=include_files)
-        if record:
-            return record
-
-        query = CallGraphQuery(self.scheduler.backend.session).like_id(id)
-        if required:
-            return query.one()
-        else:
-            return query.first()
-
-    def infer_specialty_id(self, id: str, include_files: bool = True) -> Any:
-        """
-        Try to infer the record based on speciality id (e.g. file paths, `-` shorthand).
-        """
-        assert self.scheduler
-        assert isinstance(self.scheduler.backend, RedunBackendDb)
-        assert self.scheduler.backend.session
-
-        if include_files and (os.path.exists(id) or ":" in id):
-            # Looks like a local path.
-            file_info = find_file(self.scheduler.backend, id)
-            if file_info:
-                return file_info
-
-        if id == "-":
-            # Most recent execution.
-            return (
-                self.scheduler.backend.session.query(Execution)
-                .join(Job, Job.id == Execution.job_id)
-                .order_by(Job.start_time.desc())
-                .first()
-            )
-
-        return None
+        return infer_id(
+            self.scheduler.backend.session, id, include_files=include_files, required=required
+        )
 
     def viz_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
         """
@@ -1868,56 +1712,39 @@ class RedunClient:
         assert isinstance(self.scheduler.backend, RedunBackendDb)
         assert self.scheduler.backend.session
 
-        query = CallGraphQuery(self.scheduler.backend.session).order_by("time")
-
         # Display defaults.
         indent = 0
         detail = args.detail
         compact = True
         display = "general"
 
-        record_types = set()
-
-        # Filter by execution status.
-        if args.exec_status:
-            record_types.add("Execution")
-            query = query.filter_execution_statuses(args.exec_status.split(","))
-
-        # Filter by job status.
-        if args.job_status:
-            record_types.add("Job")
-            query = query.filter_job_statuses(args.job_status.split(","))
-
-        # Filter by value types.
-        if args.value_type:
-            # Implies filtering by Value type.
-            record_types.add("Value")
-            query = query.filter_value_types(args.value_type)
-        if args.file_path:
-            # Implies filtering by Value type.
-            record_types.add("Value")
-            query = query.filter_file_paths(args.file_path)
-
-        # Filter by record type.
-        if args.all:
-            record_types.update(CallGraphQuery.MODEL_NAMES)
-        if args.exec:
-            record_types.add("Execution")
-        if args.job:
-            record_types.add("Job")
-        if args.call_node:
-            record_types.add("CallNode")
-        if args.task:
-            record_types.add("Task")
-        if args.value:
-            record_types.add("Value")
         if args.file:
-            record_types = {"Value"}
-            query = query.filter_value_types(["redun.File"])
             display = "file"
 
-        if record_types:
-            query = query.filter_types(record_types)
+        # Filter by execution id.
+        if args.exec_id:
+            # Replace special id into regular execution ids.
+            execs: Iterable[Execution] = list(
+                filter(
+                    lambda record: isinstance(record, Execution),
+                    [self.infer_id(exec_id) for exec_id in args.exec_id.split(",")],
+                )
+            )
+            args.exec_id = ",".join(exec.id for exec in execs)
+
+        has_type_filters = (
+            args.all
+            or args.exec
+            or args.job
+            or args.call_node
+            or args.task
+            or args.value
+            or args.file
+            or args.file_path
+        )
+
+        query = CallGraphQuery(self.scheduler.backend.session).order_by("time")
+        query = parse_callgraph_query(query, args)
 
         if extra_args:
             # Check unknown filters.
@@ -1928,7 +1755,7 @@ class RedunClient:
             # Search for specialty ids first.
             id = extra_args[0]
             detail = True
-            record = self.infer_specialty_id(id)
+            record = infer_specialty_id(self.scheduler.backend.session, id)
             if record:
                 with with_pager(self, args):
                     self.log_record(record, indent=indent, detail=detail, format=args.format)
@@ -1937,33 +1764,11 @@ class RedunClient:
             # Search by entities by id.
             query = query.like_id(id)
 
-        elif not record_types:
+        elif not has_type_filters:
             # Default show executions.
             self.display("Recent executions:\n")
 
             query = query.filter_types({"Execution"})
-
-        # Filter by execution id.
-        if args.exec_id:
-            execs: Iterable[Execution] = list(
-                filter(
-                    lambda record: isinstance(record, Execution),
-                    [self.infer_id(exec_id) for exec_id in args.exec_id.split(",")],
-                )
-            )
-            query = query.filter_execution_ids(exec.id for exec in execs)
-
-        # Filter task properties.
-        if args.task_name:
-            query = query.filter_task_names(args.task_name)
-
-        # Filter by tags.
-        if args.tag:
-            tags = [parse_tag_key_value(tag, value_required=False) for tag in args.tag]
-            query = query.filter_tags(tags)
-        if args.exec_tag:
-            tags = [parse_tag_key_value(tag, value_required=False) for tag in args.exec_tag]
-            query = query.filter_execution_tags(tags)
 
         # Display results.
         with with_pager(self, args):
@@ -2432,16 +2237,20 @@ class RedunClient:
         # joining with Files.
         query = query.clone(values=session.query(Value.value_hash))
         value_cte = query.build()._values.cte()
-        value_subquery = sa.select(["*"]).select_from(value_cte)
-        files = (
-            session.query(File)
-            .filter(File.value_hash.in_(value_subquery))
-            .order_by(File.path)
-            .all()
+        value_subquery = sa.select("*").select_from(value_cte)
+        files, value_hashes = zip(
+            *(
+                (file, file.value_hash)
+                for file, _ in (
+                    session.query(File, File.path)
+                    .filter(File.value_hash.in_(value_subquery))
+                    .order_by(File.path)
+                    .all()
+                )
+            )
         )
 
         # Build query file tags.
-        value_hashes = [file.value_hash for file in files]
         tags = session.query(Tag).filter(Tag.entity_id.in_(value_hashes))
         value_hash2tags = defaultdict(list)
         for tag in tags:
@@ -2462,6 +2271,16 @@ class RedunClient:
                 indent=indent,
             )
             prev_path = file.path
+
+    def console_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+        """
+        Performs the console command (CLI GUI).
+        """
+        scheduler = self.get_scheduler(args)
+
+        from redun.console.app import RedunApp
+
+        RedunApp(scheduler, args, extra_args, argv).run()
 
     def repl_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
         """
@@ -2588,7 +2407,7 @@ class RedunClient:
             args, extra_args = parser.parse_known_args(argv)
             return self.log_command(args, extra_args, argv)
 
-    def _parse_entity_info(self, id_prefix: str) -> Tuple[str, TagEntityType]:
+    def _parse_entity_info(self, id_prefix: str) -> Tuple[str, TagEntity]:
         model_pks = {
             Execution: "id",
             Job: "id",
@@ -2601,7 +2420,7 @@ class RedunClient:
         full_id = getattr(entity, model_pks[type(entity)])
 
         try:
-            entity_type = TagEntityType(type(entity).__name__)
+            entity_type = TagEntity(type(entity).__name__)
         except ValueError:
             raise ValueError(
                 "Entity {} is not a taggable entity type ({}).".format(
@@ -2715,14 +2534,11 @@ class RedunClient:
         """
         array_job_index: int = -1
         if args.array_job:
-            if AWS_ARRAY_VAR in os.environ:
-                array_job_index = int(os.environ[AWS_ARRAY_VAR])
-            elif K8S_ARRAY_VAR in os.environ:
-                array_job_index = int(os.environ[K8S_ARRAY_VAR])
-            elif GCP_ARRAY_VAR in os.environ:
-                array_job_index = int(os.environ[GCP_ARRAY_VAR])
-            else:
+            index = get_job_array_index()
+            if index is None:
                 raise RedunClientError("Array job environment variable not set")
+            else:
+                array_job_index = index
 
             # Get path to actual error file based on index.
             if args.error:
@@ -2783,7 +2599,7 @@ class RedunClient:
 
             else:
                 # Parse task args from cli.
-                task_arg_parser, cli2arg = get_task_arg_parser(task)
+                task_arg_parser, cli2arg = get_task_arg_parser(task, include_defaults=True)
                 task_opts = task_arg_parser.parse_args(extra_args)
 
                 # Parse cli arguments to task arguments.

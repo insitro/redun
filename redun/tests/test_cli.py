@@ -9,6 +9,7 @@ from typing import Any, List, cast
 from unittest.mock import Mock, patch
 
 import boto3
+import botocore
 import pytest
 from freezegun import freeze_time
 from moto import mock_logs
@@ -17,6 +18,7 @@ from sqlalchemy.orm import Session
 import redun
 from redun import File, Scheduler, task
 from redun.backends.db import CallNode, Execution, Job, RedunBackendDb, Value
+from redun.backends.db.query import find_file
 from redun.cli import (
     REDUN_CONFIG_ENV,
     CallGraphQuery,
@@ -24,8 +26,6 @@ from redun.cli import (
     RedunClientError,
     check_version,
     find_config_dir,
-    find_file,
-    get_abs_db_uri,
     get_config_dir,
     import_script,
     is_port_in_use,
@@ -36,6 +36,7 @@ from redun.executors.aws_batch import BATCH_LOG_GROUP
 from redun.executors.code_packaging import create_tar
 from redun.job_array import AWS_ARRAY_VAR
 from redun.scheduler import Traceback
+from redun.scheduler_config import get_abs_db_uri
 from redun.tags import ANY_VALUE
 from redun.tests.utils import assert_match_lines, use_tempdir
 from redun.utils import get_import_paths, pickle_dump
@@ -754,7 +755,7 @@ setup_scheduler = workflow::setup_scheduler
 
 
 @use_tempdir
-def test_find_file(scheduler: Scheduler) -> None:
+def test_find_file(scheduler: Scheduler, session: Session) -> None:
     @task()
     def task1():
         file = File("out.txt")
@@ -763,8 +764,7 @@ def test_find_file(scheduler: Scheduler) -> None:
 
     scheduler.run(task1())
 
-    assert isinstance(scheduler.backend, RedunBackendDb)
-    row = find_file(scheduler.backend, "out.txt")
+    row = find_file(session, "out.txt")
     assert row
     file, job, kind = row
     assert file.path == "out.txt"
@@ -772,7 +772,7 @@ def test_find_file(scheduler: Scheduler) -> None:
 
 
 @use_tempdir
-def test_find_file_as_subvalue(scheduler: Scheduler) -> None:
+def test_find_file_as_subvalue(scheduler: Scheduler, session: Session) -> None:
     """
     We should be able to find Files that are subvalues.
     """
@@ -786,8 +786,7 @@ def test_find_file_as_subvalue(scheduler: Scheduler) -> None:
 
     scheduler.run(task1())
 
-    assert isinstance(scheduler.backend, RedunBackendDb)
-    result = find_file(scheduler.backend, "out.txt")
+    result = find_file(session, "out.txt")
     assert result
     file, job, kind = result
     assert file.path == "out.txt"
@@ -795,7 +794,7 @@ def test_find_file_as_subvalue(scheduler: Scheduler) -> None:
 
 
 @use_tempdir
-def test_find_file_arg(scheduler: Scheduler) -> None:
+def test_find_file_arg(scheduler: Scheduler, session: Session) -> None:
     """
     Find a File given as an Argument to a Task.
     """
@@ -812,8 +811,7 @@ def test_find_file_arg(scheduler: Scheduler) -> None:
 
     scheduler.run(main())
 
-    assert isinstance(scheduler.backend, RedunBackendDb)
-    result = find_file(scheduler.backend, "out.txt")
+    result = find_file(session, "out.txt")
     assert result
     file, job, kind = result
     assert file.path == "out.txt"
@@ -821,7 +819,7 @@ def test_find_file_arg(scheduler: Scheduler) -> None:
 
 
 @use_tempdir
-def test_find_file_arg_subvalue(scheduler: Scheduler) -> None:
+def test_find_file_arg_subvalue(scheduler: Scheduler, session: Session) -> None:
     """
     Find a File given as a Subvalue in an Argument to a Task.
     """
@@ -838,8 +836,7 @@ def test_find_file_arg_subvalue(scheduler: Scheduler) -> None:
 
     scheduler.run(main())
 
-    assert isinstance(scheduler.backend, RedunBackendDb)
-    result = find_file(scheduler.backend, "out.txt")
+    result = find_file(session, "out.txt")
     assert result
     file, job, kind = result
     assert file.path == "out.txt"
@@ -972,7 +969,10 @@ def task1(x: int):
 
 
 @use_tempdir
-def test_run_tags() -> None:
+@patch("redun.cli.get_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
+@patch("redun.cli.get_simple_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
+@patch("redun.cli.get_gcp_user", lambda: None)
+def test_run_tags(get_simple_aws_user_mock: Mock, get_aws_user_mock: Mock) -> None:
     """
     Run tags should be recorded on the execution.
     """
@@ -1233,6 +1233,40 @@ def task1(x: int):
     assert tags["project"] == ["my-project"]
 
 
+@use_tempdir
+def test_cloud_user_tags() -> None:
+    """
+    Run cloud (AWS, GCP) user tags should be recorded on the execution.
+    """
+    file = File("workflow.py")
+    file.write(
+        """
+from redun import task
+
+@task()
+def task1(x: int):
+    return x + 1
+"""
+    )
+
+    with patch("redun.cli.get_aws_user", lambda _: "arn:::::alice"), patch(
+        "redun.cli.get_simple_aws_user", lambda _: "alice"
+    ), patch("redun.cli.get_gcp_user", lambda: "alice@gmail.com"):
+        client = RedunClient()
+        client.execute(["redun", "run", "workflow.py", "task1", "--x", "10"])
+
+    scheduler = setup_scheduler()
+    assert scheduler.backend
+    backend = cast(RedunBackendDb, scheduler.backend)
+    assert backend.session
+
+    execution = backend.session.query(Execution).one()
+    tags = backend.get_tags([execution.id])[execution.id]
+    assert tags["user_aws"] == ["alice"]
+    assert tags["user_aws_arn"] == ["arn:::::alice"]
+    assert tags["user_gcp"] == ["alice@gmail.com"]
+
+
 def test_query(scheduler: Scheduler, backend: RedunBackendDb, session: Session) -> None:
     """
     CallGraphQuery should query records correctly.
@@ -1247,6 +1281,7 @@ def test_query(scheduler: Scheduler, backend: RedunBackendDb, session: Session) 
     # All entities should be part of query.
     query = CallGraphQuery(session)
     assert len(list(query.all())) == 7
+    assert len(list(query.order_by("time").all())) == 7
     assert list(query.count()) == [
         ("Execution", 1),
         ("Job", 1),
@@ -1266,6 +1301,9 @@ def test_query(scheduler: Scheduler, backend: RedunBackendDb, session: Session) 
     # Filter by type.
     execution = query.filter_types(["Execution"]).one()
     assert isinstance(execution, Execution)
+    # ensure the correct type is returned when ordering query is added
+    execution_ordered = query.order_by("time").filter_types(["Execution"]).one()
+    assert isinstance(execution_ordered, Execution)
 
     call_node = query.filter_types(["CallNode"]).one()
     assert isinstance(call_node, CallNode)
@@ -1396,6 +1434,7 @@ def test_value_subqueries(scheduler: Scheduler, backend: RedunBackendDb, session
 
     # Get the three executions.
     exec3, exec2, exec1 = list(query.filter_types(["Execution"]).order_by("time").all())
+    assert exec3.call_node.timestamp > exec2.call_node.timestamp > exec1.call_node.timestamp
 
     # We should be able to fetch the other record types from the execution.
     assert (
@@ -1668,7 +1707,10 @@ def main(x: int):
 
 
 @use_tempdir
-def test_cli_log_tags() -> None:
+@patch("redun.cli.get_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
+@patch("redun.cli.get_simple_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
+@patch("redun.cli.get_gcp_user", lambda: None)
+def test_cli_log_tags(get_simple_aws_user_mock: Mock, get_aws_user_mock: Mock) -> None:
     """
     cli should allow querying the CallGraph for tags.
     """
@@ -1693,7 +1735,18 @@ def main(x: int) -> int:
 
     # Run example workflow.
     client = RedunClient()
-    client.execute(["redun", "run", "--user", "alice", "workflow.py", "task1", "--x", "10"])
+    client.execute(
+        [
+            "redun",
+            "run",
+            "--user",
+            "alice",
+            "workflow.py",
+            "task1",
+            "--x",
+            "10",
+        ]
+    )
 
     scheduler = setup_scheduler()
     assert scheduler.backend
@@ -2001,15 +2054,15 @@ def task1(x: int):
     return x + 1
 
 @task()
-def main(x: int):
-    return task1(x) + 1
+def main(x: int, y: int):
+    return task1(x) + 1 + y
 """
     )
 
     client = RedunClient()
 
-    result = client.execute(["redun", "run", "workflow.py", "main", "--x", "10"])
-    assert result == 12
+    result = client.execute(["redun", "run", "workflow.py", "main", "--x", "10", "--y", "5"])
+    assert result == 17
 
     assert client.scheduler
     scheduler = client.scheduler
@@ -2025,12 +2078,49 @@ def main(x: int):
         if job.parent_id:
             assert result == 11
         else:
-            assert result == 12
+            assert result == 17
 
     # Ensure that we can specify execution ids as well as job ids
     execution = backend.session.query(Execution).first()
     result = client.execute(["redun", "run", "--rerun", "workflow.py", execution.id])
+    assert result == 17
+
+    result = client.execute(["redun", "run", "--rerun", "workflow.py", execution.id, "--y", "10"])
+    assert result == 22
+
+
+@use_tempdir
+def test_run_packed_inputs() -> None:
+    """
+    Test that `run` accepts binary inputs w/ the --input flag.
+    """
+    file = File("workflow.py")
+    file.write(
+        """
+from redun import task
+
+redun_namespace = 'test'
+
+@task()
+def main(x: int, y: int = 0):
+    # Note: the default value y=0 is important to the test, this is a corner case of the CLI.
+    return x + y
+"""
+    )
+
+    client = RedunClient()
+
+    with File("inputs").open("wb") as out:
+        pickle_dump([(5,), {"y": 7}], out)
+
+    result = client.execute(["redun", "run", "workflow.py", "main", "--input", "inputs"])
     assert result == 12
+
+    # We should still allow overrides from the cmdline.
+    result = client.execute(
+        ["redun", "run", "workflow.py", "main", "--input", "inputs", "--y", "10"]
+    )
+    assert result == 15
 
 
 @pytest.mark.parametrize("executor", ["proc", "thread"])
@@ -2068,12 +2158,10 @@ def main() -> int:
         # Process executors are not shut down in py3.8, so it may still be running.
         # This is expected but we skip the test rather than try to wait it out
         return
-    assert client.scheduler
-    scheduler = client.scheduler
-    assert scheduler.backend
-    backend = cast(RedunBackendDb, scheduler.backend)
-    assert backend.session
-    value = backend.session.query(Value).filter(Value.type != "redun.Task").one()
+
+    parser = client.get_command_parser()
+    args, extra_args = parser.parse_known_args([])
+    value = client.get_session(args=args).query(Value).filter(Value.type != "redun.Task").one()
     assert value.value_parsed
     assert value.value_parsed != this_pid
 

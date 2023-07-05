@@ -4,7 +4,7 @@ import pickle
 import time
 import unittest.mock
 import uuid
-from typing import cast
+from typing import Any, Dict, cast
 from unittest.mock import Mock, patch
 
 import boto3
@@ -24,9 +24,11 @@ from redun.executors.aws_batch import (
     SUCCEEDED,
     AWSBatchExecutor,
     batch_submit,
+    equiv_job_def,
     get_batch_job_name,
     get_hash_from_job_name,
     get_job_definition,
+    get_job_details,
     get_job_log_stream,
     get_or_create_job_definition,
     iter_batch_job_log_lines,
@@ -90,18 +92,22 @@ def test_get_job_definition(get_aws_client_mock) -> None:
 @patch("redun.executors.aws_batch.get_job_definition")
 def test_required_job_def_name(get_job_definition_mock, _) -> None:
     """
-    Confirm that job_def_name is required when autocreate_job is False.
+    Confirm that job_def_name is required when autocreate_job_def is False.
     """
     # A job_def_name is required when autocreate is False.
     with pytest.raises(AssertionError):
-        batch_submit({"command": ["ls"]}, "queue", "image", autocreate_job=False)
+        batch_submit({"command": ["ls"]}, "queue", "image", autocreate_job_def=False)
 
     # When the required job_def_name is supplied, an error should be raised if a matching
     # definition cannot be found.
     get_job_definition_mock.return_value = {}
     with pytest.raises(ValueError):
         batch_submit(
-            {"command": ["ls"]}, "queue", "image", job_def_name="NONEXISTENT", autocreate_job=False
+            {"command": ["ls"]},
+            "queue",
+            "image",
+            job_def_name="NONEXISTENT",
+            autocreate_job_def=False,
         )
 
 
@@ -429,6 +435,25 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
             "privileged": False,
         },
     )
+
+
+@patch("redun.executors.aws_utils.get_aws_client")
+def test_job_definition_role(get_aws_client_mock) -> None:
+    """
+    Confirm that jobs roles are set correctly.
+    """
+
+    # The default role is the AWS account's ecsTaskExecutionRole.
+    details = get_job_details("image")
+    assert details["containerProperties"]["jobRoleArn"].endswith("role/ecsTaskExecutionRole")
+
+    # If specified, use the user's role.
+    details = get_job_details("image", role="aRole")
+    assert details["containerProperties"]["jobRoleArn"] == "aRole"
+
+    # If the "none" role is specified, do not set the role.
+    details = get_job_details("image", role="none")
+    assert "jobRoleArn" not in details["containerProperties"]
 
 
 @patch("redun.executors.aws_utils.get_aws_client")
@@ -1155,7 +1180,9 @@ def test_iter_batch_job_logs(aws_describe_jobs_mock) -> None:
     assert list(iter_batch_job_logs(job_id, required=False)) == []
 
 
-def mock_executor(scheduler, debug=False, code_package=False):
+def mock_executor(
+    scheduler, custom_config_args: Dict[str, Any] = {}, debug=False, code_package=False
+):
     """
     Returns an AWSBatchExecutor with AWS API mocks.
     """
@@ -1174,15 +1201,16 @@ def mock_executor(scheduler, debug=False, code_package=False):
                 "job_stale_time": 0.01,
                 "code_package": code_package,
                 "debug": debug,
+                **custom_config_args,
             }
         }
     )
     executor = AWSBatchExecutor("batch", scheduler, config["batch"])
 
-    executor.get_jobs = Mock()
+    executor.get_jobs = Mock()  # type: ignore[assignment]
     executor.get_jobs.return_value = []
 
-    executor.get_array_child_jobs = Mock()
+    executor.get_array_child_jobs = Mock()  # type: ignore[assignment]
     executor.get_array_child_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")
@@ -1210,7 +1238,7 @@ def test_executor(
     parse_job_logs_mock.return_value = []
 
     scheduler = mock_scheduler()
-    executor = mock_executor(scheduler)
+    executor = mock_executor(scheduler, {"timeout": 5, "shared_memory": 5, "privileged": True})
     executor.start()
 
     try:
@@ -1238,7 +1266,11 @@ def test_executor(
             "vcpus": 1,
             "gpus": 0,
             "memory": 4,
-            "shared_memory": None,
+            "shared_memory": 5,
+            "timeout": 5,
+            "privileged": True,
+            "autocreate_job_def": True,
+            "job_def_name": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1251,6 +1283,8 @@ def test_executor(
                 "redun_project": "",
                 "redun_task_name": "task1",
             },
+            "share_id": None,
+            "scheduling_priority_override": None,
         }
 
         batch_submit_mock.return_value = {
@@ -1276,7 +1310,11 @@ def test_executor(
             "vcpus": 1,
             "gpus": 0,
             "memory": 8,
-            "shared_memory": None,
+            "shared_memory": 5,
+            "timeout": 5,
+            "privileged": True,
+            "autocreate_job_def": True,
+            "job_def_name": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1289,6 +1327,8 @@ def test_executor(
                 "redun_project": "",
                 "redun_task_name": "task1",
             },
+            "share_id": None,
+            "scheduling_priority_override": None,
         }
 
         # Simulate AWS Batch completing job.
@@ -1373,6 +1413,10 @@ def test_executor_multinode(
             "gpus": 0,
             "memory": 4,
             "shared_memory": None,
+            "timeout": None,
+            "privileged": False,
+            "autocreate_job_def": True,
+            "job_def_name": None,
             "role": None,
             "retries": 1,
             "aws_region": "us-west-2",
@@ -1385,6 +1429,8 @@ def test_executor_multinode(
                 "redun_project": "",
                 "redun_task_name": "task1",
             },
+            "share_id": None,
+            "scheduling_priority_override": None,
         }
         job.job_tags == [("aws_batch_job", "batch-job-id#0"), ("aws_log_stream", "log1")]
     finally:
@@ -1439,6 +1485,7 @@ def test_executor_docker(
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
             "interactive": False,
+            "include_aws_env": True,
         }
 
         run_docker_mock.reset_mock()
@@ -1463,6 +1510,7 @@ def test_executor_docker(
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
             "interactive": False,
+            "include_aws_env": True,
         }
 
         # Simulate output file created by job.
@@ -1538,6 +1586,7 @@ def test_executor_job_debug(
             "vcpus": 1,
             "volumes": [(scratch_dir, scratch_dir)],
             "interactive": False,
+            "include_aws_env": True,
         }
 
         # Simulate output file created by job.
@@ -1727,6 +1776,7 @@ def test_interactive(run_docker_mock, iter_local_job_status_mock, get_aws_user_m
         "shared_memory": None,
         "vcpus": 1,
         "volumes": [(scratch_dir, scratch_dir)],
+        "include_aws_env": True,
     }
 
     # Cleanly stop executor.
@@ -2374,3 +2424,108 @@ def test_get_log_stream(aws_describe_jobs_mock) -> None:
     assert aws_describe_jobs_mock.call_args == unittest.mock.call(
         ["multi_node_id#0"], aws_region=aws_region
     )
+
+
+def test_equiv_job_def() -> None:
+    """Check our equality testing for job definitions."""
+
+    basic_job = get_job_details(image="some_image", role="some_role")
+    # This is derived from a real query for a job description from batch, lightly redacted.
+    # It has lots of keys we don't set, but shouldn't cause errors.
+    existing_job = {
+        "jobDefinitionName": "jobDefinitionName",
+        "jobDefinitionArn": "jobDefinitionArn",
+        "revision": 12345,
+        "status": "ACTIVE",
+        "type": "container",
+        "parameters": {},
+        "containerProperties": {
+            "image": "some_image",
+            "vcpus": 1,
+            "memory": 4,
+            "command": ["ls"],
+            "jobRoleArn": "some_role",
+            "volumes": [],
+            "environment": [],
+            "mountPoints": [],
+            "privileged": False,
+            "ulimits": [],
+            "resourceRequirements": [],
+            "secrets": [],
+        },
+        "tags": {},
+    }
+
+    assert equiv_job_def(basic_job, existing_job)
+
+
+################################################################################################
+# Fair Share Scheduling related tests
+################################################################################################
+
+
+def test_fss_executor_config(scheduler: Scheduler) -> None:
+    """
+    FSS config variables flow are recognized by Executor.
+    """
+    # Setup executor.
+    config = Config(
+        {
+            "batch": {
+                "image": "image",
+                "queue": "queue",
+                "s3_scratch": "s3_scratch_prefix",
+                "share_id": "team1",
+                "scheduling_priority_override": 20,
+            }
+        }
+    )
+    executor = AWSBatchExecutor("batch", scheduler, config["batch"])
+
+    assert executor.image == "image"
+    assert executor.queue == "queue"
+    assert executor.s3_scratch_prefix == "s3_scratch_prefix"
+    assert isinstance(executor.code_package, dict)
+    assert executor.debug is False
+
+    @task(namespace="test")
+    def task1(x):
+        return x
+
+    exec1 = Execution("123")
+    job = Job(task1, task1(10), execution=exec1)
+
+    options = executor._get_job_options(job)
+    assert options["share_id"] == "team1"
+    assert options["scheduling_priority_override"] == 20
+
+
+def test_fss_task_override(scheduler: Scheduler) -> None:
+    """
+    FSS config variables can be overridden on Task
+    """
+    # Setup executor.
+    config = Config(
+        {
+            "batch": {
+                "image": "image",
+                "queue": "queue",
+                "s3_scratch": "s3_scratch_prefix",
+                "share_id": "team1",
+                "scheduling_priority_override": 20,
+            }
+        }
+    )
+    executor = AWSBatchExecutor("batch", scheduler, config["batch"])
+    executor._aws_user = "alice"
+
+    @task(share_id="subteam2", scheduling_priority_override=99, namespace="test")
+    def task1(x):
+        return x
+
+    exec1 = Execution("123")
+    job = Job(task1, task1(10), execution=exec1)
+
+    options = executor._get_job_options(job)
+    assert options["share_id"] == "subteam2"
+    assert options["scheduling_priority_override"] == 99

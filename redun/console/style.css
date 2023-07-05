@@ -1,0 +1,171 @@
+RedunHeader {
+    dock: top;
+    border: solid white;
+}
+
+ExecutionComponent {
+    width: 100%;
+    color: #000;
+    background: #eee;
+    height: 1;
+}
+
+ExecutionComponent:focus {
+    color: #fff;
+    background: #55c;
+}
+
+DataTable {
+    height: auto;
+    overflow: scroll;
+    scrollbar-gutter: stable;
+}
+
+JobStatusTable {
+    height: 40%;
+    overflow: auto;
+}
+
+JobList {
+    height: 50%;
+    align-vertical: bottom;
+    overflow: scroll;
+    scrollbar-gutter: stable;
+}
+
+FilterScreen {
+    align: center middle;
+    background: #00000088;
+}
+
+.filter {
+    background: $panel-lighten-1;
+    align: center middle;
+    width: 80%;
+    height: auto;
+    padding: 1;
+}
+
+.filter-help {
+    margin: 1 1;
+    overflow: auto;
+}
+
+HelpScreen {
+    align: center middle;
+    background: #00000088;
+}
+
+.help-dialog {
+    background: $panel-lighten-1;
+    align: center middle;
+    width: 80%;
+    height: auto;
+    padding: 1;
+}
+
+.help-text {
+    margin: 1 1;
+    overflow: auto;
+}
+
+ExecutionsNamespaceScreen DataTable {
+    height: 100%;
+    overflow: auto;
+}
+
+ExecutionList {
+    overflow: auto;
+}
+
+TaskVersionsScreen DataTable {
+    height: 100%;
+    overflow: auto;
+}
+
+TasksScreen DataTable {
+    height: 100%;
+    overflow: auto;
+}
+
+FilesScreen DataTable {
+    height: 100%;
+    overflow: auto;
+}
+
+.header {
+    text-style: bold;
+    background: #225;
+}
+
+MenuScreen {
+    align: center middle;
+    background: #00000088;
+}
+
+#menu-list {
+    width: 30;
+    height: auto;
+}
+
+Label {
+    padding: 1 2;
+}
+
+#menu-list Label {
+    width: 100%;
+}
+
+#repl-screen {
+    overflow: scroll;
+}
+
+#search-results {
+    height: 100%;
+    overflow: scroll;
+    scrollbar-gutter: stable;
+}
+
+#value-screen {
+    overflow: scroll;
+}
+
+#value-subvalues {
+    height: auto;
+    max-height: 20;
+    overflow: auto;
+}
+
+#task-screen {
+    overflow: scroll;
+}
+
+#job-screen {
+    overflow: scroll;
+}
+
+#job-title {
+    width: 100%;
+}
+
+#job-args-list {
+    height: auto;
+}
+
+#job-traceback {
+    height: auto;
+    color: #ff5555;
+}
+
+UpstreamDataflowScreen, .dataflow {
+    link-color: #ccccff;
+    link-style: none;
+}
+
+.links {
+    height: auto;
+}
+
+#upstreams-screen {
+    overflow: scroll;
+}

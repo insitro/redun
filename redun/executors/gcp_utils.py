@@ -8,6 +8,7 @@ import requests
 
 from google.cloud import batch_v1
 
+from redun.version import version
 
 # List of supported available CPU Platforms
 # https://cloud.google.com/compute/docs/instances/specify-min-cpu-platform#availablezones
@@ -25,7 +26,14 @@ class MinCPUPlatform(Enum):
 def get_gcp_client(
     sync: bool = True,
 ) -> Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient]:
-    return batch_v1.BatchServiceClient() if sync else batch_v1.BatchServiceAsyncClient()
+    # TODO: Integrate redun version here later.
+    client_info = gapic_v1.client_info.ClientInfo(user_agent=f"redun/{version}")
+    return (
+        batch_v1.BatchServiceClient(client_info=client_info)
+        if sync
+        else batch_v1.BatchServiceAsyncClient(client_info=client_info)
+    )
+
 
 def gb_to_mib(gb):
     # Convert GiB to MiB.
@@ -83,15 +91,9 @@ def batch_submit(
         runnable.container = batch_v1.Runnable.Container()
         runnable.container.image_uri = image
         runnable.container.commands = commands
-        # TODO: is this needed?
-        # runnable.container.options = "".join(
-        #     [f" -v {x.mount_path}:{x.mount_path}" for x in volumes]
-        # )
         runnable.container.options = " ".join(container_options)
         runnable.container.volumes = container_volumes
         runnable.container.volumes += [f"{x.mount_path}:{x.mount_path}" for x in volumes]
-        # TODO: this causes an error, going back to the above
-        # runnable.container.volumes = [','.join([f"{x.mount_path}:{x.mount_path}" for x in volumes])]
 
     task = batch_v1.TaskSpec()
     task.runnables = [runnable]

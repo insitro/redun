@@ -5,10 +5,14 @@ from redun.executors.conda import CondaExecutor
 from redun.executors.docker import DockerExecutor
 try:
     from redun.executors.k8s import K8SExecutor
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError):
     # Skip k8s executor if kubernetes is not installed.
     pass
-from redun.executors.gcp_batch import GCPBatchExecutor
+try:
+    from redun.executors.gcp_batch import GCPBatchExecutor
+except (ImportError, ModuleNotFoundError):
+    # Skip gcp_batch executor if google-cloud-batch is not installed.
+    pass
 from redun.executors.local import LocalExecutor
 from redun.file import Dir, File, ShardedS3Dataset
 from redun.handle import Handle
@@ -25,5 +29,6 @@ from redun.scheduler import (
 )
 from redun.scripting import script
 from redun.task import PartialTask, Task, get_task_registry, task
+from redun.version import version
 
-__version__ = "0.12.0"
+__version__ = version

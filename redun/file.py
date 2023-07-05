@@ -487,6 +487,8 @@ class LocalFileSystem(FileSystem):
             Destination path to copy to. If None, use stdout.
         recursive : bool
             If True, copy a directory tree of files.
+        as_mount : bool
+            Treat src/dest as mounted.
         """
         protos = {get_proto(path) for path in [src_path, dest_path] if path}
         if "local" not in protos:
@@ -590,7 +592,10 @@ class FsspecFileSystem(FileSystem):
         self.fs.makedirs(path, exist_ok=True)
 
     def rmdir(self, path: str, recursive: bool = False) -> None:
-        self.fs.rm(path, recursive=recursive)
+        try:
+            self.fs.rm(path, recursive=recursive)
+        except FileNotFoundError:
+            pass
 
     def get_hash(self, path: str) -> str:
         """
@@ -632,6 +637,8 @@ class FsspecFileSystem(FileSystem):
             Destination path to copy to. If None, use stdout.
         recursive : bool
             If True, copy a directory tree of files.
+        as_mount : bool
+            Treat src/dest as mounted.
         """
         if recursive:
             if not src_path or not dest_path:
@@ -720,6 +727,8 @@ class GSFileSystem(FsspecFileSystem):
             Destination path to copy to. If None, use stdout.
         recursive : bool
             If True, copy a directory tree of files.
+        as_mount : bool
+            Treat src/dest as mounted.
         """
 
         def to_mount_directory(path):
@@ -844,7 +853,11 @@ class S3FileSystem(FileSystem):
         else:
             client = getattr(_local, "s3_raw", None)
         if not client:
-            client = _local.s3_raw = boto3.client("s3")
+            # We need to create the client using a session to avoid all clients
+            # sharing the same global session.
+            # See: https://github.com/boto/boto3/issues/801#issuecomment-440942144
+            session = boto3.session.Session()
+            client = _local.s3_raw = session.client("s3")
         return client
 
     def exists(self, path: str) -> bool:
@@ -924,6 +937,8 @@ class S3FileSystem(FileSystem):
             Destination path to copy to. If None, use stdout.
         recursive : bool
             If True, copy a directory tree of files.
+        as_mount : bool
+            Treat src/dest as mounted.
         """
         protos = {get_proto(path) for path in [src_path, dest_path] if path}
         if "s3" not in protos or not (protos <= {"local", "s3"}):
@@ -957,11 +972,18 @@ class S3FileSystem(FileSystem):
         """
         Returns file size of path in bytes.
         """
-        # We call head_object ourselves so that we can avoid getting stale
-        # results from the s3fs cache.
-        _, _, bucket, key = path.split("/", 3)
-        response = self.s3_raw.head_object(Bucket=bucket, Key=key, **self.s3.req_kw)
-        return response["ContentLength"]
+        try:
+            # We call head_object ourselves so that we can avoid getting stale
+            # results from the s3fs cache.
+            _, _, bucket, key = path.split("/", 3)
+            response = self.s3_raw.head_object(Bucket=bucket, Key=key, **self.s3.req_kw)
+            return response["ContentLength"]
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "404":
+                raise FileNotFoundError(path)
+            else:
+                # Unknown error, reraise it.
+                raise
 
 
 class FileClasses:
@@ -1269,6 +1291,8 @@ class Dir(FileSet):
         ----------
         dest_path : str
             Destination path to copy to.
+        as_mount : bool
+            Treat src/dest as mounted.
         """
         return self.filesystem.shell_copy(self.path, dest_path, recursive=True, as_mount=as_mount)
 
@@ -1343,7 +1367,7 @@ class StagingFile(Staging[File]):
 
         return self.local.copy_to(self.remote)
 
-    def render_unstage(self, as_mount=False) -> str:
+    def render_unstage(self, as_mount: bool = False) -> str:
         """
         Returns a shell command for unstaging a file.
         """
@@ -1353,7 +1377,7 @@ class StagingFile(Staging[File]):
 
         return self.local.shell_copy_to(self.remote.path, as_mount=as_mount)
 
-    def render_stage(self, as_mount=False) -> str:
+    def render_stage(self, as_mount: bool = False) -> str:
         """
         Returns a shell command for staging a file.
         """
@@ -1407,7 +1431,7 @@ class StagingDir(Staging[Dir]):
 
         return self.local.copy_to(self.remote)
 
-    def render_unstage(self, as_mount=False) -> str:
+    def render_unstage(self, as_mount: bool = False) -> str:
         """
         Returns a shell command for unstaging a directory.
         """
@@ -1417,7 +1441,7 @@ class StagingDir(Staging[Dir]):
 
         return self.local.shell_copy_to(self.remote.path, as_mount=as_mount)
 
-    def render_stage(self, as_mount=False) -> str:
+    def render_stage(self, as_mount: bool = False) -> str:
         """
         Returns a shell command for staging a directory.
         """

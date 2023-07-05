@@ -272,23 +272,12 @@ class Value(metaclass=MetaValue):
 
     We introduce two atypical lifecycle steps that are needed for more complex cases, especially
     those involving values that wrap state: validity checking and pre/post processing.
-
-    After deserializing a regular data object, we could typically assume that the serialization
-    was successful and proceed to use the resulting object. However, state management requires
-    that after deserialization, we offer another lifecycle hook, `is_valid`, during which the
-    object can identify that the deserialized state no longer matches reality, and hence may not
-    be relied upon.
-
-    The simplest example of validity is a `Value` representing a file on a shared filesystem,
-    where we serialize the path to the file as a string and hash of the file contents. When we
-    retrieve a cache value and deserialize the object, we can recheck the hash of the file. If the
-    file hash does not match, then the object can declare that its state assertion is not valid,
-    and hence we should reassert it (i.e., re-run the task to rewrite the file with the intended
-    contents).
-
-    The scheduler will also arrange for pre- and post-processing hooks to be called on `Value`
+    The scheduler will arrange for pre- and post-processing hooks to be called on `Value`
     objects around their use in `Task` implementations. This allows users to implement some
     more complex concepts, such as lazy initialization or to temporarily allocate resources.
+
+    See `docs/source/design.md` for more information about "Validity" of values, which is an
+    important concept for this class.
     """
 
     type_name: Optional[str] = None

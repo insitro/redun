@@ -10,9 +10,8 @@ from typing import Any
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy import Column, ForeignKey, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session
+from sqlalchemy import Column, ForeignKey, String, text
+from sqlalchemy.orm import Session, declarative_base
 
 # revision identifiers, used by Alembic.
 revision = "cd2d53191748"
@@ -44,7 +43,8 @@ def upgrade():
     session = Session(bind=op.get_bind())
     try:
         job_ids = session.execute(
-            """
+            text(
+                """
             select job.id
             from job
             left join execution on execution.job_id = job.id
@@ -52,6 +52,7 @@ def upgrade():
               job.parent_id is null and
               execution.id is null
         """
+            )
         ).fetchall()
         for (job_id,) in job_ids:
             session.add(Execution(id=str(uuid.uuid4()), args='"Stub Execution"', job_id=job_id))

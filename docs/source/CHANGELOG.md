@@ -1,5 +1,70 @@
 # Changelog
 
+## 0.16.0
+June 21, 2023
+
+* `#303` - Fix boto thread safe
+* `#300` - Console extras
+* `#301` - Fix scrapping typo
+* `#299` - Add batch job tags at subission time
+* `#297` - broaden the scope of console executions --find to include args
+* `#294` - Add TUI Console to redun cli
+* `#295` - Update stale example output
+* `#293` - Example of running conda in a docker container
+* `#292` - Allow setting no role for aws batch jobs
+* `#291` - Removed pinned boto version for doc requirements
+* `#73` - split out version into it's own module
+* `#68` - GCP batch support v2
+* `#72` - Fix link on the "Scheduling redun workflows" docs page
+* use legacy solver for docs publishing
+* fix sphinx docs building
+* `#71` - Update design.md
+
+## 0.15.0
+May 01, 2023
+
+* `#286` - Uncap botocore to allow better dependency solving
+* `#285` - DE-8667 ensure to call record_job_start even when executor is not defiend
+* `#275` - Drop python 3.6
+* `#284` - DE-8613 make Handle.is_valid() more graceful to missing recordings
+* `#283` - Add lambda_federated_task scheduler task with tests
+* `#282` - small fix for graph reduction docs
+* `#281` - Update TaskExpression names to match code snippet
+* `#280` - [DE-8465] Fair Share Scheduling support.
+* `#278` - Release 0.14.0
+* `#261` - Provide integration code for redun and a proxy
+* `#277` - Add task_def option to federated_task config
+* `#247` - Publish federated tasks
+* `#270` - DE-8068 Pass through missing aws batch options
+
+## 0.14.0
+March 13, 2023
+
+This release primarily introduces "federated tasks", a mechanism for working with tasks 
+where you do not have to import the implementation code.
+
+* `#261` - Provide integration code for redun and a proxy
+* `#277` - Add task_def option to federated_task config
+* `#247` - Publish federated tasks
+* `#270` - DE-8068 Pass through missing aws batch options
+
+## 0.13.0
+February 27, 2023
+
+* `#272` - DE-7556: Update job definition sanitizing to be recursive 
+* `#182` - Check CSE even for completed jobs 
+* `#269` - Bump SQLAlchemy to 2.0, use future=True flag 
+* `#268` - Follow-up on SQLAlchemy 2.0 compatibility 
+* `#266` - DE-7776 Upgrade sqlalchemy to 1.4 and fix deprecation warnings 
+* `#22` - Add k8s executor 
+* `#253` - Try to clarify and document Value and Handle 
+* `#63` - remove develop mode for installing redun during docs build 
+* `#254` - DE-7282 Simplify job arguments and JobArrayer 
+* `#255` - Clarify role arn and fix for sphinx 6.0 
+* `#61` - Pass AWS_DEFAULT_REGION env variable to container
+* `#244` - DE-6763 Add IFile and ContentFile
+* `#60` - Fix import statements with lowercase config 
+
 ## 0.12.0
 November 29, 2022
 

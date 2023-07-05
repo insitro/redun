@@ -4,13 +4,12 @@ from base64 import b64decode, b64encode
 from collections import defaultdict
 from typing import Any, Dict, Iterator, List, Optional
 
-import sqlalchemy as sa
 from dateutil.parser import parse as parse_date
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import aliased, joinedload, selectinload
 from sqlalchemy.orm.query import Query
 
 from redun.backends import db
-from redun.backends.base import TagEntityType
+from redun.backends.base import TagEntity
 
 # Serialization version.
 VERSION = 1
@@ -104,12 +103,13 @@ class JobSerializer(Serializer):
         }
 
     def serialize_query(self, query: Query) -> Iterator[dict]:
-
         # Fetch parent-child links.
-        ChildJob = sa.orm.aliased(db.Job)
+        Job = aliased(db.Job, query.subquery())
+        ChildJob = aliased(db.Job, query.subquery())
+
         parent_child_pairs = (
-            query.from_self(db.Job.id, ChildJob.id)
-            .join(ChildJob, ChildJob.parent_id == db.Job.id)
+            query.session.query(Job.id, ChildJob.id)
+            .join(ChildJob, ChildJob.parent_id == Job.id)
             .order_by(ChildJob.start_time)
             .all()
         )
@@ -338,7 +338,7 @@ class TagSerializer(Serializer):
         return [
             db.Tag(
                 tag_hash=spec["tag_hash"],
-                entity_type=TagEntityType(spec["entity_type"]),
+                entity_type=TagEntity(spec["entity_type"]),
                 entity_id=spec["entity_id"],
                 key=spec["key"],
                 value=spec["value"],

@@ -19,9 +19,8 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "redun"
-html_title = "redun"
-copyright = "2020, Matt Rasmussen"
-author = "Matt Rasmussen"
+copyright = "2023, insitro"
+author = "insitro"
 
 
 # -- General configuration ---------------------------------------------------
@@ -60,3 +59,6 @@ html_theme = "furo"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static/"]
 html_extra_path = []
+
+html_logo = "_static/redun.svg"
+html_favicon = "_static/redun-no-text.svg"

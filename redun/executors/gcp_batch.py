@@ -72,6 +72,7 @@ class GCPBatchExecutor(Executor):
         # Use DockerExecutor for local debug mode.
         docker_config = get_docker_executor_config(config)
         docker_config["scratch"] = config.get("debug_scratch", fallback=DEBUG_SCRATCH)
+        docker_config["include_aws_env"] = "False"
         self._docker_executor = DockerExecutor(name + "_debug", scheduler, config=docker_config)
 
         self.gcp_client = gcp_utils.get_gcp_client()
@@ -293,7 +294,7 @@ class GCPBatchExecutor(Executor):
             if existing_task:
                 self.log(
                     "reunite redun job {redun_job} with {job_type}:\n"
-                    "  task_name = {batch_task_name}"
+                    "  task_name        = {batch_task_name}\n"
                     "  gcs_scratch_path = {job_dir}".format(
                         redun_job=job.id,
                         job_type="GCP Batch Job Task",
@@ -402,15 +403,15 @@ class GCPBatchExecutor(Executor):
             )
 
         array_task_group_name = gcp_job.task_groups[0].name
-        for i in range(0, gcp_job_task_count):
+        for i in range(gcp_job_task_count):
             self.pending_batch_tasks[f"{array_task_group_name}/tasks/{i}"] = jobs[i]
 
         self.log(
             "submit {array_size} redun job(s) as {job_type} {array_job_id}:\n"
-            "  array_job_id    = {array_job_id}\n"
-            "  array_task_group_name  = {array_task_group_name}\n"
-            "  array_size      = {array_size}\n"
-            "  gcs_scratch_path = {job_dir}\n".format(
+            "  array_job_id          = {array_job_id}\n"
+            "  array_task_group_name = {array_task_group_name}\n"
+            "  array_size            = {array_size}\n"
+            "  gcs_scratch_path      = {job_dir}\n".format(
                 array_size=array_size,
                 job_type="GCP Batch Job",
                 array_job_id=gcp_job.uid,
@@ -478,14 +479,13 @@ class GCPBatchExecutor(Executor):
 
             # Get buckets - This can probably be improved.
             mount_buckets: List[str] = list(
-                set(re.findall(r"/mnt/disks/([^\/]+)/",
-                               script_command[-1] + task_command))
+                set(re.findall(r"/mnt/disks/([^\/]+)/", script_command[-1] + task_command))
             )
 
             # Convert start command to script.
             script_path = get_job_scratch_file(self.gcs_scratch_prefix, job, ".redun_job.sh")
 
-            File(script_path).write(DEFAULT_SHELL + '\n' + script_command[-1])
+            File(script_path).write(DEFAULT_SHELL + "\n" + script_command[-1])
 
             script_path = script_path.replace("gs://", "/mnt/disks/")
 
@@ -505,7 +505,7 @@ class GCPBatchExecutor(Executor):
         job_dir = get_job_scratch_dir(self.gcs_scratch_prefix, job)
         self.log(
             "submit redun job {redun_job} as {job_type}:\n"
-            "  task_name          = {task_name}\n"
+            "  task_name        = {task_name}\n"
             "  gcs_scratch_path = {job_dir}\n".format(
                 redun_job=job.id,
                 job_type="GCP Batch Job Task",

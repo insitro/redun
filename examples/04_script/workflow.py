@@ -3,6 +3,8 @@ from typing import Dict, List
 
 from redun import File, script, task
 
+redun_namespace = "redun.examples.script"
+
 
 @task()
 def parse_int(text: str) -> int:

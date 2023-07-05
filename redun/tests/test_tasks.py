@@ -10,9 +10,17 @@ from redun import Task, task
 from redun.expression import Expression
 from redun.namespace import compute_namespace
 from redun.scheduler import set_arg_defaults
-from redun.task import Func, get_task_registry, get_tuple_type_length, wraps_task
+from redun.task import (
+    CacheCheckValid,
+    CacheScope,
+    Func,
+    get_task_registry,
+    get_tuple_type_length,
+    wraps_task,
+)
 from redun.tests.task_test_helpers import square_task
 from redun.utils import get_func_source, pickle_dumps
+from redun.value import get_type_registry
 
 
 def test_task_config() -> None:
@@ -619,3 +627,69 @@ def test_wraps_task() -> None:
     # After all our renaming, make sure our registry is still a correct index of task names.
     for task_name, task_ in get_task_registry()._tasks.items():
         assert task_name == task_.fullname
+
+
+def test_cache_options() -> None:
+    """All the methods for setting cache options get sanitized into enums."""
+
+    # Start with setting them on the method
+    @task(cache=False)
+    def task1():
+        return None
+
+    assert task1.get_task_option("cache_scope") == CacheScope.CSE
+
+    @task(cache=True)
+    def task2():
+        return None
+
+    assert task2.get_task_option("cache_scope") == CacheScope.BACKEND
+
+    @task(cache_scope="CSE")
+    def task3():
+        return None
+
+    assert task3.get_task_option("cache_scope") == CacheScope.CSE
+
+    @task(cache_scope=CacheScope.CSE)
+    def task4():
+        return None
+
+    assert task4.get_task_option("cache_scope") == CacheScope.CSE
+
+    @task()
+    def task5():
+        return None
+
+    # And retest with option overrides.
+    assert task5.options(cache=False).get_task_option("cache_scope") == CacheScope.CSE
+    assert task5.options(cache=True).get_task_option("cache_scope") == CacheScope.BACKEND
+    assert task5.options(cache_scope="CSE").get_task_option("cache_scope") == CacheScope.CSE
+    assert (
+        task5.options(cache_scope=CacheScope.CSE).get_task_option("cache_scope") == CacheScope.CSE
+    )
+    with pytest.raises(ValueError, match="'typo' is not a valid CacheScope"):
+        task5.options(cache_scope="typo")
+
+    assert task5.options(check_valid="full").get_task_option("check_valid") == CacheCheckValid.FULL
+    assert (
+        task5.options(check_valid=CacheCheckValid.FULL).get_task_option("check_valid")
+        == CacheCheckValid.FULL
+    )
+    assert (
+        task5.options(check_valid="shallow").get_task_option("check_valid")
+        == CacheCheckValid.SHALLOW
+    )
+    assert (
+        task5.options(check_valid=CacheCheckValid.SHALLOW).get_task_option("check_valid")
+        == CacheCheckValid.SHALLOW
+    )
+    with pytest.raises(ValueError, match="'typo' is not a valid CacheCheckValid"):
+        task5.options(check_valid="typo")
+
+    # Check the enum will traverse serialization.
+    type_registry = get_type_registry()
+    deserialized = type_registry.deserialize(
+        "redun.Task", type_registry.serialize(task4.options(cache_scope=CacheScope.NONE))
+    )
+    assert deserialized.get_task_option("cache_scope") == CacheScope.NONE

@@ -118,3 +118,12 @@ def hash_tag(entity_id: str, key: str, value: Any, parents: List[str]) -> str:
     Hash a CallGraph Tag.
     """
     return hash_struct(["Tag", entity_id, key, json_dumps(value), parents])
+
+
+def hash_call_node(
+    task_hash: str, args_hash: str, result_hash: str, child_call_hashes: List[str]
+) -> str:
+    """
+    Calculates the call_hash for a CallNode.
+    """
+    return hash_struct(["CallNode", task_hash, args_hash, result_hash, sorted(child_call_hashes)])

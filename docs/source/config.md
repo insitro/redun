@@ -52,7 +52,7 @@ A string that specifies the location of a user-defined function for setting up t
 - `{file_or_module}` should be a filename relative to the `redun.ini` file (e.g. `../workflow.py`), or a python module using dot-syntax (e.g. `workflow_lib.utils.scheduler`).
 - `{function_name}` should the name of a function, typically `setup_scheduler`.
 
-The user function `setup_scheduler()` should take as its first argument `config` (see [Config](redun/redun.md#redun.config.Config)) and it should return an instantiated `scheduler` (see [Scheduler](redun/redun.md#redun.scheduler.Scheduler)).
+The user function `setup_scheduler()` should take as its first argument `config` (see [Config](redun.config.Config)) and it should return an instantiated `scheduler` (see [Scheduler](redun.scheduler.Scheduler)).
 
 ```py
 from redun.config import Config
@@ -103,6 +103,30 @@ redun --setup profile=dev run workflow.py main --x 1 --y 2
 
 An integer (default: 20) of how many seconds between displays of the job status table.
 
+
+### `federated_configs`
+
+A config file may mark other config files that should be imported. This is particularly useful
+for importing remote config files containing federated entrypoints and their executors.
+
+```
+[scheduler]
+federated_configs = <path to config_dir>
+```
+
+or
+
+```
+[scheduler]
+federated_configs = 
+    <path to config_dir_1>
+    <path to config_dir_2>
+```
+
+Only the `executor` and `federated_tasks` from these config file(s) are imported, all other sections
+are ignored. There is no namespacing for these imported executors and federated tasks, either
+from each other or from the rest of the scheduler's configuration. Any duplicate names will result 
+in an error being raised.
 
 ### Backend
 
@@ -286,7 +310,7 @@ A string that specifies the AWS region containing the user's AWS Batch service.
 
 ##### `role`
 
-A string that specifies the ARN of the IAM role that AWS Batch jobs should adopt while executing. This may be needed for jobs to have proper access to resources (S3 data, other services, etc). This can be overridden on a per task basis using task options.
+A string (default: the AWS account's `ecsTaskExecutionRole`) that specifies the ARN of the IAM role that AWS Batch jobs should adopt while executing. This may be needed for jobs to have proper access to resources (S3 data, other services, etc). This can be overridden on a per task basis using task options. To disable setting a role on the job definition use `None`.
 
 This key is mapped to the [`jobRoleArn` property](https://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html#containerProperties) of the Batch API.
 
@@ -346,6 +370,21 @@ A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wa
 
 An optional integer (default: None) that specifies the time duration in seconds (measure from job attempt's `startedAt` timestamp) after which AWS Batch will terminate the job. For more on job timeouts, see the [Job Timeouts on Batch docs](https://docs.aws.amazon.com/batch/latest/userguide/job_timeouts.html). When not set, jobs will run indefinitely (unless on Fargate where there is a 14 day limit).
 
+##### privileged
+
+An optional bool (default: False) that specifies whether to run the job in privileged mode.
+
+##### autocreate_job_def
+
+An optional bool (default: True). If `autocreate_job_def` is disabled, then we require a `job_def_name`
+to be present and lookup the job by name. If `autocreate_job_def` is enabled, then we will create
+a new job definition if an existing one matching `job_def_name` and required properties cannot be found.
+For backwards-compatibility, the deprecated `autocreate_job` is also supported.
+
+##### job_def_name
+
+An optional str (default: None) that specifies a job definition to use. If not set, a new job definition will created.
+
 ##### `batch_tags`
 
 An optional JSON mapping of string key-value pairs to use as Batch job tags. This could be used to track jobs or query them after execution.
@@ -370,7 +409,7 @@ If not none, use a multi-node job and set the number of workers.
 
 #### AWS Glue executor
 
-The [AWS Glue executor](executors.md#aws-glue-executor) (`type = aws_glue`) executes tasks on the AWS Glue compute service.
+The [AWS Glue executor](executors.md#aws-glue-spark-executor) (`type = aws_glue`) executes tasks on the AWS Glue compute service.
 
 ##### `s3_scratch`
 
@@ -440,6 +479,40 @@ A string (default: `**/*.py`) that specifies a pattern for which files should be
 
 A string (default: None) that specifies a pattern for which files should be excluded from a [code package](executors.md#code-packaging). Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using [shell-like syntax](https://docs.python.org/3/library/shlex.html#shlex.split)
 
+### Federated tasks
+
+The following config keys are required. All other data is passed to the `subrun` that 
+implements the bulk of the federated task behavior, hence they are either consumed by `subrun` directly or
+are set as task options.
+
+#### `namespace`
+
+The namespace of the federated task.
+
+#### `task_name`
+
+The name of the federated task.
+
+#### `load_module`
+
+The name of the module to load, which will ensure that the above task is actually defined.
+
+#### `executor`
+
+The name of the executor that has the execution context for this federated task.
+
+#### `config_dir`
+
+The path to the configuration to use for the remainder of the execution. Either an absolute
+path or relative to the executor entrypoint. 
+
+#### `task_signature`
+
+Optional. The signature of the federated task. Because the task options can be used to change the name of the task itself, task_name _and_ task_signature are separate options in the config.
+
+#### `description`
+
+Optional. A description of this entrypoint.
 
 #### Kubernetes (k8s) executor
 
@@ -529,6 +602,17 @@ Maximum number (default: 1000) of equivalent tasks that will be submitted togeth
 
 A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wait before submission to be possibly bundled into an array job.
 
+##### `share_id`
+
+Queues with Scheduling Policies require all jobs be assigned a Fair Share 
+Scheduling `shareIdentifier`. Can be further overridden on a per-task basis using task options.
+
+##### `scheduling_priority_override`
+
+Queues with Scheduling Policies require that all job definitions specify a `schedulingPriority` 
+Alternatively, if the batch job definition does *not* configure a `schedulingPriority`, you 
+must provide a `schedulingPriorityOverride` by setting this variable. 
+Can be further overridden on a per-task basis using task options. 
 
 ## Configuration variables
 

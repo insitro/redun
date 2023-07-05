@@ -11,7 +11,7 @@ from redun import File, cond, task
 from redun.functools import flat_map, flatten
 from redun.tools import render_template
 
-redun_namesapce = "redun.examples.scrapper"
+redun_namespace = "redun.examples.scraper"
 
 S = TypeVar("S")
 T = TypeVar("T")
@@ -122,7 +122,7 @@ def crawl(url: str, url_prefix: str, out_path: str, depth: int) -> List[File]:
 
     file = scrape_page(url, out_path)
 
-    # If the page scrapping is successful, process it.
+    # If the page scraping is successful, process it.
     # We use cond (a lazy if-statement) since `file` is a lazy expression.
     return cond(file, process_page(file, url, url_prefix, out_path, depth), [])
 
@@ -166,7 +166,7 @@ def make_report(
     report_path: str, url: str, files: List[File], word_counts: List[Tuple[str, int]]
 ) -> File:
     """
-    Make an HTML report for the web scrapping.
+    Make an HTML report for the web scraping.
     """
     context = {
         "url": url,

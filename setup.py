@@ -1,5 +1,4 @@
 import os
-import platform
 
 from setuptools import find_packages, setup
 
@@ -14,32 +13,36 @@ requirements = [
     "aiohttp>=3.7.4,<4",
     "alembic>=1.4",
     "boto3>=1.16.63",
-    "botocore>=1.22.8",
+    # Avoid version botocore-1.28.0
+    # https://github.com/iterative/dvc/issues/8513#issuecomment-1298761683
+    "botocore>=1.22.8,!=1.28.0",
+    "fancycompleter>=0.9.1",
     "gcsfs>=2021.4.0",
     "google-cloud-batch>=0.2.0",
     "s3fs>=2021.11.1",
-    "sqlalchemy>=1.3.17,<2",
+    # Using 2.1 instead of 3.0 in case future 2.x versions drop support
+    # for some legacy APIs still supported in 2.0
+    "sqlalchemy>=1.4.0,<2.1",
     "python-dateutil>=2.8",
     "google-cloud-batch>=0.2.0",
+    "requests>=2.27.1",
+    "rich>=13.3.5",
+    "textual>=0.24.1",
     # If updating this list, check executors/aws_glue.py stays up to date with
     # packages needed to run in the glue environment.
 ]
-
-python_36_backports = ["dataclasses>=0.8", "types-dataclasses>=0.6.6"]
 
 extras = {
     "glue": ["pandas", "pyarrow", "pyspark"],
     "k8s": "kubernetes>=22.6",
     "viz": "pygraphviz",
+    "google-batch": ["google-cloud-batch>=0.2.0", "google-cloud-compute>=1.11.0"],
 }
 
 if REQUIRE_POSTGRES:
     requirements.append(PSYCOPG2_VERSION)
 else:
     extras["postgres"] = [PSYCOPG2_VERSION]
-
-if "3.6" in platform.python_version():
-    requirements.append(python_36_backports)
 
 
 def get_version() -> str:
@@ -48,10 +51,10 @@ def get_version() -> str:
     """
     # Technique from: https://packaging.python.org/guides/single-sourcing-package-version/
     basedir = os.path.dirname(__file__)
-    module_path = os.path.join(basedir, "redun", "__init__.py")
+    module_path = os.path.join(basedir, "redun", "version.py")
     with open(module_path) as infile:
         for line in infile:
-            if line.startswith("__version__"):
+            if line.startswith("version ="):
                 _, version, _ = line.split('"', 2)
                 return version
     assert False, "Cannot find redun package version"
@@ -93,7 +96,7 @@ redun's key features are:
     """,
     scripts=["bin/redun"],
     include_package_data=True,
-    python_requires=">= 3.6",
+    python_requires=">= 3.7",
     install_requires=requirements,
     extras_require=extras,
 )

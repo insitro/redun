@@ -11,7 +11,7 @@ from redun.executors.scratch import (
 )
 from redun.file import File, get_filesystem
 from redun.scheduler import Job
-from redun.task import Task
+from redun.task import CacheScope, Task
 from redun.utils import get_import_paths, pickle_dump
 
 REDUN_PROG = "redun"
@@ -69,7 +69,11 @@ def get_oneshot_command(
     # Build job command.
     code_arg = ["--code", code_file.path] if code_file else []
     array_arg = ["--array-job"] if array_uuid else []
-    cache_arg = [] if job_options.get("cache", True) else ["--no-cache"]
+    cache_arg = (
+        []
+        if CacheScope(job_options.get("cache_scope", CacheScope.BACKEND)) == CacheScope.BACKEND
+        else ["--no-cache"]
+    )
     command = (
         [
             REDUN_PROG,

@@ -1,17 +1,18 @@
 import ast
 import os
+import shutil
 from typing import cast
 from unittest.mock import patch
 
 import pytest
 import sqlalchemy
 
-from redun.backends.base import calc_call_hash
 from redun.backends.db import Execution, Job
 from redun.cli import get_config_dir, setup_scheduler
 from redun.executors.local import LocalExecutor
+from redun.hashing import hash_call_node
 from redun.scheduler import Config, DryRunResult, ErrorValue, Scheduler, subrun
-from redun.task import task
+from redun.task import CacheScope, task
 from redun.tests.scripts.workflow_subrun_process_executor import main
 from redun.tests.utils import use_tempdir
 
@@ -79,7 +80,7 @@ def test_subrun():
 
     # local_main's call_hash should be properly recorded.
     call_node = exec.job.call_node
-    assert call_node.call_hash == calc_call_hash(
+    assert call_node.call_hash == hash_call_node(
         call_node.task_hash,
         call_node.args_hash,
         call_node.value_hash,
@@ -131,7 +132,7 @@ def test_subrun_fail():
 
     # local_main's call_hash should be properly recorded.
     call_node = exec.job.call_node
-    assert call_node.call_hash == calc_call_hash(
+    assert call_node.call_hash == hash_call_node(
         call_node.task_hash,
         call_node.args_hash,
         call_node.value_hash,
@@ -243,6 +244,8 @@ def _config_found_in_logs(mock_log, config_dict):
             if isinstance(actual_config, dict) and actual_config == config_dict:
                 print(f"Verified config: {actual_config}")
                 return True
+            print(f"Not Verified config: {actual_config}")
+
         except Exception:
             pass
     return False
@@ -265,6 +268,40 @@ def test_subscheduler_config():
     with patch.object(scheduler, "log") as mock_log:
         assert 5 == scheduler.run(local_main(5))
         assert _config_found_in_logs(mock_log, CONFIG_DICT)
+
+
+@use_tempdir
+def test_subscheduler_config_dir():
+    """Verify that the sub-scheduler uses the provided config_dir"""
+
+    @task(executor="nondefault")
+    def bar(x):
+        return x
+
+    @task
+    def foo(x):
+        return x
+
+    config_file = os.path.join(os.path.dirname(__file__), "test_data/subrun_config_dir/redun.ini")
+    shutil.copy(config_file, "./redun.ini")
+
+    @task
+    def local_main(x):
+        return subrun(foo(x), "default", config_dir=".", new_execution=True)
+
+    scheduler = Scheduler(Config(CONFIG_DICT))
+    scheduler.load()
+
+    FILE_CONFIG_DICT = {
+        "backend": {"config_dir": ".", "db_uri": f"sqlite:///{os.getcwd()}/redun.db"},
+        "executors.nondefault": {"mode": "thread", "type": "local"},
+        "repos.default": {"config_dir": "."},
+        "scheduler": {},
+    }
+
+    with patch.object(scheduler, "log") as mock_log:
+        assert 5 == scheduler.run(local_main(5))
+        assert _config_found_in_logs(mock_log, FILE_CONFIG_DICT)
 
 
 @use_tempdir
@@ -434,7 +471,7 @@ def test_subrun_nested_list_of_tasks():
 
 
 def test_subrun_cached():
-    """Subrun "wrapper" task is cached"""
+    """Subrun "implementation" task is cached"""
     task_calls = []
 
     @task(cache=False)
@@ -447,33 +484,57 @@ def test_subrun_cached():
         task_calls.append("local_main")
         return subrun(foo(x), executor="default", new_execution=True)
 
+    @task()
+    def local_main_full(x):
+        task_calls.append("local_main_full")
+        return subrun.options(check_valid="full")(foo(x), executor="default", new_execution=True)
+
     scheduler = Scheduler()
     scheduler.load()
     assert 25 == scheduler.run(local_main(5))
     assert task_calls == ["local_main", "foo"]
 
     task_calls = []
-    with patch.object(scheduler, "get_cache", wraps=scheduler.get_cache) as get_cache:
+    with patch.object(scheduler, "_get_cache", wraps=scheduler._get_cache) as get_cache:
+        # When we run again, we get a cache hit to grab the subrun expression. Then shallow
+        # checking allows it to skip running the subrun altogether.
         assert 25 == scheduler.run(local_main(5))
         assert task_calls == []
         assert get_cache.call_count == 2
         assert get_cache.call_args_list[0][0][0].task.fullname == "test_subrun.local_main"
         assert get_cache.call_args_list[1][0][0].task.fullname == "redun.subrun_root_task"
 
+    task_calls = []
+    with patch.object(scheduler, "_get_cache", wraps=scheduler._get_cache) as get_cache:
+        # Full validity checking means we need to run the subrun, so `foo` will get executed.
+        assert 25 == scheduler.run(local_main_full(5))
+        assert task_calls == ["local_main_full", "foo"]
+        assert get_cache.call_count == 2
+        assert get_cache.call_args_list[0][0][0].task.fullname == "test_subrun.local_main_full"
+        assert get_cache.call_args_list[1][0][0].task.fullname == "redun.subrun_root_task"
+
 
 def test_subrun_root_task_cached():
-    """_subrun_root_task is cached by default.  This test disables caching for all other tasks."""
+    """_subrun_root_task is cached at execution scope by default. This test disables caching for
+    all other tasks."""
     task_calls = []
 
-    @task(cache=False)
+    @task
+    def noop(any):
+        # Prevent expression cycles
+        return any
+
+    @task(cache_scope=CacheScope.NONE)
     def foo(x):
         task_calls.append("foo")
         return x**2
 
-    @task(cache=False)
+    @task(cache_scope=CacheScope.NONE)
     def local_main(x):
         task_calls.append("local_main")
-        return subrun(foo(x), executor="default", new_execution=True)
+        return subrun.options(cache_scope=CacheScope.CSE)(
+            foo(x), executor="default", new_execution=True
+        )
 
     scheduler = Scheduler()
     scheduler.load()
@@ -481,12 +542,26 @@ def test_subrun_root_task_cached():
     assert task_calls == ["local_main", "foo"]
 
     task_calls = []
-    with patch.object(scheduler, "get_cache", wraps=scheduler.get_cache) as get_cache:
+    with patch.object(scheduler, "_get_cache", wraps=scheduler._get_cache) as get_cache:
+        # The main task can't be cached, and only allowing CSE caching for the subrun means it
+        # isn't either.
         assert 25 == scheduler.run(local_main(5))
-        # Since _subrun_root_task was cached, foo isn't called
-        assert task_calls == ["local_main"]
-        assert get_cache.call_count == 1
-        assert get_cache.call_args_list[0][0][0].task.fullname == "redun.subrun_root_task"
+        assert task_calls == ["local_main", "foo"]
+        assert get_cache.call_count == 2
+        assert get_cache.call_args_list[0][0][0].task.fullname == "test_subrun.local_main"
+        assert get_cache.call_args_list[1][0][0].task.fullname == "redun.subrun_root_task"
+
+        # But the second call won't invoke the underlying subrun a second time.
+        task_calls = []
+        get_cache.reset_mock()
+        assert [25, 25] == scheduler.run([local_main(5), local_main(noop(5))])
+        assert task_calls == ["local_main", "local_main", "foo"]
+        assert get_cache.call_count == 5
+        assert get_cache.call_args_list[0][0][0].task.fullname == "redun.root_task"
+        assert get_cache.call_args_list[1][0][0].task.fullname == "test_subrun.local_main"
+        assert get_cache.call_args_list[2][0][0].task.fullname == "test_subrun.noop"
+        assert get_cache.call_args_list[3][0][0].task.fullname == "redun.subrun_root_task"
+        assert get_cache.call_args_list[4][0][0].task.fullname == "test_subrun.local_main"
 
 
 def test_subrun_root_task_disabled_cached():
@@ -511,10 +586,10 @@ def test_subrun_root_task_disabled_cached():
     assert task_calls == ["local_main", "foo"]
 
     task_calls = []
-    with patch.object(scheduler, "get_cache", wraps=scheduler.get_cache) as get_cache:
+    with patch.object(scheduler, "_get_cache", wraps=scheduler._get_cache) as get_cache:
         assert 25 == scheduler.run(local_main(5))
         assert task_calls == ["local_main", "foo"]
-        assert get_cache.call_count == 0
+        assert get_cache.call_count == 2
 
 
 # ==========================================================================================
@@ -576,3 +651,64 @@ def test_process_executor(start_method: str):
 
         # Confirm that the sub-scheduler actually used the config_dict we passed it.
         assert _config_found_in_logs(mock_log, config_dict)
+
+
+# ==========================================================================================
+# Load module test
+# ==========================================================================================
+@use_tempdir
+def test_subrun_load_module():
+    """Verify that explicit load modules are honored."""
+
+    from redun.tests.isolated_task import isolated_task
+
+    # Note that these use the `bar` implementation at module scope.
+
+    @task
+    def local_main(x):
+        return subrun(
+            isolated_task(x),
+            "process_main",
+            CONFIG_DICT,
+            new_execution=True,
+            load_modules=["redun.tests.isolated_task"],
+        )
+
+    @task
+    def local_main_missing_module(x):
+        return subrun(
+            isolated_task(x),
+            "process_main",
+            CONFIG_DICT,
+            new_execution=True,
+            load_modules=["redun.tests.bad_module"],
+        )
+
+    @task
+    def local_main_wrong_module(x):
+        return subrun(
+            isolated_task(x),
+            "process_main",
+            CONFIG_DICT,
+            new_execution=True,
+            load_modules=["redun.tests.test_scheduler_subrun"],
+        )
+
+    config_dict = {
+        "backend": {"db_uri": "sqlite:///redun.db"},
+        "executors.process_main": {
+            "type": "local",
+            "mode": "process",
+            "start_method": "spawn",
+        },
+    }
+
+    scheduler = Scheduler(Config(config_dict))
+    scheduler.load()
+    assert 5 == scheduler.run(local_main(5))["result"]
+    with pytest.raises(ModuleNotFoundError, match="No module named 'redun.tests.bad_module'"):
+        scheduler.run(local_main_missing_module(6))
+    # If the test is working properly, we shouldn't be able to find the task without the correct
+    # module supplied.
+    with pytest.raises(AssertionError, match="Could not find task `isolated_task`"):
+        scheduler.run(local_main_wrong_module(6))
