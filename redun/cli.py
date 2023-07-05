@@ -72,7 +72,6 @@ from redun.backends.db.query import (
 )
 from redun.backends.db.serializers import RecordSerializer
 from redun.config import Config, create_config_section
-from redun.executors.base import get_executors_from_config, Executor
 from redun.executors.aws_batch import (
     BATCH_LOG_GROUP,
     AWSBatchExecutor,
@@ -85,6 +84,7 @@ from redun.executors.aws_utils import (
     get_simple_aws_user,
     iter_log_stream,
 )
+from redun.executors.base import Executor, get_executors_from_config
 from redun.executors.code_packaging import extract_tar
 from redun.executors.launch import launch_script
 from redun.expression import TaskExpression

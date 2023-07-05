@@ -8,13 +8,13 @@ import pickle
 import shutil
 import subprocess
 import tempfile
+import time
 from concurrent.futures import ThreadPoolExecutor
 from configparser import SectionProxy
+from pathlib import Path
 from shlex import quote
 from tempfile import mkdtemp
-import time
 from typing import Any, Dict, List, Optional, Tuple
-from pathlib import Path
 
 from filelock import FileLock
 
@@ -26,6 +26,7 @@ from redun.scripting import ScriptError, prepare_command
 from redun.task import Task
 
 CONDA_ENV_CREATION_TIMEOUT = 5 * 60  # 5 minutes
+
 
 def find_conda_cmd() -> str:
     """
@@ -39,14 +40,17 @@ def find_conda_cmd() -> str:
     if os.environ.get("CONDA_EXE"):
         return os.environ["CONDA_EXE"]
     raise RuntimeError(
-        f"Could not find conda executable. Make sure one of the following is installed: {supported_conda_executables}"
+        f"Could not find conda executable. "
+        "Make sure one of the following is installed: {supported_conda_executables}"
     )
+
 
 class CondaEnvironment:
     """
     A class for managing a Conda environment.
     Creates a new environment if it does not exist, otherwise reuses an existing environment.
     """
+
     def __init__(
         self,
         env_name: Optional[str] = None,
@@ -70,18 +74,17 @@ class CondaEnvironment:
             user_str = os.getlogin()
         except OSError:
             user_str = "unknown"
-        self.conda_lockfile = FileLock(f'/tmp/redun.{user_str}.conda-executor.conda.lock')
-        self.pip_lockfile = FileLock(f'/tmp/redun.{user_str}.conda-executor.pip.lock')
+        self.conda_lockfile = FileLock(f"/tmp/redun.{user_str}.conda-executor.conda.lock")
+        self.pip_lockfile = FileLock(f"/tmp/redun.{user_str}.conda-executor.pip.lock")
         self.conda_cmd = find_conda_cmd()
         self._ensure_env_exists()
 
     def __repr__(self):
-        return f"CondaEnvironment(env_name={self.env_name}, env_file={self.env_file}, env_dir={self.env_dir}, output_dir={self.output_dir})"
+        return f"CondaEnvironment(env_name={self.env_name}, env_file={self.env_file}, env_dir={self.env_dir}, output_dir={self.output_dir})" # noqa
 
     def _run_command(self, command: List[str], capture_output: bool) -> Tuple[int, str, str]:
         result = subprocess.run(command, capture_output=capture_output, text=True)
         return result.returncode, result.stdout, result.stderr
-
 
     def _ensure_env_exists(self):
         if self.env_file:
@@ -115,15 +118,30 @@ class CondaEnvironment:
             if env_path.endswith(".yml") or env_path.endswith(".yaml"):
                 with self.conda_lockfile:
                     create_env_code, _, create_env_error = self._run_command(
-                        [self.conda_cmd, "env", "create", "-f", env_path, "-p", os.path.join(env_output_dir, ".conda")],
-                        capture_output=True
+                        [
+                            self.conda_cmd,
+                            "env",
+                            "create",
+                            "-f",
+                            env_path,
+                            "-p",
+                            os.path.join(env_output_dir, ".conda"),
+                        ],
+                        capture_output=True,
                     )
                 shutil.copy(env_path, os.path.join(env_output_dir, "environment.yml"))
             elif env_path.endswith(".lock"):
                 with self.conda_lockfile:
                     create_env_code, _, create_env_error = self._run_command(
-                        [self.conda_cmd, "create", "--file", env_path, "-p", os.path.join(env_output_dir, ".conda")],
-                        capture_output=True
+                        [
+                            self.conda_cmd,
+                            "create",
+                            "--file",
+                            env_path,
+                            "-p",
+                            os.path.join(env_output_dir, ".conda"),
+                        ],
+                        capture_output=True,
                     )
                 shutil.copy(env_path, os.path.join(env_output_dir, "environment.lock"))
 
@@ -133,7 +151,7 @@ class CondaEnvironment:
                 raise RuntimeError(
                     f"Failed to create Conda environment `{env_output_dir}` from file: {create_env_error}"
                 )
-            
+
             self.env_dir = os.path.join(env_output_dir, ".conda")
 
             # install extra pip requirements, if specified
@@ -146,18 +164,27 @@ class CondaEnvironment:
                         pip_install_command = self.get_conda_command() + pip_install_command
 
                     with self.pip_lockfile:
-                        pip_install_code, _, pip_install_error = self._run_command(pip_install_command, capture_output=True)
+                        pip_install_code, _, pip_install_error = self._run_command(
+                            pip_install_command, capture_output=True
+                        )
                     pip_file_name = Path(pip_req_file).name
                     pip_file_name = os.path.splitext(pip_file_name)[0]
-                    shutil.copy(pip_req_file, os.path.join(env_output_dir, f"pip_requirements.{pip_file_name}.txt"))
+                    shutil.copy(
+                        pip_req_file,
+                        os.path.join(env_output_dir, f"pip_requirements.{pip_file_name}.txt"),
+                    )
                     if pip_install_code != 0:
-                        raise RuntimeError(f"Failed to install pip requirements for conda environment `{env_output_dir}: {pip_install_error}")
-            
+                        raise RuntimeError(
+                            f"Failed to install pip requirements for conda environment `{env_output_dir}: {pip_install_error}"
+                        )
+
             # Create a file to indicate that the environment has been initialized
             (Path(env_output_dir) / "redun_initialized").touch()
             return
 
-        env_list_code, env_list_output, _ = self._run_command([self.conda_cmd, "env", "list"], capture_output=True)
+        env_list_code, env_list_output, _ = self._run_command(
+            [self.conda_cmd, "env", "list"], capture_output=True
+        )
         if env_list_code != 0:
             raise RuntimeError("Failed to list Conda environments.")
 
@@ -171,19 +198,13 @@ class CondaEnvironment:
                 f"Conda environment in directory {self.env_dir} does not exist.\nFound environments: {env_list_output}"
             )
 
-
-
     def run_command(self, command: List[str], capture_output: bool = False) -> str:
         env_command = self.get_conda_command() + command
-        return_code, command_output, command_error = self._run_command(
-            env_command, capture_output
-        )
+        return_code, command_output, command_error = self._run_command(env_command, capture_output)
         if return_code != 0:
-            raise RuntimeError(
-                f"Failed to execute command in Conda environment: {command_error}"
-            )
+            raise RuntimeError(f"Failed to execute command in Conda environment: {command_error}")
         return command_output
-        
+
     def get_conda_command(self) -> List[str]:
         no_capture_output = ["--no-capture-output"] if self.conda_cmd in {"conda", "mamba"} else []
         if self.env_name:
@@ -313,6 +334,7 @@ class CondaExecutor(Executor):
         assert job.task.script
         self._submit(job)
 
+
 def get_job_conda_environment(job: Job, env_base_path: Optional[str]) -> CondaEnvironment:
     """
     Return the conda environment for the given job.
@@ -350,7 +372,11 @@ def get_job_conda_environment(job: Job, env_base_path: Optional[str]) -> CondaEn
                     with tempfile.NamedTemporaryFile(
                         mode="w", prefix="pip_requirements_", suffix=".txt", delete=False
                     ) as f:
-                        if len(package_list) == 1 and os.path.exists(package_list[0]) and os.path.isfile(package_list[0]):
+                        if (
+                            len(package_list) == 1
+                            and os.path.exists(package_list[0])
+                            and os.path.isfile(package_list[0])
+                        ):
                             pip_requirements_files.append(package_list[0])
                         else:
                             for package in package_list:
@@ -367,15 +393,27 @@ def get_job_conda_environment(job: Job, env_base_path: Optional[str]) -> CondaEn
                         f.write(f"{package}\n")
                     pip_requirements_files = [f.name]
 
-
-    if os.path.exists(conda_arg): # file or directory
+    if os.path.exists(conda_arg):  # file or directory
         if os.path.isdir(conda_arg):
-            return CondaEnvironment(env_dir=conda_arg, pip_requirements_files=pip_requirements_files, output_dir=env_base_path)
+            return CondaEnvironment(
+                env_dir=conda_arg,
+                pip_requirements_files=pip_requirements_files,
+                output_dir=env_base_path,
+            )
         else:
-            return CondaEnvironment(env_file=conda_arg, pip_requirements_files=pip_requirements_files, output_dir=env_base_path)
+            return CondaEnvironment(
+                env_file=conda_arg,
+                pip_requirements_files=pip_requirements_files,
+                output_dir=env_base_path,
+            )
     else:
         # assume conda_arg is an env name
-        return CondaEnvironment(env_name=conda_arg, pip_requirements_files=pip_requirements_files, output_dir=env_base_path)
+        return CondaEnvironment(
+            env_name=conda_arg,
+            pip_requirements_files=pip_requirements_files,
+            output_dir=env_base_path,
+        )
+
 
 def get_task_command(task: Task, args: Tuple, kwargs: dict, log_level: int) -> str:
     """
@@ -387,6 +425,7 @@ def get_task_command(task: Task, args: Tuple, kwargs: dict, log_level: int) -> s
     else:
         shell = "#!/usr/bin/env bash\nset -euo pipefail"
     return prepare_command(command, shell)
+
 
 def execute(
     scratch_path: str,
@@ -436,7 +475,11 @@ def execute(
         )
 
     command = wrap_command(
-        inner_command, conda_env.get_conda_command(), command_path, command_output_path, command_error_path
+        inner_command,
+        conda_env.get_conda_command(),
+        command_path,
+        command_output_path,
+        command_error_path,
     )
     cmd_result = subprocess.run(command, check=False, capture_output=False)
 

@@ -5,10 +5,10 @@ from statistics import mean
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import requests
-
 from google.cloud import batch_v1
 
 from redun.version import version
+
 
 # List of supported available CPU Platforms
 # https://cloud.google.com/compute/docs/instances/specify-min-cpu-platform#availablezones
@@ -38,6 +38,7 @@ def get_gcp_client(
 def gb_to_mib(gb):
     # Convert GiB to MiB.
     return int(gb * 1024)
+
 
 def batch_submit(
     client: Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient],
@@ -117,7 +118,7 @@ sudo mount --bind /var/lib/nvidia /var/lib/nvidia
 echo "$(date) Mounting driver folder" | sudo tee -a /var/log/startupscript.log
 echo $(mount | grep nvidia) | sudo tee -a /var/log/startupscript.log
 sudo mount -o remount,exec /var/lib/nvidia
-"""
+""",
         ]
         gpu_install_runnable_1.container.volumes = ["/mnt/disks:/mnt/disks"]
 
@@ -135,7 +136,12 @@ sudo mount -o remount,exec /var/lib/nvidia
         gpu_install_runnable_3.ignore_exit_status = True
         gpu_install_runnable_3.script = batch_v1.Runnable.Script()
         gpu_install_runnable_3.script.path = "/mnt/disks/install_gpu_drivers.sh"
-        task.runnables = [gpu_install_runnable_1, gpu_install_runnable_2, gpu_install_runnable_3, runnable]
+        task.runnables = [
+            gpu_install_runnable_1,
+            gpu_install_runnable_2,
+            gpu_install_runnable_3,
+            runnable,
+        ]
 
     # We can specify what resources are requested by each task.
     resources = batch_v1.ComputeResource()

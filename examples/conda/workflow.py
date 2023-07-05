@@ -1,7 +1,7 @@
 import os
 import subprocess
-import time
 import threading
+import time
 from typing import Dict, List, Tuple
 
 from redun import task
@@ -51,14 +51,15 @@ def run_in_conda_process_with_yml_and_pip(x: int) -> Tuple[int, int, int]:
         pandas.__version__,
     )
 
+
 @task(
     executor="conda",
     conda=os.path.join(os.path.dirname(__file__), "my_py310_redun_env.yml"),
     pip=["pandas==2.0.0", "colorama==0.4.6"],
 )
 def run_in_conda_process_with_yml_and_pip2(x: int) -> Tuple[int, int, int]:
-    import pandas
     import colorama
+    import pandas
 
     # Return the process id (pid) to prove this task runs in its own process.
     time.sleep(1)
@@ -70,6 +71,7 @@ def run_in_conda_process_with_yml_and_pip2(x: int) -> Tuple[int, int, int]:
         pandas.__version__,
         colorama.__version__,
     )
+
 
 @task(
     executor="conda", conda=os.path.join(os.path.dirname(__file__), "my_py27_env.yml"), script=True
