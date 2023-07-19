@@ -1411,15 +1411,16 @@ def test_catch_cache(scheduler: Scheduler) -> None:
     assert scheduler.run(catch(faulty(), ZeroDivisionError, recover), cache=False) == 1.0
     assert calls == ["faulty", "faulty"]
 
-    # Caching should not be used if turned off at the task level.
+    # Caching should not be used if turned off at the task level or the scheduler level.
     assert (
         scheduler.run(
             catch(faulty.options(cache_scope=CacheScope.NONE)(), ZeroDivisionError, recover),
-            cache=False,
         )
         == 1.0
     )
     assert calls == ["faulty", "faulty", "faulty"]
+    assert scheduler.run(catch(faulty(), ZeroDivisionError, recover), cache=False) == 1.0
+    assert calls == ["faulty", "faulty", "faulty", "faulty"]
 
     # Reraised catch should not cache.
     calls = []
