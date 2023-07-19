@@ -23,6 +23,9 @@ requirements = [
     # for some legacy APIs still supported in 2.0
     "sqlalchemy>=1.4.0,<2.1",
     "python-dateutil>=2.8",
+    # cython3 and pyyaml conflicts
+    # https://github.com/yaml/pyyaml/issues/724#issuecomment-1638591821
+    "pyyaml!=6.0.0,!=5.4.0,!=5.4.1",
     "requests>=2.27.1",
     "rich>=13.3.5",
     "textual>=0.24.1",

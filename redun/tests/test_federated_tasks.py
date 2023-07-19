@@ -1,5 +1,6 @@
 import copy
 import os
+import sys
 from typing import Optional
 
 import pytest
@@ -108,6 +109,10 @@ def test_federated_task() -> None:
         scheduler.run(federated)
 
 
+@pytest.mark.skipif(
+    (sys.version_info.major, sys.version_info.minor) == (3, 8),
+    reason="Test fails on 3.8 due to 3.8-specific python bug.",
+)
 def test_lambda_federated_task(tmpdir) -> None:
     """Demonstrate that we can use the data from the lambda invocation to start a task."""
     config_dir = os.path.join(
