@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.1
+July 27, 2023
+
+* `#311` - update MANIFEST.in for console/style.css
+* `#310` - skip test since shutdown doesnt actually run in 3.8
+* `#309` - Test task _and_ scheduler level catch cache busting
+* `#307` - Add Console docs
+
 ## 0.16.0
 June 21, 2023
 
