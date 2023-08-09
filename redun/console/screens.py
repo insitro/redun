@@ -14,7 +14,7 @@ from textual.containers import Container, Vertical
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import Screen
-from textual.widgets import Footer, Input, Label, Static, TextLog
+from textual.widgets import Footer, Input, Label, RichLog, Static
 
 from redun import File
 from redun.backends.db import Argument, CallNode, Execution
@@ -197,7 +197,7 @@ class ReplScreen(RedunScreen):
     def __init__(self, locals={}, obj_id: Optional[str] = None):
         self.obj_id = obj_id
         super().__init__()
-        self.text_log = TextLog()
+        self.text_log = RichLog()
         self.input = CommandInput(placeholder="Execute Python code...")
 
         def query(expr: Any, *args: Any, **kwargs: Any) -> Any:

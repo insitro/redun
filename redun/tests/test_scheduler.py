@@ -16,6 +16,7 @@ from redun.backends.db import RedunBackendDb
 from redun.backends.db import Task as TaskDb
 from redun.config import Config
 from redun.expression import SchedulerExpression
+from redun.federated_tasks import federated_task
 from redun.promise import Promise
 from redun.scheduler import (
     DryRunResult,
@@ -27,7 +28,6 @@ from redun.scheduler import (
     catch,
     catch_all,
     cond,
-    federated_task,
     scheduler_task,
 )
 from redun.scheduler_config import postprocess_config

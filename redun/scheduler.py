@@ -68,7 +68,7 @@ from redun.task import (
     scheduler_task,
     task,
 )
-from redun.utils import format_table, iter_nested_value, map_nested_value, str2bool, trim_string
+from redun.utils import format_table, iter_nested_value, map_nested_value, trim_string
 from redun.value import Value, get_type_registry
 
 # Globals.
@@ -2731,76 +2731,3 @@ def subrun(
             return Promise()
 
     return scheduler.evaluate(subrun_root_task_expr, parent_job=parent_job).then(then)
-
-
-@scheduler_task(namespace="redun")
-def federated_task(
-    scheduler: Scheduler,
-    parent_job: Job,
-    sexpr: SchedulerExpression,
-    entrypoint: str,
-    *task_args,
-    **task_kwargs,
-) -> Promise:
-    """Execute a task that has been indirectly specified in the scheduler config file by providing
-    a `federated_task` and its executor. This allows us to invoke code we do not have locally.
-
-    Since the code isn't visible, the cache_scope for the subrun is always set to CSE.
-
-    Parameters
-    ----------
-    entrypoint: str
-        The name of the `federated_task` section in the config that identifies the task to perform.
-    task_args: Optional[List[Any]]
-        Positional arguments for the task
-    task_kwargs: Any
-        Keyword arguments for the task
-    """
-
-    # Load the federated config and find the specified entrypoint within it.
-    federated_task_configs = scheduler.config.get("federated_tasks")
-
-    assert entrypoint in federated_task_configs, (
-        f"Could not find the entrypoint `{entrypoint}` "
-        f"in the provided federated tasks. Found `{list(federated_task_configs.keys())}`"
-    )
-
-    entrypoint_config: Dict[str, Any] = dict(federated_task_configs[entrypoint])
-
-    required_keys = {"namespace", "task_name", "load_module", "executor", "config_dir"}
-    available_keys = set(entrypoint_config.keys())
-    assert required_keys.issubset(available_keys), (
-        f"Federated task entry `{entrypoint}` does not have the required keys, missing "
-        f"`{required_keys.difference(available_keys)}`"
-    )
-
-    # The description is optional, but it shouldn't be in the hash. Just hide it from the
-    # downstream subrun, so we don't have to deal with merging a user's `config_args`.
-    entrypoint_config.pop("description", None)
-
-    # Extract the keys relevant to hashing
-    hash_config = {}
-    for key in required_keys:
-        hash_config[key] = entrypoint_config[key]
-
-    # This argument needs to be parsed.
-    if "new_execution" in entrypoint_config:
-        entrypoint_config["new_execution"] = str2bool(entrypoint_config["new_execution"])
-
-    # Since we require a namespace, we can simply dot format this ourselves.
-    wrapper_task_expr: TaskExpression = TaskExpression(
-        task_name=f'{entrypoint_config.pop("namespace")}.{entrypoint_config.pop("task_name")}',
-        args=task_args,
-        kwargs=task_kwargs,
-    )
-
-    subrun_task = subrun(
-        expr=wrapper_task_expr,
-        executor=entrypoint_config.pop("executor"),
-        load_modules=[entrypoint_config.pop("load_module")],
-        # Since the code isn't visible, only accept CSE hits.
-        cache_scope=CacheScope.CSE,
-        **entrypoint_config,
-    )
-
-    return scheduler.evaluate(subrun_task, parent_job=parent_job)
