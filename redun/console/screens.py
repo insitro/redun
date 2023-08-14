@@ -362,7 +362,7 @@ class SearchScreen(RedunScreen):
     results = reactive(None)
     page = reactive(1)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.page_size = DEFAULT_PAGE_SIZE
@@ -370,6 +370,8 @@ class SearchScreen(RedunScreen):
         self.input = CommandInput("", complete=False, placeholder="Enter search...")
         self.results_table = Table(id="search-results")
         self.results_table.add_columns("Search results")
+
+        self.query: Optional[CallGraphQuery] = None
 
     def get_path(self) -> str:
         return "search"
@@ -392,6 +394,16 @@ class SearchScreen(RedunScreen):
         if self.page > 1:
             self.page -= 1
             self.query_one(RedunFooter).page = self.page
+
+    def action_repl(self) -> None:
+        screen = self.app.get_screen("ReplScreen")
+        screen.update(
+            {
+                "results": self.results,
+                "search_query": self.query,
+            }
+        )
+        self.app.push_screen(screen)
 
     def watch_page(self) -> None:
         self.call_after_refresh(self.load_results)
@@ -447,6 +459,7 @@ class SearchScreen(RedunScreen):
                 .joinedload(Argument.value),
             )
         )
+        self.query = query
 
         self.results = list(query.page(self.page - 1, self.page_size))
 
