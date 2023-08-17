@@ -1807,7 +1807,7 @@ class RedunClient:
         """
         Display an Execution.
         """
-        status = execution.status
+        status = execution.status_display
 
         self.display(
             "Exec {id} [{status}] {start_time}:  {args} {tags}".format(
@@ -1912,7 +1912,7 @@ class RedunClient:
         self.display(
             "Job {id} [{status}] {start_time}:  {task_name}({args}) {tags}".format(
                 id=format_id(job.id, detail),
-                status=job.status.center(self.STATUS_WIDTH),
+                status=job.status_display.center(self.STATUS_WIDTH),
                 start_time=job.start_time.strftime("%Y-%m-%d %H:%M:%S"),
                 task_name=job.task.fullname,
                 args=args,

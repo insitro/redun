@@ -42,7 +42,14 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Session, backref, declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import (
+    Session,
+    backref,
+    declarative_base,
+    reconstructor,
+    relationship,
+    sessionmaker,
+)
 from sqlalchemy.orm.session import object_session
 from sqlalchemy.schema import Index
 from sqlalchemy.sql import exists
@@ -737,6 +744,14 @@ class Execution(Base):
         uselist=True,
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._load()
+
+    @reconstructor
+    def _load(self):
+        self._status: Optional[str] = None
+
     def __repr__(self):
         return "Execution(id='{id}', task_name='{task_name}', args={args})".format(
             id=self.id[:8],
@@ -758,12 +773,45 @@ class Execution(Base):
             return None
         return self.job.call_node.task
 
-    @property
-    def status(self) -> str:
-        if self.job and self.job.status in {"DONE", "CACHED"}:
+    def _job_status2exec_status(self, job_status: Optional[str]) -> str:
+        """
+        Convert the root Job status into an Execution status.
+        """
+        if job_status is None:
+            return "FAILED"
+        elif job_status in {"DONE", "CACHED"}:
             return "DONE"
         else:
-            return "FAILED"
+            return job_status
+
+    def calc_status(self, result_type: Optional[str]) -> str:
+        """
+        Compute status from the result_type of the root Job.
+        """
+        job_status = self.job.calc_status(result_type) if self.job else None
+        self._status = self._job_status2exec_status(job_status)
+        return self._status
+
+    @property
+    def status(self) -> str:
+        """
+        Returns the computed status of the Execution.
+        """
+        if self._status:
+            # Return the cached status if available.
+            return self._status
+        else:
+            job_status = self.job.status if self.job else None
+            self._status = self._job_status2exec_status(job_status)
+            return self._status
+
+    @property
+    def status_display(self) -> str:
+        """
+        Return status suitable for display in tables.
+        """
+        # Make RUN adjust to the left.
+        return "RUN " if self.status == "RUNNING" else self.status
 
 
 class Job(Base):
@@ -807,6 +855,10 @@ class Job(Base):
         uselist=True,
     )
 
+    @reconstructor
+    def _load(self):
+        self._status: Optional[str] = None
+
     def __repr__(self) -> str:
         return "Job(id='{id}', start_time='{start_time}', task_name={task_name})".format(
             id=self.id[:8],
@@ -823,21 +875,37 @@ class Job(Base):
             return None
         return self.end_time - self.start_time
 
+    def calc_status(self, result_type: Optional[str]) -> str:
+        """
+        Calculate Job status from result type.
+        """
+        if result_type == "redun.ErrorValue":
+            self._status = "FAILED"
+        elif not self.end_time:
+            self._status = "RUNNING"
+        elif self.cached:
+            self._status = "CACHED"
+        else:
+            self._status = "DONE"
+        return self._status
+
     @property
     def status(self) -> str:
         """
-        Returns Job status (DONE, CACHED, FAILED, RUNNING).
-
-        Currently, we denote a FAILED Job by not recording its end_time.
-        In the future, we will likely record an explicit status so that we can
-        record end_times for FAILED Jobs as well.
+        Returns Job status (RUNNING, FAILED, CACHED, DONE).
         """
-        if not self.end_time:
-            return "FAILED"
-        elif self.cached:
-            return "CACHED"
-        else:
-            return "DONE"
+        if self._status:
+            return self._status
+        result_type = self.call_node.value.type if self.call_node else None
+        return self.calc_status(result_type)
+
+    @property
+    def status_display(self) -> str:
+        """
+        Return status suitable for display in tables.
+        """
+        # Make RUN adjust to the left.
+        return "RUN " if self.status == "RUNNING" else self.status
 
 
 class Task(Base):

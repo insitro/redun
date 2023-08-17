@@ -26,6 +26,8 @@ from redun.backends.db import (
 )
 from redun.tags import ANY_VALUE, parse_tag_key_value
 
+REDUN_ERROR_TYPE_NAME = "redun.ErrorValue"
+
 
 def setup_query_parser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """
@@ -45,10 +47,10 @@ def setup_query_parser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     parser.add_argument("--value", action="store_true", help="Show related values.")
     parser.add_argument("--file", action="store_true", help="Show related files.")
     parser.add_argument(
-        "--exec-status", help="Filter executions by status (comma separated: DONE, FAILED)."
+        "--exec-status", help="Filter executions by status (comma separated: RUNNING,FAILED,DONE)."
     )
     parser.add_argument(
-        "--job-status", help="Filter jobs by status (comma separated: DONE, CACHED, FAILED)."
+        "--job-status", help="Filter jobs by status (comma separated: RUNNING,FAILED,CACHED,DONE)."
     )
     parser.add_argument("--task-name", action="append", help="Filter tasks and jobs by task name.")
     parser.add_argument("--task-hash", action="append", help="Filter tasks and jobs by task hash.")
@@ -286,6 +288,16 @@ class CallGraphQuery:
             jobs=self._jobs.join(Task, Task.hash == Job.task_hash),
         )
 
+    def _join_values(self):
+        return self.clone(
+            executions=self._executions.outerjoin(
+                CallNode, CallNode.call_hash == Job.call_hash
+            ).outerjoin(Value, Value.value_hash == CallNode.value_hash),
+            jobs=self._jobs.outerjoin(CallNode, CallNode.call_hash == Job.call_hash).outerjoin(
+                Value, Value.value_hash == CallNode.value_hash
+            ),
+        )
+
     def _join_executions(self):
         """
         Join Executions to each subquery.
@@ -353,28 +365,41 @@ class CallGraphQuery:
             filters=self._filters + [filter],
         )
 
+    def _job_status_term(self, status: str) -> Any:
+        """
+        Returns SQLAlchemy filter term for finding Jobs with status `status`.
+        """
+        if status == "RUNNING":
+            return Job.end_time.is_(None) & Job.call_hash.is_(None)
+        elif status == "CACHED":
+            return Job.cached.is_(True)
+        elif status == "FAILED":
+            return Value.type == REDUN_ERROR_TYPE_NAME
+        elif status == "DONE":
+            return Job.cached.is_(False) & (Value.type != REDUN_ERROR_TYPE_NAME)
+        else:
+            raise NotImplementedError(status)
+
     def filter_execution_statuses(self, execution_statuses: Iterable[str]) -> "CallGraphQuery":
         """
         Filter by Execution status.
         """
         assert execution_statuses
 
-        def term(status):
-            if status == "DONE":
-                return Job.end_time.isnot(None)
-            elif status == "FAILED":
-                return Job.end_time.is_(None)
-            else:
-                raise NotImplementedError(status)
+        # Convert execution statuses into root job statuses.
+        # When the root job is CACHED, we consider the Execution DONE.
+        job_statuses = list(execution_statuses)
+        if "DONE" in job_statuses:
+            job_statuses.append("CACHED")
 
-        execution_clause = reduce(sa.or_, map(term, execution_statuses))
+        execution_clause = reduce(sa.or_, map(self._job_status_term, job_statuses))
 
         def filter(query):
             return query.clone(executions=query._executions.filter(execution_clause))
 
         return self.clone(
             filter_types=self._filter_types & {"Execution"},
-            joins=self._joins | {"job"},
+            joins=self._joins | {"job", "value"},
             filters=self._filters + [filter],
             order_by="time",
         )
@@ -385,17 +410,7 @@ class CallGraphQuery:
         """
         assert job_statuses
 
-        def job_term(status):
-            if status == "FAILED":
-                return Job.end_time.is_(None)
-            elif status == "DONE":
-                return Job.end_time.isnot(None) & Job.cached.is_(False)
-            elif status == "CACHED":
-                return Job.cached.is_(True)
-            else:
-                raise NotImplementedError(status)
-
-        job_clause = reduce(sa.or_, map(job_term, job_statuses))
+        job_clause = reduce(sa.or_, map(self._job_status_term, job_statuses))
 
         def filter(query):
             return query.clone(jobs=query._jobs.filter(job_clause))
@@ -403,6 +418,7 @@ class CallGraphQuery:
         return self.clone(
             filter_types=self._filter_types & {"Job"},
             filters=self._filters + [filter],
+            joins=self._joins | {"value"},
         )
 
     def filter_task_names(self, task_names: Iterable[str]) -> "CallGraphQuery":
@@ -592,6 +608,8 @@ class CallGraphQuery:
             query = query._join_files()
         if "job" in self._joins:
             query = query._join_jobs()
+        if "value" in self._joins:
+            query = query._join_values()
         if "task" in self._joins:
             query = query._join_tasks()
         if "execution" in self._joins:

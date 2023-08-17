@@ -1,9 +1,11 @@
 from typing import cast
 
+import pytest
 from sqlalchemy.orm import Session
 
 from redun import File, Scheduler, task
-from redun.backends.db.query import Job, infer_id
+from redun.backends.db.query import CallGraphQuery, Job, infer_id
+from redun.scheduler import scheduler_task
 from redun.tests.utils import use_tempdir
 
 
@@ -75,3 +77,47 @@ def test_infer_id_file(scheduler: Scheduler, session: Session) -> None:
     assert isinstance(file_info[1], Job)
     assert file_info[1].call_node.arguments[0].value_parsed.path == "file2"
     assert file_info[2] == "arg"
+
+
+def test_status(scheduler: Scheduler, session: Session) -> None:
+    """
+    We should be able to filter on Execution and Job status correctly.
+    """
+
+    @task
+    def div(x: float, y: float) -> float:
+        return x / y
+
+    @scheduler_task()
+    def kill(scheduler, parent_job, expr):
+        # Immediately kill the workflow. This skips recording end_time of the active jobs, so they
+        # will be considered RUNNING.
+        scheduler.reject_job(None, Exception())
+
+    @task
+    def do_kill():
+        return kill()
+
+    # Perform some Executions.
+    assert scheduler.run(div(4, 2)) == 2
+    assert scheduler.run(div(4, 2)) == 2
+    assert scheduler.run(div(8, 2)) == 4
+
+    with pytest.raises(ZeroDivisionError):
+        assert scheduler.run(div(1, 0))
+
+    with pytest.raises(Exception):
+        assert scheduler.run(do_kill())
+
+    query = CallGraphQuery(session)
+
+    # Assert job statuses are correct.
+    assert len(list(query.filter_job_statuses(["DONE"]).all())) == 2
+    assert len(list(query.filter_job_statuses(["CACHED"]).all())) == 1
+    assert len(list(query.filter_job_statuses(["FAILED"]).all())) == 1
+    assert len(list(query.filter_job_statuses(["RUNNING"]).all())) == 1
+
+    # Assert execution statuses are correct.
+    assert len(list(query.filter_execution_statuses(["DONE"]).all())) == 3
+    assert len(list(query.filter_execution_statuses(["FAILED"]).all())) == 1
+    assert len(list(query.filter_execution_statuses(["RUNNING"]).all())) == 1

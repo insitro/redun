@@ -14,7 +14,7 @@ from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import DataTable, Footer, Input, Static
 
-from redun.backends.db import Execution, Job, Tag, Task, Value
+from redun.backends.db import CallNode, Execution, Job, Tag, Task, Value
 from redun.cli import format_timedelta
 from redun.console.utils import format_job, get_links, style_status
 from redun.scheduler import Job as SchedulerJob
@@ -103,7 +103,7 @@ class ExecutionList(DataTable):
         for execution in self.executions:
             self.add_row(
                 f"Exec {execution.id[:8]}",
-                style_status(execution.status),
+                style_status(execution.status_display),
                 execution.job.start_time.strftime("%Y-%m-%d %H:%M:%S"),
                 format_timedelta(execution.job.duration) if execution.job.duration else "",
                 f"[[bold]{execution.job.task.namespace or 'no namespace'}[/bold]] "
@@ -149,7 +149,7 @@ class JobList(DataTable):
         for job in self.jobs:
             self.add_row(
                 f"{' ' * min(job.depth, 10)}Job {job.id[:8]}",
-                style_status(job.status),
+                style_status(job.status_display),
                 job.start_time.strftime("%Y-%m-%d %H:%M:%S"),
                 format_timedelta(job.duration) if job.duration else "",
                 format_job(job),
@@ -168,10 +168,12 @@ class JobStatusTable(Table):
     Table of redun Job statuses by task.
     """
 
+    JOB_STATUSES = [status for status in SchedulerJob.STATUSES if status != "PENDING"]
+
     def __init__(self, execution_id: str, **kwargs):
         super().__init__(**kwargs)
         self.execution_id = execution_id
-        self.add_columns("TASK", *SchedulerJob.STATUSES)
+        self.add_columns("TASK", *self.JOB_STATUSES)
         self.add_row("Loading...")
 
         self.tasks: List[Optional[Task]] = []
@@ -184,8 +186,11 @@ class JobStatusTable(Table):
         self.clear()
 
         # Fetch jobs and task names from db.
+        # Fetch Value.type in order to help compute Job status.
         self.job_tasks = (
-            self.app.session.query(Job, Task.namespace, Task.name)
+            self.app.session.query(Job, Task.namespace, Task.name, Value.type)
+            .outerjoin(CallNode, Job.call_hash == CallNode.call_hash)
+            .outerjoin(Value, CallNode.value_hash == Value.value_hash)
             .join(Task, Job.task_hash == Task.hash)
             .filter(Job.execution_id == self.execution_id)
             .all()
@@ -201,9 +206,9 @@ class JobStatusTable(Table):
 
         # Compute status counts.
         job_status_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
-        for job, namespace, name in self.job_tasks:
+        for job, namespace, name, result_type in self.job_tasks:
             fullname = namespace + "." + name if namespace else name
-            job_status_counts[fullname][job.status] += 1
+            job_status_counts[fullname][job.calc_status(result_type)] += 1
             job_status_counts[fullname]["TOTAL"] += 1
             job_status_counts["ALL"][job.status] += 1
             job_status_counts["ALL"]["TOTAL"] += 1
@@ -213,7 +218,7 @@ class JobStatusTable(Table):
         for task_name in task_names:
             self.add_row(
                 task_name,
-                *[str(job_status_counts[task_name][status]) for status in SchedulerJob.STATUSES],
+                *[str(job_status_counts[task_name][status]) for status in self.JOB_STATUSES],
             )
 
         self.tasks = [name2task.get(task_name) for task_name in task_names]

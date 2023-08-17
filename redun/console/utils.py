@@ -164,12 +164,13 @@ def style_status(status: str) -> str:
     Returns styled text for a job/execution status.
     """
     status2style = {
-        "DONE": "#55aa55",
-        "FAILED": "#aa5555",
-        "CACHED": "#5555aa",
+        "DONE": "white on #55aa55",
+        "FAILED": "white on #aa5555",
+        "CACHED": "white on #5555aa",
+        "RUN ": "black on #aaaa55",
     }
     if status in status2style:
-        return f"[white on {status2style[status]}]{status.center(6)}[/]"
+        return f"[{status2style[status]}]{status.center(6)}[/]"
     else:
         return f"[{status.center(6)}]"
 

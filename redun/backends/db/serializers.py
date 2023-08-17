@@ -117,6 +117,15 @@ class JobSerializer(Serializer):
         for parent_id, child_id in parent_child_pairs:
             parent2children[parent_id].append(child_id)
 
+        # Fetch status in bulk.
+        Value = aliased(db.Value)
+        job_result_types = (
+            query.session.query(Job.id, Value.type)
+            .outerjoin(db.CallNode, Job.call_hash == db.CallNode.call_hash)
+            .outerjoin(Value, db.CallNode.value_hash == Value.value_hash)
+        ).all()
+        job_id2result_type = {job_id: result_type for job_id, result_type in job_result_types}
+
         for job in query.all():
             yield {
                 "_version": VERSION,
@@ -126,7 +135,7 @@ class JobSerializer(Serializer):
                 "end_time": serialize_timestamp(job.end_time),
                 "task_hash": job.task_hash,
                 "cached": job.cached,
-                "status": job.status,
+                "status": job.calc_status(job_id2result_type[job.id]),
                 "call_hash": job.call_hash,
                 "parent_id": job.parent_id,
                 "children": parent2children[job.id],
