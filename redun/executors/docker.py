@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import subprocess
@@ -261,6 +262,7 @@ class DockerExecutor(Executor):
         super().__init__(name, scheduler=scheduler)
         if config is None:
             raise ValueError("DockerExecutor requires config.")
+        self._config = config
 
         # Required config.
         self._image = config["image"]
@@ -273,7 +275,7 @@ class DockerExecutor(Executor):
         self._code_file: Optional[File] = None
 
         # Default task options.
-        self._default_job_options = {
+        self._default_job_options: Dict[str, Any] = {
             "vcpus": config.getint("vcpus", fallback=1),
             "gpus": config.getint("gpus", fallback=0),
             "memory": config.getint("memory", fallback=4),
@@ -286,24 +288,39 @@ class DockerExecutor(Executor):
         self._pending_jobs: Dict[str, "Job"] = OrderedDict()
         self._thread: Optional[threading.Thread] = None
 
+    def set_scheduler(self, scheduler: "Scheduler") -> None:
+        super().set_scheduler(scheduler)
+        # Perform additional config parsing now that we know our Scheduler.
+        self._default_job_options["volumes"] = self._parse_volumes(
+            self._config.get("volumes", fallback="[]")
+        )
+
+    def _parse_volumes(self, volumes_str: str) -> List[List[str]]:
+        """
+        Parses Docker volume mounts from JSON string.
+        """
+        try:
+            volumes = json.loads(volumes_str)
+        except json.decoder.JSONDecodeError:
+            raise ValueError("Invalid 'volumes' syntax. Expected JSON list of path pairs.")
+
+        # Convert host_paths to absolute paths if they are relative.
+        # Relative paths are assumed to be relative to the config dir.
+        assert self._scheduler
+        configdir = self._scheduler.config.configdir
+        return [
+            [os.path.abspath(os.path.join(configdir, host_path)), container_path]
+            for host_path, container_path in volumes
+        ]
+
     @property
     def _scratch_prefix(self) -> str:
         if not self._scratch_prefix_abs:
             if os.path.isabs(self._scratch_prefix_rel):
                 self._scratch_prefix_abs = self._scratch_prefix_rel
             else:
-                # TODO: Is there a better way to find the path of the current
-                # config dir?
-                try:
-                    assert self._scheduler
-                    base_dir = os.path.abspath(
-                        self._scheduler.config["repos"]["default"]["config_dir"]
-                    )
-                except KeyError:
-                    # Use current working directory as base_dir if default
-                    # config_dir cannot be found.
-                    base_dir = os.getcwd()
-
+                assert self._scheduler
+                base_dir = os.path.abspath(self._scheduler.config.configdir)
                 self._scratch_prefix_abs = os.path.normpath(
                     os.path.join(base_dir, self._scratch_prefix_rel)
                 )

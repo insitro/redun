@@ -2,7 +2,7 @@ import os
 from configparser import ConfigParser, ExtendedInterpolation, SectionProxy
 from typing import Any, Dict, Iterable, Optional, Union
 
-from redun.file import File
+from redun.file import File, get_proto
 
 
 class RedunExtendedInterpolation(ExtendedInterpolation):
@@ -27,6 +27,10 @@ class RedunExtendedInterpolation(ExtendedInterpolation):
 
 
 class RedunConfigParser(ConfigParser):
+    def __init__(self, *args, config: "Config", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config = config
+
     def optionxform(self, optionstr):
         # Treat option names as case sensitive.
         return optionstr
@@ -37,17 +41,29 @@ class Config:
     Extends ConfigParser to support nested sections.
     """
 
-    def __init__(self, config_dict: Optional[dict] = None):
-        self.parser = RedunConfigParser(interpolation=RedunExtendedInterpolation())
+    def __init__(self, config_dict: Optional[dict] = None, configdir: Optional[str] = None):
+        self.parser = RedunConfigParser(config=self, interpolation=RedunExtendedInterpolation())
         self._sections: "Section" = {}
+        self._configdir = configdir
         if config_dict:
             self.read_dict(config_dict)
+
+    @property
+    def configdir(self) -> str:
+        if self._configdir:
+            return self._configdir
+        else:
+            return os.getcwd()
 
     def read_string(self, string: str) -> None:
         self.parser.read_string(string)
         self._sections = self._parse_sections(self.parser)
 
     def read_path(self, filename: str) -> None:
+        if get_proto(filename) == "local":
+            # Config files read from other filesystems, such as s3, do not set a config dir.
+            self._configdir = os.path.dirname(filename)
+
         with File(filename).open() as infile:
             self.parser.read_file(infile)
             self._sections = self._parse_sections(self.parser)

@@ -287,6 +287,15 @@ A float (default: 4) that specifies the default amount of memory (in Gb) require
 
 A bool (default: False) that specifies whether the Docker container should be run in interactive mode. This is useful for debugging a workflow since the stdout of every container will be redirected to the terminal.
 
+##### `volumes`
+
+A JSON list of pairs that specifies [Docker volume mounts](https://docs.docker.com/storage/volumes/). Each pair is a host and container path. For example, the following syntax is used to mount `/tmp/data` and `/tmp/data2` host directories to `/workflow/data` and `/workflow/data2` container directories, respectively.
+
+```ini
+volumes = [["/tmp/data", "/workflow/data"], ["/tmp/data2", "/workflow/data2"]]
+```
+
+If host paths are relative, they are assumed relative to the configuration directory (e.g. `.redun`).
 
 #### AWS Batch executor
 
