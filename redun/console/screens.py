@@ -375,7 +375,7 @@ class SearchScreen(RedunScreen):
         self.results_table = Table(id="search-results")
         self.results_table.add_columns("Search results")
 
-        self.query: Optional[CallGraphQuery] = None
+        self.search_query: Optional[CallGraphQuery] = None
 
     def get_path(self) -> str:
         return "search"
@@ -404,7 +404,7 @@ class SearchScreen(RedunScreen):
         screen.update(
             {
                 "results": self.results,
-                "search_query": self.query,
+                "search_query": self.search_query,
             }
         )
         self.app.push_screen(screen)
@@ -445,7 +445,6 @@ class SearchScreen(RedunScreen):
         self.app.goto_record(record)
 
     async def load_results(self) -> None:
-
         if format_args(self.parser, self.args) == []:
             self.results = []
             return
@@ -463,7 +462,7 @@ class SearchScreen(RedunScreen):
                 .joinedload(Argument.value),
             )
         )
-        self.query = query
+        self.search_query = query
 
         self.results = list(query.page(self.page - 1, self.page_size))
 
