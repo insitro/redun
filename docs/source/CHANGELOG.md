@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.16.2
+August 25, 2023
+
+* `#319` - avoid Screen.query method
+* `#317` - Add DockerExecutor volumes config
+* `#315` - Efficiently compute Exec and Job status from result type
+* `#314` - add missing repl hotkey for search screen
+* `#313` - Remove duplicate federated tasks
+
 ## 0.16.1
 July 27, 2023
 
