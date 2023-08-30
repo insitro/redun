@@ -61,7 +61,10 @@ In this example, we will perform the following steps:
 - Recalibrate the base calls using the BAM.
 - Collect metrics for the alignment, inserts, and overall read depth.
 
-First, we need to prepare a dataset into cloud storage by copying the local FASTQs to S3.
+First, we need to install [`gcsfs`](https://pypi.org/project/gcsfs/) because the sites files are downloaded from google cloud.
+This task runs on the local executor, not on AWS batch so you can run `pip install gcsfs` to enable redun to read files from google cloud.
+
+Second, we need to prepare a dataset into cloud storage by copying the local FASTQs to S3.
 
 ```sh
 redun run workflow.py prepare_samples --output-path s3://YOUR_BUCKET/bioinfo_batch/

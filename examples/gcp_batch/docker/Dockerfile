@@ -11,8 +11,7 @@ WORKDIR /code
 # Here we copy the redun library into the container, but we could also
 # use `pip install redun`.
 COPY redun redun
-COPY requirements.txt .
 RUN pip3 install --upgrade pip
-RUN pip3 install -r requirements.txt
+RUN pip3 install "redun/[google-batch]"
 
 RUN mkdir -p /mnt/disks/share/
