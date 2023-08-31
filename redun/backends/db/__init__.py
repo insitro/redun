@@ -1614,7 +1614,7 @@ class RedunBackendDb(RedunBackend):
             # See `_get_value_data`
             data = b""
 
-        value_row = self.session.query(Value).filter_by(value_hash=value_hash).first()
+        value_row = self.session.get(Value, value_hash)
         if value_row:
             # Value already recorded.
             return value_hash
@@ -1628,7 +1628,19 @@ class RedunBackendDb(RedunBackend):
                 value=data,
             )
         )
-        self.session.commit()
+        try:
+            self.session.commit()
+        except sa.exc.IntegrityError:
+            # Most likely value recorded in the meantime by another process.
+            self.session.rollback()
+            # run a double check
+            # we can't catch for UniqueViolation or other as it is abstracted away by sqlalchemy
+            value_row = self.session.get(Value, value_hash)
+            if value_row:
+                return value_hash
+            else:
+                # something else went wrong
+                raise
 
         self._record_special_redun_values([value], [value_hash])
 

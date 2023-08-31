@@ -4,6 +4,7 @@ from unittest import mock
 from unittest.mock import patch
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
 
@@ -57,10 +58,37 @@ def test_max_value_size() -> None:
 
     backend = RedunBackendDb(db_uri="sqlite:///:memory:", config=config)
     backend.load()
-    small_object = "J" * 10000
+    large_object = "J" * 10000
 
     with pytest.raises(RedunDatabaseError):
-        backend.record_value(small_object)
+        backend.record_value(large_object)
+
+
+def test_race_condition_record_value() -> None:
+    """
+    Test proper handling of a dirty read when a recorded value exists even though it didn't
+    just a couple of lines of code before.
+    """
+    backend = RedunBackendDb(db_uri="sqlite:///:memory:")
+    backend.load()
+    proper_commit = backend.session.commit  # type: ignore
+
+    def commit_but_raise_anyway(*args, **kwargs):
+        proper_commit(*args, **kwargs)
+        raise IntegrityError("UniquenessViolated", "UniquenessViolated", "UniquenessViolated")
+
+    backend.session.commit = mock.MagicMock(side_effect=commit_but_raise_anyway)  # type: ignore
+    # record value should gracefully handle the IntegrityError and return the value_hash
+    value_hash1 = backend.record_value("myvalue")
+
+    assert backend.get_value(value_hash1) == ("myvalue", True)
+
+    backend.session.commit = mock.MagicMock(  # type: ignore
+        side_effect=IntegrityError("OtherIssue", "OtherIssue", "OtherIssue")
+    )
+
+    with pytest.raises(IntegrityError):
+        backend.record_value("my-other-value")
 
 
 def test_call_graph_db() -> None:
