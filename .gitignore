@@ -8,3 +8,5 @@ docs/build/
 redun.db
 dist/
 build/
+scratch/
+workflow.py
