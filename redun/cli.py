@@ -3112,6 +3112,5 @@ class RedunClient:
     def pg_executor_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
         from redun import PgExecutor
 
-        key: str = "executor." + args.name
-        config: Config = setup_config(args.config, repo=args.pull_repo)
-        PgExecutor.run_worker(config[key])
+        config: Config = setup_config(args.config)
+        PgExecutor.run_worker(config["executors"][args.name])

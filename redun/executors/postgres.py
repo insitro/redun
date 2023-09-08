@@ -108,7 +108,7 @@ def create_queue_table(opt: Dict, table: str) -> None:
 
 
 @contextlib.contextmanager
-def get_cursor(opt: Dict) -> Generator[psycopg2.cursor, None, None]:
+def get_cursor(opt: Dict) -> Generator["psycopg2.cursor", None, None]:
     """Context manager to get a database cursor and close it after use.
 
     Cursor autocommit is off. If needed, turn it on yourself with
@@ -129,7 +129,9 @@ def get_cursor(opt: Dict) -> Generator[psycopg2.cursor, None, None]:
         conn.close()
 
 
-def run_worker_single(cur: psycopg2.cursor, queue: str, result_queue: Optional[str] = None) -> int:
+def run_worker_single(
+    cur: "psycopg2.cursor", queue: str, result_queue: Optional[str] = None
+) -> int:
     """Fetch a batch of tasks from the queue and run them, optionally returning
     result on different queue.
 
@@ -183,7 +185,7 @@ def run_worker_single(cur: psycopg2.cursor, queue: str, result_queue: Optional[s
 
 @contextlib.contextmanager
 def fetch_results(
-    cur: psycopg2.cursor, queue: str, executor_key: uuid.UUID, limit: int = 100
+    cur: "psycopg2.cursor", queue: str, executor_key: uuid.UUID, limit: int = 100
 ) -> Generator[Optional[List], None, None]:
     """Context manager for fetching results from a queue under transaction.
 
@@ -228,7 +230,7 @@ def fetch_results(
 
 
 def run_worker_until_empty(
-    cur: psycopg2.cursor,
+    cur: "psycopg2.cursor",
     queue: str,
     result_queue: Optional[str] = None,
     max_tasks: int = 1000,
@@ -304,7 +306,7 @@ def encode_run_params(func: Callable, args: Tuple, kw: Dict) -> bytes:
 
 
 def wait_until_notified(
-    cur: psycopg2.cursor, queue: str, timeout: int = 60, extra_read_fd: Optional[int] = None
+    cur: "psycopg2.cursor", queue: str, timeout: int = 60, extra_read_fd: Optional[int] = None
 ):
     """Use Postgres-specific commands LISTEN, UNLISTEN to hibernate the
     process until there is new data to be read from the table queue. To
@@ -315,10 +317,10 @@ def wait_until_notified(
     https://gist.github.com/kissgyorgy/beccba1291de962702ea9c237a900c79
 
     Args:
-        cur (Cursor): Database cursor we use to run LISTEN/UNLISTEN
+        cur: Database cursor we use to run LISTEN/UNLISTEN
         queue: table queue name
-        timeout (int, optional): Max seconds to wait. Defaults to 60.
-        extra_read_fd (int, optional): FD which, if set, will be passed to
+        timeout: Max seconds to wait. Defaults to 60.
+        extra_read_fd: FD which, if set, will be passed to
             `select` alongside the database connection. Can be used to signal
             early return, so this function can return immediately for worker
             shutdown.
@@ -389,7 +391,7 @@ def _run_worker_batch(
 
 
 def submit_encoded_tasks(
-    cur: psycopg2.cursor, queue: str, executor_key: uuid.UUID, payloads: List[bytes]
+    cur: "psycopg2.cursor", queue: str, executor_key: uuid.UUID, payloads: List[bytes]
 ):
     """Inserts some payloads into the queue, then notifies any listeners of
     that queue.
@@ -681,7 +683,7 @@ class PgExecutor(Executor):
 
         self.stop()
 
-    def _monitor_one(self, cur: psycopg2.cursor):
+    def _monitor_one(self, cur: "psycopg2.cursor"):
         """Run a single batch of task monitoring.
 
         Args:
