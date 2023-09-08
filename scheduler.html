@@ -1,13 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Configuration" href="config.html" /><link rel="prev" title="Executors" href="executors.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.1.1 and Furo 2023.07.26 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.5 and Furo 2023.08.19 -->
         <title>Scheduling redun workflows - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=362ab14a" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -232,7 +232,7 @@
         </div>
         <article role="main">
           <section id="scheduling-redun-workflows">
-<h1>Scheduling redun workflows<a class="headerlink" href="#scheduling-redun-workflows" title="Permalink to this heading">#</a></h1>
+<h1>Scheduling redun workflows<a class="headerlink" href="#scheduling-redun-workflows" title="Link to this heading">#</a></h1>
 <p>Redun attempts to allow users to naturally express complex workflows,
 while still allowing the scheduler to execute them correctly and efficiently. For many cases,
 the default settings are both safe and effective, and will “just work” as expected. However,
@@ -243,7 +243,7 @@ to assist users needing to customize or understand the execution behavior more c
 <p>For more background on the design of the caching behavior and the scheduler, we also provide further
 <a class="reference internal" href="implementation/graph_reduction_caching.html"><span class="std std-doc">implementation notes</span></a>.</p>
 <section id="core-principles-of-the-scheduler">
-<h2>Core principles of the scheduler<a class="headerlink" href="#core-principles-of-the-scheduler" title="Permalink to this heading">#</a></h2>
+<h2>Core principles of the scheduler<a class="headerlink" href="#core-principles-of-the-scheduler" title="Link to this heading">#</a></h2>
 <p>The redun scheduler operates on these principles:</p>
 <ol class="arabic simple">
 <li><p>Running a workflow with caching should produce the equivalent result as running without, up to
@@ -270,7 +270,7 @@ for cases where the result came from a different execution, whereas CSE is withi
 execution. We explain these in detail in the following sections.</p>
 </section>
 <section id="single-vs-ultimate-reductions">
-<h2>Single vs Ultimate reductions<a class="headerlink" href="#single-vs-ultimate-reductions" title="Permalink to this heading">#</a></h2>
+<h2>Single vs Ultimate reductions<a class="headerlink" href="#single-vs-ultimate-reductions" title="Link to this heading">#</a></h2>
 <p>Before explaining the scheduler behaviors, we need to briefly introduce the concept of reductions.
 For a longer exposition, see <a class="reference internal" href="implementation/graph_reduction_caching.html"><span class="std std-doc">Graph reduction caching</span></a>.
 Consider the following snippet:</p>
@@ -298,7 +298,7 @@ answer. However, redun sometimes uses single reductions, because this allows it 
 careful.</p>
 </section>
 <section id="unique-evaluation-of-expressions">
-<h2>Unique evaluation of expressions<a class="headerlink" href="#unique-evaluation-of-expressions" title="Permalink to this heading">#</a></h2>
+<h2>Unique evaluation of expressions<a class="headerlink" href="#unique-evaluation-of-expressions" title="Link to this heading">#</a></h2>
 <p>To introduce expression caching, consider the following basic Python code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="nb">input</span><span class="p">):</span>
   <span class="n">result</span> <span class="o">=</span> <span class="o">...</span>
@@ -357,7 +357,7 @@ several places within the result returned from a task.</p>
 original random python example.</p>
 </section>
 <section id="common-sub-expression-elimination-cse">
-<h2>Common Sub-expression Elimination (CSE)<a class="headerlink" href="#common-sub-expression-elimination-cse" title="Permalink to this heading">#</a></h2>
+<h2>Common Sub-expression Elimination (CSE)<a class="headerlink" href="#common-sub-expression-elimination-cse" title="Link to this heading">#</a></h2>
 <p>Within the scope of a single redun execution, redun is careful not to rerun a <code class="docutils literal notranslate"><span class="pre">Task</span></code> with the
 same arguments.</p>
 <p>This behavior is performed at the level of <code class="docutils literal notranslate"><span class="pre">Task</span></code>s, since it allows us to correctly handle cases
@@ -381,7 +381,7 @@ The in this example, events would likely play out in this order:</p>
 be aggressive about reusing it. Errors will be propagated through CSE.</p>
 </section>
 <section id="task-caching">
-<h2>Task caching<a class="headerlink" href="#task-caching" title="Permalink to this heading">#</a></h2>
+<h2>Task caching<a class="headerlink" href="#task-caching" title="Link to this heading">#</a></h2>
 <p>Task caching refers to using the redun backend to find and replaying the result of a <code class="docutils literal notranslate"><span class="pre">Task</span></code>
 from a prior execution. The redun database creates persistence for this cache, allowing caching
 to span multiple executions, processes, hosts, etc. In general, we need to be more careful than
@@ -452,10 +452,10 @@ do not. Therefore, redun takes the conservative approach and discards errors ret
 the cache and reruns the task.</p>
 </section>
 <section id="configuring-the-scheduler">
-<h2>Configuring the scheduler<a class="headerlink" href="#configuring-the-scheduler" title="Permalink to this heading">#</a></h2>
+<h2>Configuring the scheduler<a class="headerlink" href="#configuring-the-scheduler" title="Link to this heading">#</a></h2>
 <p>The scheduler and tasks provide a few different mechanisms for customizing the behavior of redun.</p>
 <section id="configuration-options">
-<h3>Configuration options<a class="headerlink" href="#configuration-options" title="Permalink to this heading">#</a></h3>
+<h3>Configuration options<a class="headerlink" href="#configuration-options" title="Link to this heading">#</a></h3>
 <p>The most common mechanism for customizing the behavior of the scheduler is to use task options
 <code class="docutils literal notranslate"><span class="pre">check_valid</span></code> and <code class="docutils literal notranslate"><span class="pre">cache</span></code>, to switch between full and shallow validity checking, or to turn off
 caching, respectively. As an advanced option, the <code class="docutils literal notranslate"><span class="pre">cache_scope</span></code> option can disable CSE as well.
@@ -470,7 +470,7 @@ values for later runs. Additionally, a task that is run with full validity check
 to populate the cache for later runs of the same task with shallow validity checking.</p>
 </section>
 <section id="configuration-playbook">
-<h3>Configuration playbook<a class="headerlink" href="#configuration-playbook" title="Permalink to this heading">#</a></h3>
+<h3>Configuration playbook<a class="headerlink" href="#configuration-playbook" title="Link to this heading">#</a></h3>
 <p>We conclude our discussion of the scheduler behavior by summarizing some of the most common
 situations where users might interact with these flags.</p>
 <ul class="simple">
@@ -495,7 +495,7 @@ tool for debugging.</p></li>
 </section>
 </section>
 <section id="summary-of-evaluation-algorithm">
-<h2>Summary of evaluation algorithm<a class="headerlink" href="#summary-of-evaluation-algorithm" title="Permalink to this heading">#</a></h2>
+<h2>Summary of evaluation algorithm<a class="headerlink" href="#summary-of-evaluation-algorithm" title="Link to this heading">#</a></h2>
 <p>redun’s evaluation process can be summarized with the following pseudo-code:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
   <span class="mf">1.</span> <span class="n">If</span> <span class="n">we</span><span class="s1">&#39;ve already evaluated this expression, return the pre-existing result</span>
@@ -528,14 +528,14 @@ each expression object is only evaluated once, regardless of whether it is finis
 The scheduler implementation has to specially handle these behaviors.</p>
 </section>
 <section id="scheduler-tasks">
-<h2>Scheduler tasks<a class="headerlink" href="#scheduler-tasks" title="Permalink to this heading">#</a></h2>
+<h2>Scheduler tasks<a class="headerlink" href="#scheduler-tasks" title="Link to this heading">#</a></h2>
 <p>“Scheduler tasks” provide a method for extending and altering the scheduler. When working
 with scheduler tasks, be sure to carefully consult their documentation for any changes.</p>
 <p>Scheduler tasks are not subject to CSE or caching, but can be involved in unique expression
 deduplication.</p>
 </section>
 <section id="scheduler-overhead">
-<h2>Scheduler overhead<a class="headerlink" href="#scheduler-overhead" title="Permalink to this heading">#</a></h2>
+<h2>Scheduler overhead<a class="headerlink" href="#scheduler-overhead" title="Link to this heading">#</a></h2>
 <p>The scheduler implementation makes every effort to be performant, but the scheduler does
 impose some costs, as compared to the equivalent python code.</p>
 <p>Redun adds several other run-time penalties, such as needing to hash values and source code,
@@ -631,9 +631,9 @@ reduces this penalty in practice.</p>
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b3ba4146"></script>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>

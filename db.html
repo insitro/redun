@@ -1,13 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Spark" href="spark.html" /><link rel="prev" title="Configuration" href="config.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.1.1 and Furo 2023.07.26 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.5 and Furo 2023.08.19 -->
         <title>Backend and database - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=362ab14a" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -232,14 +232,14 @@
         </div>
         <article role="main">
           <section id="backend-and-database">
-<h1>Backend and database<a class="headerlink" href="#backend-and-database" title="Permalink to this heading">#</a></h1>
+<h1>Backend and database<a class="headerlink" href="#backend-and-database" title="Link to this heading">#</a></h1>
 <p>redun stores data provenance and cached values in <em>repositories</em>, (repos for short), similar to how <a class="reference external" href="https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository">git stores commit graphs in repos</a>.
 redun repos are currently implemented using either sqlite (the default) or PostgreSQL.
 Additionally, users may specify an <a class="reference internal" href="#optional-value-store">external key-value store</a> to avoid bloating the primary repo with large binary objects.</p>
 <p>Once your workflows mature to the point where you want to share them or their results with collaborators, we recommend configuring a persistent database repo for provenance tracking.
 See the <a class="reference internal" href="config.html#backend"><span class="std std-ref">backend configuration</span></a> section for details.</p>
 <section id="querying-call-graphs">
-<h2>Querying call graphs<a class="headerlink" href="#querying-call-graphs" title="Permalink to this heading">#</a></h2>
+<h2>Querying call graphs<a class="headerlink" href="#querying-call-graphs" title="Link to this heading">#</a></h2>
 <p>Every time redun executes a workflow, it records the execution as a CallGraph. The <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">log</span></code> command can be used to query past executions and walk through the CallGraph (see also the <a class="reference internal" href="console.html"><span class="std std-doc">Console (TUI)</span></a>). Here we’ll walk through the <code class="docutils literal notranslate"><span class="pre">examples/compile/</span></code> example. The workflow script should look something like this:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
@@ -530,26 +530,26 @@ Recent<span class="w"> </span>executions:
 </div>
 </section>
 <section id="syncing-provenance-data">
-<h2>Syncing provenance data<a class="headerlink" href="#syncing-provenance-data" title="Permalink to this heading">#</a></h2>
+<h2>Syncing provenance data<a class="headerlink" href="#syncing-provenance-data" title="Link to this heading">#</a></h2>
 <p>The redun database (stored in <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code> by default) is designed to be retained for long term storage and analysis. To aid this, the redun CLI provides several commands to make backing up and syncing databases easy.</p>
 <section id="repositories">
-<h3>Repositories<a class="headerlink" href="#repositories" title="Permalink to this heading">#</a></h3>
+<h3>Repositories<a class="headerlink" href="#repositories" title="Link to this heading">#</a></h3>
 <p>Redun organizes data provenance into repositories (“repos” for short) similar to how git organizes code in repos. By default, all provenance is tracked in the default, nameless repository.</p>
 <p>Additional named repositories may be added with <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">repo</span> <span class="pre">add</span> <span class="pre">&lt;repo</span> <span class="pre">name&gt;</span> <span class="pre">&lt;config</span> <span class="pre">dir&gt;</span></code>. The configuration for the repository may be local or on S3.</p>
 <p>Available repositories can be enumerated with <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">repo</span> <span class="pre">list</span></code>.</p>
 <p>Removing repositories via the command line is not currently supported, but <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">repo</span> <span class="pre">remove</span> <span class="pre">&lt;repo</span> <span class="pre">name&gt;</span></code> will instruct you on how to edit your config file.</p>
 </section>
 <section id="running-redun-in-other-repositories">
-<h3>Running redun in other repositories<a class="headerlink" href="#running-redun-in-other-repositories" title="Permalink to this heading">#</a></h3>
+<h3>Running redun in other repositories<a class="headerlink" href="#running-redun-in-other-repositories" title="Link to this heading">#</a></h3>
 <p>To run redun commands in a different database, <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">--repo</span> <span class="pre">&lt;repo</span> <span class="pre">name&gt;</span> <span class="pre">&lt;command&gt;</span></code> will work for most commands. For example, <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">--repo</span> <span class="pre">foo</span> <span class="pre">log</span> <span class="pre">--task</span></code> will print tasks present in the “foo” repository.</p>
 </section>
 <section id="synchronizing-repositories">
-<h3>Synchronizing repositories<a class="headerlink" href="#synchronizing-repositories" title="Permalink to this heading">#</a></h3>
+<h3>Synchronizing repositories<a class="headerlink" href="#synchronizing-repositories" title="Link to this heading">#</a></h3>
 <p>Just like git, <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">pull</span> <span class="pre">&lt;repo&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">push</span> <span class="pre">&lt;repo&gt;</span></code> will synchronize data to and from remote repositories.</p>
 <p>You can also sync from remote to remote: <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">--repo</span> <span class="pre">foo</span> <span class="pre">push</span> <span class="pre">bar</span></code> will push all records from repository “foo” to “bar”. The number of records pushed will be displayed.</p>
 </section>
 <section id="manual-exports">
-<h3>Manual exports<a class="headerlink" href="#manual-exports" title="Permalink to this heading">#</a></h3>
+<h3>Manual exports<a class="headerlink" href="#manual-exports" title="Link to this heading">#</a></h3>
 <p>First, the database can be exported to a JSON log format using the <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">export</span></code> command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">redun</span> <span class="n">export</span>
 
@@ -601,7 +601,7 @@ redun<span class="w"> </span>push<span class="w"> </span>prod
 </section>
 </section>
 <section id="database-migration">
-<h2>Database migration<a class="headerlink" href="#database-migration" title="Permalink to this heading">#</a></h2>
+<h2>Database migration<a class="headerlink" href="#database-migration" title="Link to this heading">#</a></h2>
 <p>The redun CLI will automatically initialize and upgrade the redun database in most cases, so users will oftentimes not need to manage database versioning themselves. However, there are certain situations where users may want or need to manage database upgrades explicitly, such as upgrading a central shared PostgreSQL database. Here, we review common commands for inspecting and managing database version upgrades.</p>
 <p>When the redun CLI is run for the first on a workflow script, by default a new sqlite database is created at <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code>.</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>workflow.py<span class="w"> </span>main
@@ -641,7 +641,7 @@ Final db version: 3.0
 </div>
 <p>Downgrades can be done with <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">db</span> <span class="pre">downgrade</span> <span class="pre">&lt;version&gt;</span></code>.</p>
 <section id="automatic-database-upgrading">
-<h3>Automatic database upgrading<a class="headerlink" href="#automatic-database-upgrading" title="Permalink to this heading">#</a></h3>
+<h3>Automatic database upgrading<a class="headerlink" href="#automatic-database-upgrading" title="Link to this heading">#</a></h3>
 <p>For the most common use case, the redun CLI uses a local sqlite database file (e.g. <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code>).
 Since such a database is used by only one client, it is typically safe to automatically upgrade the database if needed.
 Such an upgrade will happen automatically on the next <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">run</span> <span class="pre">...</span></code> command.
@@ -649,7 +649,7 @@ If you would like to disable automatic upgrades, it can be turned off with the <
 Automigration is not used for non-sqlite databases, since a centrally used database will likely need more coordination to not disrupt clients.</p>
 </section>
 <section id="database-version-capabilities">
-<h3>Database version capabilities<a class="headerlink" href="#database-version-capabilities" title="Permalink to this heading">#</a></h3>
+<h3>Database version capabilities<a class="headerlink" href="#database-version-capabilities" title="Link to this heading">#</a></h3>
 <p>Each version of the redun library requires the redun database to be within a specific version range. To understand what database version is required for your library or database, consult the table below.</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -676,7 +676,7 @@ Automigration is not used for non-sqlite databases, since a centrally used datab
 </div>
 </section>
 <section id="no-downtime-migrations">
-<h3>No downtime migrations<a class="headerlink" href="#no-downtime-migrations" title="Permalink to this heading">#</a></h3>
+<h3>No downtime migrations<a class="headerlink" href="#no-downtime-migrations" title="Link to this heading">#</a></h3>
 <p>The compatibility ranges between the library and database are designed to allow gradual upgrades, so that redun clients never need to fully stop access.</p>
 <ul class="simple">
 <li><p>Migrations are designed to be <em>pre-deploy</em>, that is, they are always applied to the database (e.g. <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">db</span> <span class="pre">upgrade</span></code>) before upgrading clients.</p></li>
@@ -686,7 +686,7 @@ Automigration is not used for non-sqlite databases, since a centrally used datab
 </section>
 </section>
 <section id="optional-value-store">
-<h2>Optional value store<a class="headerlink" href="#optional-value-store" title="Permalink to this heading">#</a></h2>
+<h2>Optional value store<a class="headerlink" href="#optional-value-store" title="Link to this heading">#</a></h2>
 <p>By default, values are stored in the database as BLOB columns.
 For most usage patterns, these BLOBs represent the fastest source of growth in the repo.
 Users can specify an external key-value store and a minimum size cutoff beyond which values are written to the value store instead of the primary repo.
@@ -776,9 +776,9 @@ See <code class="docutils literal notranslate"><span class="pre">ValueStore</spa
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b3ba4146"></script>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>

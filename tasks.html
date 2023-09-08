@@ -1,13 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Executors" href="executors.html" /><link rel="prev" title="Values" href="values.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.1.1 and Furo 2023.07.26 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.5 and Furo 2023.08.19 -->
         <title>Tasks - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=362ab14a" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -232,10 +232,10 @@
         </div>
         <article role="main">
           <section id="tasks">
-<h1>Tasks<a class="headerlink" href="#tasks" title="Permalink to this heading">#</a></h1>
+<h1>Tasks<a class="headerlink" href="#tasks" title="Link to this heading">#</a></h1>
 <p>Tasks are the basic unit of work in a redun workflow.</p>
 <section id="task-naming">
-<h2>Task naming<a class="headerlink" href="#task-naming" title="Permalink to this heading">#</a></h2>
+<h2>Task naming<a class="headerlink" href="#task-naming" title="Link to this heading">#</a></h2>
 <p>Every task has a name and namespace that uniquely identifies it within and across workflows. Task names and namespaces are also used as part of <a class="reference internal" href="#task-hashing">task hashing</a> to ensure unique hashes. Typically, the name of a task can be automatically inferred from the function’s name (e.g. <code class="docutils literal notranslate"><span class="pre">func.__name__</span></code>) and the namespace can be set once at the top of a module (<code class="docutils literal notranslate"><span class="pre">redun_namespace</span></code>). For example, in this workflow</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="c1"># workflow.py</span>
 <span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span>
@@ -265,7 +265,7 @@
 <p>Namespaces are especially important for distinguishing tasks when call graphs recorded from different workflows are combined into one database.</p>
 </section>
 <section id="tasks-as-pure-functions">
-<h2>Tasks as pure functions<a class="headerlink" href="#tasks-as-pure-functions" title="Permalink to this heading">#</a></h2>
+<h2>Tasks as pure functions<a class="headerlink" href="#tasks-as-pure-functions" title="Link to this heading">#</a></h2>
 <p>In order for redun to safely cache results and execute tasks in parallel, a few restrictions must be followed when writing a task. Primarily, tasks must be written such that they are “effectively <a class="reference external" href="https://en.wikipedia.org/wiki/Pure_function">pure functions</a>”. That is, given the same arguments, a task should always return (effectively) the same result. redun does not try to enforce strict purity, so minor side-effects such logging, or caching, are not an issue. A task can even be stochastic as long as the user is ok with using cached results from previous executions.</p>
 <p>Tasks are allowed to call other tasks, just like one would write a function to call other functions. In fact, this is the encouraged way of building up a workflow program. Tasks are also allowed to call plain Python functions, as long as the net result of the task is effectively pure. You may also call tasks from plain Python functions as well. In fact, this often occurs when using functions such as <code class="docutils literal notranslate"><span class="pre">map()</span></code>.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">small_helper</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
@@ -287,7 +287,7 @@
 <p>See <a class="reference internal" href="#redun-tasks-are-not-general-python">Redun tasks are not general python</a> below, for more.</p>
 </section>
 <section id="task-hashing">
-<h2>Task hashing<a class="headerlink" href="#task-hashing" title="Permalink to this heading">#</a></h2>
+<h2>Task hashing<a class="headerlink" href="#task-hashing" title="Link to this heading">#</a></h2>
 <p>As with general <code class="docutils literal notranslate"><span class="pre">Value</span></code>s, redun relies on hashing tasks to identify whether two tasks are the same. Among other things, this allows us to identify if a past computation used the “same” task, and hence might be a suitable cache result.</p>
 <p>For Tasks, redun provides multiple ways to determine a hash. By default, Tasks are hashed by their name, namespace, and source code. You can inspect this process yourself with <code class="docutils literal notranslate"><span class="pre">Task.source</span></code> and <code class="docutils literal notranslate"><span class="pre">Task.hash</span></code> attributes:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
@@ -321,7 +321,7 @@
 </div>
 </section>
 <section id="nested-values">
-<h2>Nested values<a class="headerlink" href="#nested-values" title="Permalink to this heading">#</a></h2>
+<h2>Nested values<a class="headerlink" href="#nested-values" title="Link to this heading">#</a></h2>
 <p>It is common in workflow frameworks to allow a task to have multiple outputs. This is useful when different outputs need to be routed to their own downstream tasks. redun aims to be pythonic, and in Python functions return one value. However, return values can be container types such as lists, tuples, dict, etc. In that spirit, redun gives special treatment to the built-in Python containers (list, tuple, dict, namedtuple, set, dataclass) in order to provide features like multiple outputs and inputs. In redun, we call a value built up from possibly multiple nested container types, a <em>nested value</em>. Take the following code for example:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">run_calculation</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
@@ -384,7 +384,7 @@
 <p>Notice that <code class="docutils literal notranslate"><span class="pre">values</span></code> in <code class="docutils literal notranslate"><span class="pre">main()</span></code> is actually a list of Expressions. The redun scheduler knows to wait on the evaluation of all expressions within a nested value before using it as an argument to a task (<code class="docutils literal notranslate"><span class="pre">adder</span></code>).</p>
 </section>
 <section id="recursion">
-<h2>Recursion<a class="headerlink" href="#recursion" title="Permalink to this heading">#</a></h2>
+<h2>Recursion<a class="headerlink" href="#recursion" title="Link to this heading">#</a></h2>
 <p>Another example of the generality of our call graph recording technique is the ability to define workflows with recursion, which many workflow engines cannot express. Take the following example:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
@@ -401,7 +401,7 @@
 <p>This computes the n<sup>th</sup> <a class="reference external" href="https://en.wikipedia.org/wiki/Fibonacci_number">Fibonacci number</a> using recursion. redun doesn’t prevent a task from calling itself, and in fact, due to the memoization, this calculation will be done in linear time instead of exponential.</p>
 </section>
 <section id="task-options">
-<h2>Task options<a class="headerlink" href="#task-options" title="Permalink to this heading">#</a></h2>
+<h2>Task options<a class="headerlink" href="#task-options" title="Link to this heading">#</a></h2>
 <p>Tasks can be configured in many ways to adjust how they are executed and cached. For example, the <a class="reference internal" href="#executor"><code class="docutils literal notranslate"><span class="pre">executor</span></code></a> task option defines which <a class="reference internal" href="executors.html"><span class="std std-doc">executor</span></a> system (local, AWS Batch, etc) the task should execute on, and the [<code class="docutils literal notranslate"><span class="pre">cache</span></code>] task option defines whether the cache can be used to fast-forward through the task (see <a class="reference internal" href="scheduler.html"><span class="std std-doc">Scheduler</span></a> for more information on caching).</p>
 <p>The most common way to configure a task is with the <a class="reference internal" href="redun/redun.html#redun.task.task" title="redun.task.task"><span class="xref myst py py-func"><code class="docutils literal notranslate"><span class="pre">&#64;task</span></code></span></a> decorator. For example, this task runs on AWS Batch with 4Gb of memory and without using caching:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">,</span> <span class="n">memory</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -427,16 +427,16 @@
 </div>
 <p>Lastly, several task options, such as <a class="reference internal" href="config.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">image</span></code></span></a> or <a class="reference internal" href="config.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">memory</span></code></span></a>, can be inherited by the <a class="reference internal" href="config.html#executors"><span class="std std-ref">executor configuration</span></a>.</p>
 <section id="allowed-cache-results">
-<h3><code class="docutils literal notranslate"><span class="pre">allowed_cache_results</span></code><a class="headerlink" href="#allowed-cache-results" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">allowed_cache_results</span></code><a class="headerlink" href="#allowed-cache-results" title="Link to this heading">#</a></h3>
 <p>Generally not a user-facing option, this is a <code class="docutils literal notranslate"><span class="pre">Optional[Set[CacheResult]]</span></code> specifying an upper bound on which kind of cache results are may be used (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>, indicating that any are allowed).</p>
 </section>
 <section id="cache">
-<h3><code class="docutils literal notranslate"><span class="pre">cache</span></code><a class="headerlink" href="#cache" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">cache</span></code><a class="headerlink" href="#cache" title="Link to this heading">#</a></h3>
 <p>A bool (default: <code class="docutils literal notranslate"><span class="pre">true</span></code>) that defines whether the backend cache can be used to fast-forward through the task’s execution. See <a class="reference internal" href="scheduler.html#Configuration-options"><span class="std std-ref">Scheduler</span></a> for more explanation.
 A value of <code class="docutils literal notranslate"><span class="pre">true</span></code> is implemented by setting <code class="docutils literal notranslate"><span class="pre">cache_scope=CacheScope.BACKEND</span></code> and <code class="docutils literal notranslate"><span class="pre">false</span></code> by setting <code class="docutils literal notranslate"><span class="pre">cache_scope=CacheScope.CSE</span></code>.</p>
 </section>
 <section id="cache-scope">
-<h3><code class="docutils literal notranslate"><span class="pre">cache_scope</span></code><a class="headerlink" href="#cache-scope" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">cache_scope</span></code><a class="headerlink" href="#cache-scope" title="Link to this heading">#</a></h3>
 <p>A <code class="docutils literal notranslate"><span class="pre">CacheScope</span></code> enum value (default: <code class="docutils literal notranslate"><span class="pre">CacheScope.BACKEND</span></code>) that indicates the upper bound on what scope a cache result may come from. See <a class="reference internal" href="scheduler.html#Configuration-options"><span class="std std-ref">Scheduler</span></a> for more explanation.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">NONE</span></code>: Disable both CSE and cache hits</p></li>
@@ -445,13 +445,13 @@ A value of <code class="docutils literal notranslate"><span class="pre">true</sp
 </ul>
 </section>
 <section id="check-valid">
-<h3><code class="docutils literal notranslate"><span class="pre">check_valid</span></code><a class="headerlink" href="#check-valid" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">check_valid</span></code><a class="headerlink" href="#check-valid" title="Link to this heading">#</a></h3>
 <p>An enum value <code class="docutils literal notranslate"><span class="pre">CacheCheckValid</span></code> (or a string that can be coerced, default: <code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code>) that defines whether the entire subtree
 of results is checked for validity (<code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code>) or whether just this task’s ultimate results need to be valid (<code class="docutils literal notranslate"><span class="pre">&quot;shallow&quot;</span></code>). This can be used to dramatically speed up resuming large workflows.
 See <a class="reference internal" href="scheduler.html#Configuration-options"><span class="std std-ref">Scheduler</span></a> for more explanation.</p>
 </section>
 <section id="config-args">
-<h3><code class="docutils literal notranslate"><span class="pre">config_args</span></code><a class="headerlink" href="#config-args" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">config_args</span></code><a class="headerlink" href="#config-args" title="Link to this heading">#</a></h3>
 <p>A list of strings defining config args for this task.
 Config args will be ignored when hashing a task meaning that changes in config args’ values will not cause tasks to re-evaluate.
 The values in the <code class="docutils literal notranslate"><span class="pre">config_args</span></code> list should match arg or kwarg names in the task definition.
@@ -464,33 +464,33 @@ For example, consider:</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">memory</span></code> arg in <code class="docutils literal notranslate"><span class="pre">task1</span></code> will be ignored when hashing a task and changing that value will not trigger re-evaluation of the task.</p>
 </section>
 <section id="executor">
-<h3><code class="docutils literal notranslate"><span class="pre">executor</span></code><a class="headerlink" href="#executor" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">executor</span></code><a class="headerlink" href="#executor" title="Link to this heading">#</a></h3>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">default</span></code>) that defines which executor the task executes on. See <a class="reference internal" href="executors.html"><span class="std std-doc">Executors</span></a> for more information.</p>
 </section>
 <section id="hash-includes">
-<h3><code class="docutils literal notranslate"><span class="pre">hash_includes</span></code><a class="headerlink" href="#hash-includes" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">hash_includes</span></code><a class="headerlink" href="#hash-includes" title="Link to this heading">#</a></h3>
 <p>A list of data to include in the task hash. Changing the hash will invalidate cached execution results.</p>
 </section>
 <section id="limits">
-<h3><code class="docutils literal notranslate"><span class="pre">limits</span></code><a class="headerlink" href="#limits" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">limits</span></code><a class="headerlink" href="#limits" title="Link to this heading">#</a></h3>
 <p>A list or dict of resources needed for this task to execute. See the <a class="reference internal" href="config.html#limits"><span class="std std-ref">Limits</span></a> feature for more information.</p>
 </section>
 <section id="load-module">
-<h3><code class="docutils literal notranslate"><span class="pre">load_module</span></code><a class="headerlink" href="#load-module" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">load_module</span></code><a class="headerlink" href="#load-module" title="Link to this heading">#</a></h3>
 <p>The name of a python module that can be loaded to recreate this task. For example, this is part of how a remote worker is instructed to initialize itself, in preparation for running a task.</p>
 </section>
 <section id="name">
-<h3><code class="docutils literal notranslate"><span class="pre">name</span></code><a class="headerlink" href="#name" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">name</span></code><a class="headerlink" href="#name" title="Link to this heading">#</a></h3>
 <p>A string (default: <code class="docutils literal notranslate"><span class="pre">func.__name__</span></code>) naming the task. Task name must use only alphanumeric characters and underscore ‘_’.</p>
 <p>Every task in a workflow needs a unique name. By default, this is automatically inferred from the function’s name (e.g. <code class="docutils literal notranslate"><span class="pre">func.__name__</span></code>). However, the user may use the <code class="docutils literal notranslate"><span class="pre">name</span></code> task option to explicitly set a task’s name. See <a class="reference internal" href="#task-naming">Task naming</a> for more.</p>
 </section>
 <section id="namespace">
-<h3><code class="docutils literal notranslate"><span class="pre">namespace</span></code><a class="headerlink" href="#namespace" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">namespace</span></code><a class="headerlink" href="#namespace" title="Link to this heading">#</a></h3>
 <p>A string defining the namespace for a task. Task namespace must use only alphanumeric characters, underscore ‘_’, and dot ‘.’, and may not start with a dot.</p>
 <p>Ideally, tasks should be uniquely identified across workflows by their fullname, which is a combination of their namespace and name. Typically, the namespace is set for the entire python module using the <code class="docutils literal notranslate"><span class="pre">redun_namespace</span></code> global variable (See <a class="reference internal" href="#task-naming">Task naming</a> for more). However, the namespace can also be configured explicitly using this task option.</p>
 </section>
 <section id="nout">
-<h3><code class="docutils literal notranslate"><span class="pre">nout</span></code><a class="headerlink" href="#nout" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">nout</span></code><a class="headerlink" href="#nout" title="Link to this heading">#</a></h3>
 <p>An optional int (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>) that can be used for tasks that return a tuple or list of length <code class="docutils literal notranslate"><span class="pre">nout</span></code>. Typically, tasks return lazy results with unknown length (<code class="docutils literal notranslate"><span class="pre">nout=None</span></code>). This prevents users from iterating or destructuring results like they could with a normal tuple or list. Using <code class="docutils literal notranslate"><span class="pre">nout</span></code>, a user can iterate and destructure results.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">nout</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">make_pair</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
@@ -511,21 +511,21 @@ For example, consider:</p>
 </div>
 </section>
 <section id="script">
-<h3><code class="docutils literal notranslate"><span class="pre">script</span></code><a class="headerlink" href="#script" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">script</span></code><a class="headerlink" href="#script" title="Link to this heading">#</a></h3>
 <p>A bool (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>) that defines whether this task is a <a class="reference internal" href="design.html#script-tasks"><span class="std std-ref">script task</span></a>.</p>
 </section>
 <section id="version">
-<h3><code class="docutils literal notranslate"><span class="pre">version</span></code><a class="headerlink" href="#version" title="Permalink to this heading">#</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">version</span></code><a class="headerlink" href="#version" title="Link to this heading">#</a></h3>
 <p>An optional string (default: None) defining the version of the task. If defined, the task version helps to determine the hash for a task. When not given, the task hash will depend on the task’s source code. Therefore, an explicit version allows the user to safely refactor a task without causing unnecessary re-execution of their pipeline.</p>
 <p>See <a class="reference internal" href="#task-hashing">Task hashing</a> for more.</p>
 </section>
 </section>
 <section id="redun-tasks-are-not-general-python">
-<h2>Redun tasks are not general python<a class="headerlink" href="#redun-tasks-are-not-general-python" title="Permalink to this heading">#</a></h2>
+<h2>Redun tasks are not general python<a class="headerlink" href="#redun-tasks-are-not-general-python" title="Link to this heading">#</a></h2>
 <p>Although redun tasks are designed to allow rich and natural definition of tasks in Python,
 tasks need to act as <a class="reference internal" href="#tasks-as-pure-functions">pure functions</a>. This section discusses a few potential issues in more depth.</p>
 <section id="object-references-and-uniqueness">
-<h3>Object references and uniqueness<a class="headerlink" href="#object-references-and-uniqueness" title="Permalink to this heading">#</a></h3>
+<h3>Object references and uniqueness<a class="headerlink" href="#object-references-and-uniqueness" title="Link to this heading">#</a></h3>
 <p>As noted in (Hashing and equality)[values.md#Hashing-and-equality], redun does not distinguish
 between references to a single underlying object and values that merely have the same hash.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyObject</span><span class="p">:</span>
@@ -563,7 +563,7 @@ below, for an example of how relying on object identity can produce unexpected b
 </div>
 </section>
 <section id="external-state-and-non-deterministic-functions">
-<h3>External state and non-deterministic functions<a class="headerlink" href="#external-state-and-non-deterministic-functions" title="Permalink to this heading">#</a></h3>
+<h3>External state and non-deterministic functions<a class="headerlink" href="#external-state-and-non-deterministic-functions" title="Link to this heading">#</a></h3>
 <p>Python code often makes use stateful imperative code, in the form of module variables, class
 members, etc. These generally need to be avoided, because Redun is designed to leverage the
 deterministic behavior of “effectively” pure functions to efficiently schedule and cache tasks
@@ -597,7 +597,7 @@ then you are left with race conditions and potential thread safety issues.</p>
 scheduler. This is a subtle trick that only works because redun can’t detect the external state.</p>
 </section>
 <section id="mutating-arguments">
-<h3>Mutating arguments<a class="headerlink" href="#mutating-arguments" title="Permalink to this heading">#</a></h3>
+<h3>Mutating arguments<a class="headerlink" href="#mutating-arguments" title="Link to this heading">#</a></h3>
 <p>Pure functions are generally not allowed to mutate their arguments and redun likewise relies
 on this assumption. Many functional programming languages have deep enforcement of immutability
 because this is such a crucial concept, but python does not. Therefore, it is up to the user
@@ -661,9 +661,9 @@ their arguments is fragile, and this is best avoided altogether.</p>
 </section>
 </section>
 <section id="advanced-topics">
-<h2>Advanced topics<a class="headerlink" href="#advanced-topics" title="Permalink to this heading">#</a></h2>
+<h2>Advanced topics<a class="headerlink" href="#advanced-topics" title="Link to this heading">#</a></h2>
 <section id="tasks-as-first-class-values">
-<h3>Tasks as first class values<a class="headerlink" href="#tasks-as-first-class-values" title="Permalink to this heading">#</a></h3>
+<h3>Tasks as first class values<a class="headerlink" href="#tasks-as-first-class-values" title="Link to this heading">#</a></h3>
 <p>As we saw in the recursion section, redun can handle complex dataflows, such as recursion. It also can implement higher order tasks (tasks that receive or return other tasks) in order to provide very reusable workflow components.</p>
 <p>As an example, let’s say we had a pipeline of steps:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
@@ -736,7 +736,7 @@ their arguments is fragile, and this is best avoided altogether.</p>
 </div>
 </section>
 <section id="task-wrapping">
-<h3>Task wrapping<a class="headerlink" href="#task-wrapping" title="Permalink to this heading">#</a></h3>
+<h3>Task wrapping<a class="headerlink" href="#task-wrapping" title="Link to this heading">#</a></h3>
 <p>We provide a mechanism for wrapping tasks, which is a powerful mechanism for altering
 the run-time behavior of a task. Conceptually inspired by <code class="docutils literal notranslate"><span class="pre">&#64;functools.wraps</span></code>, which makes it easier
 to create decorators that enclose functions. As a motivating example, consider a task that needs
@@ -807,7 +807,7 @@ the cost of the extra powers we have.</p>
 </div>
 </section>
 <section id="subrun">
-<h3>Subrun<a class="headerlink" href="#subrun" title="Permalink to this heading">#</a></h3>
+<h3>Subrun<a class="headerlink" href="#subrun" title="Link to this heading">#</a></h3>
 <p>Redun provides the <code class="docutils literal notranslate"><span class="pre">subrun</span></code> scheduler task, which is able to start a nested scheduler within
 the body of a task.</p>
 <p>To see why this is useful, imagine
@@ -850,7 +850,7 @@ scheduler would deploy to another execution.</p>
 <p>See the example <code class="docutils literal notranslate"><span class="pre">examples/subrun</span></code> for more information.</p>
 </section>
 <section id="federated-task">
-<h3>Federated task<a class="headerlink" href="#federated-task" title="Permalink to this heading">#</a></h3>
+<h3>Federated task<a class="headerlink" href="#federated-task" title="Link to this heading">#</a></h3>
 <p>Generally redun requires access to the code implementing a task in order to execute that task.
 Federated tasks provide a mechanism to invoke a task without having local access to the code.</p>
 <p>The typical scenario is that we have two python repositories, a <code class="docutils literal notranslate"><span class="pre">local</span></code> one we are currently working in,
@@ -980,9 +980,9 @@ facilitating AWS role switches.</p>
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b3ba4146"></script>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>

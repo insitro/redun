@@ -1,13 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="../">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun" href="../redun/modules.html" /><link rel="prev" title="Content addressable hashing summary" href="hashing.html" />
 
-    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.1.1 and Furo 2023.07.26 -->
+    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.5 and Furo 2023.08.19 -->
         <title>Graph reduction caching - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=362ab14a" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -232,26 +232,26 @@
         </div>
         <article role="main">
           <section id="graph-reduction-caching">
-<h1>Graph reduction caching<a class="headerlink" href="#graph-reduction-caching" title="Permalink to this heading">#</a></h1>
+<h1>Graph reduction caching<a class="headerlink" href="#graph-reduction-caching" title="Link to this heading">#</a></h1>
 <p>redun’s use of <a class="reference external" href="https://en.wikipedia.org/wiki/Graph_reduction">graph reduction</a> and caching techniques
 are central to the architecture.</p>
 <section id="consequences">
-<h2>Consequences<a class="headerlink" href="#consequences" title="Permalink to this heading">#</a></h2>
+<h2>Consequences<a class="headerlink" href="#consequences" title="Link to this heading">#</a></h2>
 <p>redun uses graph reduction to execute a workflow. This provides a clear and established framework for deciding how various execution steps should occur and how their results should propagate. In contrast, other workflow engines, such as Airflow, view workflow execution as simply executing tasks in topological sort order along a directed acyclic graph (DAG). While simple, this approach leaves unaddressed questions about which kinds of caching or graph optimizations (e.g. Common Subexpression Elimination, task composition/fusion) are safe to perform.</p>
 <p>Consider, for example, workflow caching, where we fast forward through tasks that have been previously executed. Viewing workflow execution as graph reduction, allows us to consider when we would prefer caching <em>single reductions</em> versus <em>ultimate reductions</em>, and the consequences of those options. It also allows us to think through how <a class="reference external" href="https://en.wikipedia.org/wiki/Common_subexpression_elimination">Common Subexpression Elimination</a> (CSE) can be used to provide the benefits for pull-style workflow engines within a broad push-style approach.</p>
 <p>Going forward, our decisions on caching and CSE will likely play a role in how we design subschedulers (<code class="docutils literal notranslate"><span class="pre">subrun</span></code>) and federate workflows.</p>
 </section>
 <section id="design-details">
-<h2>Design details<a class="headerlink" href="#design-details" title="Permalink to this heading">#</a></h2>
+<h2>Design details<a class="headerlink" href="#design-details" title="Link to this heading">#</a></h2>
 <section id="review-of-redun-s-reduction-and-caching-process">
-<h3>Review of redun’s reduction and caching process<a class="headerlink" href="#review-of-redun-s-reduction-and-caching-process" title="Permalink to this heading">#</a></h3>
+<h3>Review of redun’s reduction and caching process<a class="headerlink" href="#review-of-redun-s-reduction-and-caching-process" title="Link to this heading">#</a></h3>
 <p>Here, we review redun’s workflow evaluation process, as well as how redun uses several
 caching mechanisms to provide <a class="reference external" href="https://en.wikipedia.org/wiki/Incremental_computing">incremental compute</a> commonly seen in other workflow engines.
 The different caching mechnisms are used together in order to blend the best behaviors of
 push- and pull-style workflow engines, as well as provide a balance between rigorous reactivity
 (code and data) and user opt-in optimizations.</p>
 <section id="graph-reduction">
-<h4>Graph reduction<a class="headerlink" href="#graph-reduction" title="Permalink to this heading">#</a></h4>
+<h4>Graph reduction<a class="headerlink" href="#graph-reduction" title="Link to this heading">#</a></h4>
 <p>redun represents a workflow as a large Expression Graph and uses
 <a class="reference external" href="https://en.wikipedia.org/wiki/Graph_reduction">graph reduction</a> to recursively evaluate the graph
 until workflow completion. For example, consider the following workflow:</p>
@@ -324,7 +324,7 @@ the redun Scheduler will recursively evaluate this expression. Specifically, the
 </div>
 </section>
 <section id="the-redun-expression-graph-language">
-<h4>The redun Expression Graph language<a class="headerlink" href="#the-redun-expression-graph-language" title="Permalink to this heading">#</a></h4>
+<h4>The redun Expression Graph language<a class="headerlink" href="#the-redun-expression-graph-language" title="Link to this heading">#</a></h4>
 <p>Here, we define a full <a class="reference external" href="https://en.wikipedia.org/wiki/Formal_grammar">grammar</a> describing the redun Expression Graph structure.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">e</span> <span class="o">=</span> <span class="n">TaskExpression</span><span class="p">(</span><span class="n">task_name</span><span class="p">,</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">),</span> <span class="p">{</span><span class="n">arg_key</span><span class="p">:</span> <span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span> <span class="n">options</span><span class="p">)</span>
   <span class="o">|</span> <span class="n">SchedulerExpression</span><span class="p">(</span><span class="n">task_name</span><span class="p">,</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">),</span> <span class="p">{</span><span class="n">arg_key</span><span class="p">:</span> <span class="n">e</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span> <span class="n">options</span><span class="p">)</span>
@@ -397,7 +397,7 @@ eval(concrete_value, p) =&gt; concrete_value
 </ul>
 </section>
 <section id="speeding-up-graph-reduction-with-caching">
-<h4>Speeding up graph reduction with caching<a class="headerlink" href="#speeding-up-graph-reduction-with-caching" title="Permalink to this heading">#</a></h4>
+<h4>Speeding up graph reduction with caching<a class="headerlink" href="#speeding-up-graph-reduction-with-caching" title="Link to this heading">#</a></h4>
 <p>Let us now consider how caching could help us in speeding up reductions. Calling a task’s function could be
 an expensive operation, taking seconds to hours of compute time depending on the task. Therefore, prior
 to calling any task’s function, we would like to consult a cache to see if we have ever performed this reduction before,
@@ -468,7 +468,7 @@ are always “valid” by this definition.</p>
 </ul>
 </section>
 <section id="review-of-push-and-pull-workflow-engines">
-<h4>Review of push and pull workflow engines<a class="headerlink" href="#review-of-push-and-pull-workflow-engines" title="Permalink to this heading">#</a></h4>
+<h4>Review of push and pull workflow engines<a class="headerlink" href="#review-of-push-and-pull-workflow-engines" title="Link to this heading">#</a></h4>
 <p>Workflow engines can be categorized by whether their execution can be seen as “pushing” values as arguments into tasks
 or “pulling” results from tasks. Here are a few examples:</p>
 <ul class="simple">
@@ -532,7 +532,7 @@ data-dependent dynamic execution to simply parameterizing workflow graph structu
 graph construction-time (i.e. before seeing any data).</p>
 </section>
 <section id="unifying-push-and-pull-with-common-subexpression-elimination-cse">
-<h4>Unifying push and pull with Common Subexpression Elimination (CSE)<a class="headerlink" href="#unifying-push-and-pull-with-common-subexpression-elimination-cse" title="Permalink to this heading">#</a></h4>
+<h4>Unifying push and pull with Common Subexpression Elimination (CSE)<a class="headerlink" href="#unifying-push-and-pull-with-common-subexpression-elimination-cse" title="Link to this heading">#</a></h4>
 <p>Given the individual advantages of push and pull workflow engines, can we develop a workflow engine that has the
 benefits of both? redun achieves this by using <a class="reference external" href="https://en.wikipedia.org/wiki/Common_subexpression_elimination">Common Subexpression Elimination (CSE)</a>.</p>
 <p>The basic idea behind CSE is to detect whether the exact same expression is being reduced multiple times within an
@@ -563,7 +563,7 @@ workflows, such as in the example <a class="reference external" href="https://gi
 We believe this gives users the best of both worlds while providing the familiar semantics of “caching”.</p>
 </section>
 <section id="opt-in-ultimate-reduction-caching">
-<h4>Opt-in ultimate reduction caching<a class="headerlink" href="#opt-in-ultimate-reduction-caching" title="Permalink to this heading">#</a></h4>
+<h4>Opt-in ultimate reduction caching<a class="headerlink" href="#opt-in-ultimate-reduction-caching" title="Link to this heading">#</a></h4>
 <p>As described above, we default to single reduction caching due to its ability to safely check each task hash
 and external value validity. However, there may be situations where the user is willing to ignore
 changes to external values that appear in the child task calls, and would like to opt into
@@ -621,7 +621,7 @@ We use the database table <code class="docutils literal notranslate"><span class
 </ul>
 </section>
 <section id="caching-implementation">
-<h4>Caching implementation<a class="headerlink" href="#caching-implementation" title="Permalink to this heading">#</a></h4>
+<h4>Caching implementation<a class="headerlink" href="#caching-implementation" title="Link to this heading">#</a></h4>
 <p>In terms of cache implementation, we have implemented the following database and in-memory data structures.</p>
 <p>We have implemented the <code class="docutils literal notranslate"><span class="pre">Evaluation</span></code> table which provides a mapping from <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> (our cache key) to
 <code class="docutils literal notranslate"><span class="pre">value_hash</span></code> which is the hash of a Value containing the single reduction results. We use this to perform single
@@ -716,9 +716,9 @@ We use this to perform CSE detection.</p>
       
     </aside>
   </div>
-</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=b3ba4146"></script>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
-    <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>

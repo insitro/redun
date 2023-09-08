@@ -1,13 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Visualization" href="visualization.html" /><link rel="prev" title="Type checking" href="typing.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.1.1 and Furo 2023.07.26 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.5 and Furo 2023.08.19 -->
         <title>Console (TUI) - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=362ab14a" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -232,7 +232,7 @@
         </div>
         <article role="main">
           <section id="console-tui">
-<h1>Console (TUI)<a class="headerlink" href="#console-tui" title="Permalink to this heading">#</a></h1>
+<h1>Console (TUI)<a class="headerlink" href="#console-tui" title="Link to this heading">#</a></h1>
 <p>redun has a <a class="reference external" href="https://en.wikipedia.org/wiki/Text-based_user_interface">Text-based User Interface (TUI)</a> called Console, which provides a convenient way to interactively explore the <a class="reference internal" href="design.html#provenance-and-call-graphs"><span class="std std-ref">data provenance</span></a> recorded by past redun executions.</p>
 <p>For example, running the command</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>console
@@ -242,17 +242,17 @@
 <p><a href="_static/console-executions.svg"><img src="_static/console-executions.svg"></a></p>
 <p>This provides similar information as the <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">log</span></code> command, but also supports interactive exploration using keyboard navigation (e.g. arrow keys, cycling focus using tab) and mouse (e.g. clicking, dragging, mouse wheel). This is made possible by the powerful <a class="reference external" href="https://github.com/textualize/textual/">Textual</a> Python library.</p>
 <section id="console-walk-through">
-<h2>Console walk-through<a class="headerlink" href="#console-walk-through" title="Permalink to this heading">#</a></h2>
+<h2>Console walk-through<a class="headerlink" href="#console-walk-through" title="Link to this heading">#</a></h2>
 <p>To highlight some of the key features of the Console, we’ll explore the data provenance recorded by executing several of the <a class="reference external" href="https://github.com/insitro/redun/tree/main/examples">workflow examples</a> provided in the redun source repo.</p>
 <section id="executions-screen">
-<h3>Executions screen<a class="headerlink" href="#executions-screen" title="Permalink to this heading">#</a></h3>
+<h3>Executions screen<a class="headerlink" href="#executions-screen" title="Link to this heading">#</a></h3>
 <p>As we showed above, the Console can be started using the command <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">console</span></code>. The first screen is a list of the past Executions.</p>
 <p><a href="_static/console-executions.svg"><img src="_static/console-executions.svg"></a></p>
 <p>Let’s review some features on this first screen. First, on the bottom, we have a list of actions we can take along with hotkeys for invoking them. For example, pressing the <code class="docutils literal notranslate"><span class="pre">q</span></code> key will quit the Console application. Another important key, the <code class="docutils literal notranslate"><span class="pre">Escape</span></code> key, acts like a web browser back button as we navigate to other screens in the Console app. The <code class="docutils literal notranslate"><span class="pre">m</span></code> hotkey provides a menu of the top-level screens of the Console.</p>
 <p><a href="_static/console-menu.svg"><img src="_static/console-menu.svg"></a></p>
 </section>
 <section id="execution-screen">
-<h3>Execution screen<a class="headerlink" href="#execution-screen" title="Permalink to this heading">#</a></h3>
+<h3>Execution screen<a class="headerlink" href="#execution-screen" title="Link to this heading">#</a></h3>
 <p>Selecting an Execution in the executions list will take us to a screen providing information specific to one Execution. Here, we see the provenance recorded by running the <a class="reference external" href="https://github.com/insitro/redun/tree/main/examples/scraping">web scraping example</a>.</p>
 <p><a href="_static/console-execution.svg"><img src="_static/console-execution.svg"></a></p>
 <p><strong>Header.</strong> First, notice that the header has changed to <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">console</span> <span class="pre">executions/5174a516-dfaf-4b81-978c-b6ec948160a6</span></code>. This a valid shell command that can be used to return to this specific screen in the Console app. You can think of it like a URL for your terminal. For example, you could <a class="reference external" href="https://github.com/Textualize/textual/blob/main/FAQ.md#how-can-i-select-and-copy-text-in-a-textual-app">copy</a> this command and share it with collaborators who have access to the same redun repo.</p>
@@ -264,7 +264,7 @@
 <p><a href="_static/console-execution-filter.svg"><img src="_static/console-execution-filter.svg"></a></p>
 </section>
 <section id="job-screen">
-<h3>Job screen<a class="headerlink" href="#job-screen" title="Permalink to this heading">#</a></h3>
+<h3>Job screen<a class="headerlink" href="#job-screen" title="Link to this heading">#</a></h3>
 <p>Selecting a specific job, we navigate to the Job screen.</p>
 <p><a href="_static/console-job.svg"><img src="_static/console-job.svg"></a></p>
 <p><strong>Header.</strong> Similar to the Execution screen, the header provides basic information of the Job. In particular the <code class="docutils literal notranslate"><span class="pre">Trackback:</span></code> line allows quick navigation to the Execution, parent Job, and child Jobs. Job and Execution-specific tags are also displayed.</p>
@@ -273,7 +273,7 @@
 <p><strong>REPL.</strong> One common need when inspecting a job is to more deeply inspect the Job’s arguments or result. This can be done by pressing the <code class="docutils literal notranslate"><span class="pre">r</span></code> hotkey, which will navigate to the built-in <a class="reference external" href="https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop">Read-Eval-Print-Loop (REPL)</a> screen. The <code class="docutils literal notranslate"><span class="pre">r</span></code> hotkey is provided on many screens, and pressing it will inject local variables into the REPL specific to the originating screen. In this case, we will inject the <code class="docutils literal notranslate"><span class="pre">job</span></code>, <code class="docutils literal notranslate"><span class="pre">args</span></code>, <code class="docutils literal notranslate"><span class="pre">kwargs</span></code>, and <code class="docutils literal notranslate"><span class="pre">result</span></code> values (see below).</p>
 </section>
 <section id="repl-screen">
-<h3>REPL screen<a class="headerlink" href="#repl-screen" title="Permalink to this heading">#</a></h3>
+<h3>REPL screen<a class="headerlink" href="#repl-screen" title="Link to this heading">#</a></h3>
 <p>The REPL screen provides a <a class="reference external" href="https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop">Read-Eval-Print-Loop (REPL)</a> for inspecting data provenance directly in a Python REPL. redun uses <a class="reference external" href="https://www.sqlalchemy.org/">SQLAlchemy</a> to lazily load Python values from the redun database into memory.</p>
 <p><a href="_static/console-repl.svg"><img src="_static/console-repl.svg"></a></p>
 <p>Values used in the workflow will deserialize from the database using pickle and will default to pickle previews (mock-like objects) for any value with an unknown class (i.e. not currently importable).</p>
@@ -281,7 +281,7 @@
 </section>
 </section>
 <section id="conclusion">
-<h2>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this heading">#</a></h2>
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading">#</a></h2>
 <p>In summary, we have gone through a quick walk-through of the redun Console and how it can be used for inspecting data provenance and debugging workflow executions. There are many more screens that allow inspecting Files, Values, and more that can be found in the main menu (hotkey <code class="docutils literal notranslate"><span class="pre">m</span></code>) as well as navigating between screens via links. Overall, the app acts similar a web app by providing a header that updates with a shell command for navigating directly back to any screen, much like a web page URL.</p>
 </section>
 </section>
@@ -361,9 +361,9 @@
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b3ba4146"></script>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>

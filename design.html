@@ -1,13 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Values" href="values.html" /><link rel="prev" title="Install" href="index.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.1.1 and Furo 2023.07.26 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.5 and Furo 2023.08.19 -->
         <title>Design overview - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=362ab14a" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -232,10 +232,10 @@
         </div>
         <article role="main">
           <section id="design-overview">
-<h1>Design overview<a class="headerlink" href="#design-overview" title="Permalink to this heading">#</a></h1>
+<h1>Design overview<a class="headerlink" href="#design-overview" title="Link to this heading">#</a></h1>
 <p>Here, we describe the high-level design features of redun.</p>
 <section id="motivation">
-<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this heading">#</a></h2>
+<h2>Motivation<a class="headerlink" href="#motivation" title="Link to this heading">#</a></h2>
 <p>The goal of redun is to provide the benefits of workflow engines for Python code in an easy and unintrusive way. Workflow engines can help run code faster by using parallel distributed execution, they can provide checkpointing for fast resuming of previously halted execution, they can reactively re-execute code based on changes in data or code, and can provide logging for data provenance.</p>
 <p>While there are <a class="reference external" href="https://github.com/pditommaso/awesome-pipeline">A LOT</a> of workflow engines available even for Python, redun differs by avoiding the need to restructure programs in terms of dataflow. In fact, we take the position that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, recursion, higher order functions, etc). redun’s key insight is that workflows can be expressed as lazy expressions, that are then evaluated by a scheduler that performs automatic parallelization, caching, and data provenance logging.</p>
 <p>redun’s key features are:</p>
@@ -251,7 +251,7 @@
 <p>See the <a class="reference internal" href="#influences">influences</a> for more details on how these features relate to other tools.</p>
 </section>
 <section id="first-example">
-<h2>First example<a class="headerlink" href="#first-example" title="Permalink to this heading">#</a></h2>
+<h2>First example<a class="headerlink" href="#first-example" title="Link to this heading">#</a></h2>
 <p>redun augments Python to simulate a functional language with lazy evaluation. By writing code as pure functions without side-effects, redun can safely perform parallel execution and cache function results. By using <a class="reference internal" href="#lazy-evaluation-and-parallelism">lazy evaluation</a>, we can execute a Python program quickly to automatically discover the dataflow between functions. Therefore, it is unnecessary to force the developer to specify the dataflow directly (e.g. Airflow’s <code class="docutils literal notranslate"><span class="pre">set_upstream()</span></code> and <code class="docutils literal notranslate"><span class="pre">set_downstream()</span></code>).</p>
 <p>redun does not try to impose a functional style on all code. Python supports multiple programming paradigms and a typical project might include libraries that make use of all of them. Therefore, redun allows the user to annotate which functions are effectively pure using a <code class="docutils literal notranslate"><span class="pre">&#64;task</span></code> decorator. Such functions are called Tasks and they are the main unit of execution in redun. Tasks have several special properties that make them a powerful building block for data pipelines.</p>
 <p>Here, is a small hello world program for redun:</p>
@@ -298,9 +298,9 @@ Hello,<span class="w"> </span>World!
 </div>
 </section>
 <section id="key-features">
-<h2>Key features<a class="headerlink" href="#key-features" title="Permalink to this heading">#</a></h2>
+<h2>Key features<a class="headerlink" href="#key-features" title="Link to this heading">#</a></h2>
 <section id="memoization-and-reactivity">
-<h3>Memoization and reactivity<a class="headerlink" href="#memoization-and-reactivity" title="Permalink to this heading">#</a></h3>
+<h3>Memoization and reactivity<a class="headerlink" href="#memoization-and-reactivity" title="Link to this heading">#</a></h3>
 <p>The return values of tasks are memoized. When calling the same task with the same arguments, a previously cached result is used instead of re-executing the task. This allows us to quickly resume a past execution, by fast forwarding through old parts of a program and only executing new parts.</p>
 <p>Consider the example above, which is also available in <code class="docutils literal notranslate"><span class="pre">examples/hello_world.py</span></code>. On first execution, every task executes as indicated by the “[redun] Run” log lines:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">redun</span> <span class="n">run</span> <span class="n">hello_world</span><span class="o">.</span><span class="n">py</span> <span class="n">main</span>
@@ -355,7 +355,7 @@ Hello,<span class="w"> </span>World!
 <p>How is this achieved? To make this memoization work, we need to know whether we have seen the same Task called with the same arguments. redun performs <a class="reference internal" href="tasks.html#task-hashing"><span class="std std-ref">hashing of Tasks</span></a> (see below) and arguments and uses those hashes as a cache key for fetching values from a result cache.</p>
 </section>
 <section id="lazy-evaluation-and-parallelism">
-<h3>Lazy evaluation and parallelism<a class="headerlink" href="#lazy-evaluation-and-parallelism" title="Permalink to this heading">#</a></h3>
+<h3>Lazy evaluation and parallelism<a class="headerlink" href="#lazy-evaluation-and-parallelism" title="Link to this heading">#</a></h3>
 <p>Tasks are executed in a lazy and asynchronous manner. When a task is called, it returns immediately with an <code class="docutils literal notranslate"><span class="pre">Expression</span></code> object:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span>
 
@@ -438,7 +438,7 @@ Hello,<span class="w"> </span>World!
 <p>Our use of Expressions to build up Task dependency is also similar to <a class="reference external" href="https://docs.python.org/dev/library/concurrent.futures.html">Concurrent Futures in Python</a> and <a class="reference external" href="https://docs.dask.org/en/latest/delayed.html">Dask Delayed</a>.</p>
 </section>
 <section id="tasks-as-pure-functions">
-<h3>Tasks as pure functions<a class="headerlink" href="#tasks-as-pure-functions" title="Permalink to this heading">#</a></h3>
+<h3>Tasks as pure functions<a class="headerlink" href="#tasks-as-pure-functions" title="Link to this heading">#</a></h3>
 <p>In order for redun to safely cache results and execute tasks in parallel, a few restrictions must be followed when writing a task. Primarily, tasks must be written such that they are “effectively <a class="reference external" href="https://en.wikipedia.org/wiki/Pure_function">pure functions</a>”. That is, given the same arguments, a task should always return (effectively) the same result. redun does not try to enforce strict purity, so minor side-effects such logging, or caching, are not an issue. A task can even be stochastic as long as the user is ok with using cached results from previous executions.</p>
 <p>Tasks are allowed to call other tasks, just like one would write a function to call other functions. In fact, this is the encouraged way of building up a workflow program. Tasks are also allowed to call plain Python functions, as long as the net result of the task is effectively pure. You may also call tasks from plain Python functions as well. In fact, this often occurs when using functions such as <code class="docutils literal notranslate"><span class="pre">map()</span></code>.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">small_helper</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
@@ -459,7 +459,7 @@ Hello,<span class="w"> </span>World!
 <p>One point of caution about using plain Python functions is that redun cannot hash the contents of a plain Python function, such as <code class="docutils literal notranslate"><span class="pre">small_helper</span></code> above. So changes to that function will not trigger re-execution. It becomes the responsibility of the user to force re-execution if needed, perhaps by bumping the version of the calling task or explicitly indicating the dependency to Redun (see <a class="reference internal" href="tasks.html#task-hashing"><span class="std std-ref">Task Hashing</span></a> for more).</p>
 </section>
 <section id="result-caching">
-<h3>Result caching<a class="headerlink" href="#result-caching" title="Permalink to this heading">#</a></h3>
+<h3>Result caching<a class="headerlink" href="#result-caching" title="Link to this heading">#</a></h3>
 <p>As Redun’s scheduler traverses the lazy expression graphs, it looks for opportunities to rely on cached values to avoid repeating computations it has already performed. Redun’s approach to this is designed to be both efficient and correct. For more information on caching and scheduling, see (scheduler)[scheduler.md]. To illustrate how this works, and some of the subtleties therein, consider this example:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
@@ -506,7 +506,7 @@ Hello,<span class="w"> </span>World!
 <p>The end result of this process is that redun correctly skips re-execution of unchanged high level tasks, such as <code class="docutils literal notranslate"><span class="pre">main</span></code>, but properly re-executes updated deeply nested tasks, such as <code class="docutils literal notranslate"><span class="pre">step1</span></code>. It is quite common in large programs that the upper level tasks mostly perform routing of arguments and results, and the lower level tasks perform the actual work. Routing frequently is unaffected by the actual data or implementations of the lower level tasks, so being able to skip re-execution of high level tasks is an important optimization.</p>
 </section>
 <section id="file-reactivity">
-<h3>File reactivity<a class="headerlink" href="#file-reactivity" title="Permalink to this heading">#</a></h3>
+<h3>File reactivity<a class="headerlink" href="#file-reactivity" title="Link to this heading">#</a></h3>
 <p>A common use case for workflow engines is to read and write to files, either stored locally or remotely (object storage, S3, etc). Files can be a tricky data type to accommodate in a purely functional setting because the contents of files can change outside of our control. Ideally, we would like our workflow engine to react to those changes. For example, we would want to re-execute our workflow when:</p>
 <ul class="simple">
 <li><p>An input file changes its contents, and now we want to re-execute the tasks that read that input file so we can regenerate our downstream results.</p></li>
@@ -547,10 +547,10 @@ Hello,<span class="w"> </span>World!
 <p>See the <a class="reference internal" href="values.html#Validity"><span class="std std-ref">Validity</span></a> section below for additional discussion on the general feature.</p>
 </section>
 <section id="shell-scripting">
-<h3>Shell scripting<a class="headerlink" href="#shell-scripting" title="Permalink to this heading">#</a></h3>
+<h3>Shell scripting<a class="headerlink" href="#shell-scripting" title="Link to this heading">#</a></h3>
 <p>It is common, especially in bioinformatics, to use workflow engines to combine together unix programs into a computational pipeline. Typically, each program exchanges data with each other through input and output files. redun provides several features to ease the calling of programs through scripts and managing their input and output files.</p>
 <section id="script-tasks">
-<h4>Script tasks<a class="headerlink" href="#script-tasks" title="Permalink to this heading">#</a></h4>
+<h4>Script tasks<a class="headerlink" href="#script-tasks" title="Link to this heading">#</a></h4>
 <p>A <em>script task</em> is a special task in redun whose definition is a shell script as opposed to a python function. Script tasks are defined by passing the task option <code class="docutils literal notranslate"><span class="pre">script=True</span></code> in the <code class="docutils literal notranslate"><span class="pre">&#64;task()</span></code> decorator and returning a string containing a shell script.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">script</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">task1</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">):</span>
@@ -593,7 +593,7 @@ Hello,<span class="w"> </span>World!
 <p>Feel free to indent lines to match the surrounding code. redun uses <a class="reference external" href="https://docs.python.org/3/library/textwrap.html#textwrap.dedent">dedent()</a> to remove leading whitespace in scripts.</p>
 </section>
 <section id="file-staging">
-<h4>File staging<a class="headerlink" href="#file-staging" title="Permalink to this heading">#</a></h4>
+<h4>File staging<a class="headerlink" href="#file-staging" title="Link to this heading">#</a></h4>
 <p>When defining script tasks that run on a remote execution environment (e.g. AWS Batch), it is common to have to copy input files from a cloud storage location (e.g. S3) to the compute node and similarly copy output files from the compute node back to cloud storage. We call this file staging and unstaging, respectively.</p>
 <p>Manually performing file staging would look something like this:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">script</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -720,16 +720,16 @@ Hello,<span class="w"> </span>World!
 </section>
 </section>
 <section id="provenance-and-call-graphs">
-<h3>Provenance and call graphs<a class="headerlink" href="#provenance-and-call-graphs" title="Permalink to this heading">#</a></h3>
+<h3>Provenance and call graphs<a class="headerlink" href="#provenance-and-call-graphs" title="Link to this heading">#</a></h3>
 <img src="_static/redun-call-graph.svg" width="100%"/>
 <p>Depicted above is an example call graph and job tree (left) for an execution of a workflow (right). When each task is called, a CallNode is recorded along with all the Values used as arguments and return values. As tasks (<code class="docutils literal notranslate"><span class="pre">main</span></code>) call child tasks, children CallNodes are recorded (<code class="docutils literal notranslate"><span class="pre">task1</span></code> and <code class="docutils literal notranslate"><span class="pre">task2</span></code>). “Horizontal” dataflow is also recorded between sibling tasks, such as <code class="docutils literal notranslate"><span class="pre">task1</span></code> and <code class="docutils literal notranslate"><span class="pre">task2</span></code>. Each node in the call graph is identified by a unique hash and each Job and Execution is identified by a unique UUID. This information is stored by default in the redun database <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code>.</p>
 <p>The redun backend database provides a durable record of these call graphs for every execution redun performs. This not only provides the backend storage for caching, it also is queryable by users to explore the call graph, using the <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">log</span></code>, <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">console</span></code>, and <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">repl</span></code> commands. For example, if we know that a file <code class="docutils literal notranslate"><span class="pre">/tmp/data</span></code> was produced by redun, we can find out exactly which execution did so, and hence can retrieve information about the code and inputs used to do so. See <a class="reference internal" href="db.html#Querying-call-graphs"><span class="std std-ref">querying call graphs</span></a> for more.</p>
 </section>
 </section>
 <section id="advanced-topics">
-<h2>Advanced topics<a class="headerlink" href="#advanced-topics" title="Permalink to this heading">#</a></h2>
+<h2>Advanced topics<a class="headerlink" href="#advanced-topics" title="Link to this heading">#</a></h2>
 <section id="working-with-databases-and-apis">
-<h3>Working with databases and APIs<a class="headerlink" href="#working-with-databases-and-apis" title="Permalink to this heading">#</a></h3>
+<h3>Working with databases and APIs<a class="headerlink" href="#working-with-databases-and-apis" title="Link to this heading">#</a></h3>
 <p>It’s common to use workflow engines to implement Extract Transform Load (ETL) pipelines which help move data between data stores such as databases, data lakes, and other services. Inevitably, we would need to work with ephemeral objects such as database connections and API clients that would have difficulties with caching and re-execution without providing special treatment. For example:</p>
 <ul class="simple">
 <li><p>Database connections or API clients might have internal state you don’t want to be serialized, such as secrets or overly specific configuration information (IP addresses, port numbers).</p></li>
@@ -740,7 +740,7 @@ Hello,<span class="w"> </span>World!
 <p>redun provides solutions to several of these challenges using a concept called (Handles)[values.md#Handles-for-ephemeral-and-stateful-values].</p>
 </section>
 <section id="running-without-a-scheduler">
-<h3>Running without a scheduler<a class="headerlink" href="#running-without-a-scheduler" title="Permalink to this heading">#</a></h3>
+<h3>Running without a scheduler<a class="headerlink" href="#running-without-a-scheduler" title="Link to this heading">#</a></h3>
 <p>Redun is designed to execute workflows in a highly parallel and asynchronous manner. This allows
 it to efficiently orchestrate complex workflows spread over a wide collection of resources.
 If the workflow is configured to use remote resources, this can mean that the scheduler
@@ -772,7 +772,7 @@ the proxy is not long-lived, and we don’t have any way for the caller to monit
 results.</p>
 </section>
 <section id="connections-to-functional-programming">
-<h3>Connections to functional programming<a class="headerlink" href="#connections-to-functional-programming" title="Permalink to this heading">#</a></h3>
+<h3>Connections to functional programming<a class="headerlink" href="#connections-to-functional-programming" title="Link to this heading">#</a></h3>
 <p>redun’s use of task decorators and lazy-evaluation can be thought of as a <a class="reference external" href="https://en.wikipedia.org/wiki/Monad_(functional_programming)">monad</a>. The redun monad consists of three components:</p>
 <ul class="simple">
 <li><p>A type constructor <code class="docutils literal notranslate"><span class="pre">M</span></code>:</p>
@@ -819,7 +819,7 @@ results.</p>
 <p>In our use, “reifying” means wrapping the computation into an expression tree that our scheduler can analyze for deciding which tasks can be executed safely in parallel, which tasks can be skipped due to caching, etc. Generating the expression tree is what makes redun <em>declarative</em>, even though we do execute imperative code to generate the expression tree.</p>
 </section>
 <section id="redun-a-language-within">
-<h3>redun: a language within<a class="headerlink" href="#redun-a-language-within" title="Permalink to this heading">#</a></h3>
+<h3>redun: a language within<a class="headerlink" href="#redun-a-language-within" title="Link to this heading">#</a></h3>
 <p>redun can be thought of as implementing an asynchronous functional programming language within Python, which is an imperative multi-paradigm language, a general pattern called <a class="reference external" href="https://en.wikipedia.org/wiki/Metaprogramming">metaprogramming</a>. This strategy for implementing a workflow engine allows us to use a very popular programming language, Python (used in data science, ML, web development, ETLs), but adapt it to have language features amenable to distributed computing. The following features map between Python and redun-the-language:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Task</span></code>s are the functions of redun.</p></li>
@@ -847,7 +847,7 @@ results.</p>
 </section>
 </section>
 <section id="influences">
-<h2>Influences<a class="headerlink" href="#influences" title="Permalink to this heading">#</a></h2>
+<h2>Influences<a class="headerlink" href="#influences" title="Link to this heading">#</a></h2>
 <p>The development of redun has been inspired by many projects. Here is a brief review of our understanding of how redun’s ideas relate to similar concepts seen elsewhere.</p>
 <ul class="simple">
 <li><p>Bioinformatic workflow languages: <a class="reference external" href="https://github.com/openwdl/wdl">WDL</a>, <a class="reference external" href="https://www.commonwl.org/">CWL</a>, <a class="reference external" href="https://www.nextflow.io/">Nextflow</a>, <a class="reference external" href="https://snakemake.readthedocs.io/en/stable/">Snakemake</a>, <a class="reference external" href="https://github.com/grailbio/reflow">Reflow</a></p>
@@ -1007,9 +1007,9 @@ results.</p>
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b3ba4146"></script>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>

@@ -1,13 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="FAQ" href="FAQ.html" /><link rel="prev" title="Console (TUI)" href="console.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.1.1 and Furo 2023.07.26 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.5 and Furo 2023.08.19 -->
         <title>Visualization - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=362ab14a" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -232,10 +232,10 @@
         </div>
         <article role="main">
           <section id="visualization">
-<h1>Visualization<a class="headerlink" href="#visualization" title="Permalink to this heading">#</a></h1>
+<h1>Visualization<a class="headerlink" href="#visualization" title="Link to this heading">#</a></h1>
 <p>Visualizing the call graph of redun executions can help developers understand the evaluation and fan out/in patterns of redun programs, making them a useful debugging tool.</p>
 <section id="configuring-visualizations">
-<h2>Configuring visualizations<a class="headerlink" href="#configuring-visualizations" title="Permalink to this heading">#</a></h2>
+<h2>Configuring visualizations<a class="headerlink" href="#configuring-visualizations" title="Link to this heading">#</a></h2>
 <p>Similar to logging, we can visualize <code class="docutils literal notranslate"><span class="pre">Execution</span></code>, <code class="docutils literal notranslate"><span class="pre">Job</span></code>, <code class="docutils literal notranslate"><span class="pre">CallNode</span></code>, and <code class="docutils literal notranslate"><span class="pre">Value</span></code> objects by hash.
 The basic command to do so is <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">viz</span> <span class="pre">&lt;id_or_hash_prefix&gt;</span></code>.
 Note that <code class="docutils literal notranslate"><span class="pre">Task</span></code> objects cannot be visualized currently as they are directly associated with jobs in the context of call graphs.
@@ -243,7 +243,7 @@ If in the future we support expression graph visualization, we can include expli
 <p><code class="docutils literal notranslate"><span class="pre">Value</span></code> queries are treated slightly differently from the other objects, with a greater focus on their upstream lineage.
 We will cover each of these two visualization scenarios separately, along with each of their relevant flags.</p>
 <section id="visualizing-non-value-objects">
-<h3>Visualizing non-<code class="docutils literal notranslate"><span class="pre">Value</span></code> objects<a class="headerlink" href="#visualizing-non-value-objects" title="Permalink to this heading">#</a></h3>
+<h3>Visualizing non-<code class="docutils literal notranslate"><span class="pre">Value</span></code> objects<a class="headerlink" href="#visualizing-non-value-objects" title="Link to this heading">#</a></h3>
 <p>The graphs discussed here will correspond to the example below.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
@@ -341,7 +341,7 @@ We can also plot jobs or CallNodes, which both will yield a CallNode and its imm
 <img src="_static/make-call-node.png" width="50%"/>
 </section>
 <section id="visualizing-value-objects">
-<h3>Visualizing <code class="docutils literal notranslate"><span class="pre">Value</span></code> objects<a class="headerlink" href="#visualizing-value-objects" title="Permalink to this heading">#</a></h3>
+<h3>Visualizing <code class="docutils literal notranslate"><span class="pre">Value</span></code> objects<a class="headerlink" href="#visualizing-value-objects" title="Link to this heading">#</a></h3>
 <p>The graph for a value query depicts all the upstream calls and values that were required to generate the value.
 Note that the value object is taken as is and not deconstructed.
 Thus, for a nested value such as the list queried for below, only the direct lineage is revealed.
@@ -390,7 +390,7 @@ This flag makes routing calls more informative because it displays not only the 
 <img src="_static/make-subvalue-wrap.png" width="50%"/>
 </section>
 <section id="final-notes">
-<h3>Final Notes<a class="headerlink" href="#final-notes" title="Permalink to this heading">#</a></h3>
+<h3>Final Notes<a class="headerlink" href="#final-notes" title="Link to this heading">#</a></h3>
 <p>The image generated may vary between calls. If the graph generated is difficult to read, utilize the flags to remove job nodes, shift to a horizontal layout, or simply try rerunning again.</p>
 <p>For convenience, the flags are broken down by when they are appropriate to use.</p>
 </section>
@@ -470,9 +470,9 @@ This flag makes routing calls more informative because it displays not only the 
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b3ba4146"></script>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>

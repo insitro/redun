@@ -1,13 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Tasks" href="tasks.html" /><link rel="prev" title="Design overview" href="design.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.1.1 and Furo 2023.07.26 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.5 and Furo 2023.08.19 -->
         <title>Values - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=362ab14a" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -232,11 +232,11 @@
         </div>
         <article role="main">
           <section id="values">
-<h1>Values<a class="headerlink" href="#values" title="Permalink to this heading">#</a></h1>
+<h1>Values<a class="headerlink" href="#values" title="Link to this heading">#</a></h1>
 <p>Values is the general term redun uses to refer to task arguments and results. Below, we describe
 some of the special treatments redun uses to enable expressive value dataflow.</p>
 <section id="hashing-and-equality">
-<h2>Hashing and equality<a class="headerlink" href="#hashing-and-equality" title="Permalink to this heading">#</a></h2>
+<h2>Hashing and equality<a class="headerlink" href="#hashing-and-equality" title="Link to this heading">#</a></h2>
 <p>All values in redun must be hashable. Hashes are used to define equality of values, without any
 fallback to deep equality checking.</p>
 <p>An important consequence is that redun ignores the difference between whether two entities
@@ -253,13 +253,13 @@ actually references to the same underlying object, or merely hash identically. F
 <p>Therefore, hashes provide a unique mechanism for indexing objects in the backend.</p>
 </section>
 <section id="serialization">
-<h2>Serialization<a class="headerlink" href="#serialization" title="Permalink to this heading">#</a></h2>
+<h2>Serialization<a class="headerlink" href="#serialization" title="Link to this heading">#</a></h2>
 <p>Redun primarily serializes <code class="docutils literal notranslate"><span class="pre">Value</span></code>s with <code class="docutils literal notranslate"><span class="pre">pickle</span></code> since it is native to python and provides powerful tools for
 serializing complex and nested Python objects. Users may customize this as usual, with
 <code class="docutils literal notranslate"><span class="pre">__getstate__</span></code> and <code class="docutils literal notranslate"><span class="pre">__setstate__</span></code>.</p>
 </section>
 <section id="validity">
-<h2>Validity<a class="headerlink" href="#validity" title="Permalink to this heading">#</a></h2>
+<h2>Validity<a class="headerlink" href="#validity" title="Link to this heading">#</a></h2>
 <p>In addition to handling ordinary values, i.e., data or objects represented in memory, complex
 workflows often require reasoning about state that may be complex or external, such as
 a database or filesystem. Redun accomplishes reasoning over this state by converting it into
@@ -279,7 +279,7 @@ contents).</p>
 <p>See (File reactivity)[design.md#File-reactivity] for more exposition on the file case.</p>
 </section>
 <section id="extending-standard-types-with-proxyvalues">
-<h2>Extending standard types with <code class="docutils literal notranslate"><span class="pre">ProxyValue</span></code>s<a class="headerlink" href="#extending-standard-types-with-proxyvalues" title="Permalink to this heading">#</a></h2>
+<h2>Extending standard types with <code class="docutils literal notranslate"><span class="pre">ProxyValue</span></code>s<a class="headerlink" href="#extending-standard-types-with-proxyvalues" title="Link to this heading">#</a></h2>
 <p>Many task have inputs or outputs that are not redun <code class="docutils literal notranslate"><span class="pre">Value</span></code> types, either because they are
 builtins like <code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">int</span></code>, or are other types, such as <code class="docutils literal notranslate"><span class="pre">np.array</span></code>. When the redun scheduler
 works with these, it wraps them in <code class="docutils literal notranslate"><span class="pre">ProxyValue</span></code>, but then unwraps them before presenting them to
@@ -300,7 +300,7 @@ to customize the behavior. These types also provide hooks to allow the CLI to pa
 which the <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">run</span></code> command relies on.</p>
 </section>
 <section id="handles-for-ephemeral-and-stateful-values">
-<h2>Handles for ephemeral and stateful values<a class="headerlink" href="#handles-for-ephemeral-and-stateful-values" title="Permalink to this heading">#</a></h2>
+<h2>Handles for ephemeral and stateful values<a class="headerlink" href="#handles-for-ephemeral-and-stateful-values" title="Link to this heading">#</a></h2>
 <p>We’ll introduce the features of Handles in several steps. The first feature that Handles provide is control over the data used for serialization and a mechanism for recreating ephemeral state after deserialization. Let’s say we wanted to pass a database connection between tasks in a safe way. We could use a Handle class to do the following:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">Handle</span>
 
@@ -339,7 +339,7 @@ which the <code class="docutils literal notranslate"><span class="pre">redun</sp
 <p>First, we use the <code class="docutils literal notranslate"><span class="pre">DbHandle</span></code> class to wrap a sqlite database connection. When Handles are serialized, only the arguments to their constructor are serialized. Therefore, you can define as much internal state as you wish for a Handle and it will not get caught up in the cache. redun’s default serialization is Python’s pickle framework. pickle uses the <code class="docutils literal notranslate"><span class="pre">__new__()</span></code> constructor and <code class="docutils literal notranslate"><span class="pre">__setstate__</span></code> (or <code class="docutils literal notranslate"><span class="pre">__dict__</span></code>) to directly set the state of an object, thus avoiding calling the <code class="docutils literal notranslate"><span class="pre">__init__</span></code> initializer. Handles modify this behavior in order to execute <code class="docutils literal notranslate"><span class="pre">__init__</span></code> even when deserializing. Therefore, we can use the constructor to reestablish ephemeral state such as the database connection.</p>
 <p>Since Handles are often used to wrap another object, such as a connection, Handles provide a convenient mechanism for reducing boiler plate code. If a Handle defines a <code class="docutils literal notranslate"><span class="pre">self.instance</span></code> attribute, all attribute access to the Handle is automatically proxied to the <code class="docutils literal notranslate"><span class="pre">self.instance</span></code>. Above the <code class="docutils literal notranslate"><span class="pre">conn.execute()</span></code> and <code class="docutils literal notranslate"><span class="pre">conn.executemany()</span></code> calls make use of the attribute proxy.</p>
 <section id="state-tracking">
-<h3>State tracking<a class="headerlink" href="#state-tracking" title="Permalink to this heading">#</a></h3>
+<h3>State tracking<a class="headerlink" href="#state-tracking" title="Link to this heading">#</a></h3>
 <p>Now let’s take a closer look at the <code class="docutils literal notranslate"><span class="pre">load()</span></code> task. It uses a handle, <code class="docutils literal notranslate"><span class="pre">dest_conn</span></code>, as an input and output in order to perform a write. Ideally, we would like to represent that <code class="docutils literal notranslate"><span class="pre">dest_conn</span></code> is updated by the <code class="docutils literal notranslate"><span class="pre">load</span></code> task so that we can correctly determine which tasks need to be re-executed when input data or code changes.</p>
 <p>As we stated before, hashing an entire database just to represent the database state is often not feasible, either because there is too much data to rehash frequently, or the database state contains too much ancillary data to hash consistently. As an alternative to hashing the whole database, we could just hash the sequence of operations (i.e. Tasks) we have applied to database Handle. This is the strategy redun takes.</p>
 <p>Specifically, as a handle passes into or out of a Task, the redun scheduler duplicates the Handle and incorporates into its hash information specific to the task call, such as the hash of the corresponding call node. Therefore, in the example above, if we look at these specific lines:</p>
@@ -398,7 +398,7 @@ which the <code class="docutils literal notranslate"><span class="pre">redun</sp
 <p>The old handle state <code class="docutils literal notranslate"><span class="pre">dest_conn3</span></code> is marked as invalid. What’s important about this bookkeeping is that if we revert the change to <code class="docutils literal notranslate"><span class="pre">load2()</span></code>, it is not appropriate to just fast revert to dest_conn3. We must re-execute <code class="docutils literal notranslate"><span class="pre">load2()</span></code> again to update the database to be at state <code class="docutils literal notranslate"><span class="pre">dest_conn3</span></code> (instead of <code class="docutils literal notranslate"><span class="pre">dest_conn3b</span></code>).</p>
 </section>
 <section id="more-advanced-handle-uses">
-<h3>More advanced Handle uses<a class="headerlink" href="#more-advanced-handle-uses" title="Permalink to this heading">#</a></h3>
+<h3>More advanced Handle uses<a class="headerlink" href="#more-advanced-handle-uses" title="Link to this heading">#</a></h3>
 <p><em>This is currently explained very briefly</em></p>
 <p>Handles can be forked into instances that can be processed in parallel (parallel loading into a database). Forking might also be done to denote that there is no dependency between the tasks and limit the scope of rollbacks (i.e. Handle invalidation).</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">merge_handles</span>
@@ -502,9 +502,9 @@ which the <code class="docutils literal notranslate"><span class="pre">redun</sp
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b3ba4146"></script>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>
