@@ -306,7 +306,9 @@ def launch_federated_task(
         task_name,
     ]
 
-    launch_script(config, executor=executor, script_command=script_command)
+    launch_script(
+        config, executor=executor, script_command=script_command, execution_id=execution.id
+    )
 
     return execution.id
 

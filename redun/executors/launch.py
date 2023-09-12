@@ -6,7 +6,7 @@ from redun.config import Config
 from redun.executors.base import Executor, get_executor_from_config
 from redun.expression import TaskExpression
 from redun.logging import logger
-from redun.scheduler import Job, Scheduler
+from redun.scheduler import Execution, Job, Scheduler
 from redun.scripting import script_task
 from redun.task import hash_args_eval
 from redun.value import get_type_registry
@@ -18,6 +18,7 @@ def launch_script(
     executor: Optional[Executor] = None,
     executor_name: Optional[str] = None,
     task_options: Optional[dict] = None,
+    execution_id: Optional[str] = None,
 ) -> None:
     """
     Submit the provided script command to the executor, then exit.
@@ -28,6 +29,25 @@ def launch_script(
 
     WARNING: This won't actually work on all executor types, such as the local ones. To work,
     the executor needs to be "fire and forget" for `submit_script`.
+
+    Parameters
+    ----------
+    config : Config
+        Config object containing executor information.
+    script_command : List[str]
+        The script command to run on the executor.
+    executor : Optional[Executor]
+        Optional Executor on which to run the script.  Must be set if executor_name is not set.
+    executor_name : Optional[str]
+        Name of the executor in the config.  Must be set if executor is not set.
+    task_options : Optional[dict]
+        Task options to pass to the script task.
+    execution_id : Optional[str]
+        If provided, use this execution id. This is only relevant for tagging.
+
+    Returns
+    -------
+        None
     """
 
     if executor is None:
@@ -35,6 +55,7 @@ def launch_script(
         executor = get_executor_from_config(config.get("executors", {}), executor_name)
 
     scheduler = Scheduler()
+    execution = Execution(id=execution_id)
     executor.set_scheduler(scheduler)
 
     # Prepare command to execute within Executor.
@@ -49,7 +70,7 @@ def launch_script(
     logger.info(f"Run within Executor {executor_name}: {remote_run_command}")
 
     # Submit directly to executor and immediately exit.
-    job = Job(script_task, run_expr)
+    job = Job(script_task, run_expr, execution=execution)
     script_args = ()
     script_kwargs = {"command": remote_run_command}
     job.eval_hash, job.args_hash = hash_args_eval(
