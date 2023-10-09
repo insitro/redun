@@ -194,6 +194,15 @@ def test_default_shell(scheduler: Scheduler) -> None:
     assert scheduler.run(result) == b"ok\n"
 
 
+def test_script_list(scheduler: Scheduler) -> None:
+    """
+    script() should accept lists as well.
+    """
+    # Note: The double space should be preserved since each element is shell quoted.
+    result = script(["echo", "hello  world"])
+    assert scheduler.run(result) == b"hello  world\n"
+
+
 def test_script_error(scheduler: Scheduler) -> None:
     """
     Scripts should propagate their errors.

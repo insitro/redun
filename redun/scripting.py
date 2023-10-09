@@ -1,10 +1,11 @@
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
 from tempfile import mkdtemp
 from textwrap import dedent
-from typing import Any, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 from redun.file import File, Staging
 from redun.task import Task, task
@@ -210,7 +211,7 @@ def postprocess_script(result: Any, outputs: Any, temp_path: Optional[str] = Non
 
 
 def script(
-    command: str,
+    command: Union[str, List],
     inputs: Any = [],
     outputs: Any = NULL,
     tempdir: bool = False,
@@ -219,6 +220,30 @@ def script(
 ) -> Any:
     """
     Execute a shell script as a redun task with file staging.
+
+    See the docs for a full explanation:
+      https://insitro.github.io/redun/design.html#file-staging
+
+    Parameters
+    ----------
+    command : Union[str, List]
+        Command string or argv list to execute.
+    inputs : Any
+        Collection of FileStaging objects used to stage cloud input files to local files.
+    outputs : Any
+        Collection of FileStaging objects used to unstage local output files back to cloud storage.
+    tempdir : bool
+        If True, run the command within a temporary directory.
+    as_mount : bool
+        If True, make use of cloud storage mounting (if available) to stage files.
+    **task_options : Any
+        Options to configure the Executor, such as `vcpus=2` or `memory=3`.
+
+    Returns
+    -------
+    Any
+        A result the same shape as `outputs` but with all FileStaging objects converted to their
+        corresponding remote Files.
     """
     if outputs == NULL:
         outputs = File("-")
@@ -237,6 +262,8 @@ def script(
     command_parts.extend(input.render_stage(as_mount) for input in iter_nested_value(inputs))
 
     # User command.
+    if isinstance(command, list):
+        command = " ".join(map(shlex.quote, command))
     command_parts.append(get_wrapped_command(prepare_command(command)))
 
     # Unstage outputs.
