@@ -55,6 +55,7 @@ executors
 scheduler
 config
 db
+tags
 spark
 typing
 console
