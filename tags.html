@@ -1,0 +1,421 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Spark" href="spark.html" /><link rel="prev" title="Backend and database" href="db.html" />
+
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+        <title>Tags - redun documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">redun  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="_static/redun.svg" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">redun  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="values.html">Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasks.html">Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="executors.html">Executors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduling redun workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db.html">Backend and database</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="console.html">Console (TUI)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developing.html">Developer guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="redun/modules.html">API docs</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API docs</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="redun/redun.html">redun package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of redun package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="redun/redun.backends.html">redun.backends package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of redun.backends package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun/redun.backends.db.html">redun.backends.db package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun/redun.console.html">redun.console package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun/redun.executors.html">redun.executors package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/insitro/redun">GitHub repository</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="tags">
+<h1>Tags<a class="headerlink" href="#tags" title="Link to this heading">#</a></h1>
+<p>redun provides the concept of <strong>tags</strong> for annotating workflow <a class="reference internal" href="design.html#provenance-and-call-graphs"><span class="std std-ref">data provenance</span></a> with additional metadata. Tags are represented as key-values pairs, where the value can be any JSON datatype (int, float, string, boolean, None, list, dict). By default, redun automatically adds tags to Executions and Jobs to record metadata such as, redun version, username, git commit, AWS Batch Job id, etc. In the example below, we have a redun Execution with tags like <code class="docutils literal notranslate"><span class="pre">redun.version=0.16.0</span></code> and <code class="docutils literal notranslate"><span class="pre">user=rasmus</span></code>. Some tags like <code class="docutils literal notranslate"><span class="pre">git_commit</span></code> can be used to automatically construct links to GitHub.</p>
+<img src="_static/console-execution.svg" width="100%"/>
+<p>Tags are helpful for querying data provenance. For example, using the <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">log</span></code> command, we can query for all Executions run by user <code class="docutils literal notranslate"><span class="pre">rasmus</span></code>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>log<span class="w"> </span>--tag<span class="w"> </span><span class="nv">user</span><span class="o">=</span>rasmus
+
+Recent<span class="w"> </span>executions:
+
+<span class="nv">ion</span><span class="o">=</span><span class="m">0</span>.16.1,<span class="w"> </span><span class="nv">user</span><span class="o">=</span>rasmus,<span class="w"> </span><span class="nv">user_gcp</span><span class="o">=</span>rasmus@insitro.com<span class="o">)</span>
+Exec<span class="w"> </span>6dc981d7<span class="w"> </span><span class="o">[</span><span class="w"> </span>DONE<span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="m">2023</span>-08-11<span class="w"> </span><span class="m">14</span>:44:09:<span class="w">  </span>run<span class="w"> </span>hello_world.py<span class="w"> </span>main<span class="w"> </span><span class="o">(</span><span class="nv">git_commit</span><span class="o">=</span>b3faf931667ffd18f797334eb1feef9b464ea600,<span class="w"> </span><span class="nv">git_origin_url</span><span class="o">=</span>git@github.com:insitro/redun.git,<span class="w"> </span><span class="nv">project</span><span class="o">=</span>redun.examples.hello_world,<span class="w"> </span>redun.version<span class="o">=</span><span class="m">0</span>.16.1,<span class="w"> </span><span class="nv">user</span><span class="o">=</span>rasmus,<span class="w"> </span>use
+<span class="nv">r_gcp</span><span class="o">=</span>rasmus@insitro.com<span class="o">)</span>
+Exec<span class="w"> </span>86b72927<span class="w"> </span><span class="o">[</span><span class="w"> </span>DONE<span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="m">2023</span>-06-15<span class="w"> </span><span class="m">09</span>:27:47:<span class="w">  </span>run<span class="w"> </span>hello_world.py<span class="w"> </span>main<span class="w"> </span>--greet<span class="w"> </span>Hi4<span class="w"> </span><span class="o">(</span><span class="nv">git_commit</span><span class="o">=</span>7ec9cb747aac9bb5bfbe6b518c9eab71296ffcc2,<span class="w"> </span><span class="nv">git_origin_url</span><span class="o">=</span>git@github.com:insitro/redun.git,<span class="w"> </span><span class="nv">project</span><span class="o">=</span>redun.examples.hello_world,<span class="w"> </span>redun.version<span class="o">=</span><span class="m">0</span>.15.0,<span class="w"> </span><span class="nv">user</span>
+<span class="o">=</span>rasmus<span class="o">)</span>
+Exec<span class="w"> </span>022e2cb6<span class="w"> </span><span class="o">[</span><span class="w"> </span>DONE<span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="m">2023</span>-06-15<span class="w"> </span><span class="m">09</span>:26:12:<span class="w">  </span>run<span class="w"> </span>hello_world.py<span class="w"> </span>main<span class="w"> </span>--greet<span class="w"> </span>Hi3<span class="w"> </span><span class="o">(</span><span class="nv">git_commit</span><span class="o">=</span>7ec9cb747aac9bb5bfbe6b518c9eab71296ffcc2,<span class="w"> </span><span class="nv">git_origin_url</span><span class="o">=</span>git@github.com:insitro/redun.git,<span class="w"> </span><span class="nv">project</span><span class="o">=</span>redun.examples.hello_world,<span class="w"> </span>redun.version<span class="o">=</span><span class="m">0</span>.15.0,<span class="w"> </span><span class="nv">user</span>
+<span class="o">=</span>rasmus<span class="o">)</span>
+Exec<span class="w"> </span>525eb514<span class="w"> </span><span class="o">[</span><span class="w"> </span>DONE<span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="m">2023</span>-06-15<span class="w"> </span><span class="m">09</span>:25:49:<span class="w">  </span>run<span class="w"> </span>hello_world.py<span class="w"> </span>main<span class="w"> </span>--greet<span class="w"> </span>Hi2<span class="w"> </span><span class="o">(</span><span class="nv">git_commit</span><span class="o">=</span>7ec9cb747aac9bb5bfbe6b518c9eab71296ffcc2,<span class="w"> </span><span class="nv">git_origin_url</span><span class="o">=</span>git@github.com:insitro/redun.git,<span class="w"> </span><span class="nv">project</span><span class="o">=</span>redun.examples.hello_world,<span class="w"> </span>redun.version<span class="o">=</span><span class="m">0</span>.15.0,<span class="w"> </span><span class="nv">user</span>
+<span class="o">=</span>rasmus<span class="o">)</span>
+</pre></div>
+</div>
+<section id="tag-structure">
+<h2>Tag structure<a class="headerlink" href="#tag-structure" title="Link to this heading">#</a></h2>
+<p>In general, users can add their own tags and attach them to any part of the recorded CallGraph (e.g. Execution, Job, Task, Value) in order to record helpful metadata and improve overall the data provenance.</p>
+<img src="_static/redun-tags.svg" width="100%"/>
+<p>In the example above, we have an illustration of the <a class="reference internal" href="design.html#provenance-and-call-graphs"><span class="std std-ref">CallGraph data structure</span></a> redun records while running a workflow. Briefly, when a user starts a new workflow execution, it is recorded with an Execution node (top right) along with a tree of Job nodes (right) for each task that is run during the workflow. For each Job, we record a CallNode (blue boxes) that connects together additional information such as the related Task, argument Values, and result Value.</p>
+<p>As seen above, Tag nodes (green boxes) attach to a variety of node types. This allows users to record metadata specific to a particular Task, Value, Job, or Execution. Each tag has the following three properties:</p>
+<ul class="simple">
+<li><p><strong>Entity:</strong> the id of the node the tag describes.</p></li>
+<li><p><strong>Key:</strong> a string describing what kind of information the tag describes (e.g. <code class="docutils literal notranslate"><span class="pre">user</span></code>, <code class="docutils literal notranslate"><span class="pre">git_commit</span></code>, <code class="docutils literal notranslate"><span class="pre">aws_batch_job</span></code>)</p></li>
+<li><p><strong>Value:</strong> a JSON datatype describing the tag value.</p></li>
+</ul>
+<p>The key-value approach is similar to other tagging designs such as <a class="reference external" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html">AWS tags</a>, and the three part structure deliberately follows the <a class="reference external" href="https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model">Entity, Attribute, Value</a> design in order to provide significant flexiblity in modeling metadata.</p>
+</section>
+<section id="adding-tags">
+<h2>Adding tags<a class="headerlink" href="#adding-tags" title="Link to this heading">#</a></h2>
+<section id="adding-execution-tags">
+<h3>Adding execution tags<a class="headerlink" href="#adding-execution-tags" title="Link to this heading">#</a></h3>
+<p>To add custom tags to an execution, add the <code class="docutils literal notranslate"><span class="pre">--tag</span></code> option when using <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">run</span></code>. For example, to add tags describing the kind of project and dataset being used in the workflow, we could use:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>--tag<span class="w"> </span><span class="nv">project</span><span class="o">=</span>my-analysis<span class="w"> </span>--tag<span class="w"> </span><span class="nv">dataset</span><span class="o">=</span>my-dataset<span class="w"> </span>workflow.py<span class="w"> </span>main
+</pre></div>
+</div>
+<p>Tags are described in a <code class="docutils literal notranslate"><span class="pre">{key}={value}</span></code> format. For convenience, string values don’t need to be quoted. Other JSON datatypes are represented as usual (but remembed to escape from shell interpretation):</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>--tag<span class="w"> </span><span class="nv">cost</span><span class="o">=</span><span class="m">3</span>.20<span class="w"> </span>--tag<span class="w"> </span><span class="nv">final</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>--tag<span class="w"> </span>flags<span class="w"> </span><span class="s1">&#39;[&quot;a&quot;,&quot;b&quot;,&quot;c&quot;]&#39;</span><span class="w"> </span>workflow.py<span class="w"> </span>main
+</pre></div>
+</div>
+<p>You may also use multiple tags of the same key. Here, we record multiple <code class="docutils literal notranslate"><span class="pre">source</span></code> tags:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>run<span class="w"> </span>--tag<span class="w"> </span><span class="nv">source</span><span class="o">=</span>my-data-source-1<span class="w"> </span>--tag<span class="w"> </span><span class="nv">source</span><span class="o">=</span>my-data-source-2<span class="w"> </span>workflow.py<span class="w"> </span>main
+</pre></div>
+</div>
+<p>If you are programmatically running a workflow, Execution tags can be added using the <a class="reference internal" href="redun/redun.html#redun.scheduler.Scheduler.run" title="redun.scheduler.Scheduler.run"><span class="xref myst py py-meth"><code class="docutils literal notranslate"><span class="pre">Scheduler.run()</span></code> method</span></a> and passing tags as a list of key-value tuples:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">scheduler</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="p">(</span><span class="n">config</span><span class="o">=...</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">(),</span> <span class="n">tags</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;cost&quot;</span><span class="p">,</span> <span class="mf">3.2</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;final&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)])</span>
+</pre></div>
+</div>
+</section>
+<section id="adding-task-tags">
+<h3>Adding task tags<a class="headerlink" href="#adding-task-tags" title="Link to this heading">#</a></h3>
+<p>Tags can be added to Tasks using the <code class="docutils literal notranslate"><span class="pre">tags</span></code> task option in the <code class="docutils literal notranslate"><span class="pre">&#64;task</span></code> decorator:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;version&quot;</span><span class="p">,</span> <span class="s2">&quot;prod&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;team&quot;</span><span class="p">,</span> <span class="s2">&quot;my-team&quot;</span><span class="p">)])</span>
+<span class="k">def</span> <span class="nf">my_task</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="c1"># ...</span>
+</pre></div>
+</div>
+<p>Jobs will also automatically inherit the tags of their Tasks.</p>
+</section>
+<section id="adding-value-tags">
+<h3>Adding value tags<a class="headerlink" href="#adding-value-tags" title="Link to this heading">#</a></h3>
+<p>To add tags to a Value, pass the value through <a class="reference internal" href="#redun.scheduler.apply_tags"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">apply_tags()</span></code></span></a> which returns the value back unchanged, but adds the provided tags during data provenance recording. For example, consider the following code:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+    <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;version&quot;</span><span class="p">,</span> <span class="s2">&quot;dev&quot;</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>Here, the task <code class="docutils literal notranslate"><span class="pre">add()</span></code> adds two numbers as usual, but will tag the result Value <code class="docutils literal notranslate"><span class="pre">c</span></code> with the tag <code class="docutils literal notranslate"><span class="pre">version=dev</span></code>.</p>
+</section>
+<section id="adding-job-tags">
+<h3>Adding job tags<a class="headerlink" href="#adding-job-tags" title="Link to this heading">#</a></h3>
+<p>First, Jobs automatically inherit any tags added to their corresponding Tasks. To add additional tags at runtime, you can also add them using the <a class="reference internal" href="#redun.scheduler.apply_tags"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">apply_tags()</span></code></span></a> task.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">compute_cost</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+    <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">job_tags</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;cost&quot;</span><span class="p">,</span> <span class="n">cost</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>Execution tags can also be added at runtime using <code class="docutils literal notranslate"><span class="pre">apply_tags(value,</span> <span class="pre">execution_tags=[(key,</span> <span class="pre">value),</span> <span class="pre">...])</span></code>.</p>
+</section>
+</section>
+<section id="modifying-tags-after-execution">
+<h2>Modifying tags after execution<a class="headerlink" href="#modifying-tags-after-execution" title="Link to this heading">#</a></h2>
+<p>Tags can also be added, removed, and updated after a workflow execution using the <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">tag</span></code> command. See <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">tag</span> <span class="pre">--help</span></code> for full details:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add a new tag `key=value` on record with id prefix `abcd1234`.</span>
+redun<span class="w"> </span>tag<span class="w"> </span>add<span class="w"> </span>abcd1234<span class="w"> </span><span class="nv">key</span><span class="o">=</span>value
+
+<span class="c1"># Remove the tag `key=value` from record with id prefix `abcd1234`.</span>
+redun<span class="w"> </span>tag<span class="w"> </span>rm<span class="w"> </span>abcd1234<span class="w"> </span><span class="nv">key</span><span class="o">=</span>value
+
+<span class="c1"># Update tag with key `key` on record with id prefix `abcd1234` with a new value `value`.</span>
+redun<span class="w"> </span>tag<span class="w"> </span>update<span class="w"> </span>abcd1234<span class="w"> </span><span class="nv">key</span><span class="o">=</span>value
+</pre></div>
+</div>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="spark.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Spark</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="db.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Backend and database</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, insitro
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Tags</a><ul>
+<li><a class="reference internal" href="#tag-structure">Tag structure</a></li>
+<li><a class="reference internal" href="#adding-tags">Adding tags</a><ul>
+<li><a class="reference internal" href="#adding-execution-tags">Adding execution tags</a></li>
+<li><a class="reference internal" href="#adding-task-tags">Adding task tags</a></li>
+<li><a class="reference internal" href="#adding-value-tags">Adding value tags</a></li>
+<li><a class="reference internal" href="#adding-job-tags">Adding job tags</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modifying-tags-after-execution">Modifying tags after execution</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>
