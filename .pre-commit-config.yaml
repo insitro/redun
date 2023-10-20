@@ -26,4 +26,4 @@ repos:
       - id: mypy
         args: ['--show-error-codes', '--warn-unused-ignores']
         exclude: 'bin/|docs/|examples/|experimental/|redun_server/|setup.py'
-        additional_dependencies: [types-freezegun, types-python-dateutil, types-requests]
+        additional_dependencies: [types-freezegun, types-python-dateutil, types-requests, types-psycopg2]

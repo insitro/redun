@@ -13,6 +13,11 @@ try:
 except (ImportError, ModuleNotFoundError):
     # Skip gcp_batch executor if google-cloud-batch is not installed.
     pass
+try:
+    from redun.executors.postgres import PgExecutor
+except (ImportError, ModuleNotFoundError):
+    # Skip pg executor if psycopg2 is not installed.
+    pass
 from redun.executors.local import LocalExecutor
 from redun.file import Dir, File, ShardedS3Dataset
 from redun.handle import Handle
