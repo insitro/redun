@@ -100,7 +100,7 @@ redun's key features are:
     """,
     scripts=["bin/redun"],
     include_package_data=True,
-    python_requires=">= 3.7",
+    python_requires=">= 3.8",
     install_requires=requirements,
     extras_require=extras,
 )
