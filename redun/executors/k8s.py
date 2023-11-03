@@ -663,11 +663,14 @@ class K8SExecutor(Executor):
         pod: V1Pod,
         job_status: str,
         status_reason: Optional[str],
-        k8s_labels: List[Tuple[str, str]] = [],
+        k8s_labels: List[Tuple[str, str]] = None,
     ) -> None:
         """
         Complete a redun job (done or reject).
         """
+        if k8s_labels is None:
+            k8s_labels = []
+
         assert self._scheduler
 
         if job_status == SUCCEEDED:
@@ -691,7 +694,7 @@ class K8SExecutor(Executor):
 
         elif job_status == FAILED:
             error, error_traceback = parse_job_error(self.scratch_prefix, job)
-            logs = [f"*** Logs for K8S pod {pod.metadata.name}:\n"]
+            logs = [f"*** Logs for K8S pod {pod.metadata.name}: \n"]
 
             # TODO: Consider displaying events in the logs since this can have
             # helpful info as well.
@@ -770,7 +773,7 @@ class K8SExecutor(Executor):
 
                 if "batch.kubernetes.io/job-completion-index" not in pod.metadata.annotations:
                     self.log(
-                        f"Pod {pod.metadata.name} is missing job-completion-index:",
+                        f"Pod {pod.metadata.name} is missing job-completion-index: ",
                         pod.metadata.annotations,
                     )
                     continue

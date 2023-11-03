@@ -120,6 +120,42 @@ def test_package_job_code() -> None:
     }
 
 
+@use_tempdir
+def test_package_job_code_basename_and_arcname() -> None:
+    """
+    basename should be reflected in tarball name.
+    arcname_prefix should be reflected in extracted file paths.
+    """
+
+    # Creating python files.
+    File("workflow.py").write("")
+    File("lib/lib.py").write("")
+
+    # Package up code.
+    s3_scratch_prefix = "s3/"
+    code_package = {"include": ["**/*.py"]}
+    code_file = package_code(
+        s3_scratch_prefix,
+        code_package,
+        basename="my_tarball",
+        arcname_prefix="some_prefix",
+    )
+
+    # Code file prefix should have the basename before the hash.
+    assert code_file.path.startswith(os.path.join(s3_scratch_prefix, "code/my_tarball"))
+    assert code_file.path.endswith(".tar.gz")
+
+    # code_file should contain the files that have `some_prefix` in their paths
+    os.makedirs("dest")
+    extract_tar(code_file, "dest")
+
+    files = {file.path for file in Dir("dest")}
+    assert files == {
+        "dest/some_prefix/workflow.py",
+        "dest/some_prefix/lib/lib.py",
+    }
+
+
 def test_parse_code_package_config():
     # Parse default code_package patterns.
     config = Config({"batch": {}})
