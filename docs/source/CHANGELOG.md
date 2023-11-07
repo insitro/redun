@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.17.0
+November 03, 2023
+
+* `#327` - Utility functions to support experimental k8s work.
+* `#328` - Fix CI failures in main
+* `#326` - Add documentation of the tag system
+* `#324` - Add support for argv lists to script
+* `#323` - Add execution_id to launch script for tagging purposes
+* `#322` - Handling race conditions when caching values
+* `#321` - Move gcsfs to optional google extra dependencies
+
 ## 0.16.2
 August 25, 2023
 
