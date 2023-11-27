@@ -379,18 +379,18 @@ A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wa
 
 An optional integer (default: None) that specifies the time duration in seconds (measure from job attempt's `startedAt` timestamp) after which AWS Batch will terminate the job. For more on job timeouts, see the [Job Timeouts on Batch docs](https://docs.aws.amazon.com/batch/latest/userguide/job_timeouts.html). When not set, jobs will run indefinitely (unless on Fargate where there is a 14 day limit).
 
-##### privileged
+##### `privileged`
 
 An optional bool (default: False) that specifies whether to run the job in privileged mode.
 
-##### autocreate_job_def
+##### `autocreate_job_def`
 
 An optional bool (default: True). If `autocreate_job_def` is disabled, then we require a `job_def_name`
 to be present and lookup the job by name. If `autocreate_job_def` is enabled, then we will create
 a new job definition if an existing one matching `job_def_name` and required properties cannot be found.
 For backwards-compatibility, the deprecated `autocreate_job` is also supported.
 
-##### job_def_name
+##### `job_def_name`
 
 An optional str (default: None) that specifies a job definition to use. If not set, a new job definition will created.
 
@@ -415,6 +415,19 @@ A bool (default: True) that specifies whether redun should add default tags to a
 ##### `num_nodes`
 
 If not none, use a multi-node job and set the number of workers. 
+
+##### `job_def_extra`
+
+Dictionary of additional arguments to pass to AWS Batch job definition creation. Parameters are documented
+[here](https://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html). Only the specified
+keys will be changed - any other options set elsewhere by redun (such as ulimit for multi-node jobs, etc)
+will remain set.
+
+For example, to allocate 100 MiB of swap space:
+
+```python
+job_def_extra = {"containerProperties": {"linuxParameters": {"maxSwap": 100, "swappiness": 0}}}
+```
 
 #### AWS Glue executor
 

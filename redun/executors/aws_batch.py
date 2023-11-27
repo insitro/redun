@@ -189,13 +189,7 @@ def get_job_details(
 
         # for multi-node jobs, increase ulimit for number of open file descriptors to
         # allow for large number of open socket connections
-        container_props["ulimits"] = [
-            {
-                "name": "nofile",
-                "softLimit": 65535,
-                "hardLimit": 65535,
-            }
-        ]
+        container_props["ulimits"] = [{"name": "nofile", "softLimit": 65535, "hardLimit": 65535}]
         return {
             "type": "multinode",
             "nodeProperties": {
@@ -204,14 +198,8 @@ def get_job_details(
                 "nodeRangeProperties": [
                     # Create two identical node groups, so we can tell only the main node to
                     # provide outputs.
-                    {
-                        "container": container_props,
-                        "targetNodes": "0",
-                    },
-                    {
-                        "container": container_props,
-                        "targetNodes": "1:",
-                    },
+                    {"container": container_props, "targetNodes": "0"},
+                    {"container": container_props, "targetNodes": "1:"},
                 ],
             },
         }
@@ -254,11 +242,14 @@ def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
         """Recursively check that the lhs is a subset of the rhs - Batch may return more keys
         than we set, usually to empty values, but we don't care."""
 
-        return all(
-            lhs[key] == rhs[key]
-            or (isinstance(lhs[key], dict) and dict_eq_lhs_keys(lhs[key], rhs[key]))
-            for key in lhs.keys()
-        )
+        try:
+            return all(
+                lhs[key] == rhs[key]
+                or (isinstance(lhs[key], dict) and dict_eq_lhs_keys(lhs[key], rhs[key]))
+                for key in lhs.keys()
+            )
+        except KeyError:  # key not in rhs.
+            return False
 
     return dict_eq_lhs_keys(job_def1, job_def2)
 
@@ -344,9 +335,7 @@ def make_job_def_name(image_name: str, job_def_suffix: str = "-jd") -> str:
 
 
 def create_job_override_command(
-    command: List[str],
-    command_worker: Optional[List[str]] = None,
-    num_nodes: Optional[int] = None,
+    command: List[str], command_worker: Optional[List[str]] = None, num_nodes: Optional[int] = None
 ) -> Dict[str, Any]:
     """Format the command into the form needed for the AWS Batch `submit_job` API.
 
@@ -364,10 +353,7 @@ def create_job_override_command(
 
         # Make a shallow copy so we can suppress output on these nodes
         node_overrides = [
-            {
-                "targetNodes": "0",
-                "containerOverrides": {"command": command},
-            },
+            {"targetNodes": "0", "containerOverrides": {"command": command}},
             {"targetNodes": "1:", "containerOverrides": {"command": command_worker}},
         ]
 
@@ -619,12 +605,7 @@ def submit_command(
     """
     Submit a shell command to AWS Batch.
     """
-    shell_command = get_script_task_command(
-        s3_scratch_prefix,
-        job,
-        command,
-        exit_command="exit 1",
-    )
+    shell_command = get_script_task_command(s3_scratch_prefix, job, command, exit_command="exit 1")
 
     # Submit to AWS Batch.
     assert job.eval_hash
@@ -632,8 +613,7 @@ def submit_command(
 
     job_batch_options = get_batch_job_options(job_options)
     job_batch_args = create_job_override_command(
-        command=shell_command,
-        num_nodes=job_batch_options.get("num_nodes", None),
+        command=shell_command, num_nodes=job_batch_options.get("num_nodes", None)
     )
 
     # Submit to AWS Batch.
@@ -1176,10 +1156,7 @@ class AWSBatchExecutor(Executor):
         if "autocreate_job" in job_options and "autocreate_job_def" not in job_options:
             job_options["autocreate_job_def"] = job_options["autocreate_job"]
 
-        task_options = {
-            **self.default_task_options,
-            **job_options,
-        }
+        task_options = {**self.default_task_options, **job_options}
 
         # Add default batch tags to the job.
         if self.use_default_batch_tags:
