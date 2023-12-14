@@ -32,3 +32,25 @@ from redun.task import PartialTask, Task, get_task_registry, task
 from redun.version import version
 
 __version__ = version
+__all__ = [
+    "Dir",
+    "File",
+    "Handle",
+    "PartialTask",
+    "Scheduler",
+    "ShardedS3Dataset",
+    "Task",
+    "apply_tags",
+    "catch",
+    "cond",
+    "get_current_namespace",
+    "get_current_scheduler",
+    "get_task_registry",
+    "merge_handles",
+    "namespace",
+    "script",
+    "set_current_scheduler",
+    "task",
+    "throw",
+    "version",
+]
