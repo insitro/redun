@@ -8,65 +8,6 @@ from redun.functools import compose
 from redun.task import PartialTask
 from redun.value import get_type_registry
 
-NULL = object()
-
-
-@task(name="map", namespace="redun")
-def task_map(a_task, values):
-    return [a_task(value) for value in values]
-
-
-# Monkey patch Expression with map.
-def expression_map(self, a_task):
-    return TaskExpression("redun.map", (a_task, self), {})
-
-
-Expression.map = expression_map  # type: ignore
-
-
-@task(name="reduce", namespace="redun")
-def task_reduce(a_task, values, init=NULL):
-    values = iter(values)
-    if init is NULL:
-        result = next(values)
-    else:
-        result = init
-    for value in values:
-        result = a_task(result, value)
-    return result
-
-
-def expression_reduce(self, a_task, init=NULL):
-    return TaskExpression("redun.reduce", (a_task, self, init), {})
-
-
-Expression.reduce = expression_reduce  # type: ignore
-
-
-def test_expression_map(scheduler):
-    @task()
-    def get_list():
-        return [1, 2, 3]
-
-    @task()
-    def inc(x):
-        return x + 1
-
-    assert scheduler.run(get_list().map(inc)) == [2, 3, 4]
-
-
-def test_expression_reduce(scheduler):
-    @task()
-    def get_list():
-        return [1, 2, 3]
-
-    @task()
-    def add(a, b):
-        return a + b
-
-    assert scheduler.run(get_list().reduce(add)) == 6
-    assert scheduler.run(get_list().reduce(add, 10)) == 16
-
 
 def test_partial(scheduler: Scheduler) -> None:
     """
@@ -101,6 +42,21 @@ def test_partial(scheduler: Scheduler) -> None:
     # Arguments can be specified in different order using kwargs.
     assert scheduler.run(add.partial(b=1)(10)) == 11
     assert scheduler.run(add.partial(a=1)(b=10)) == 11
+
+
+def test_partial_override(scheduler: Scheduler) -> None:
+    """
+    We should be able override previously specified arguments when calling a PartialTask.
+    """
+
+    @task
+    def add(a: int, b: int) -> int:
+        return a + b
+
+    add2 = add.partial(a=2)
+
+    # Override a=2 with a=3.
+    assert scheduler.run(add2(a=3, b=3)) == 6
 
 
 def test_partial_serialize() -> None:

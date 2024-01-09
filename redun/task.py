@@ -564,7 +564,7 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
     ) -> Result:
         # By calling the original task, we ensure that a normal pre-registered
         # task will be the one in the CallGraph recording.
-        return self.task(*self.args, *args, **self.kwargs, **kwargs)
+        return self.task(*self.args, *args, **{**self.kwargs, **kwargs})
 
     # Cast the signature to match the wrapped function.
     __call__: Func = cast(Func, _call)

@@ -1788,8 +1788,11 @@ class Scheduler:
         task_frames: List[FrameSummary] = []
         for frame_job in job_stack:
             assert frame_job.task
-            assert frame_job.eval_args
-            args, kwargs = frame_job.eval_args
+            if frame_job.eval_args:
+                args, kwargs = frame_job.eval_args
+            else:
+                # Job has been clear()ed already.
+                args, kwargs = (), {}
 
             sig = inspect.signature(frame_job.task.func)
             task_frames.append(
