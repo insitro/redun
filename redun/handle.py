@@ -211,7 +211,7 @@ class Handle(Value):
 
     def apply_call(self, call_hash: str) -> "Handle":
         """
-        Returns a new Handle derived from this one assumin passage through a call with call_hash.
+        Returns a new Handle derived from this one assuming passage through a call with call_hash.
         """
         return self.__handle__.apply_call(self, call_hash)
 

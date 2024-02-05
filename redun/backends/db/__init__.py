@@ -2234,16 +2234,16 @@ class RedunBackendDb(RedunBackend):
 
     def is_valid_handle(self, handle: BaseHandle) -> bool:
         """
-        A handle is valid if it current or ancestral to the current handle.
+        A handle is valid if it is current or ancestral to the current handle.
         """
         assert self.session
-        (is_valid,) = (
+        row = (
             self.session.query(Handle.is_valid)
             .filter_by(hash=handle.__handle__.hash)
             .one_or_none()
         )
         # If handle isn't recorded, it is not valid.
-        return is_valid is True
+        return row and row[0]
 
     def record_execution(self, exec_id: str, args: List[str]) -> None:
         """

@@ -181,6 +181,15 @@ def test_handle_db() -> None:
     assert not backend.is_valid_handle(handle4)
 
 
+def test_handle_null():
+    backend = RedunBackendDb(db_uri="sqlite:///:memory:")
+    backend.load()
+
+    handle = Handle("conn")
+    # Unsaved handle should not be considered valid
+    assert not backend.is_valid_handle(handle)
+
+
 def test_scheduler_db():
     """
     Scheduler should be able to use the database Backend.
