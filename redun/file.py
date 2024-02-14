@@ -1,7 +1,9 @@
 import abc
 import glob
 import io
+import logging
 import os
+import re
 import shutil
 import sys
 import threading
@@ -26,11 +28,20 @@ import boto3
 import fsspec
 import s3fs
 from botocore.exceptions import ClientError
+from fsspec.utils import infer_storage_options
 
 from redun import glue
 from redun.hashing import hash_stream, hash_struct
 from redun.logging import logger
 from redun.value import Value
+
+# Try importing azure-specific packages.
+try:
+    import adlfs
+    from azure.ai.ml.identity import AzureMLOnBehalfOfCredential
+    from azure.identity import DefaultAzureCredential
+except (ImportError, ModuleNotFoundError):
+    pass
 
 # Don't require pyspark to be installed locally except for type checking.
 if TYPE_CHECKING:
@@ -954,6 +965,189 @@ class S3FileSystem(FileSystem):
             else:
                 # Unknown error, reraise it.
                 raise
+
+
+@register_filesystem
+class AzureBlobFileSystem(FsspecFileSystem):
+    name = "az"
+
+    def __init__(self):
+        super().__init__()
+        self._cr = None
+
+        # fsspec/adlfs create separate file systems for each storage account
+        # likewise, underlying Azure SDK clients also are account-specific
+        # an alternative here would be (maybe) to have multiple AzureBlobFileSystem
+        # instances too and accept account name as a parameter to the constructor
+        # but it requires modifying redun internal code.
+        self._file_systems = {}
+
+    @property
+    def az_credential(self):
+        if self._cr is not None:
+            return self._cr
+
+        try:
+            cr = DefaultAzureCredential()
+            # quick validation
+            cr.get_token("https://storage.azure.com/")
+            self._cr = cr
+        except:  # noqa: E722
+            # special credential available only inside AML compute
+            # when running with "user_identity"
+            # https://learn.microsoft.com/en-us/samples/azure/azureml-examples/azureml---on-behalf-of-feature/
+            logging.info(
+                "Failed to create DefaultAzureCredential, trying AzureMLOnBehalfOfCredential. "
+                "Ignore this if running in AML cluster."
+            )
+            cr = AzureMLOnBehalfOfCredential()
+            cr.get_token("https://storage.azure.com/")
+            self._cr = cr
+
+        return self._cr
+
+    def _create_fs_for_account(self, account_name: str) -> "adlfs.AzureBlobFileSystem":
+        # for simplicity, support only direct blob access, not data lake
+        fs = adlfs.AzureBlobFileSystem(
+            anon=False, account_name=account_name, credential=self.az_credential
+        )
+        # internally, adlfs assumes "credential" kwarg is the async one,
+        # which is not always true (AML credential doesn't have public async implementation,
+        # so we use the sync one only. We could use the async default credential but we don't know
+        # if it has any drawbacks)
+        fs.sync_credential = self.az_credential
+        fs.credential = None
+        return fs
+
+    @staticmethod
+    def get_account_name_from_path(path: str) -> str:
+        ops = infer_storage_options(path)
+        host = ops["host"]
+        match = re.match(r"(?P<account_name>.+)\.blob\.core\.windows\.net", host)
+        if match:
+            account_name = match.groupdict()["account_name"]
+            return account_name
+        else:
+            raise ValueError(
+                "Invalid Azure Blob Storage URL. "
+                "Expected az://<container>@<account>.blob.core.windows.net/<path>"
+            )
+
+    def get_fs_for_path(self, path: str):
+        account_name = self.get_account_name_from_path(path)
+        fs = self._file_systems.get(account_name, None)
+        if not fs:
+            fs = self._create_fs_for_account(account_name)
+            self._file_systems[account_name] = fs
+        return fs
+
+    def glob(self, pattern: str) -> List[str]:
+        """
+        Returns filenames matching pattern.
+        """
+        glob_result = []
+        blob_fs = self.get_fs_for_path(pattern)
+
+        for path in blob_fs.glob(pattern, recursive=True):
+            # convert paths from container/path-part/file
+            # to az://container@account.blob.core.windows.net/path-part/file
+            # so this function result can be used to create redun Files.
+            container, file_key = path.split("/", maxsplit=1)
+            glob_result.append(
+                f"az://{container}@{blob_fs.account_name}.blob.core.windows.net/{file_key}"
+            )
+
+        return glob_result
+
+    # Functions below are mostly copied from base class
+    # with self.fs replaced with self.get_fs_for_path(path)
+
+    def _ensure_dir(self, path: str) -> str:
+        """
+        Automatically create the directory for path.
+        """
+        dirname = os.path.dirname(path)
+        self.get_fs_for_path(path).makedirs(dirname, exist_ok=True)
+        return dirname
+
+    def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
+        """
+        Open a file stream for path with mode ('r', 'w', 'b').
+        """
+        # Auto create the directory if needed.
+        if "w" in mode or "a" in mode:
+            self._ensure_dir(path)
+
+        return self.get_fs_for_path(path).open(path, mode, **kwargs)
+
+    def exists(self, path: str) -> bool:
+        """
+        Returns True if path exists on filesystem.
+        """
+        return self.get_fs_for_path(path).exists(path)
+
+    def remove(self, path: str) -> None:
+        """
+        Delete a path from the filesystem.
+        """
+        try:
+            self.get_fs_for_path(path).rm(path)
+        except FileNotFoundError:
+            pass
+
+    def mkdir(self, path: str) -> None:
+        self.get_fs_for_path(path).makedirs(path, exist_ok=True)
+
+    def rmdir(self, path: str, recursive: bool = False) -> None:
+        try:
+            # NOTE: adlfs generates runtime warnings (related to async calls)
+            # when called with recursive=True, but the files are in fact deleted.
+            self.get_fs_for_path(path).rm(path, recursive=recursive)
+        except FileNotFoundError:
+            pass
+
+    def get_hash(self, path: str) -> str:
+        """
+        Return a hash for the file at path.
+        """
+        # Use etag for hashing, as we do for s3.
+        # md5 is available as stat()["content_settings"]["content_md5"]
+        if self.exists(path):
+            etag = self.get_fs_for_path(path).stat(path)["etag"]
+        else:
+            etag = ""
+        return hash_struct(["File", "az", path, etag])
+
+    def copy(self, src_path: str, dest_path: str) -> None:
+        """
+        Copy a file from src_path to dest_path.
+        """
+        if get_proto(src_path) == get_proto(dest_path) and self.get_account_name_from_path(
+            src_path
+        ) == self.get_account_name_from_path(dest_path):
+            # Perform copy at filesystem level only if both files are in the same storage account.
+            self.get_fs_for_path(src_path).copy(src_path, dest_path, on_error="raise")
+        else:
+            # Perform generic copy.
+            super(FsspecFileSystem, self).copy(src_path, dest_path)
+
+    def isfile(self, path: str) -> bool:
+        """
+        Returns True if path is a file.
+        """
+        return self.get_fs_for_path(path).isfile(path)
+
+    def isdir(self, path: str) -> bool:
+        """
+        Returns True if path is a directory.
+        """
+        return self.get_fs_for_path(path).isdir(path)
+
+    def filesize(self, path: str) -> int:
+        """
+        Returns file size of path in bytes.
+        """
+        return self.get_fs_for_path(path).stat(path)["size"]
 
 
 class FileClasses:

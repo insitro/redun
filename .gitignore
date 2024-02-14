@@ -1,4 +1,5 @@
 .venv
+.python-version
 __pycache__
 *.egg-info/
 .tox/

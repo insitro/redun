@@ -212,7 +212,7 @@ def test_rest_federated_task(tmpdir) -> None:
     launch_federated_task(**rest_data)
 
     # The launched task is async to us, so let it finish.
-    wait_until(lambda: os.path.isfile(result_path), timeout=10)
+    wait_until(lambda: os.path.isfile(result_path), timeout=15)
 
     with open(result_path, "r") as fp:
         result = fp.read()

@@ -41,6 +41,10 @@ extras = {
         "google-cloud-batch>=0.2.0",
         "google-cloud-compute>=1.11.0",
     ],
+    "azure": [
+        "adlfs>=2024.2.0",
+        "azure-ai-ml>=1.12.0",
+    ],
 }
 
 if REQUIRE_POSTGRES:

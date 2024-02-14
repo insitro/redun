@@ -15,3 +15,5 @@ kubernetes==22.6
 google-cloud-batch==0.9.0
 google-cloud-compute==1.11.0
 urllib3<2
+adlfs==2024.2.0
+azure-ai-ml==1.12.0

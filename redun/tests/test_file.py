@@ -1,7 +1,7 @@
 import os
 import shlex
 import shutil
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import boto3
 import pytest
@@ -10,6 +10,7 @@ import vcr
 import redun.file
 from redun import File, Scheduler, ShardedS3Dataset, task
 from redun.file import (
+    AzureBlobFileSystem,
     ContentDir,
     ContentFile,
     ContentStagingFile,
@@ -1061,3 +1062,83 @@ def test_content_file_classes() -> None:
     ContentFile("dir/a").touch()
     ContentFile("dir/b").touch()
     assert all(isinstance(file, ContentFile) for file in ContentDir("dir"))
+
+
+@patch("adlfs.AzureBlobFileSystem")
+@patch("redun.file.DefaultAzureCredential")
+def test_azure_glob(_, adlfs_mock):
+
+    glob_mock = MagicMock()
+    glob_mock.return_value = [
+        "container1/sample/path/",
+        "container1/sample/path/file1.txt",
+        "container1/sample/path/file2.csv",
+    ]
+
+    adlfs_mock.return_value.glob = glob_mock
+    adlfs_mock.return_value.account_name = "myaccount"
+
+    fs = AzureBlobFileSystem()
+
+    result = fs.glob("az://container1@myaccount.blob.core.windows.net/sample/path/**")
+    assert result == [
+        "az://container1@myaccount.blob.core.windows.net/sample/path/",
+        "az://container1@myaccount.blob.core.windows.net/sample/path/file1.txt",
+        "az://container1@myaccount.blob.core.windows.net/sample/path/file2.csv",
+    ]
+
+
+@patch("adlfs.AzureBlobFileSystem")
+@patch("redun.file.DefaultAzureCredential")
+def test_azure_list_files_in_dir(_, adlfs_mock):
+
+    glob_mock = MagicMock()
+    glob_mock.return_value = [
+        "container1/sample/path/",
+        "container1/sample/path/file1.txt",
+        "container1/sample/path/file2.csv",
+    ]
+
+    def mock_isfile_func(path):
+        return path[-1] != "/"
+
+    adlfs_mock.return_value.glob = glob_mock
+    adlfs_mock.return_value.account_name = "myaccount"
+    adlfs_mock.return_value.isfile = MagicMock(side_effect=mock_isfile_func)
+
+    dir = redun.Dir("az://container1@myaccount.blob.core.windows.net/sample/path/")
+
+    result = {file.path for file in dir.files()}
+    assert result == {
+        "az://container1@myaccount.blob.core.windows.net/sample/path/file1.txt",
+        "az://container1@myaccount.blob.core.windows.net/sample/path/file2.csv",
+    }
+
+
+def test_azure_get_account_name_from_path():
+    fs = AzureBlobFileSystem()
+    result = fs.get_account_name_from_path(
+        "az://mycontainer@myawesomestorage.blob.core.windows.net/my/path"
+    )
+
+    assert result == "myawesomestorage"
+
+
+@patch("redun.file.AzureMLOnBehalfOfCredential")
+@patch("redun.file.DefaultAzureCredential")
+def test_azure_default_credential(default_credential_mock, on_behalf_credential_mock):
+    fs = AzureBlobFileSystem()
+    internal_fs = fs.get_fs_for_path("az://mycontainer@myawesomestorage.blob.core.windows.net")
+    assert internal_fs.sync_credential == default_credential_mock.return_value
+    on_behalf_credential_mock.assert_not_called()
+
+
+@patch("redun.file.AzureMLOnBehalfOfCredential")
+@patch("redun.file.DefaultAzureCredential")
+def test_azure_fallback_credential(default_credential_mock, on_behalf_credential_mock):
+    default_credential_mock.return_value.get_token = MagicMock(
+        side_effect=Exception("failed to get token")
+    )
+    fs = AzureBlobFileSystem()
+    internal_fs = fs.get_fs_for_path("az://mycontainer@myawesomestorage.blob.core.windows.net")
+    assert internal_fs.sync_credential == on_behalf_credential_mock.return_value
