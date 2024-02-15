@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.18.0
+February 15, 2024
+
+* `#339` - Azure Blob Filesystem
+* `#338` - Fix is_valid_handle to work for unsaved handles.
+* `#337` - Allow arguments in a PartialTask call to override previously specified arguments
+* `#335` - Explicit top level redun.* exports
+* `#333` - Surface job_def_extra option
+
 ## 0.17.0
 November 03, 2023
 
