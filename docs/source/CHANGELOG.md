@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.19.0
+February 22, 2024
+
+* `#332` - Add Context
+
 ## 0.18.0
 February 15, 2024
 
