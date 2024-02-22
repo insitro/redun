@@ -9,6 +9,7 @@ VERSION_KEY = "redun.version"
 PROJECT_KEY = "project"
 DOC_KEY = "doc"
 USER_KEY = "user"
+CONTEXT_KEY = "redun.context"
 
 # Matches any value.
 ANY_VALUE = object()

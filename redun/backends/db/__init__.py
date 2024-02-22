@@ -67,6 +67,7 @@ from redun.file import get_proto
 from redun.handle import Handle as BaseHandle
 from redun.hashing import hash_call_node, hash_struct, hash_tag
 from redun.logging import logger as _logger
+from redun.tags import CONTEXT_KEY
 from redun.task import CacheCheckValid, CacheResult, CacheScope
 from redun.task import Task as BaseTask
 from redun.utils import (
@@ -907,6 +908,20 @@ class Job(Base):
         # Make RUN adjust to the left.
         return "RUN " if self.status == "RUNNING" else self.status
 
+    @property
+    def context(self) -> dict:
+        """
+        Returns the associated context.
+        """
+        if not self.call_node:
+            return {}
+
+        for tag in self.call_node.tags:
+            if tag.key == CONTEXT_KEY:
+                return tag.value_parsed or {}
+
+        return {}
+
 
 class Task(Base):
     __tablename__ = "task"
@@ -1058,6 +1073,14 @@ class Tag(Base):
             key="",
             value=None,
         )
+
+    @property
+    def value_parsed(self) -> Any:
+        """
+        Returns parsed value referenced by Tag.
+        """
+        value = object_session(self).query(Value).get(self.value)
+        return value.value_parsed if value is not None else None
 
 
 #
@@ -1573,6 +1596,18 @@ class RedunBackendDb(RedunBackend):
 
         self.session.commit()
 
+    def record_call_node_context(
+        self, call_hash: str, context_hash: Optional[str], context: dict
+    ) -> str:
+        """
+        Records a context dict for a CallNode as a Tag.
+        """
+        if context_hash is None:
+            # Compute context_hash if not given.
+            context_hash = self.record_value(context)
+        self.record_tags(TagEntity.CallNode, call_hash, [(CONTEXT_KEY, context_hash)])
+        return context_hash
+
     def record_value(self, value: Any, data: Optional[bytes] = None) -> str:
         """
         Record a Value into the backend.
@@ -1843,6 +1878,7 @@ class RedunBackendDb(RedunBackend):
         scheduler_task_hashes: Set[str],
         cache_scope: CacheScope,
         check_valid: CacheCheckValid,
+        context_hash: Optional[str] = None,
         allowed_cache_results: Optional[Set[CacheResult]] = None,
     ) -> Tuple[Any, Optional[str], CacheResult]:
         """
@@ -1864,7 +1900,7 @@ class RedunBackendDb(RedunBackend):
 
         if CacheResult.CSE in allowed_cache_results:
             # Check for CSE (Equivalent Job in same execution).
-            call_node: CallNode = (
+            call_nodes = (
                 self.session.query(CallNode)
                 .join(Job, CallNode.call_hash == Job.call_hash)
                 .filter(
@@ -1872,9 +1908,15 @@ class RedunBackendDb(RedunBackend):
                     Job.execution_id == execution_id,
                     CallNode.args_hash == args_hash,
                 )
-                .order_by(Job.start_time.desc())
-                .first()
             )
+
+            # Restrict to same context if context is present.
+            if context_hash:
+                call_nodes = call_nodes.join(Tag, Tag.entity_id == CallNode.call_hash).filter(
+                    Tag.key == CONTEXT_KEY, Tag.value == sa_cast(context_hash, JSON)
+                )
+
+            call_node: CallNode = call_nodes.order_by(Job.start_time.desc()).first()
             if call_node:
                 result, is_cached = self.get_call_cache(call_node.call_hash)
                 if is_cached:
@@ -1886,8 +1928,11 @@ class RedunBackendDb(RedunBackend):
             and CacheResult.ULTIMATE in allowed_cache_results
         ):
             # Check ultimate reduction cache.
-            call_hash = self.get_call_hash(task_hash, args_hash, scheduler_task_hashes)
-            if call_hash:
+            call_node2 = self._get_call_node(
+                task_hash, args_hash, scheduler_task_hashes, context_hash
+            )
+            if call_node2:
+                call_hash = call_node2.call_hash
                 result, is_cached = self.get_call_cache(call_hash)
                 cache_type = CacheResult.ULTIMATE
 
@@ -1980,7 +2025,11 @@ class RedunBackendDb(RedunBackend):
                 self.session.commit()
 
     def _get_call_node(
-        self, task_hash: str, args_hash: str, scheduler_task_hashes: Set[str]
+        self,
+        task_hash: str,
+        args_hash: str,
+        scheduler_task_hashes: Set[str],
+        context_hash: Optional[str] = None,
     ) -> Optional[CallNode]:
         assert self.session
 
@@ -1993,6 +2042,11 @@ class RedunBackendDb(RedunBackend):
             .filter_by(task_hash=task_hash, args_hash=args_hash)
             .order_by(CallNode.timestamp.desc())
         )
+
+        if context_hash:
+            call_nodes = call_nodes.join(Tag, Tag.entity_id == CallNode.call_hash).filter(
+                Tag.key == CONTEXT_KEY, Tag.value == sa_cast(context_hash, JSON)
+            )
 
         # Intersect call_node task_hashes with current task hashes.
         call_hashes = {call_node.call_hash for call_node in call_nodes}
@@ -2012,33 +2066,6 @@ class RedunBackendDb(RedunBackend):
         if current_call_nodes:
             # Use the newest CallNode.
             return current_call_nodes[0]
-        else:
-            return None
-
-    def get_call_hash(
-        self, task_hash: str, args_hash: str, scheduler_task_hashes: Set[str]
-    ) -> Optional[str]:
-        """
-        Returns the call_hash of a current CallNode with matching task and arg hashes.
-
-        A CallNode is considered *current* only if its Task is currently in the
-        TaskRegistry (same task_hash) and all its child CallNodes are current.
-
-        Parameters
-        ----------
-        task_hash : str
-            Hash of Task used in the call.
-        args_hash : str
-            Hash of all arguments used in the call.
-
-        Returns
-        -------
-        Optional[str]
-            Hash of the found CallNode, or None.
-        """
-        call_node = self._get_call_node(task_hash, args_hash, scheduler_task_hashes)
-        if call_node:
-            return call_node.call_hash
         else:
             return None
 

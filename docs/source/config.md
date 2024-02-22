@@ -104,7 +104,7 @@ redun --setup profile=dev run workflow.py main --x 1 --y 2
 An integer (default: 20) of how many seconds between displays of the job status table.
 
 
-### `federated_configs`
+#### `federated_configs`
 
 A config file may mark other config files that should be imported. This is particularly useful
 for importing remote config files containing federated entrypoints and their executors.
@@ -118,15 +118,54 @@ or
 
 ```
 [scheduler]
-federated_configs = 
+federated_configs =
     <path to config_dir_1>
     <path to config_dir_2>
 ```
 
 Only the `executor` and `federated_tasks` from these config file(s) are imported, all other sections
 are ignored. There is no namespacing for these imported executors and federated tasks, either
-from each other or from the rest of the scheduler's configuration. Any duplicate names will result 
+from each other or from the rest of the scheduler's configuration. Any duplicate names will result
 in an error being raised.
+
+#### `context`
+
+Redun's context allows users to specify workflow arguments in the redun.ini config file and then pass those arguments to deeply nested sub-tasks, without having to pass the argument explicitly through all the intermediate tasks along the way.
+This is useful for avoiding tedious argument passing (what React developers call "prop-drilling") and avoids triggering rerunning tasks that don't even look at such config (they just pass it along).
+
+```ini
+[scheduler]
+# Here, we define context variables for our tool, my_tool.
+context =
+  {
+    "my_tool": {
+      "ratio": 1.618
+    }
+  }
+```
+
+Then in the task definition, we can access the context variable using the `get_context`:
+
+```python
+@task
+def my_tool(value: int, ratio: float = get_context("my_tool.ratio")) -> str:
+    # Perform desired computation with flag set by context.
+    return f"Ran my_tool with argument: {ratio}"
+```
+
+Context can be overridden with a few CLI flags that can be passed to `redun run`.
+Please use `redun run -h` to see the full list of options.
+
+#### `context_file`
+
+In addition to specifying context inline with the `context` option, users can instead provide a path to the JSON file containing context.
+This is useful for large or complex contexts that are easier to manage in a separate file.
+The path can be either absolute or relative to the redun config directory (`.redun` by default).
+
+```ini
+[scheduler]
+context_file = /Users/piotr/context.json
+```
 
 ### Backend
 

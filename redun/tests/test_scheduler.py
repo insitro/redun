@@ -851,7 +851,7 @@ def test_job_options() -> None:
     expr = task1.options(option2="ccc")()
     job = Job(task1, expr)
     job.task = task1
-    assert job.get_options() == {
+    assert job.get_raw_options() == {
         "option1": "aaa",
         "option2": "ccc",
     }
@@ -1725,6 +1725,27 @@ def test_default_args_expression(scheduler: Scheduler) -> None:
         return x
 
     assert scheduler.run(main2()) == [3]
+
+
+def test_default_args_parent_job(scheduler: Scheduler, session: Session) -> None:
+    """
+    The right parent_job should be used for default args.
+    """
+
+    @task
+    def get_offset() -> int:
+        return 10
+
+    @task
+    def add(a: int, b: int, offset: int = get_offset()):
+        return a + b + offset
+
+    assert scheduler.run(add(1, 2)) == 13
+
+    # get_offset() should be a sibling to add().
+    execution = session.query(Execution).one()
+    assert execution.job.task.name == "root_task"
+    assert [child.task.name for child in execution.job.child_jobs] == ["get_offset", "add"]
 
 
 def test_job_clear(scheduler: Scheduler) -> None:

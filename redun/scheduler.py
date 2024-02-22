@@ -1,6 +1,7 @@
 import datetime
 import importlib
 import inspect
+import json
 import linecache
 import logging
 import os
@@ -14,6 +15,7 @@ import traceback
 import uuid
 from collections import OrderedDict, defaultdict
 from itertools import chain, takewhile
+from json import JSONDecodeError
 from traceback import FrameSummary
 from typing import (
     Any,
@@ -68,7 +70,7 @@ from redun.task import (
     scheduler_task,
     task,
 )
-from redun.utils import format_table, iter_nested_value, map_nested_value, trim_string
+from redun.utils import format_table, iter_nested_value, map_nested_value, merge_dicts, trim_string
 from redun.value import Value, get_type_registry
 
 # Globals.
@@ -154,12 +156,11 @@ def set_current_scheduler(scheduler: Optional["Scheduler"]) -> None:
             pass
 
 
-def set_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> Tuple[Tuple, dict]:
+def get_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> dict:
     """
-    Set default arguments from Task signature.
+    Get default arguments from Task signature.
     """
-    # Start with given kwargs.
-    kwargs2 = dict(kwargs)
+    default_kwargs = {}
 
     sig = task.signature
     for i, param in enumerate(sig.parameters.values()):
@@ -167,13 +168,22 @@ def set_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> Tuple[Tuple, di
             # User already specified this arg in args.
             continue
 
-        elif param.name in kwargs2:
+        elif param.name in kwargs:
             # User already specified this arg in kwargs.
             continue
 
         elif param.default is not param.empty:
             # Default should be used.
-            kwargs2[param.name] = param.default
+            default_kwargs[param.name] = param.default
+    return default_kwargs
+
+
+def set_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> Tuple[Tuple, dict]:
+    """
+    Set default arguments from Task signature.
+    """
+    kwargs2 = dict(kwargs)
+    kwargs2.update(get_arg_defaults(task, args, kwargs))
     return args, kwargs2
 
 
@@ -218,9 +228,10 @@ class Execution:
     An Execution tracks the execution of a workflow of :class:`redun.task.Task`s.
     """
 
-    def __init__(self, id: Optional[str] = None):
+    def __init__(self, id: Optional[str] = None, context: Optional[dict] = None):
         self.id = id or str(uuid.uuid4())
         self.job: Optional[Job] = None
+        self.context: dict = context if context is not None else {}
 
     def add_job(self, job: "Job") -> None:
         # Record first job as root job.
@@ -242,6 +253,7 @@ class Job:
         id: Optional[str] = None,
         parent_job: Optional["Job"] = None,
         execution: Optional[Execution] = None,
+        options: Optional[dict] = None,
     ):
         self.id = id or str(uuid.uuid4())
 
@@ -257,7 +269,11 @@ class Job:
         # Execution state.
 
         # Job-level task option overrides.
-        self.task_options: Dict[str, Any] = {}
+        self.options: Dict[str, Any] = options or {}
+
+        # Job-level context variables.
+        self._context: Optional[dict] = None
+        self.context_hash: Optional[str] = None
 
         # The evaluated version of (self.expr.args, self.expr.kwargs)
         self.eval_args: Optional[Tuple[Tuple, Dict]] = None
@@ -268,6 +284,9 @@ class Job:
 
         # The hash of the evaluated and preprocessed arguments.
         self.args_hash: Optional[str] = None
+
+        # Evaluated Job-level task option overrides.
+        self.eval_options: Optional[dict] = None
 
         # The hash of (self.task.hash, self.arg_hash). This is used as the cache key.
         self.eval_hash: Optional[str] = None
@@ -329,9 +348,9 @@ class Job:
         else:
             raise ValueError("Unknown status")
 
-    def get_option(self, key: str, default: Any = None, as_type: Optional[Type] = None) -> Any:
+    def get_raw_option(self, key: str, default: Any = None, as_type: Optional[Type] = None) -> Any:
         """
-        Returns a task option associated with a :class:`Job`.
+        Returns an evaluated task option associated with a :class:`Job`.
 
         Precedence is given to task options defined at call-time
         (e.g. `task.options(option=foo)(arg1, arg2)`) over task definition-time
@@ -353,9 +372,9 @@ class Job:
         result = get_raw()
         return as_type(result) if as_type else result
 
-    def get_options(self) -> dict:
+    def get_raw_options(self) -> dict:
         """
-        Returns task options for this job.
+        Returns the unevaluated task options for this job.
 
         Precedence is given to task options defined at call-time
         (e.g. `task.options(option=foo)(arg1, arg2)`) over task definition-time
@@ -365,9 +384,58 @@ class Job:
         task_options = {
             **self.task.get_task_options(),
             **self.expr.task_expr_options,
-            **self.task_options,
+            **self.options,
         }
         return task_options
+
+    def get_option(self, key: str, default: Any = None, as_type: Optional[Type] = None) -> Any:
+        """
+        Returns a task option associated with a :class:`Job`.
+
+        Precedence is given to task options defined at call-time
+        (e.g. `task.options(option=foo)(arg1, arg2)`) over task definition-time
+        (e.g. `@task(option=foo)`).
+        """
+        result = self.get_options().get(key, default)
+        if as_type:
+            result = as_type(result)
+        return result
+
+    def get_options(self) -> dict:
+        """
+        Returns task options for this job.
+
+        Precedence is given to task options defined at call-time
+        (e.g. `task.options(option=foo)(arg1, arg2)`) over task definition-time
+        (e.g. `@task(option=foo)`).
+        """
+        if self.eval_options is None:
+            # If options aren't evaluated yet, we can still use them as long
+            # as there are no Expressions.
+            options = self.get_raw_options()
+            assert all(not isinstance(option, Expression) for option in iter_nested_value(options))
+            self.eval_options = options
+
+        return self.eval_options
+
+    def get_context(self) -> dict:
+        """
+        Returns the context variables for the Job.
+        """
+        if self._context is None:
+            # Compute and cache full context.
+            assert self.execution
+
+            # Inherit context from parent_job or Execution.
+            parent_context = (
+                self.parent_job.get_context() if self.parent_job else self.execution.context
+            )
+
+            # Determine call-time overrides.
+            context_override = self.get_option("_context_override", {})
+
+            self._context = merge_dicts([parent_context, context_override])
+        return self._context
 
     def get_limits(self) -> Dict[str, int]:
         """
@@ -459,10 +527,30 @@ class Job:
         self.eval_args = None
         self.args = None
         self.result_promise = None
+        self._context = None
         self.job_tags.clear()
         self.execution_tags.clear()
         self.value_tags.clear()
         self.child_jobs.clear()
+
+
+class JobEnv(Job):
+    """
+    Job environment.
+
+    Customize a Job with a specific context dict.
+    """
+
+    def __init__(self, job: Job, context: dict):
+        self.job = job
+        self._env_context = context
+
+    def __getattr__(self, attr: str) -> Any:
+        # Proxy attributes to job.
+        return getattr(self.job, attr)
+
+    def get_context(self) -> dict:
+        return self._env_context
 
 
 def get_backend_from_config(backend_config: Optional[SectionProxy] = None) -> RedunBackend:
@@ -743,8 +831,11 @@ def needs_root_task(task_registry: TaskRegistry, expr: Any) -> bool:
         task
     ), f"Could not find task `{expr.task_name}`, found options {list(task_registry._tasks.keys())}"
 
-    args, kwargs = set_arg_defaults(task, expr.args, expr.kwargs)
-    return any(isinstance(arg, Expression) for arg in iter_nested_value((args, kwargs)))
+    default_kwargs = get_arg_defaults(task, expr.args, expr.kwargs)
+    return any(
+        isinstance(arg, Expression)
+        for arg in iter_nested_value((expr.args, expr.kwargs, default_kwargs))
+    )
 
 
 class Scheduler:
@@ -834,7 +925,7 @@ class Scheduler:
         ] = defaultdict(dict)
 
         # Tracking for Common Subexpression Elimination (CSE) for pending Jobs.
-        self._pending_jobs: Dict[Optional[str], Job] = {}
+        self._pending_jobs: Dict[Tuple[Optional[str], Optional[str]], Job] = {}
 
         # Currently pending/running jobs.
         self._jobs: Set[Job] = set()
@@ -845,6 +936,18 @@ class Scheduler:
         # Execution modes.
         self._dryrun = False
         self._use_cache = True
+        context_str = self.config.get("scheduler", {}).get("context")
+        context_file = self.config.get("scheduler", {}).get("context_file")
+        if context_str and context_file:
+            raise SchedulerError("Both context and context_file specified in config!")
+
+        if context_file:
+            with open(context_file, "r") as f:
+                context_str = f.read()
+        try:
+            self._context = json.loads(context_str) if context_str else {}
+        except JSONDecodeError as error:
+            raise SchedulerError(f"Invalid redun context JSON definition: {error}\n{context_str}")
 
     @property
     def is_running(self) -> bool:
@@ -951,6 +1054,7 @@ class Scheduler:
         dryrun: bool = False,
         cache: bool = True,
         tags: Iterable[Tuple[str, Any]] = (),
+        context: dict = {},
         execution_id: Optional[str] = None,
     ) -> Result:
         pass
@@ -963,6 +1067,7 @@ class Scheduler:
         dryrun: bool = False,
         cache: bool = True,
         tags: Iterable[Tuple[str, Any]] = (),
+        context: dict = {},
         execution_id: Optional[str] = None,
     ) -> Result:
         pass
@@ -974,6 +1079,7 @@ class Scheduler:
         dryrun: bool = False,
         cache: bool = True,
         tags: Iterable[Tuple[str, Any]] = (),
+        context: dict = {},
         execution_id: Optional[str] = None,
     ) -> Result:
         """
@@ -993,7 +1099,9 @@ class Scheduler:
         parent_job: Optional[Job]
         if exec_argv is None:
             exec_argv = ["scheduler.run", trim_string(repr(expr))]
-        self._current_execution = Execution(execution_id)
+        self._current_execution = Execution(
+            execution_id, context=merge_dicts([self._context, context])
+        )
         self.backend.record_execution(self._current_execution.id, exec_argv)
         self.backend.record_tags(
             TagEntity.Execution, self._current_execution.id, chain(self._exec_tags, tags)
@@ -1036,6 +1144,7 @@ class Scheduler:
         parent_job_id: str,
         dryrun: bool = False,
         cache: bool = True,
+        context: dict = {},
     ) -> dict:
         """
         Extend an existing scheduler execution (run) to evaluate a Task or Expression.
@@ -1061,6 +1170,7 @@ class Scheduler:
             root_task(quote(None)),  # type: ignore
             id=parent_job_id,
             execution=self._current_execution,
+            options={"_context_override": context},
         )
         parent_job.eval_args = ((quote(None),), {})
 
@@ -1243,16 +1353,46 @@ class Scheduler:
                     )
                 )
             else:
+                # Downgrade the cache option, if needed.
+                job_options = {}
+                if not self._use_cache:
+                    job_options["cache_scope"] = CacheScope.NONE
+
                 # TaskExpressions need to be executed in a new Job.
-                job = Job(task, expr, parent_job=parent_job, execution=self._current_execution)
+                job = Job(
+                    task,
+                    expr,
+                    parent_job=parent_job,
+                    execution=self._current_execution,
+                    options=job_options,
+                )
                 self._jobs.add(job)
 
-                # Make default arguments explicit in case they need to be evaluated.
-                expr_args = set_arg_defaults(task, expr.args, expr.kwargs)
+                def options_then(job_options):
+                    # Update job options so that default_kwargs below can make use of it if needed.
+                    job.eval_options = job_options
 
-                # Evaluate args then execute job.
-                args_promise = self.evaluate(expr_args, parent_job=parent_job)
-                promise = args_promise.then(lambda eval_args: self._exec_job(job, eval_args))
+                    # Evaluate default arguments with same parent_job, but with
+                    # context from job.
+                    options_job = JobEnv(parent_job, job.get_context())
+                    return self.evaluate(
+                        get_arg_defaults(job.task, expr.args, expr.kwargs), parent_job=options_job
+                    )
+
+                # Evaluate task_options, default_kwargs, and then expression args.
+                default_kwargs_promise = self.evaluate(
+                    job.get_raw_options(), parent_job=parent_job
+                ).then(options_then)
+
+                # Evaluate expression args.
+                args_promise = self.evaluate((expr.args, expr.kwargs), parent_job=parent_job)
+
+                # After all arguments are evaluated, execute job.
+                def args_then(eval_args):
+                    [(args, kwargs), default_kwargs] = eval_args
+                    return self._exec_job(job, (args, {**default_kwargs, **kwargs}))
+
+                promise = Promise.all([args_promise, default_kwargs_promise]).then(args_then)
 
         elif isinstance(expr, SimpleExpression):
             # Simple Expressions can be executed synchronously.
@@ -1370,7 +1510,7 @@ class Scheduler:
             if CacheResult.CSE not in allowed_cache_results:
                 return None
 
-        pending_job = self._pending_jobs.get(job.eval_hash)
+        pending_job = self._pending_jobs.get((job.eval_hash, job.context_hash))
         if pending_job:
             job.collapse(pending_job)
             return pending_job
@@ -1391,11 +1531,6 @@ class Scheduler:
 
         This function runs on the main scheduler thread.
         """
-
-        # Downgrade the cache option, if needed.
-        if not self._use_cache:
-            job.task_options["cache_scope"] = CacheScope.NONE
-
         # Ensure we are on main scheduler thread.
         assert self.thread_id == threading.get_ident()
         assert job.task
@@ -1411,8 +1546,9 @@ class Scheduler:
 
         # Check cache using eval_hash as key.
         job.eval_hash, job.args_hash = hash_args_eval(self.type_registry, job.task, args, kwargs)
-        assert job.eval_hash
-        assert job.args_hash
+        context = job.get_context()
+        if context:
+            job.context_hash = self.type_registry.get_hash(context)
 
         # Check whether a job of the same eval_hash is already running.
         if self._check_pending_job(job) is not None:
@@ -1497,7 +1633,7 @@ class Scheduler:
         # Record the job as pending, since we're submitting it.
         # Note that if the CSE is disabled, this job might have the same `eval_hash` as a prior
         # one. We don't care about overwriting, however, since they're all equivalent.
-        self._pending_jobs[job.eval_hash] = job
+        self._pending_jobs[(job.eval_hash, job.context_hash)] = job
 
         # Submit job.
         if not job.task.script:
@@ -1613,6 +1749,13 @@ class Scheduler:
                 child_call_hashes=child_call_hashes,
             )
 
+        # Record CallNode context, if present.
+        context = job.get_context()
+        if context:
+            assert job.context_hash == self.backend.record_call_node_context(
+                job.call_hash, job.context_hash, context
+            )
+
         self._record_job_tags(job)
 
         self.backend.record_job_end(job)
@@ -1632,7 +1775,7 @@ class Scheduler:
 
         # Once a job has been recorded to the cache, we don't need to keep around
         # the job, since if we see it again, we'll simply download the result.
-        self._pending_jobs.pop(job.eval_hash, None)
+        self._pending_jobs.pop((job.eval_hash, job.context_hash), None)
 
     def _record_job_tags(self, job: Job) -> None:
         """
@@ -1750,6 +1893,14 @@ class Scheduler:
                 result_hash=error_hash,
                 child_call_hashes=child_call_hashes,
             )
+
+            # Record CallNode context, if present.
+            context = job.get_context()
+            if context:
+                assert job.context_hash == self.backend.record_call_node_context(
+                    job.call_hash, job.context_hash, context
+                )
+
             self._record_job_tags(job)
             self.backend.record_job_end(job, status="FAILED")
             job.reject(error)
@@ -1859,6 +2010,7 @@ class Scheduler:
             self.task_registry.task_hashes,
             cache_scope,
             check_valid,
+            job.context_hash,
             allowed_cache_results,
         )
 
@@ -2658,6 +2810,7 @@ def subrun(
     run_config: Dict[str, Any] = {
         "dryrun": scheduler._dryrun,
         "cache": scheduler._use_cache,
+        "context": parent_job.get_context(),
     }
     if not new_execution:
         run_config["parent_job_id"] = parent_job.id

@@ -9,6 +9,7 @@ import sqlalchemy
 
 from redun.backends.db import Execution, Job
 from redun.cli import get_config_dir, setup_scheduler
+from redun.context import get_context
 from redun.executors.local import LocalExecutor
 from redun.hashing import hash_call_node
 from redun.scheduler import Config, DryRunResult, ErrorValue, Scheduler, subrun
@@ -712,3 +713,26 @@ def test_subrun_load_module():
     # module supplied.
     with pytest.raises(AssertionError, match="Could not find task `isolated_task`"):
         scheduler.run(local_main_wrong_module(6))
+
+
+@task
+def foo_context(x: int, k: int = get_context("k", 2)) -> int:
+    return x * k
+
+
+@use_tempdir
+def test_subrun_context() -> None:
+    """
+    subrun should get the parent scheduler's context.
+    """
+
+    @task
+    def main(x):
+        return subrun(foo_context(x), executor="process")
+
+    # Assert that the foo and bar tasks appear in local scheduler's log
+    scheduler = Scheduler(config=Config(config_dict=CONFIG_DICT))
+    scheduler.load()
+    assert scheduler.run(main(5)) == 10
+
+    assert scheduler.run(main.update_context(k=3)(5)) == 15

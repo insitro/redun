@@ -94,6 +94,14 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    def record_call_node_context(
+        self, call_hash: str, context_hash: Optional[str], context: dict
+    ) -> str:
+        """
+        Records a context dict for a CallNode as a Tag.
+        """
+        pass
+
     def record_value(self, value: Any, data: Optional[bytes] = None) -> str:
         """
         Record a Value into the backend.
@@ -138,6 +146,7 @@ class RedunBackend(abc.ABC):
         scheduler_task_hashes: Set[str],
         cache_scope: CacheScope,
         check_valid: CacheCheckValid,
+        context_hash: Optional[str] = None,
         allowed_cache_results: Optional[Set[CacheResult]] = None,
     ) -> Tuple[Any, Optional[str], CacheResult]:
         """
@@ -180,9 +189,11 @@ class RedunBackend(abc.ABC):
         cache_scope : CacheScope
             What scope of cache hits to try. `CacheScopeType.CSE` only allows CSE, and
             `CacheScopeType.NONE` disables all caching.
-        check_valid : CacheCheckValid,
+        check_valid : CacheCheckValid
             If set to `CacheCheckValid.FULL` perform Evaluation cache check or if
             `CacheCheckValid.SHALLOW` perform Call cache check. See above for more details.
+        context_hash : Optional[str]
+            If given, restrict cache results to results obtained with a particular context.
         allowed_cache_results : Optional[Set[CacheResult]]
             If provided, further restrict the allowed types of results.
 

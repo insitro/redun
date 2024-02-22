@@ -65,6 +65,18 @@ def get_abs_url(uri: str, base: str) -> str:
     return abs_uri
 
 
+def get_abs_config_dir(config_dir: str, cwd: Optional[str] = None) -> str:
+    """
+    Returns absolute path to config_dir.
+
+    If `config_dir` is a relative path, it is assumed to be relative to `cwd`.
+    `cwd` defaults to the current working directory.
+    """
+    if not cwd:
+        cwd = os.getcwd()
+    return os.path.normpath(os.path.join(cwd, config_dir))
+
+
 def get_abs_db_uri(db_uri: str, config_dir: str, cwd: Optional[str] = None) -> str:
     """
     Returns DB_URI with absolute path.
@@ -72,9 +84,7 @@ def get_abs_db_uri(db_uri: str, config_dir: str, cwd: Optional[str] = None) -> s
     If `db_uri` is a relative path, it is assumed to be relative to `config_dir`.
     `config_dir` itself may be relative to the current working directory (cwd).
     """
-    if not cwd:
-        cwd = os.getcwd()
-    abs_config_dir = os.path.normpath(os.path.join(cwd, config_dir))
+    abs_config_dir = get_abs_config_dir(config_dir, cwd)
     abs_db_uri = get_abs_url(db_uri, abs_config_dir)
     return abs_db_uri
 
@@ -116,6 +126,13 @@ def postprocess_config(config: Config, config_dir: str) -> Config:
     # Create scheduler section if needed
     if not config.get("scheduler"):
         config["scheduler"] = create_config_section()
+
+    # Convert context_file to absolute path.
+    context_file = config["scheduler"].get("context_file")
+    if context_file and not os.path.isabs(context_file):
+        config["scheduler"]["context_file"] = os.path.join(
+            get_abs_config_dir(config_dir), context_file
+        )
 
     # Merge executors and federated tasks from any federated imported configs. Throw errors
     # on naming conflicts.

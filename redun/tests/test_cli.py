@@ -35,7 +35,7 @@ from redun.cli import (
 from redun.executors.aws_batch import BATCH_LOG_GROUP
 from redun.executors.code_packaging import create_tar
 from redun.job_array import AWS_ARRAY_VAR
-from redun.scheduler import Traceback
+from redun.scheduler import SchedulerError, Traceback
 from redun.scheduler_config import get_abs_db_uri
 from redun.tags import ANY_VALUE
 from redun.tests.utils import assert_match_lines, use_tempdir
@@ -2164,6 +2164,310 @@ def main() -> int:
     value = client.get_session(args=args).query(Value).filter(Value.type != "redun.Task").one()
     assert value.value_parsed
     assert value.value_parsed != this_pid
+
+
+@pytest.fixture(scope="module")
+def context_workflow():
+    body = """
+import os
+import redun
+
+@redun.task
+def main(context: dict = redun.get_context("my_tool", None)) -> dict:
+    return context
+"""
+    return File("workflow.py").write(body)
+
+
+@use_tempdir
+def test_both_context_and_context_file_present(context_workflow) -> None:
+    """
+    Ensure that an error is raised if both context and context file are present.
+    """
+    config_string = """
+[scheduler]
+context_file = context.json
+context = {}
+"""
+    File(".redun/redun.ini").write(config_string)
+    client = RedunClient()
+    with pytest.raises(SchedulerError, match="Both context and context_file specified in config!"):
+        client.execute(["redun", "run", "workflow.py", "main"])
+
+
+@use_tempdir
+def test_context_file_in_redun_config(context_workflow) -> None:
+    """
+    Ensure that context_file option can be used in redun config.
+    """
+    config_string = """
+[scheduler]
+context_file = context.json
+"""
+    File(".redun/redun.ini").write(config_string)
+    File(".redun/context.json").write(
+        """{
+    "my_tool": {
+        "a": 2,
+        "c": "bar"
+    }
+}
+"""
+    )
+    client = RedunClient()
+    result = client.execute(["redun", "run", "workflow.py", "main"])
+    assert result == {"a": 2, "c": "bar"}
+
+
+@use_tempdir
+def test_context_file_override(context_workflow) -> None:
+    """
+    Ensure that the context from redun.ini can be overridden by the context file.
+    """
+    config_string = """
+[scheduler]
+context =
+  {
+    "my_tool": {
+      "a": 1,
+      "b": "foo"
+    }
+  }
+"""
+    context_override = """
+{
+    "my_tool": {
+        "a": 2,
+        "c": "bar"
+    }
+}
+"""
+    File(".redun/redun.ini").write(config_string)
+    File("context.json").write(context_override)
+    client = RedunClient()
+    result = client.execute(
+        ["redun", "run", "--context-file", "context.json", "workflow.py", "main"]
+    )
+    assert result == {"a": 2, "b": "foo", "c": "bar"}
+
+
+@use_tempdir
+def test_context_file_config_relative(context_workflow) -> None:
+    """
+    Ensure that when the context file is a relative path specified in redun.ini, it is searched in
+    the directory relative to the .redun config dir.
+    """
+    config_string = """
+[scheduler]
+context_file = ../context.json
+"""
+    File(".redun/redun.ini").write(config_string)
+    File("context.json").write(
+        """{
+    "my_tool": {
+        "a": 2,
+        "c": "bar"
+    }
+}
+"""
+    )
+    client = RedunClient()
+    result = client.execute(["redun", "run", "workflow.py", "main"])
+    assert result == {"a": 2, "c": "bar"}
+
+
+@use_tempdir
+def test_context_file_config_absolute(context_workflow) -> None:
+    """
+    Ensure that when the context file is an absolute path specified in redun.ini, it is used as is.
+    """
+    context_file_path = f"{os.getcwd()}/context.json"
+    assert os.path.isabs(context_file_path)
+
+    config_string = f"""
+[scheduler]
+context_file = {context_file_path}
+"""
+    File(".redun/redun.ini").write(config_string)
+    File(context_file_path).write(
+        """{
+    "my_tool": {
+        "a": 2,
+        "c": "bar"
+    }
+}
+"""
+    )
+    client = RedunClient()
+    result = client.execute(["redun", "run", "workflow.py", "main"])
+    assert result == {"a": 2, "c": "bar"}
+
+
+@use_tempdir
+def test_context_file_arg_relative(context_workflow) -> None:
+    """
+    Ensure that when the context file is a relative path specified as --context-file argument,
+    it is searched in the current working directory.
+    """
+    File("context.json").write(
+        """{
+    "my_tool": {
+        "a": 2,
+        "c": "bar"
+    }
+}
+"""
+    )
+    client = RedunClient()
+    result = client.execute(
+        ["redun", "run", "--context-file", "context.json", "workflow.py", "main"]
+    )
+    assert result == {"a": 2, "c": "bar"}
+
+
+@use_tempdir
+def test_context_file_arg_absolute(context_workflow) -> None:
+    """
+    Ensure that when the context file is an absolute path specified as --context-file argument,
+    it is used as is.
+    """
+    context_file_path = f"{os.getcwd()}/context.json"
+    assert os.path.isabs(context_file_path)
+
+    File(context_file_path).write(
+        """{
+    "my_tool": {
+        "a": 2,
+        "c": "bar"
+    }
+}
+"""
+    )
+    client = RedunClient()
+    result = client.execute(
+        ["redun", "run", "--context-file", context_file_path, "workflow.py", "main"]
+    )
+    assert result == {"a": 2, "c": "bar"}
+
+
+@use_tempdir
+def test_context_option_override(context_workflow) -> None:
+    """
+    Ensure that the context from redun.ini can be overridden by the context option.
+    """
+    config_string = """
+[scheduler]
+context =
+  {
+    "my_tool": {
+      "a": 1,
+      "b": "foo"
+    }
+  }
+"""
+    File(".redun/redun.ini").write(config_string)
+    client = RedunClient()
+    result = client.execute(
+        [
+            "redun",
+            "run",
+            "--context",
+            "my_tool.a=2",
+            "--context",
+            "my_tool.c=bar",
+            "workflow.py",
+            "main",
+        ]
+    )
+    assert result == {"a": 2, "b": "foo", "c": "bar"}
+
+
+@use_tempdir
+def test_context_file_and_option_override(context_workflow) -> None:
+    """
+    Ensure that the context from redun.ini can be overridden by the context file and option.
+    Overrides from --context should take precedence over the context file and the context file
+    should take precedence over the redun.ini context.
+    """
+    config_string = """
+[scheduler]
+context =
+  {
+    "my_tool": {
+      "a": 1,
+      "b": "foo"
+    }
+  }
+"""
+    context_override = """
+{
+    "my_tool": {
+        "a": 2,
+        "c": "bar"
+    }
+}
+"""
+    File(".redun/redun.ini").write(config_string)
+    File("context.json").write(context_override)
+    client = RedunClient()
+    result = client.execute(
+        [
+            "redun",
+            "run",
+            "--context-file",
+            "context.json",
+            "--context",
+            "my_tool.a=3",
+            "--context",
+            "my_tool.d=baz",
+            "workflow.py",
+            "main",
+        ]
+    )
+    assert result == {"a": 3, "b": "foo", "c": "bar", "d": "baz"}
+
+
+@use_tempdir
+def test_context_update_context_precedence() -> None:
+    """
+    Ensure that update_context takes precedence over any other option.
+    """
+    config_string = """
+[scheduler]
+context =
+  {
+    "my_tool": {
+      "a": 1,
+      "b": "foo"
+    }
+  }
+"""
+    workflow = """
+import os
+import redun
+
+@redun.task
+def inner(context: dict = redun.get_context("my_tool", None)) -> dict:
+    return context
+
+@redun.task
+def main() -> dict:
+    return inner.update_context(my_tool={"a": 3, "c": "bar"})()
+"""
+    File(".redun/redun.ini").write(config_string)
+    File("workflow.py").write(workflow)
+    client = RedunClient()
+    result = client.execute(
+        [
+            "redun",
+            "run",
+            "--context",
+            "my_tool.a=2",
+            "workflow.py",
+            "main",
+        ]
+    )
+    assert result == {"a": 3, "b": "foo", "c": "bar"}
 
 
 @pytest.mark.parametrize("executor", ["proc", "thread"])

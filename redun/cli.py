@@ -121,7 +121,7 @@ from redun.tags import (
     parse_tag_key_value,
 )
 from redun.task import Task as BaseTask
-from redun.utils import add_import_path, format_table, pickle_dump, trim_string
+from redun.utils import add_import_path, format_table, merge_dicts, pickle_dump, trim_string
 from redun.value import NoneType, function_type, get_type_registry
 
 # pygraphviz may not be installed. If not, disable
@@ -266,6 +266,8 @@ def get_config_dir(config_dir: Optional[str] = None) -> str:
     - environment variable
     - search filesystem (parent directories) for config dir
     - assume `.redun` in current working directory.
+
+    Note that the returned config dir may be relative.
     """
     if config_dir:
         # If config_dir is already defined, use it as is.
@@ -1054,6 +1056,26 @@ class RedunClient:
             help="If provided, the execution id. Must be a UUID that has not been used "
             "previously.",
         )
+        run_parser.add_argument(
+            "--context-file",
+            help=(
+                "Path to a JSON file containing updated context. If provided, overrides the "
+                "base context from redun.ini for the execution. This path should be either "
+                "absolute or relative to the current working directory."
+            ),
+        )
+
+        run_parser.add_argument(
+            "--context",
+            dest="context_updates",
+            default=[],
+            action="append",
+            help=(
+                "Updates individual values in the execution context. Format: <key>=<value>, where "
+                "the keys can use dot notation to refer to nested keys in JSON. This argument can "
+                "be used multiple times to override multiple keys."
+            ),
+        )
 
         run_parser.set_defaults(func=self.run_command)
         run_parser.set_defaults(show_help=False)
@@ -1425,6 +1447,33 @@ class RedunClient:
         self.get_scheduler(args, migrate=True)
         self.display("Initialized redun repository: {}".format(args.config))
 
+    def resolve_context_updates(
+        self, context_file: str, context_updates: List[str]
+    ) -> Dict[str, Any]:
+        """
+        Create a dict with updates to the context from command line arguments.
+        """
+        new_context = {}
+        if context_file:
+            with open(context_file, "r") as fp:
+                new_context = json.load(fp)
+
+        if context_updates:
+            # Build a nested dict from the context update keys.
+            context_updates_dict: Dict[str, Any] = {}
+            for key_value in context_updates:
+                key, value = parse_tag_key_value(key_value)
+                current_dict = context_updates_dict
+                parts = key.split(".")
+                for part in parts[:-1]:
+                    current_dict = current_dict.setdefault(part, {})
+                current_dict[parts[-1]] = value
+
+            # Merge the nested dict into the new context.
+            new_context = merge_dicts([new_context, context_updates_dict])
+
+        return new_context
+
     def run_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> Any:
         """
         Performs the run command.
@@ -1523,6 +1572,11 @@ class RedunClient:
         if args.option:
             task_options = dict(map(parse_tag_key_value, args.option))
             task = task.options(**task_options)
+
+        updated_context = self.resolve_context_updates(args.context_file, args.context_updates)
+        if updated_context:
+            # Apply task context override.
+            task = task.update_context(updated_context)
 
         # Determine execution tags.
         tags: List[Tuple[str, Any]] = get_default_execution_tags(

@@ -22,7 +22,7 @@ from redun.expression import SchedulerExpression, TaskExpression
 from redun.hashing import hash_arguments, hash_eval, hash_struct
 from redun.namespace import compute_namespace
 from redun.promise import Promise
-from redun.utils import get_func_source
+from redun.utils import get_func_source, merge_dicts
 from redun.value import TypeRegistry, Value, get_type_registry
 
 Func = TypeVar("Func", bound=Callable)
@@ -377,6 +377,13 @@ class Task(Value, Generic[Func]):
             task_options_base=self._task_options_base,
             task_options_override=new_task_options_update,
         )
+
+    def update_context(self, context: dict = {}, **kwargs: Any) -> "Task[Func]":
+        """
+        Update the context variables for the task.
+        """
+        prev_context = self._task_options_override.get("_context_override", {})
+        return self.options(_context_override=merge_dicts([prev_context, context, kwargs]))
 
     def _calc_hash(self) -> str:
         """The hash is designed for checking equality of `Task`s for the purposes of caching.

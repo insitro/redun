@@ -1,3 +1,4 @@
+from redun.context import get_context
 from redun.executors.alias import AliasExecutor
 from redun.executors.aws_batch import AWSBatchExecutor
 from redun.executors.aws_glue import AWSGlueExecutor
