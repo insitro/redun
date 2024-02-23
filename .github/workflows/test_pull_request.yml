@@ -20,7 +20,7 @@ jobs:
       - run: pip install tox
       - run: tox -e py
   test-postgres:
-    timeout-minutes: 10
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
