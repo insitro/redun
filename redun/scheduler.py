@@ -1311,16 +1311,16 @@ class Scheduler:
         """
         self._jobs_pending_limits.append((job, eval_args))
 
+    def _add_limits(self, limits1, limits2):
+        return {
+            limit_name: limits1[limit_name] + limits2[limit_name]
+            for limit_name in set(limits1) | set(limits2)
+        }
+
     def _check_jobs_pending_limits(self) -> None:
         """
         Checks whether Jobs pending due to limits can now satisfy limits and run.
         """
-
-        def _add_limits(limits1, limits2):
-            return {
-                limit_name: limits1[limit_name] + limits2[limit_name]
-                for limit_name in set(limits1) | set(limits2)
-            }
 
         ready_jobs: List[Tuple[Job, Tuple[tuple, dict]]] = []
         not_ready_jobs: List[Tuple[Job, Tuple[tuple, dict]]] = []
@@ -1329,7 +1329,7 @@ class Scheduler:
         # Resource limits that will be consumed by ready jobs.
         for job, eval_args in self._jobs_pending_limits:
             job_limits = job.get_limits()
-            proposed_limits = _add_limits(job_limits, ready_job_limits)
+            proposed_limits = self._add_limits(job_limits, ready_job_limits)
             if self._is_job_within_limits(proposed_limits):
                 ready_jobs.append((job, eval_args))
                 ready_job_limits = proposed_limits

@@ -30,7 +30,13 @@ def test_scheduler_limits_utils() -> None:
     """
     scheduler = Scheduler(config=Config(CONFIG_DICT))
 
-    job_limits = {"api": 1, "memory": MEMORY_LIMIT}
+    job_limits1 = {"api": 1, "memory": MEMORY_LIMIT}
+    job_limits2 = {"api": 1}
+
+    # Confirm we can add limits together where not all keys are present in both jobs. Regression
+    # test added for:
+    #   https://github.com/insitro/redun/issues/91
+    job_limits = scheduler._add_limits(job_limits1, job_limits2)
 
     # Check that a job that should have enough resources to run is correctly deemed within limits.
     assert scheduler._is_job_within_limits(job_limits)
