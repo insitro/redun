@@ -1313,7 +1313,7 @@ class Scheduler:
 
     def _add_limits(self, limits1, limits2):
         return {
-            limit_name: limits1[limit_name] + limits2[limit_name]
+            limit_name: limits1.get(limit_name, 0) + limits2.get(limit_name, 0)
             for limit_name in set(limits1) | set(limits2)
         }
 
