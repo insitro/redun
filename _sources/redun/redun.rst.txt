@@ -38,6 +38,14 @@ redun.config module
    :undoc-members:
    :show-inheritance:
 
+redun.context module
+--------------------
+
+.. automodule:: redun.context
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.db\_utils module
 ----------------------
 

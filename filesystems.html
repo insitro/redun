@@ -2,10 +2,12 @@
 <html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 --><title>Python Module Index - redun documentation</title>
-<link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+        <title>Filesystems - redun documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -132,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -215,7 +217,8 @@
           <span>Back to top</span>
         </a>
         <div class="content-icon-container">
-          <div class="theme-toggle-container theme-toggle-content">
+          
+<div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -223,344 +226,53 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          
-<section class="domainindex-section">
-  <h1>Python Module Index</h1>
-  <div class="domainindex-jumpbox"><a href="#cap-r"><strong>r</strong></a></div>
+          <section id="filesystems">
+<h1>Filesystems<a class="headerlink" href="#filesystems" title="Link to this heading">#</a></h1>
+<p>redun supports reading and writing to various filesystems, including local, S3, GCS, and Azure Blob Storage.</p>
+<p>The filesystem to be used is determined by the protocol in the file URL provided to <code class="docutils literal notranslate"><span class="pre">redun.file</span></code> constructor.
+In most cases, users don’t need to interact with <code class="docutils literal notranslate"><span class="pre">Filesystem</span></code> objects directly.</p>
+<section id="azure-blob-storage-filesystem">
+<h2>Azure Blob Storage filesystem<a class="headerlink" href="#azure-blob-storage-filesystem" title="Link to this heading">#</a></h2>
+<p>This filesystem is considered experimental - please read the documentation carefully before using it.</p>
+<section id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h3>
+<p>If you use <code class="docutils literal notranslate"><span class="pre">redun.File</span></code> or <code class="docutils literal notranslate"><span class="pre">Dir</span></code>, initialize it with <code class="docutils literal notranslate"><span class="pre">az</span></code> path:
+<code class="docutils literal notranslate"><span class="pre">az://container&#64;accountname.blob.core.windows.net/path/to/file</span></code>. Other paths format (like HTTPS blob URI) are not
+supported.</p>
 </section>
-<table class="domainindex-table">
-  <tr class="pcap">
-    <td></td><td>&#160;</td><td></td>
-  </tr>
-  <tr class="cap" id="cap-r">
-    <td></td><td><strong>r</strong></td><td></td>
-  </tr>
-  <tr>
-    <td><img src="_static/minus.png" class="toggler"
-              id="toggle-1" style="display: none" alt="-" /></td>
-    <td>
-        <a href="redun/redun.html#module-redun"><code class="xref">redun</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.html#module-redun.backends"><code class="xref">redun.backends</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.html#module-redun.backends.base"><code class="xref">redun.backends.base</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.db.html#module-redun.backends.db"><code class="xref">redun.backends.db</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.db.html#module-redun.backends.db.dataflow"><code class="xref">redun.backends.db.dataflow</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.db.html#module-redun.backends.db.query"><code class="xref">redun.backends.db.query</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.db.html#module-redun.backends.db.serializers"><code class="xref">redun.backends.db.serializers</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.html#module-redun.backends.value_store"><code class="xref">redun.backends.value_store</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.bcoding"><code class="xref">redun.bcoding</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.cli"><code class="xref">redun.cli</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.config"><code class="xref">redun.config</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console"><code class="xref">redun.console</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.app"><code class="xref">redun.console.app</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.parser"><code class="xref">redun.console.parser</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.screens"><code class="xref">redun.console.screens</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.upstream_screen"><code class="xref">redun.console.upstream_screen</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.utils"><code class="xref">redun.console.utils</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.widgets"><code class="xref">redun.console.widgets</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.context"><code class="xref">redun.context</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.db_utils"><code class="xref">redun.db_utils</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors"><code class="xref">redun.executors</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.alias"><code class="xref">redun.executors.alias</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.aws_batch"><code class="xref">redun.executors.aws_batch</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.aws_glue"><code class="xref">redun.executors.aws_glue</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.aws_utils"><code class="xref">redun.executors.aws_utils</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.base"><code class="xref">redun.executors.base</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.code_packaging"><code class="xref">redun.executors.code_packaging</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.command"><code class="xref">redun.executors.command</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.docker"><code class="xref">redun.executors.docker</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.launch"><code class="xref">redun.executors.launch</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.local"><code class="xref">redun.executors.local</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.scratch"><code class="xref">redun.executors.scratch</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.expression"><code class="xref">redun.expression</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.federated_tasks"><code class="xref">redun.federated_tasks</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.file"><code class="xref">redun.file</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.functools"><code class="xref">redun.functools</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.glue"><code class="xref">redun.glue</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.handle"><code class="xref">redun.handle</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.hashing"><code class="xref">redun.hashing</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.job_array"><code class="xref">redun.job_array</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.logging"><code class="xref">redun.logging</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.namespace"><code class="xref">redun.namespace</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.promise"><code class="xref">redun.promise</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.scheduler"><code class="xref">redun.scheduler</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.scheduler_config"><code class="xref">redun.scheduler_config</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.scripting"><code class="xref">redun.scripting</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.sphinx"><code class="xref">redun.sphinx</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.tags"><code class="xref">redun.tags</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.task"><code class="xref">redun.task</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.tools"><code class="xref">redun.tools</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.utils"><code class="xref">redun.utils</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.value"><code class="xref">redun.value</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.version"><code class="xref">redun.version</code></a></td><td>
-    <em></em></td>
-  </tr>
-</table>
+<section id="thread-safety">
+<h3>Thread safety<a class="headerlink" href="#thread-safety" title="Link to this heading">#</a></h3>
+<p>By design, <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> operations are not stateless, and there are potential issues with thread safety:</p>
+<ul class="simple">
+<li><p>listings cache (dircache) - for results of ls-like commands. <code class="docutils literal notranslate"><span class="pre">glob</span></code> calls <em>likely</em> don’t affect the cache,
+unlike <code class="docutils literal notranslate"><span class="pre">listdir</span></code> which we don’t call currently, so all redun calls like <code class="docutils literal notranslate"><span class="pre">Dir.files()</span></code> are safe</p></li>
+<li><p>file access (see https://filesystem-spec.readthedocs.io/en/latest/features.html#file-buffering-and-random-access) -
+users should assume IO file operations are unsafe and avoid reads/writes to the same file from multiple redun tasks running
+on the same executor.</p></li>
+</ul>
+</section>
+<section id="credentials-lookup">
+<h3>Credentials lookup<a class="headerlink" href="#credentials-lookup" title="Link to this heading">#</a></h3>
+<p>For most cases, Azure SDKs should work without any issues with the default credentials, and that’s what
+<code class="docutils literal notranslate"><span class="pre">adlfs</span></code> (<code class="docutils literal notranslate"><span class="pre">fsspec</span></code> implementation for Azure storage) does when not prompted otherwise.</p>
+<p>Note that it <strong>wasn’t</strong> tested on Azure Batch nodes, but <code class="docutils literal notranslate"><span class="pre">DefaultClientCredential</span></code> is expected to work inside
+any Azure compute with properly configured managed identity.</p>
+<p>However, inside AzureML compute that uses on-behalf-of authentication, DefaultClientCredential will not work.
+There is a special credential class that works, but works only in synchronous mode. <code class="docutils literal notranslate"><span class="pre">adlfs</span></code> works with both sync
+and async credential classes, but it assumes custom credential classes are async. We do a small hack in the code
+to assign credential class to a correct class property.</p>
+<p>Currently use a simple try-catch to determine if we can retrieve auth token from DefaultAzureCredential and use
+AML credential as fallback option. We can reconsider that in the future if we find a better way of determining
+when we run on Azure compute without managed identity (e.g. environment variables).</p>
+</section>
+</section>
+</section>
 
         </article>
       </div>
@@ -587,8 +299,32 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Filesystems</a><ul>
+<li><a class="reference internal" href="#azure-blob-storage-filesystem">Azure Blob Storage filesystem</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#thread-safety">Thread safety</a></li>
+<li><a class="reference internal" href="#credentials-lookup">Credentials lookup</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

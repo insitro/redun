@@ -389,11 +389,9 @@ to span multiple executions, processes, hosts, etc. In general, we need to be mo
 with CSE, that the cached value is appropriate to use.</p>
 <p>Task caching operates at the granularity of a single
 call to a <code class="docutils literal notranslate"><span class="pre">Task</span></code> with concrete arguments. Recall that the result of a <code class="docutils literal notranslate"><span class="pre">Task</span></code> might be a value,
-or another expression that needs further evaluation. In its normal mode, caching uses single</p>
-<ul class="simple">
-<li><p>[x] reductions, stepping through the evaluation. See the <a class="reference internal" href="design.html#Result-caching"><span class="std std-ref">Results caching</span></a>
-section, for more information on how this recursive checking works.</p></li>
-</ul>
+or another expression that needs further evaluation. In its normal mode, caching uses single
+reductions, stepping through the evaluation. See the <a class="reference internal" href="design.html#Result-caching"><span class="std std-ref">Results caching</span></a>
+section, for more information on how this recursive checking works.</p>
 <p>Consider the following example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
 <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>

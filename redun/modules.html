@@ -336,6 +336,7 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.repo_add_command"><code class="docutils literal notranslate"><span class="pre">RedunClient.repo_add_command()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.repo_list_command"><code class="docutils literal notranslate"><span class="pre">RedunClient.repo_list_command()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.repo_remove_command"><code class="docutils literal notranslate"><span class="pre">RedunClient.repo_remove_command()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.resolve_context_updates"><code class="docutils literal notranslate"><span class="pre">RedunClient.resolve_context_updates()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.run_command"><code class="docutils literal notranslate"><span class="pre">RedunClient.run_command()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.server_command"><code class="docutils literal notranslate"><span class="pre">RedunClient.server_command()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.cli.RedunClient.start_pager"><code class="docutils literal notranslate"><span class="pre">RedunClient.start_pager()</span></code></a></li>
@@ -407,6 +408,11 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.config.create_config_section"><code class="docutils literal notranslate"><span class="pre">create_config_section()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.context">redun.context module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.context.get_context"><code class="docutils literal notranslate"><span class="pre">get_context</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.context.get_context_value"><code class="docutils literal notranslate"><span class="pre">get_context_value()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.db_utils">redun.db_utils module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.db_utils.filter_in"><code class="docutils literal notranslate"><span class="pre">filter_in()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.db_utils.get_or_create"><code class="docutils literal notranslate"><span class="pre">get_or_create()</span></code></a></li>
@@ -460,6 +466,23 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.file">redun.file module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.az_credential"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.az_credential</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.copy"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.copy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.exists"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.exists()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.filesize"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.filesize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.get_account_name_from_path"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.get_account_name_from_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.get_fs_for_path"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.get_fs_for_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.get_hash"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.get_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.glob"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.glob()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.isdir"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.isdir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.isfile"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.isfile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.mkdir"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.mkdir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.name"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.remove"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.remove()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.AzureBlobFileSystem.rmdir"><code class="docutils literal notranslate"><span class="pre">AzureBlobFileSystem.rmdir()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.file.ContentDir"><code class="docutils literal notranslate"><span class="pre">ContentDir</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentDir.classes"><code class="docutils literal notranslate"><span class="pre">ContentDir.classes</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.file.ContentDir.type_basename"><code class="docutils literal notranslate"><span class="pre">ContentDir.type_basename</span></code></a></li>
@@ -856,12 +879,19 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.add_parent"><code class="docutils literal notranslate"><span class="pre">Job.add_parent()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.clear"><code class="docutils literal notranslate"><span class="pre">Job.clear()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.collapse"><code class="docutils literal notranslate"><span class="pre">Job.collapse()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.get_context"><code class="docutils literal notranslate"><span class="pre">Job.get_context()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.get_limits"><code class="docutils literal notranslate"><span class="pre">Job.get_limits()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.get_option"><code class="docutils literal notranslate"><span class="pre">Job.get_option()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.get_options"><code class="docutils literal notranslate"><span class="pre">Job.get_options()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.get_raw_option"><code class="docutils literal notranslate"><span class="pre">Job.get_raw_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.get_raw_options"><code class="docutils literal notranslate"><span class="pre">Job.get_raw_options()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.reject"><code class="docutils literal notranslate"><span class="pre">Job.reject()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.resolve"><code class="docutils literal notranslate"><span class="pre">Job.resolve()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.Job.status"><code class="docutils literal notranslate"><span class="pre">Job.status</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.JobEnv"><code class="docutils literal notranslate"><span class="pre">JobEnv</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.scheduler.JobEnv.get_context"><code class="docutils literal notranslate"><span class="pre">JobEnv.get_context()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.NoCurrentScheduler"><code class="docutils literal notranslate"><span class="pre">NoCurrentScheduler</span></code></a></li>
@@ -898,6 +928,7 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.format_arg"><code class="docutils literal notranslate"><span class="pre">format_arg()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.format_job_statuses"><code class="docutils literal notranslate"><span class="pre">format_job_statuses()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.format_task_call"><code class="docutils literal notranslate"><span class="pre">format_task_call()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.get_arg_defaults"><code class="docutils literal notranslate"><span class="pre">get_arg_defaults()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.get_backend_from_config"><code class="docutils literal notranslate"><span class="pre">get_backend_from_config()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.get_current_scheduler"><code class="docutils literal notranslate"><span class="pre">get_current_scheduler()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler.get_ignore_warnings_from_config"><code class="docutils literal notranslate"><span class="pre">get_ignore_warnings_from_config()</span></code></a></li>
@@ -914,6 +945,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.scheduler_config">redun.scheduler_config module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler_config.get_abs_config_dir"><code class="docutils literal notranslate"><span class="pre">get_abs_config_dir()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler_config.get_abs_db_uri"><code class="docutils literal notranslate"><span class="pre">get_abs_db_uri()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler_config.get_abs_url"><code class="docutils literal notranslate"><span class="pre">get_abs_url()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.scheduler_config.postprocess_config"><code class="docutils literal notranslate"><span class="pre">postprocess_config()</span></code></a></li>
@@ -1019,6 +1051,7 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.Task.recompute_hash"><code class="docutils literal notranslate"><span class="pre">Task.recompute_hash()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.Task.signature"><code class="docutils literal notranslate"><span class="pre">Task.signature</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.Task.type_name"><code class="docutils literal notranslate"><span class="pre">Task.type_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.task.Task.update_context"><code class="docutils literal notranslate"><span class="pre">Task.update_context()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task.TaskRegistry"><code class="docutils literal notranslate"><span class="pre">TaskRegistry</span></code></a><ul>
@@ -1182,7 +1215,140 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun.version">redun.version module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="redun.html#redun-visualize-module">redun.visualize module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="redun.html#module-redun">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.Dir"><code class="docutils literal notranslate"><span class="pre">Dir</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.classes"><code class="docutils literal notranslate"><span class="pre">Dir.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.copy_to"><code class="docutils literal notranslate"><span class="pre">Dir.copy_to()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.exists"><code class="docutils literal notranslate"><span class="pre">Dir.exists()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.file"><code class="docutils literal notranslate"><span class="pre">Dir.file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.filesystem"><code class="docutils literal notranslate"><span class="pre">Dir.filesystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.mkdir"><code class="docutils literal notranslate"><span class="pre">Dir.mkdir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.rel_path"><code class="docutils literal notranslate"><span class="pre">Dir.rel_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.rmdir"><code class="docutils literal notranslate"><span class="pre">Dir.rmdir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.shell_copy_to"><code class="docutils literal notranslate"><span class="pre">Dir.shell_copy_to()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.stage"><code class="docutils literal notranslate"><span class="pre">Dir.stage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.type_basename"><code class="docutils literal notranslate"><span class="pre">Dir.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Dir.type_name"><code class="docutils literal notranslate"><span class="pre">Dir.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.File"><code class="docutils literal notranslate"><span class="pre">File</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.basename"><code class="docutils literal notranslate"><span class="pre">File.basename()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.classes"><code class="docutils literal notranslate"><span class="pre">File.classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.copy_to"><code class="docutils literal notranslate"><span class="pre">File.copy_to()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.dirname"><code class="docutils literal notranslate"><span class="pre">File.dirname()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.exists"><code class="docutils literal notranslate"><span class="pre">File.exists()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.filesystem"><code class="docutils literal notranslate"><span class="pre">File.filesystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.get_hash"><code class="docutils literal notranslate"><span class="pre">File.get_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.hash"><code class="docutils literal notranslate"><span class="pre">File.hash</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.is_valid"><code class="docutils literal notranslate"><span class="pre">File.is_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.isdir"><code class="docutils literal notranslate"><span class="pre">File.isdir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.isfile"><code class="docutils literal notranslate"><span class="pre">File.isfile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.open"><code class="docutils literal notranslate"><span class="pre">File.open()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.path"><code class="docutils literal notranslate"><span class="pre">File.path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.read"><code class="docutils literal notranslate"><span class="pre">File.read()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.readlines"><code class="docutils literal notranslate"><span class="pre">File.readlines()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.remove"><code class="docutils literal notranslate"><span class="pre">File.remove()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.shell_copy_to"><code class="docutils literal notranslate"><span class="pre">File.shell_copy_to()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.size"><code class="docutils literal notranslate"><span class="pre">File.size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.stage"><code class="docutils literal notranslate"><span class="pre">File.stage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.stream"><code class="docutils literal notranslate"><span class="pre">File.stream</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.touch"><code class="docutils literal notranslate"><span class="pre">File.touch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.type_basename"><code class="docutils literal notranslate"><span class="pre">File.type_basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.type_name"><code class="docutils literal notranslate"><span class="pre">File.type_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.update_hash"><code class="docutils literal notranslate"><span class="pre">File.update_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.File.write"><code class="docutils literal notranslate"><span class="pre">File.write()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.Handle"><code class="docutils literal notranslate"><span class="pre">Handle</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Handle.HandleInfo"><code class="docutils literal notranslate"><span class="pre">Handle.HandleInfo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Handle.apply_call"><code class="docutils literal notranslate"><span class="pre">Handle.apply_call()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Handle.fork"><code class="docutils literal notranslate"><span class="pre">Handle.fork()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Handle.get_hash"><code class="docutils literal notranslate"><span class="pre">Handle.get_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Handle.is_valid"><code class="docutils literal notranslate"><span class="pre">Handle.is_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Handle.postprocess"><code class="docutils literal notranslate"><span class="pre">Handle.postprocess()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Handle.preprocess"><code class="docutils literal notranslate"><span class="pre">Handle.preprocess()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Handle.type_name"><code class="docutils literal notranslate"><span class="pre">Handle.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.PartialTask"><code class="docutils literal notranslate"><span class="pre">PartialTask</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.PartialTask.is_valid"><code class="docutils literal notranslate"><span class="pre">PartialTask.is_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.PartialTask.options"><code class="docutils literal notranslate"><span class="pre">PartialTask.options()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.PartialTask.partial"><code class="docutils literal notranslate"><span class="pre">PartialTask.partial()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.PartialTask.type_name"><code class="docutils literal notranslate"><span class="pre">PartialTask.type_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.Scheduler"><code class="docutils literal notranslate"><span class="pre">Scheduler</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.add_executor"><code class="docutils literal notranslate"><span class="pre">Scheduler.add_executor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.add_job_tags"><code class="docutils literal notranslate"><span class="pre">Scheduler.add_job_tags()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.clear"><code class="docutils literal notranslate"><span class="pre">Scheduler.clear()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.done_job"><code class="docutils literal notranslate"><span class="pre">Scheduler.done_job()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.evaluate"><code class="docutils literal notranslate"><span class="pre">Scheduler.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.extend_run"><code class="docutils literal notranslate"><span class="pre">Scheduler.extend_run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.get_job_status_report"><code class="docutils literal notranslate"><span class="pre">Scheduler.get_job_status_report()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.is_running"><code class="docutils literal notranslate"><span class="pre">Scheduler.is_running</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.load"><code class="docutils literal notranslate"><span class="pre">Scheduler.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.log"><code class="docutils literal notranslate"><span class="pre">Scheduler.log()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.log_job_statuses"><code class="docutils literal notranslate"><span class="pre">Scheduler.log_job_statuses()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.reject_job"><code class="docutils literal notranslate"><span class="pre">Scheduler.reject_job()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.run"><code class="docutils literal notranslate"><span class="pre">Scheduler.run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Scheduler.set_cache"><code class="docutils literal notranslate"><span class="pre">Scheduler.set_cache()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.filenames"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.filenames</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.filesystem"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.filesystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.format"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.format</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.from_data"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.from_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.from_files"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.from_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.get_hash"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.get_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.hash"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.hash</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.is_valid"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.is_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.iter_subvalues"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.iter_subvalues()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.load_pandas"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.load_pandas()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.load_pandas_shards"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.load_pandas_shards()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.load_spark"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.load_spark()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.path"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.postprocess"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.postprocess()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.purge_spark"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.purge_spark()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.recurse"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.recurse</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.save_spark"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.save_spark()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.type_name"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.type_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.ShardedS3Dataset.update_hash"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset.update_hash()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.Task"><code class="docutils literal notranslate"><span class="pre">Task</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.T"><code class="docutils literal notranslate"><span class="pre">Task.T</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.fullname"><code class="docutils literal notranslate"><span class="pre">Task.fullname</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.get_hash"><code class="docutils literal notranslate"><span class="pre">Task.get_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.get_task_option"><code class="docutils literal notranslate"><span class="pre">Task.get_task_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.get_task_options"><code class="docutils literal notranslate"><span class="pre">Task.get_task_options()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.has_task_option"><code class="docutils literal notranslate"><span class="pre">Task.has_task_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.is_valid"><code class="docutils literal notranslate"><span class="pre">Task.is_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.load_module"><code class="docutils literal notranslate"><span class="pre">Task.load_module</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.nout"><code class="docutils literal notranslate"><span class="pre">Task.nout</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.options"><code class="docutils literal notranslate"><span class="pre">Task.options()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.partial"><code class="docutils literal notranslate"><span class="pre">Task.partial()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.recompute_hash"><code class="docutils literal notranslate"><span class="pre">Task.recompute_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.signature"><code class="docutils literal notranslate"><span class="pre">Task.signature</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.type_name"><code class="docutils literal notranslate"><span class="pre">Task.type_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.html#redun.Task.update_context"><code class="docutils literal notranslate"><span class="pre">Task.update_context()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.apply_tags"><code class="docutils literal notranslate"><span class="pre">apply_tags</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.catch"><code class="docutils literal notranslate"><span class="pre">catch</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.cond"><code class="docutils literal notranslate"><span class="pre">cond</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.get_context"><code class="docutils literal notranslate"><span class="pre">get_context</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.get_current_namespace"><code class="docutils literal notranslate"><span class="pre">get_current_namespace()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.get_current_scheduler"><code class="docutils literal notranslate"><span class="pre">get_current_scheduler()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.get_task_registry"><code class="docutils literal notranslate"><span class="pre">get_task_registry()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.merge_handles"><code class="docutils literal notranslate"><span class="pre">merge_handles</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.namespace"><code class="docutils literal notranslate"><span class="pre">namespace()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.script"><code class="docutils literal notranslate"><span class="pre">script()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.set_current_scheduler"><code class="docutils literal notranslate"><span class="pre">set_current_scheduler()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.task"><code class="docutils literal notranslate"><span class="pre">task()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.html#redun.throw"><code class="docutils literal notranslate"><span class="pre">throw</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

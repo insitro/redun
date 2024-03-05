@@ -324,9 +324,8 @@
 <h4><code class="docutils literal notranslate"><span class="pre">job_status_interval</span></code><a class="headerlink" href="#job-status-interval" title="Link to this heading">#</a></h4>
 <p>An integer (default: 20) of how many seconds between displays of the job status table.</p>
 </section>
-</section>
 <section id="federated-configs">
-<h3><code class="docutils literal notranslate"><span class="pre">federated_configs</span></code><a class="headerlink" href="#federated-configs" title="Link to this heading">#</a></h3>
+<h4><code class="docutils literal notranslate"><span class="pre">federated_configs</span></code><a class="headerlink" href="#federated-configs" title="Link to this heading">#</a></h4>
 <p>A config file may mark other config files that should be imported. This is particularly useful
 for importing remote config files containing federated entrypoints and their executors.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">scheduler</span><span class="p">]</span>
@@ -335,7 +334,7 @@ for importing remote config files containing federated entrypoints and their exe
 </div>
 <p>or</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">scheduler</span><span class="p">]</span>
-<span class="n">federated_configs</span> <span class="o">=</span> 
+<span class="n">federated_configs</span> <span class="o">=</span>
     <span class="o">&lt;</span><span class="n">path</span> <span class="n">to</span> <span class="n">config_dir_1</span><span class="o">&gt;</span>
     <span class="o">&lt;</span><span class="n">path</span> <span class="n">to</span> <span class="n">config_dir_2</span><span class="o">&gt;</span>
 </pre></div>
@@ -344,6 +343,41 @@ for importing remote config files containing federated entrypoints and their exe
 are ignored. There is no namespacing for these imported executors and federated tasks, either
 from each other or from the rest of the scheduler’s configuration. Any duplicate names will result
 in an error being raised.</p>
+</section>
+<section id="context">
+<h4><code class="docutils literal notranslate"><span class="pre">context</span></code><a class="headerlink" href="#context" title="Link to this heading">#</a></h4>
+<p>Redun’s context allows users to specify workflow arguments in the redun.ini config file and then pass those arguments to deeply nested sub-tasks, without having to pass the argument explicitly through all the intermediate tasks along the way.
+This is useful for avoiding tedious argument passing (what React developers call “prop-drilling”) and avoids triggering rerunning tasks that don’t even look at such config (they just pass it along).</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[scheduler]</span>
+<span class="c1"># Here, we define context variables for our tool, my_tool.</span>
+<span class="na">context</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="na">{</span>
+<span class="w">    </span><span class="na">&quot;my_tool&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">{</span>
+<span class="w">      </span><span class="na">&quot;ratio&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">1.618</span>
+<span class="w">    </span><span class="na">}</span>
+<span class="w">  </span><span class="na">}</span>
+</pre></div>
+</div>
+<p>Then in the task definition, we can access the context variable using the <code class="docutils literal notranslate"><span class="pre">get_context</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">my_tool</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">get_context</span><span class="p">(</span><span class="s2">&quot;my_tool.ratio&quot;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="c1"># Perform desired computation with flag set by context.</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Ran my_tool with argument: </span><span class="si">{</span><span class="n">ratio</span><span class="si">}</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<p>Context can be overridden with a few CLI flags that can be passed to <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">run</span></code>.
+Please use <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">run</span> <span class="pre">-h</span></code> to see the full list of options.</p>
+</section>
+<section id="context-file">
+<h4><code class="docutils literal notranslate"><span class="pre">context_file</span></code><a class="headerlink" href="#context-file" title="Link to this heading">#</a></h4>
+<p>In addition to specifying context inline with the <code class="docutils literal notranslate"><span class="pre">context</span></code> option, users can instead provide a path to the JSON file containing context.
+This is useful for large or complex contexts that are easier to manage in a separate file.
+The path can be either absolute or relative to the redun config directory (<code class="docutils literal notranslate"><span class="pre">.redun</span></code> by default).</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[scheduler]</span>
+<span class="na">context_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/Users/piotr/context.json</span>
+</pre></div>
+</div>
+</section>
 </section>
 <section id="backend">
 <h3>Backend<a class="headerlink" href="#backend" title="Link to this heading">#</a></h3>
@@ -578,18 +612,18 @@ at execution time.</p>
 <p>An optional integer (default: None) that specifies the time duration in seconds (measure from job attempt’s <code class="docutils literal notranslate"><span class="pre">startedAt</span></code> timestamp) after which AWS Batch will terminate the job. For more on job timeouts, see the <a class="reference external" href="https://docs.aws.amazon.com/batch/latest/userguide/job_timeouts.html">Job Timeouts on Batch docs</a>. When not set, jobs will run indefinitely (unless on Fargate where there is a 14 day limit).</p>
 </section>
 <section id="privileged">
-<h5>privileged<a class="headerlink" href="#privileged" title="Link to this heading">#</a></h5>
+<h5><code class="docutils literal notranslate"><span class="pre">privileged</span></code><a class="headerlink" href="#privileged" title="Link to this heading">#</a></h5>
 <p>An optional bool (default: False) that specifies whether to run the job in privileged mode.</p>
 </section>
 <section id="autocreate-job-def">
-<h5>autocreate_job_def<a class="headerlink" href="#autocreate-job-def" title="Link to this heading">#</a></h5>
+<h5><code class="docutils literal notranslate"><span class="pre">autocreate_job_def</span></code><a class="headerlink" href="#autocreate-job-def" title="Link to this heading">#</a></h5>
 <p>An optional bool (default: True). If <code class="docutils literal notranslate"><span class="pre">autocreate_job_def</span></code> is disabled, then we require a <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code>
 to be present and lookup the job by name. If <code class="docutils literal notranslate"><span class="pre">autocreate_job_def</span></code> is enabled, then we will create
 a new job definition if an existing one matching <code class="docutils literal notranslate"><span class="pre">job_def_name</span></code> and required properties cannot be found.
 For backwards-compatibility, the deprecated <code class="docutils literal notranslate"><span class="pre">autocreate_job</span></code> is also supported.</p>
 </section>
 <section id="job-def-name">
-<h5>job_def_name<a class="headerlink" href="#job-def-name" title="Link to this heading">#</a></h5>
+<h5><code class="docutils literal notranslate"><span class="pre">job_def_name</span></code><a class="headerlink" href="#job-def-name" title="Link to this heading">#</a></h5>
 <p>An optional str (default: None) that specifies a job definition to use. If not set, a new job definition will created.</p>
 </section>
 <section id="batch-tags">
@@ -613,6 +647,17 @@ For backwards-compatibility, the deprecated <code class="docutils literal notran
 <section id="num-nodes">
 <h5><code class="docutils literal notranslate"><span class="pre">num_nodes</span></code><a class="headerlink" href="#num-nodes" title="Link to this heading">#</a></h5>
 <p>If not none, use a multi-node job and set the number of workers.</p>
+</section>
+<section id="job-def-extra">
+<h5><code class="docutils literal notranslate"><span class="pre">job_def_extra</span></code><a class="headerlink" href="#job-def-extra" title="Link to this heading">#</a></h5>
+<p>Dictionary of additional arguments to pass to AWS Batch job definition creation. Parameters are documented
+<a class="reference external" href="https://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html">here</a>. Only the specified
+keys will be changed - any other options set elsewhere by redun (such as ulimit for multi-node jobs, etc)
+will remain set.</p>
+<p>For example, to allocate 100 MiB of swap space:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">job_def_extra</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;containerProperties&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;linuxParameters&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;maxSwap&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;swappiness&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}}}</span>
+</pre></div>
+</div>
 </section>
 </section>
 <section id="aws-glue-executor">
@@ -904,9 +949,11 @@ Can be further overridden on a per-task basis using task options.</p>
 <li><a class="reference internal" href="#ignore-warnings"><code class="docutils literal notranslate"><span class="pre">ignore_warnings</span></code></a></li>
 <li><a class="reference internal" href="#setup-scheduler"><code class="docutils literal notranslate"><span class="pre">setup_scheduler</span></code></a></li>
 <li><a class="reference internal" href="#job-status-interval"><code class="docutils literal notranslate"><span class="pre">job_status_interval</span></code></a></li>
+<li><a class="reference internal" href="#federated-configs"><code class="docutils literal notranslate"><span class="pre">federated_configs</span></code></a></li>
+<li><a class="reference internal" href="#context"><code class="docutils literal notranslate"><span class="pre">context</span></code></a></li>
+<li><a class="reference internal" href="#context-file"><code class="docutils literal notranslate"><span class="pre">context_file</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#federated-configs"><code class="docutils literal notranslate"><span class="pre">federated_configs</span></code></a></li>
 <li><a class="reference internal" href="#backend">Backend</a><ul>
 <li><a class="reference internal" href="#automigrate"><code class="docutils literal notranslate"><span class="pre">automigrate</span></code></a></li>
 <li><a class="reference internal" href="#db-aws-secret-name"><code class="docutils literal notranslate"><span class="pre">db_aws_secret_name</span></code></a></li>
@@ -961,12 +1008,13 @@ Can be further overridden on a per-task basis using task options.</p>
 <li><a class="reference internal" href="#max-array-size"><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code></a></li>
 <li><a class="reference internal" href="#job-stale-time"><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code></a></li>
 <li><a class="reference internal" href="#timeout"><code class="docutils literal notranslate"><span class="pre">timeout</span></code></a></li>
-<li><a class="reference internal" href="#privileged">privileged</a></li>
-<li><a class="reference internal" href="#autocreate-job-def">autocreate_job_def</a></li>
-<li><a class="reference internal" href="#job-def-name">job_def_name</a></li>
+<li><a class="reference internal" href="#privileged"><code class="docutils literal notranslate"><span class="pre">privileged</span></code></a></li>
+<li><a class="reference internal" href="#autocreate-job-def"><code class="docutils literal notranslate"><span class="pre">autocreate_job_def</span></code></a></li>
+<li><a class="reference internal" href="#job-def-name"><code class="docutils literal notranslate"><span class="pre">job_def_name</span></code></a></li>
 <li><a class="reference internal" href="#batch-tags"><code class="docutils literal notranslate"><span class="pre">batch_tags</span></code></a></li>
 <li><a class="reference internal" href="#default-batch-tags"><code class="docutils literal notranslate"><span class="pre">default_batch_tags</span></code></a></li>
 <li><a class="reference internal" href="#num-nodes"><code class="docutils literal notranslate"><span class="pre">num_nodes</span></code></a></li>
+<li><a class="reference internal" href="#job-def-extra"><code class="docutils literal notranslate"><span class="pre">job_def_extra</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#aws-glue-executor">AWS Glue executor</a><ul>

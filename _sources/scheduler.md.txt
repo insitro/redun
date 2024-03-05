@@ -178,7 +178,7 @@ with CSE, that the cached value is appropriate to use.
 Task caching operates at the granularity of a single
 call to a `Task` with concrete arguments. Recall that the result of a `Task` might be a value,
 or another expression that needs further evaluation. In its normal mode, caching uses single
-  * [x] reductions, stepping through the evaluation. See the [Results caching](design.md#Result-caching)
+reductions, stepping through the evaluation. See the [Results caching](design.md#Result-caching)
 section, for more information on how this recursive checking works.
 
 Consider the following example:
