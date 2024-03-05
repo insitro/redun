@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun.executors package" href="redun.executors.html" /><link rel="prev" title="redun.backends.db package" href="redun.backends.db.html" />
 
-    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
         <title>redun.console package - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=135e06be" />
@@ -299,11 +299,8 @@
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id5"><span class="problematic" id="id6">``</span></a><a href="#id7"><span class="problematic" id="id8">`</span></a></p>
@@ -334,7 +331,7 @@ yield Footer()</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.console.app.RedunApp.SCREENS">
-<span class="sig-name descname"><span class="pre">SCREENS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Screen</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Screen</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'ExecutionsNamespaceScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.ExecutionsNamespaceScreen'&gt;,</span> <span class="pre">'ExecutionsScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.ExecutionsScreen'&gt;,</span> <span class="pre">'FilesScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.FilesScreen'&gt;,</span> <span class="pre">'MenuScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.app.MenuScreen'&gt;,</span> <span class="pre">'ReplScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.ReplScreen'&gt;,</span> <span class="pre">'SearchScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.SearchScreen'&gt;,</span> <span class="pre">'TasksScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.TasksScreen'&gt;}</span></em><a class="headerlink" href="#redun.console.app.RedunApp.SCREENS" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">SCREENS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Screen</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Screen</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'ExecutionsNamespaceScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.ExecutionsNamespaceScreen'&gt;,</span> <span class="pre">'ExecutionsScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.ExecutionsScreen'&gt;,</span> <span class="pre">'FilesScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.FilesScreen'&gt;,</span> <span class="pre">'MenuScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.app.MenuScreen'&gt;,</span> <span class="pre">'ReplScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.ReplScreen'&gt;,</span> <span class="pre">'SearchScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.SearchScreen'&gt;,</span> <span class="pre">'TasksScreen':</span> <span class="pre">&lt;class</span> <span class="pre">'redun.console.screens.TasksScreen'&gt;}</span></em><a class="headerlink" href="#redun.console.app.RedunApp.SCREENS" title="Link to this definition">#</a></dt>
 <dd><p>Screens associated with the app for the lifetime of the app.</p>
 </dd></dl>
 
@@ -484,11 +481,8 @@ See also [the <cite>Screen.TITLE</cite> attribute][textual.screen.Screen.TITLE].
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id13"><span class="problematic" id="id14">``</span></a><a href="#id15"><span class="problematic" id="id16">`</span></a></p>
@@ -594,11 +588,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id21"><span class="problematic" id="id22">``</span></a><a href="#id23"><span class="problematic" id="id24">`</span></a></p>
@@ -706,11 +697,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id29"><span class="problematic" id="id30">``</span></a><a href="#id31"><span class="problematic" id="id32">`</span></a></p>
@@ -814,11 +802,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id37"><span class="problematic" id="id38">``</span></a><a href="#id39"><span class="problematic" id="id40">`</span></a></p>
@@ -902,11 +887,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id45"><span class="problematic" id="id46">``</span></a><a href="#id47"><span class="problematic" id="id48">`</span></a></p>
@@ -961,11 +943,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id53"><span class="problematic" id="id54">``</span></a><a href="#id55"><span class="problematic" id="id56">`</span></a></p>
@@ -1047,11 +1026,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id61"><span class="problematic" id="id62">``</span></a><a href="#id63"><span class="problematic" id="id64">`</span></a></p>
@@ -1109,11 +1085,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id69"><span class="problematic" id="id70">``</span></a><a href="#id71"><span class="problematic" id="id72">`</span></a></p>
@@ -1204,11 +1177,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id77"><span class="problematic" id="id78">``</span></a><a href="#id79"><span class="problematic" id="id80">`</span></a></p>
@@ -1311,11 +1281,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id85"><span class="problematic" id="id86">``</span></a><a href="#id87"><span class="problematic" id="id88">`</span></a></p>
@@ -1462,11 +1429,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id93"><span class="problematic" id="id94">``</span></a><a href="#id95"><span class="problematic" id="id96">`</span></a></p>
@@ -1523,11 +1487,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id101"><span class="problematic" id="id102">``</span></a><a href="#id103"><span class="problematic" id="id104">`</span></a></p>
@@ -1602,11 +1563,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id109"><span class="problematic" id="id110">``</span></a><a href="#id111"><span class="problematic" id="id112">`</span></a></p>
@@ -1705,11 +1663,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id117"><span class="problematic" id="id118">``</span></a><a href="#id119"><span class="problematic" id="id120">`</span></a></p>
@@ -1784,11 +1739,8 @@ yield Footer()</p>
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
 <p><a href="#id125"><span class="problematic" id="id126">``</span></a><a href="#id127"><span class="problematic" id="id128">`</span></a></p>
@@ -2250,7 +2202,20 @@ display that as:</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.console.widgets.RedunFooter.render">
 <span class="sig-name descname"><span class="pre">render</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ConsoleRenderable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">RichCast</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></span><a class="headerlink" href="#redun.console.widgets.RedunFooter.render" title="Link to this definition">#</a></dt>
-<dd><p>Get renderable for widget.</p>
+<dd><p>Get text or Rich renderable for this widget.</p>
+<p>Implement this for custom widgets.</p>
+<p class="rubric">Example</p>
+<p><a href="#id129"><span class="problematic" id="id130">``</span></a><a href="#id131"><span class="problematic" id="id132">`</span></a>python
+from textual.app import RenderableType
+from textual.widget import Widget</p>
+<dl class="simple">
+<dt>class CustomWidget(Widget):</dt><dd><dl class="simple">
+<dt>def render(self) -&gt; RenderableType:</dt><dd><p>return “Welcome to [bold red]Textual[/]!”</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p><a href="#id133"><span class="problematic" id="id134">``</span></a><a href="#id135"><span class="problematic" id="id136">`</span></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Any renderable.</p>
@@ -2375,18 +2340,15 @@ display that as:</p>
 <dd><p>Called by Textual to create child widgets.</p>
 <p>Extend this to build a UI.</p>
 <p class="rubric">Example</p>
-<p><a href="#id129"><span class="problematic" id="id130">``</span></a><a href="#id131"><span class="problematic" id="id132">`</span></a>python
+<p><a href="#id137"><span class="problematic" id="id138">``</span></a><a href="#id139"><span class="problematic" id="id140">`</span></a>python
 def compose(self) -&gt; ComposeResult:</p>
 <blockquote>
 <div><p>yield Header()
-yield Container(</p>
-<blockquote>
-<div><p>Tree(), Viewer()</p>
-</div></blockquote>
-<p>)
+yield Label(“Press the button below:”)
+yield Button()
 yield Footer()</p>
 </div></blockquote>
-<p><a href="#id133"><span class="problematic" id="id134">``</span></a><a href="#id135"><span class="problematic" id="id136">`</span></a></p>
+<p><a href="#id141"><span class="problematic" id="id142">``</span></a><a href="#id143"><span class="problematic" id="id144">`</span></a></p>
 </dd></dl>
 
 </dd></dl>
