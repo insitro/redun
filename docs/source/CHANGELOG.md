@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.1
+March 11, 2024
+
+* `#345` - Update client credential lookup for Azure storage
+* `#344` - Bump the timeout for postgres tests
+
 ## 0.19.0
 February 22, 2024
 
