@@ -4,6 +4,16 @@ tocpdeth: 3
 
 # Developer guide
 
+## One-liner to run tests using Docker & Docker-Compose
+
+Run `./pytest.sh` with the arguments that you would pass to `pytest`, for example:
+
+```
+./pytest.sh -k static --pdb
+```
+
+The lints also have their own shortcut: `./lint.sh`
+
 ## Development installation
 
 If you have postgres available, (perhaps with `brew install postgresql` on macOS), you can prepare
