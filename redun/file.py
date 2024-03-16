@@ -1,7 +1,6 @@
 import abc
 import glob
 import io
-import logging
 import os
 import re
 import shutil
@@ -30,7 +29,7 @@ import s3fs
 from botocore.exceptions import ClientError
 from fsspec.utils import infer_storage_options
 
-from redun import glue
+from redun import azure_utils, glue
 from redun.hashing import hash_stream, hash_struct
 from redun.logging import logger
 from redun.value import Value
@@ -38,8 +37,6 @@ from redun.value import Value
 # Try importing azure-specific packages.
 try:
     import adlfs
-    from azure.ai.ml.identity import AzureMLOnBehalfOfCredential
-    from azure.identity import DefaultAzureCredential
 except (ImportError, ModuleNotFoundError):
     pass
 
@@ -987,23 +984,7 @@ class AzureBlobFileSystem(FsspecFileSystem):
         if self._cr is not None:
             return self._cr
 
-        try:
-            cr = DefaultAzureCredential()
-            # quick validation
-            cr.get_token("https://storage.azure.com/")
-            self._cr = cr
-        except:  # noqa: E722
-            # special credential available only inside AML compute
-            # when running with "user_identity"
-            # https://learn.microsoft.com/en-us/samples/azure/azureml-examples/azureml---on-behalf-of-feature/
-            logging.info(
-                "Failed to create DefaultAzureCredential, trying AzureMLOnBehalfOfCredential. "
-                "Ignore this if running in AML cluster."
-            )
-            cr = AzureMLOnBehalfOfCredential()
-            cr.get_token("https://storage.azure.com/")
-            self._cr = cr
-
+        self._cr = azure_utils.get_az_credential()
         return self._cr
 
     def _create_fs_for_account(self, account_name: str) -> "adlfs.AzureBlobFileSystem":

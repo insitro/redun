@@ -38,5 +38,6 @@ and async credential classes, but it assumes custom credential classes are async
 to assign credential class to a correct class property.
 
 Currently use a simple try-catch to determine if we can retrieve auth token from DefaultAzureCredential and use
-AML credential as fallback option. We can reconsider that in the future if we find a better way of determining
-when we run on Azure compute without managed identity (e.g. environment variables).
+AML credential as fallback option if AML env variables are set (`AZUREML_WORKSPACE_ID`). If both options fail,
+we also check if `DEFAULT_IDENTITY_CLIENT_ID` variable is set - in AzureML, it holds the client id of the cluster's
+managed identity. If it is, we try to create `ManagedIdentityCredential` with it.

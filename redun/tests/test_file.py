@@ -1065,7 +1065,7 @@ def test_content_file_classes() -> None:
 
 
 @patch("adlfs.AzureBlobFileSystem")
-@patch("redun.file.DefaultAzureCredential")
+@patch("redun.azure_utils.get_az_credential")
 def test_azure_glob(_, adlfs_mock):
 
     glob_mock = MagicMock()
@@ -1089,7 +1089,7 @@ def test_azure_glob(_, adlfs_mock):
 
 
 @patch("adlfs.AzureBlobFileSystem")
-@patch("redun.file.DefaultAzureCredential")
+@patch("redun.azure_utils.get_az_credential")
 def test_azure_list_files_in_dir(_, adlfs_mock):
 
     glob_mock = MagicMock()
@@ -1124,21 +1124,8 @@ def test_azure_get_account_name_from_path():
     assert result == "myawesomestorage"
 
 
-@patch("redun.file.AzureMLOnBehalfOfCredential")
-@patch("redun.file.DefaultAzureCredential")
-def test_azure_default_credential(default_credential_mock, on_behalf_credential_mock):
+@patch("redun.azure_utils.get_az_credential")
+def test_azure_custom_credential_passed_to_fs(credential_mock):
     fs = AzureBlobFileSystem()
     internal_fs = fs.get_fs_for_path("az://mycontainer@myawesomestorage.blob.core.windows.net")
-    assert internal_fs.sync_credential == default_credential_mock.return_value
-    on_behalf_credential_mock.assert_not_called()
-
-
-@patch("redun.file.AzureMLOnBehalfOfCredential")
-@patch("redun.file.DefaultAzureCredential")
-def test_azure_fallback_credential(default_credential_mock, on_behalf_credential_mock):
-    default_credential_mock.return_value.get_token = MagicMock(
-        side_effect=Exception("failed to get token")
-    )
-    fs = AzureBlobFileSystem()
-    internal_fs = fs.get_fs_for_path("az://mycontainer@myawesomestorage.blob.core.windows.net")
-    assert internal_fs.sync_credential == on_behalf_credential_mock.return_value
+    assert internal_fs.sync_credential == credential_mock.return_value
