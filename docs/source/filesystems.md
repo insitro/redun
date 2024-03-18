@@ -22,7 +22,9 @@ By design, `fsspec` operations are not stateless, and there are potential issues
 unlike `listdir` which we don't call currently, so all redun calls like `Dir.files()` are safe 
  - file access (see https://filesystem-spec.readthedocs.io/en/latest/features.html#file-buffering-and-random-access) -
 users should assume IO file operations are unsafe and avoid reads/writes to the same file from multiple redun tasks running
-on the same executor.
+on the same executor. Redun gets around this issue by forcing recreation of the fsspec file system objects and restarting 
+the async loop. There still may be thread safety issues, so beware.
+
 
 ### Credentials lookup
 

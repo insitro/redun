@@ -814,6 +814,8 @@ class S3FileSystem(FileSystem):
         if pid != os.getpid():
             _local.pid = os.getpid()
             client = None
+            fsspec.asyn.reset_lock()
+
         else:
             client = getattr(_local, "s3", None)
         if not client:
@@ -971,13 +973,8 @@ class AzureBlobFileSystem(FsspecFileSystem):
     def __init__(self):
         super().__init__()
         self._cr = None
-
-        # fsspec/adlfs create separate file systems for each storage account
-        # likewise, underlying Azure SDK clients also are account-specific
-        # an alternative here would be (maybe) to have multiple AzureBlobFileSystem
-        # instances too and accept account name as a parameter to the constructor
-        # but it requires modifying redun internal code.
-        self._file_systems = {}
+        self._local = threading.local()
+        self._local.pid = None
 
     @property
     def az_credential(self):
@@ -1016,10 +1013,23 @@ class AzureBlobFileSystem(FsspecFileSystem):
 
     def get_fs_for_path(self, path: str):
         account_name = self.get_account_name_from_path(path)
-        fs = self._file_systems.get(account_name, None)
+        pid = os.getpid()
+        if pid != self._local.pid:
+            # First call or in a forked process, either way need to
+            # clear out filesystems and restart the fsspec loop
+            fsspec.asyn.reset_lock()
+            # Note: fsspec/adlfs creates separate file systems for each storage account
+            # likewise, underlying Azure SDK clients also are account-specific
+            # an alternative to this file_systems map here would be to have multiple
+            # AzureBlobFileSystem instances too and accept account name as a parameter
+            # to the constructor, but that requires modifying redun internal code.
+            self._local.file_systems = {}
+            self._local.pid = pid
+        fs = self._local.file_systems.get(account_name, None)
         if not fs:
             fs = self._create_fs_for_account(account_name)
-            self._file_systems[account_name] = fs
+            self._local.file_systems[account_name] = fs
+
         return fs
 
     def glob(self, pattern: str) -> List[str]:
