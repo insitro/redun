@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.19.2
+March 18, 2024
+
+* `#347` - redun.file support for forked subprocesses
+* `#92` - Scheduler limits bug fix
+  * Add regression test for keyerror in job limits util
+  * Don't assume all jobs share the same keys in their limits
+
 ## 0.19.1
 March 11, 2024
 
