@@ -25,6 +25,7 @@ from redun.promise import Promise
 from redun.utils import get_func_source, merge_dicts
 from redun.value import TypeRegistry, Value, get_type_registry
 
+T = TypeVar("T")
 Func = TypeVar("Func", bound=Callable)
 Func2 = TypeVar("Func2", bound=Callable)
 Result = TypeVar("Result")
@@ -223,8 +224,6 @@ class Task(Value, Generic[Func]):
             nout = get_tuple_type_length(return_type)
 
         return nout
-
-    T = TypeVar("T")
 
     @overload
     def get_task_option(self, option_name: str) -> Optional[Any]:
@@ -588,11 +587,11 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
         """
         Sets state from pickle.
         """
-        super().__setstate__(state)
         self.task = Task.__new__(Task)
         self.task.__setstate__(state["task"])
         self.args = state["args"]
         self.kwargs = state["kwargs"]
+        super().__setstate__(state)
 
     def _calc_hash(self) -> str:
         return hash_struct(
@@ -617,6 +616,34 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
             Task[Func],
             self.task.options(**task_options_update).partial(*self.args, **self.kwargs),
         )
+
+    @overload
+    def get_task_option(self, option_name: str) -> Optional[Any]:
+        ...
+
+    @overload
+    def get_task_option(self, option_name: str, default: T) -> T:
+        ...
+
+    def get_task_option(self, option_name: str, default: Optional[T] = None) -> Optional[T]:
+        """
+        Fetch the requested option, preferring run-time updates over options from task
+        construction. Like the dictionary `get` method, returns the default
+        a `KeyError` on missing keys.
+        """
+        return self.task.get_task_option(option_name, default)
+
+    def get_task_options(self) -> dict:
+        """
+        Merge and return the task options.
+        """
+        return self.task.get_task_options()
+
+    def has_task_option(self, option_name: str) -> bool:
+        """
+        Return true if the task has an option with name `option_name`
+        """
+        return self.task.has_task_option(option_name)
 
     # Note: we can't parameterize PartialTask to a more specific type at this
     # time, due to the complexity of calculating the remaining parameter signature.

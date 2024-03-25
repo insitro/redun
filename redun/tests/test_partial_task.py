@@ -128,17 +128,17 @@ def test_partial_options(scheduler: Scheduler) -> None:
 
     assert not add.has_task_option("memory")
     assert add.get_task_option("memory") is None
-    assert 1 == add.get_task_option("memory", 1)
+    assert add.get_task_option("memory", 1) == 1
 
     inc = add.partial(1).options(memory=4)
-    inc = cast(PartialTask, inc)
 
     # Should be recorded on task.
-    assert inc.task.has_task_option("memory")
-    assert 4 == inc.task.get_task_option("memory")
-    assert 4 == inc.task.get_task_option("memory", 1)
+    assert inc.has_task_option("memory")
+    assert inc.get_task_option("memory") == 4
+    assert inc.get_task_option("memory", 1) == 4
 
     # When we call the PartialTask, the task_options should propagate to the Expression.
+    inc = cast(PartialTask, inc)
     expr: Expression[int] = inc(2)
     assert expr.task_expr_options == {"memory": 4}
 
@@ -190,8 +190,7 @@ def test_partial_partial_options(scheduler: Scheduler) -> None:
 
     # Options should be present on PartialTask.
     part = add3.partial(1).partial(2).options(memory=4)
-    part = cast(PartialTask, part)
-    assert part.task.get_task_options() == {"memory": 4}
+    assert part.get_task_options() == {"memory": 4}
 
     # Options should propagate to Expression.
     expr: Expression[int] = part(3)
