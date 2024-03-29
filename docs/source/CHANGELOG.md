@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.3
+March 28, 2024
+
+* `#351` - Refactor get_az_credential and cover more auth scenarios
+* `#349` - add missing PartialTask.get_options
+
 ## 0.19.2
 March 18, 2024
 
