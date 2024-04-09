@@ -1014,7 +1014,7 @@ class AzureBlobFileSystem(FsspecFileSystem):
     def get_fs_for_path(self, path: str):
         account_name = self.get_account_name_from_path(path)
         pid = os.getpid()
-        if pid != self._local.pid:
+        if pid != getattr(self._local, "pid", None):
             # First call or in a forked process, either way need to
             # clear out filesystems and restart the fsspec loop
             fsspec.asyn.reset_lock()
