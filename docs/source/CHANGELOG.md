@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.4
+April 09, 2024
+
+* `#354` - redun.file bug fix in forked processes.
+* `#353` - De 9761 fork process support for redun.file on azure
+
 ## 0.19.3
 March 28, 2024
 
