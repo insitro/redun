@@ -1677,7 +1677,7 @@ class IStagingFile(StagingFile):
     classes = IFileClasses()
 
 
-class IStagingDir(Staging[Dir]):
+class IStagingDir(StagingDir):
     type_basename = "IStagingDir"
     type_name = "redun.IStagingDir"
     classes = IFileClasses()
@@ -1738,7 +1738,7 @@ class ContentStagingFile(StagingFile):
     classes = ContentFileClasses()
 
 
-class ContentStagingDir(Staging[Dir]):
+class ContentStagingDir(StagingDir):
     type_basename = "ContentStagingDir"
     type_name = "redun.ContentStagingDir"
     classes = ContentFileClasses()

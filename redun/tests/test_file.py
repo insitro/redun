@@ -1017,6 +1017,11 @@ def test_ifile_classes() -> None:
     IFile("dir/b").touch()
     assert all(isinstance(file, IFile) for file in IDir("dir"))
 
+    assert IFile("dir/a").stage("a").render_stage() == "cp dir/a a"
+    assert IFile("dir/a").stage("a").render_unstage() == "cp a dir/a"
+    assert IDir("dir").stage("dir2").render_stage() == "cp -r dir dir2"
+    assert IDir("dir").stage("dir2").render_unstage() == "cp -r dir2 dir"
+
 
 @use_tempdir
 def test_content_file() -> None:
