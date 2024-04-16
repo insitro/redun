@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.19.5
+April 16, 2024
+
+* `#356` - fix correct superclass for IDir 
+
 ## 0.19.4
 April 09, 2024
 
