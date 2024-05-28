@@ -14,6 +14,14 @@ Subpackages
 Submodules
 ----------
 
+redun.azure\_utils module
+-------------------------
+
+.. automodule:: redun.azure_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 redun.bcoding module
 --------------------
 

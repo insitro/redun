@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.19.5
+April 16, 2024
+
+* `#356` - fix correct superclass for IDir 
+
+## 0.19.4
+April 09, 2024
+
+* `#354` - redun.file bug fix in forked processes.
+* `#353` - De 9761 fork process support for redun.file on azure
+
+## 0.19.3
+March 28, 2024
+
+* `#351` - Refactor get_az_credential and cover more auth scenarios
+* `#349` - add missing PartialTask.get_options
+
+## 0.19.2
+March 18, 2024
+
+* `#347` - redun.file support for forked subprocesses
+* `#92` - Scheduler limits bug fix
+  * Add regression test for keyerror in job limits util
+  * Don't assume all jobs share the same keys in their limits
+
+## 0.19.1
+March 11, 2024
+
+* `#345` - Update client credential lookup for Azure storage
+* `#344` - Bump the timeout for postgres tests
+
 ## 0.19.0
 February 22, 2024
 

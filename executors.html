@@ -5,10 +5,10 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Scheduling redun workflows" href="scheduler.html" /><link rel="prev" title="Tasks" href="tasks.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 -->
         <title>Executors - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=387cc868" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
     
@@ -68,7 +68,7 @@
   <symbol id="svg-sun" viewBox="0 0 24 24">
     <title>Light mode</title>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
       <circle cx="12" cy="12" r="5"></circle>
       <line x1="12" y1="1" x2="12" y2="3"></line>
       <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -83,7 +83,7 @@
   <symbol id="svg-moon" viewBox="0 0 24 24">
     <title>Dark mode</title>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
       <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
     </svg>
@@ -91,7 +91,7 @@
   <symbol id="svg-sun-half" viewBox="0 0 24 24">
     <title>Auto light/dark mode</title>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <circle cx="12" cy="12" r="9" />
       <path d="M13 12h5" />
@@ -99,6 +99,60 @@
       <path d="M13 18h1" />
       <path d="M13 9h4" />
       <path d="M13 6h1" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" /
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
     </svg>
   </symbol>
 </svg>
@@ -111,6 +165,8 @@
 <label class="overlay toc-overlay" for="__toc">
   <div class="visually-hidden">Hide table of contents sidebar</div>
 </label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
 
 
@@ -129,7 +185,8 @@
       <div class="theme-toggle-container theme-toggle-header">
         <button class="theme-toggle">
           <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
-          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
@@ -217,11 +274,17 @@
           <span>Back to top</span>
         </a>
         <div class="content-icon-container">
-          
+          <div class="view-this-page">
+  <a class="muted-link" href="_sources/executors.md.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
 <div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
-              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
@@ -231,9 +294,9 @@
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
-        <article role="main">
+        <article role="main" id="furo-main-content">
           <section id="executors">
-<h1>Executors<a class="headerlink" href="#executors" title="Link to this heading">#</a></h1>
+<h1>Executors<a class="headerlink" href="#executors" title="Link to this heading">¶</a></h1>
 <p>redun is able to perform task execution across various compute infrastructure using modules called Executors. For example, redun supports executors that execute jobs on threads, processes, and AWS Batch jobs. New kinds of infrastructure can be utilized by registering additional Executor modules.</p>
 <p>Executors are instantiated by sections in the <a class="reference internal" href="config.html"><span class="doc std std-doc">redun configuration</span></a> (<code class="docutils literal notranslate"><span class="pre">.redun/redun.ini</span></code>) following the format <code class="docutils literal notranslate"><span class="pre">[executors.{executor_name}]</span></code>, where <code class="docutils literal notranslate"><span class="pre">{executor_name}</span></code> is a user-specific name for the executor, such as <code class="docutils literal notranslate"><span class="pre">default</span></code>, <code class="docutils literal notranslate"><span class="pre">batch</span></code>, or <code class="docutils literal notranslate"><span class="pre">my_executor</span></code>. These names can then be referenced in workflows using the <code class="docutils literal notranslate"><span class="pre">executor</span></code> task option to indicate on which executor the task should execute:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;my_executor&quot;</span><span class="p">)</span>
@@ -269,11 +332,11 @@
 </pre></div>
 </div>
 <section id="local-executor">
-<h2>Local executor<a class="headerlink" href="#local-executor" title="Link to this heading">#</a></h2>
+<h2>Local executor<a class="headerlink" href="#local-executor" title="Link to this heading">¶</a></h2>
 <p>The <strong>Local executor</strong> executes tasks on the same machine as the scheduler using either multiple threads or processes (configured by the <a class="reference internal" href="config.html#local-executor"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">mode</span></code> option</span></a>). By default, redun defines a Local executor named “default” that is used as the default executor for tasks. Users can configure the local executor using the <a class="reference internal" href="config.html#local-executor"><span class="std std-ref">configuration file</span></a>.</p>
 </section>
 <section id="alias-executor">
-<h2>Alias executor<a class="headerlink" href="#alias-executor" title="Link to this heading">#</a></h2>
+<h2>Alias executor<a class="headerlink" href="#alias-executor" title="Link to this heading">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">AliasExecutor</span></code> is a lazily-resolved alias for another executor, which allows
 executors with distinct names to resolve to the same underlying implementation.</p>
 <p>For example, consider these tasks:</p>
@@ -347,37 +410,37 @@ name of the <code class="docutils literal notranslate"><span class="pre">mode</s
 </div>
 </section>
 <section id="aws-batch-executor">
-<h2>AWS Batch executor<a class="headerlink" href="#aws-batch-executor" title="Link to this heading">#</a></h2>
+<h2>AWS Batch executor<a class="headerlink" href="#aws-batch-executor" title="Link to this heading">¶</a></h2>
 <p>The <strong>AWS Batch executor</strong> executes tasks as jobs on <a class="reference external" href="https://aws.amazon.com/batch/">AWS Batch</a>, which is an AWS service for running <a class="reference external" href="https://www.docker.com/">Docker-based</a> jobs on a compute cluster. AWS Batch manages job queues, compute nodes, and job assignments such that compute requirements are met (e.g. memory, vcpus, etc). redun manages the task dependency graph and will only submit a task to execute on AWS Batch once all upstream tasks are complete.</p>
 <section id="docker-image">
-<h3>Docker image<a class="headerlink" href="#docker-image" title="Link to this heading">#</a></h3>
+<h3>Docker image<a class="headerlink" href="#docker-image" title="Link to this heading">¶</a></h3>
 <p>To use AWS Batch, users must define a Docker image that contains the necessary code for their task. If a task is a pure <a class="reference internal" href="design.html#shell-scripting"><span class="std std-ref">script task</span></a>, only the commands used in the script need to be installed in the Docker image. However, if a regular task is to run on AWS Batch, then the <code class="docutils literal notranslate"><span class="pre">redun</span></code> python package must be installed in the Docker image to facilitate the execution of the task on the AWS Batch compute node. Typically, the workflow python code itself does not need to be installed inside the Docker image. Instead, redun provides automatic <a class="reference internal" href="#code-packaging">code packaging</a> as a convenience for quick iterative development.</p>
 </section>
 <section id="configuration">
-<h3>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h3>
+<h3>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h3>
 <p>To use AWS Batch, at a minimum three options must be <a class="reference internal" href="config.html#aws-batch-executor"><span class="std std-ref">configured</span></a>, a Docker image for the job (<a class="reference internal" href="config.html#aws-batch-executor"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">image</span></code></span></a>), a AWS Batch queue to submit to (<a class="reference internal" href="config.html#aws-batch-executor"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">queue</span></code></span></a>), and a S3 path to store temporary files for communication between the scheduler and jobs (<a class="reference internal" href="config.html#aws-batch-executor"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">s3_scratch</span></code></span></a>).</p>
 </section>
 <section id="s3-scratch-space">
-<h3>S3 scratch space<a class="headerlink" href="#s3-scratch-space" title="Link to this heading">#</a></h3>
+<h3>S3 scratch space<a class="headerlink" href="#s3-scratch-space" title="Link to this heading">¶</a></h3>
 <p>redun performs simple communication with AWS Batch jobs through a user defined S3 scratch space. Specifically, the arguments to a task are serialized as a python pickle and stored at a path such as <code class="docutils literal notranslate"><span class="pre">s3://{s3_scratch}/{eval_hash}/input</span></code>, where <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> is the hash of a task’s hash and its arguments and <code class="docutils literal notranslate"><span class="pre">s3_scratch</span></code> is defined in the <a class="reference internal" href="config.html#aws-batch-executor"><span class="std std-ref">configuration</span></a>. When a task completes, its output is stored similarly in a pickle file <code class="docutils literal notranslate"><span class="pre">s3://{s3_scratch}/{eval_hash}/output</span></code>. Standard output and standard error is also captured in log files within the scratch space. All of these files are temporary and can be deleted by users once a workflow is complete.</p>
 </section>
 <section id="code-packaging">
-<h3>Code packaging<a class="headerlink" href="#code-packaging" title="Link to this heading">#</a></h3>
+<h3>Code packaging<a class="headerlink" href="#code-packaging" title="Link to this heading">¶</a></h3>
 <p>When running regular (non-script) tasks on AWS Batch, redun needs access to the workflow python code itself within the Docker container at runtime. While one could install the workflow python code in the Docker image, rebuilding and pushing Docker images for each code change could be burdensome during quick iterative development. As a convenience, redun provides a mechanism, called code packaging, for copying code into the Docker container at runtime.</p>
 <p>By default, redun copies all files matching the pattern <code class="docutils literal notranslate"><span class="pre">**/*.py</span></code> into a tar file that is copied to the s3 scratch space. This tar file is then downloaded and unzipped within the running Docker container prior to executing the task. The specific files included in the code package can be controlled using <a class="reference internal" href="config.html#aws-batch-executor"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">code_includes</span></code> and <code class="docutils literal notranslate"><span class="pre">code_excludes</span></code> configuration options</span></a>.</p>
 </section>
 <section id="job-reuniting">
-<h3>Job reuniting<a class="headerlink" href="#job-reuniting" title="Link to this heading">#</a></h3>
+<h3>Job reuniting<a class="headerlink" href="#job-reuniting" title="Link to this heading">¶</a></h3>
 <p>In certain situations, such as errors or user initiated killing, the redun scheduler might be terminated while AWS Batch jobs are running. If the redun scheduler is restarted, it will attempt to determine if a batch task has an existing AWS Batch job already running or if one has recently completed leaving an output file in s3 scratch space. If so, the redun scheduler will “reunite” with such jobs and output and avoid double submission of AWS Batch jobs. redun uses the <code class="docutils literal notranslate"><span class="pre">eval_hash</span></code> to ensure the task hash and arguments are the same since the previous job submission.</p>
 </section>
 <section id="local-debugging">
-<h3>Local debugging<a class="headerlink" href="#local-debugging" title="Link to this heading">#</a></h3>
+<h3>Local debugging<a class="headerlink" href="#local-debugging" title="Link to this heading">¶</a></h3>
 <p>During development, it may be easier to run the Docker image locally in order to debug and interactively inspect a job. Local execution of Docker-base jobs can be achieved by using the <a class="reference internal" href="config.html#aws-batch-executor"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">debug=True</span></code> option</span></a>. The S3 scratch space will still be used to transfer input and output with the Docker container.</p>
 <p>The docker container will run in interactive mode (e.g. <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--interactive</span> <span class="pre">...</span></code>), allowing users to place debugging breakpoints within tasks or see task output on stdout. The task option <code class="docutils literal notranslate"><span class="pre">interactive=False</span></code> can also be used to run the Docker container without interactive mode.</p>
 <p>The task option <code class="docutils literal notranslate"><span class="pre">volume</span></code> can also be used to define volume mounts for the Docker container during debugging. Format is <code class="docutils literal notranslate"><span class="pre">volume</span> <span class="pre">=</span> <span class="pre">[(host,</span> <span class="pre">container),</span> <span class="pre">...]</span></code>, where <code class="docutils literal notranslate"><span class="pre">host</span></code> defines a source path on the host machine, and <code class="docutils literal notranslate"><span class="pre">container</span></code> defines a destination path within the container to perform the mount.</p>
 </section>
 <section id="multi-node">
-<h3>Multi-node<a class="headerlink" href="#multi-node" title="Link to this heading">#</a></h3>
+<h3>Multi-node<a class="headerlink" href="#multi-node" title="Link to this heading">¶</a></h3>
 <p>AWS Batch allows for jobs that simultaneously use multiple compute nodes. See AWS <a class="reference external" href="https://docs.aws.amazon.com/batch/latest/userguide/multi-node-parallel-jobs.html">documentation</a></p>
 <p>If the executor is configured to use multiple nodes, by setting <code class="docutils literal notranslate"><span class="pre">num_nodes</span></code>, the executor will invoke the task with identical arguments on each node. Batch starts the main node first, then starts the rest of the nodes. The task implementation may inspect the AWS environment variables for details on the multi-node configuration, such as detecting if it is the main node, or determining the IPs to construct a peer network.</p>
 <p>Warning: For python tasks, the executor will instruct only the main node to write its outputs to storage and non-main node outputs are discarded. For script tasks, the various nodes must somehow arrange that the output is only written once, but the infrastructure does not help.</p>
@@ -385,11 +448,11 @@ name of the <code class="docutils literal notranslate"><span class="pre">mode</s
 </section>
 </section>
 <section id="docker-executor">
-<h2>Docker executor<a class="headerlink" href="#docker-executor" title="Link to this heading">#</a></h2>
+<h2>Docker executor<a class="headerlink" href="#docker-executor" title="Link to this heading">¶</a></h2>
 <p>The Docker executor (<code class="docutils literal notranslate"><span class="pre">type=docker</span></code>) runs each redun job inside a local Docker container. This executor is used by AWS Batch Executor when using debug mode.</p>
 </section>
 <section id="aws-glue-spark-executor">
-<h2>AWS Glue Spark executor<a class="headerlink" href="#aws-glue-spark-executor" title="Link to this heading">#</a></h2>
+<h2>AWS Glue Spark executor<a class="headerlink" href="#aws-glue-spark-executor" title="Link to this heading">¶</a></h2>
 <p>The <strong>AWS Glue executor</strong> executes tasks as jobs on <a class="reference external" href="https://aws.amazon.com/glue/">AWS Glue</a>, which runs <a class="reference external" href="https://spark.apache.org/">Apache Spark</a> jobs on a managed cluster. Spark jobs run on many CPUs and are especially useful for working with large tabular datasets such as those represented in Pandas DataFrames.</p>
 <p>Spark jobs are essentially a mini compute cluster, with a driver that maintains a SparkContext object, and a number of workers.
 Each worker can have one or more <strong>executors</strong>, which are the processes that run individual tasks in the Spark job. They typically
@@ -397,19 +460,19 @@ run for the life of the application and send results to the driver when complete
 their work done, depending on the configuration.</p>
 <p>To use AWS Glue, at a minimum you must configure a temporary location in S3 where files used to communicate between the scheduler and jobs are stored. Scratch space, code packaging, and job reuniting are all done in a similar way to the AWS Batch executor.</p>
 <section id="loading-and-writing-datasets">
-<h3>Loading and writing datasets<a class="headerlink" href="#loading-and-writing-datasets" title="Link to this heading">#</a></h3>
+<h3>Loading and writing datasets<a class="headerlink" href="#loading-and-writing-datasets" title="Link to this heading">¶</a></h3>
 <p>Spark datasets are typically sharded across multiple files on disk. The <a class="reference internal" href="redun/redun.html#redun.file.ShardedS3Dataset" title="redun.file.ShardedS3Dataset"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset</span></code></span></a> class provides an interface to
 these datasets that can be tracked and recorded by redun.</p>
 </section>
 <section id="helper-functions">
-<h3>Helper functions<a class="headerlink" href="#helper-functions" title="Link to this heading">#</a></h3>
+<h3>Helper functions<a class="headerlink" href="#helper-functions" title="Link to this heading">¶</a></h3>
 <p>Spark jobs are written a bit differently than pure Python. You’ll want to load large datasets to Spark DataFrames with <code class="docutils literal notranslate"><span class="pre">ShardedS3Dataset</span></code>, but frequently other operations will require the use of the Spark context that is defined when the
 job is running.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">redun.glue</span></code> module provides helper functions that can be used in glue executor jobs and can be imported into the
 top level of your redun script, even when Spark isn’t yet defined. The <code class="docutils literal notranslate"><span class="pre">redun.glue.get_spark_context()</span></code> and
 <code class="docutils literal notranslate"><span class="pre">redun.glue.get_spark_session()</span></code> functions can be used in your tasks to retrieve the currently defined spark environment.</p>
 <section id="user-defined-functions">
-<h4>User-defined functions<a class="headerlink" href="#user-defined-functions" title="Link to this heading">#</a></h4>
+<h4>User-defined functions<a class="headerlink" href="#user-defined-functions" title="Link to this heading">¶</a></h4>
 <p>You might want to define your own functions to operate on a dataset. Typically, you’d use the <code class="docutils literal notranslate"><span class="pre">pyspark.sql.functions.udf</span></code> decorator
 on a function to make it a UDF, but when redun evaluates the decorator it will error out as there is no spark context available
 to register the function to. The <code class="docutils literal notranslate"><span class="pre">redun.glue.udf</span></code> decorator handles this issue. See the redun examples for real-world use
@@ -417,21 +480,21 @@ of UDFs and this decorator.</p>
 </section>
 </section>
 <section id="available-python-modules">
-<h3>Available Python modules<a class="headerlink" href="#available-python-modules" title="Link to this heading">#</a></h3>
+<h3>Available Python modules<a class="headerlink" href="#available-python-modules" title="Link to this heading">¶</a></h3>
 <p>AWS Glue automates management, provisioning, and deployment of Spark clusters, but only with a <a class="reference external" href="https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-python-libraries.html#glue20-modules-provided">pre-determined set of Python modules</a>.
 Most functionality you may need is already available, including scipy, pandas, etc.</p>
 <p>Additional modules that are available in the public PyPi repository can be installed with the <code class="docutils literal notranslate"><span class="pre">additional_libs</span></code> task option.
 However, other modules, especially those using C/C++ compiled extensions, are not really installable at this time.</p>
 </section>
 <section id="task-options">
-<h3>Task options<a class="headerlink" href="#task-options" title="Link to this heading">#</a></h3>
+<h3>Task options<a class="headerlink" href="#task-options" title="Link to this heading">¶</a></h3>
 <p>The following configuration options may be specified on a per-task basis in the decorator.</p>
 <section id="workers">
-<h4><code class="docutils literal notranslate"><span class="pre">workers</span></code><a class="headerlink" href="#workers" title="Link to this heading">#</a></h4>
+<h4><code class="docutils literal notranslate"><span class="pre">workers</span></code><a class="headerlink" href="#workers" title="Link to this heading">¶</a></h4>
 <p>An integer that specifies the number of workers available by default to Glue jobs. Each worker provides one or more “data processing units” (DPUs). AWS defines a  DPU as “a relative measure of processing power that consists of 4 vCPUs of compute capacity and 16GB of memory.” Depending on the worker type, there will be one or more Spark executors per DPU, each with one or more spark cores. Jobs are billed by number of DPUs and time.</p>
 </section>
 <section id="worker-type">
-<h4><code class="docutils literal notranslate"><span class="pre">worker_type</span></code><a class="headerlink" href="#worker-type" title="Link to this heading">#</a></h4>
+<h4><code class="docutils literal notranslate"><span class="pre">worker_type</span></code><a class="headerlink" href="#worker-type" title="Link to this heading">¶</a></h4>
 <p>Choose from:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Standard</span></code>: each worker will have a 50GB disk scratch space and 2 executors, each with 4 vCPU cores.</p></li>
@@ -443,17 +506,17 @@ as expensive as the others.</p></li>
 </ul>
 </section>
 <section id="additional-libs">
-<h4><code class="docutils literal notranslate"><span class="pre">additional_libs</span></code><a class="headerlink" href="#additional-libs" title="Link to this heading">#</a></h4>
+<h4><code class="docutils literal notranslate"><span class="pre">additional_libs</span></code><a class="headerlink" href="#additional-libs" title="Link to this heading">¶</a></h4>
 <p>A list of additional Python libraries that will be <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>’ed before the run starts. For example,
 <code class="docutils literal notranslate"><span class="pre">additional_libs=[&quot;promise&quot;,</span> <span class="pre">&quot;alembic==1.0.0&quot;]</span></code> will install the promise and alembic libraries.</p>
 </section>
 <section id="extra-files">
-<h4><code class="docutils literal notranslate"><span class="pre">extra_files</span></code><a class="headerlink" href="#extra-files" title="Link to this heading">#</a></h4>
+<h4><code class="docutils literal notranslate"><span class="pre">extra_files</span></code><a class="headerlink" href="#extra-files" title="Link to this heading">¶</a></h4>
 <p>A list of files that will be made available in the root directory of the run.</p>
 </section>
 </section>
 <section id="kubernetes-k8s-executor">
-<h3>Kubernetes (k8s) executor<a class="headerlink" href="#kubernetes-k8s-executor" title="Link to this heading">#</a></h3>
+<h3>Kubernetes (k8s) executor<a class="headerlink" href="#kubernetes-k8s-executor" title="Link to this heading">¶</a></h3>
 <p>The <strong>k8s executor</strong> executes tasks as jobs on a <a class="reference external" href="https://kubernetes.io/">Kubernetes</a> cluster. This executors works similar to the <a class="reference internal" href="#aws-batch-executor">AWS Batch Executor</a> in terms of using scratch object storage to transfer task arguments, results, and code packaging. See the <a class="reference internal" href="config.html#kubernetes-k8s-executor"><span class="std std-ref">configuration documentation</span></a> for more details.</p>
 <p>Note: The k8s executor is new executor provided as a beta release. If you experience an issues, please report them to help improve the implementation.</p>
 </section>
@@ -549,8 +612,8 @@ as expensive as the others.</p></li>
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    <script src="_static/scripts/furo.js?v=4e2eecee"></script>
     </body>
 </html>

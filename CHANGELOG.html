@@ -5,10 +5,10 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Content addressable hashing summary" href="implementation/hashing.html" /><link rel="prev" title="Developer guide" href="developing.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 -->
         <title>Changelog - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=387cc868" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
     
@@ -68,7 +68,7 @@
   <symbol id="svg-sun" viewBox="0 0 24 24">
     <title>Light mode</title>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
       <circle cx="12" cy="12" r="5"></circle>
       <line x1="12" y1="1" x2="12" y2="3"></line>
       <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -83,7 +83,7 @@
   <symbol id="svg-moon" viewBox="0 0 24 24">
     <title>Dark mode</title>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
       <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
     </svg>
@@ -91,7 +91,7 @@
   <symbol id="svg-sun-half" viewBox="0 0 24 24">
     <title>Auto light/dark mode</title>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <circle cx="12" cy="12" r="9" />
       <path d="M13 12h5" />
@@ -99,6 +99,60 @@
       <path d="M13 18h1" />
       <path d="M13 9h4" />
       <path d="M13 6h1" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" /
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
     </svg>
   </symbol>
 </svg>
@@ -111,6 +165,8 @@
 <label class="overlay toc-overlay" for="__toc">
   <div class="visually-hidden">Hide table of contents sidebar</div>
 </label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
 
 
@@ -129,7 +185,8 @@
       <div class="theme-toggle-container theme-toggle-header">
         <button class="theme-toggle">
           <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
-          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
@@ -217,11 +274,17 @@
           <span>Back to top</span>
         </a>
         <div class="content-icon-container">
-          
+          <div class="view-this-page">
+  <a class="muted-link" href="_sources/CHANGELOG.md.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
 <div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
-              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
@@ -231,18 +294,62 @@
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
-        <article role="main">
+        <article role="main" id="furo-main-content">
           <section id="changelog">
-<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">#</a></h1>
+<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
 <section id="id1">
-<h2>0.19.0<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<h2>0.19.5<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<p>April 16, 2024</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">#356</span></code> - fix correct superclass for IDir</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>0.19.4<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
+<p>April 09, 2024</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">#354</span></code> - redun.file bug fix in forked processes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">#353</span></code> - De 9761 fork process support for redun.file on azure</p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>0.19.3<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
+<p>March 28, 2024</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">#351</span></code> - Refactor get_az_credential and cover more auth scenarios</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">#349</span></code> - add missing PartialTask.get_options</p></li>
+</ul>
+</section>
+<section id="id4">
+<h2>0.19.2<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h2>
+<p>March 18, 2024</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">#347</span></code> - redun.file support for forked subprocesses</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">#92</span></code> - Scheduler limits bug fix</p>
+<ul>
+<li><p>Add regression test for keyerror in job limits util</p></li>
+<li><p>Don’t assume all jobs share the same keys in their limits</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id5">
+<h2>0.19.1<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
+<p>March 11, 2024</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">#345</span></code> - Update client credential lookup for Azure storage</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">#344</span></code> - Bump the timeout for postgres tests</p></li>
+</ul>
+</section>
+<section id="id6">
+<h2>0.19.0<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h2>
 <p>February 22, 2024</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#332</span></code> - Add Context</p></li>
 </ul>
 </section>
-<section id="id2">
-<h2>0.18.0<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<section id="id7">
+<h2>0.18.0<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h2>
 <p>February 15, 2024</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#339</span></code> - Azure Blob Filesystem</p></li>
@@ -252,8 +359,8 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">#333</span></code> - Surface job_def_extra option</p></li>
 </ul>
 </section>
-<section id="id3">
-<h2>0.17.0<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<section id="id8">
+<h2>0.17.0<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h2>
 <p>November 03, 2023</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#327</span></code> - Utility functions to support experimental k8s work.</p></li>
@@ -265,8 +372,8 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">#321</span></code> - Move gcsfs to optional google extra dependencies</p></li>
 </ul>
 </section>
-<section id="id4">
-<h2>0.16.2<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
+<section id="id9">
+<h2>0.16.2<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h2>
 <p>August 25, 2023</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#319</span></code> - avoid Screen.query method</p></li>
@@ -276,8 +383,8 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">#313</span></code> - Remove duplicate federated tasks</p></li>
 </ul>
 </section>
-<section id="id5">
-<h2>0.16.1<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<section id="id10">
+<h2>0.16.1<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h2>
 <p>July 27, 2023</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#311</span></code> - update MANIFEST.in for console/style.css</p></li>
@@ -286,8 +393,8 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">#307</span></code> - Add Console docs</p></li>
 </ul>
 </section>
-<section id="id6">
-<h2>0.16.0<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
+<section id="id11">
+<h2>0.16.0<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h2>
 <p>June 21, 2023</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#303</span></code> - Fix boto thread safe</p></li>
@@ -308,8 +415,8 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">#71</span></code> - Update design.md</p></li>
 </ul>
 </section>
-<section id="id7">
-<h2>0.15.0<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
+<section id="id12">
+<h2>0.15.0<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h2>
 <p>May 01, 2023</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#286</span></code> - Uncap botocore to allow better dependency solving</p></li>
@@ -327,8 +434,8 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">#270</span></code> - DE-8068 Pass through missing aws batch options</p></li>
 </ul>
 </section>
-<section id="id8">
-<h2>0.14.0<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
+<section id="id13">
+<h2>0.14.0<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h2>
 <p>March 13, 2023</p>
 <p>This release primarily introduces “federated tasks”, a mechanism for working with tasks
 where you do not have to import the implementation code.</p>
@@ -339,8 +446,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#270</span></code> - DE-8068 Pass through missing aws batch options</p></li>
 </ul>
 </section>
-<section id="id9">
-<h2>0.13.0<a class="headerlink" href="#id9" title="Link to this heading">#</a></h2>
+<section id="id14">
+<h2>0.13.0<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h2>
 <p>February 27, 2023</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#272</span></code> - DE-7556: Update job definition sanitizing to be recursive</p></li>
@@ -358,8 +465,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#60</span></code> - Fix import statements with lowercase config</p></li>
 </ul>
 </section>
-<section id="id10">
-<h2>0.12.0<a class="headerlink" href="#id10" title="Link to this heading">#</a></h2>
+<section id="id15">
+<h2>0.12.0<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h2>
 <p>November 29, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#241</span></code> - Remove length restriction on redun type names</p></li>
@@ -369,15 +476,15 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#232</span></code> - DE-6585 Raise a more informative error message for File errors</p></li>
 </ul>
 </section>
-<section id="id11">
-<h2>0.11.1<a class="headerlink" href="#id11" title="Link to this heading">#</a></h2>
+<section id="id16">
+<h2>0.11.1<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h2>
 <p>November 01, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#234</span></code> - Temporarily cap botocore version due to upstream bug</p></li>
 </ul>
 </section>
-<section id="id12">
-<h2>0.11.0<a class="headerlink" href="#id12" title="Link to this heading">#</a></h2>
+<section id="id17">
+<h2>0.11.0<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h2>
 <p>November 01, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#227</span></code> - Add –wait option to redun launch</p></li>
@@ -386,15 +493,15 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#217</span></code> - DE-6397 Add pre commit for all linting/formatting</p></li>
 </ul>
 </section>
-<section id="id13">
-<h2>0.10.1<a class="headerlink" href="#id13" title="Link to this heading">#</a></h2>
+<section id="id18">
+<h2>0.10.1<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h2>
 <p>October 20, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#219</span></code> - Fix nested value iteration for dataclasses instantiated from subscripted generics</p></li>
 </ul>
 </section>
-<section id="id14">
-<h2>0.10.0<a class="headerlink" href="#id14" title="Link to this heading">#</a></h2>
+<section id="id19">
+<h2>0.10.0<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h2>
 <p>October 17, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#218</span></code> - Add alias executors</p></li>
@@ -403,8 +510,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#213</span></code> - Backport fixes</p></li>
 </ul>
 </section>
-<section id="id15">
-<h2>0.9.1<a class="headerlink" href="#id15" title="Link to this heading">#</a></h2>
+<section id="id20">
+<h2>0.9.1<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h2>
 <p>September 30, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#206</span></code> - Add missing get_hash to ShardedS3Dataset</p></li>
@@ -420,8 +527,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#197</span></code> - fix bug with mark_dup staging</p></li>
 </ul>
 </section>
-<section id="id16">
-<h2>0.8.16<a class="headerlink" href="#id16" title="Link to this heading">#</a></h2>
+<section id="id21">
+<h2>0.8.16<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h2>
 <p>September 08, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#194</span></code> - Increase default <code class="docutils literal notranslate"><span class="pre">ulimits</span></code> for <code class="docutils literal notranslate"><span class="pre">nofile</span></code> (number of open file descriptors) for multi-node aws batch jobs</p></li>
@@ -432,8 +539,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#188</span></code> - DE-5961 Allow functions decoratored by &#64;task and &#64;scheduler_task to processed by autodoc</p></li>
 </ul>
 </section>
-<section id="id17">
-<h2>0.8.15<a class="headerlink" href="#id17" title="Link to this heading">#</a></h2>
+<section id="id22">
+<h2>0.8.15<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h2>
 <p>August 18, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#179</span></code> - Add job stitching to subrun</p></li>
@@ -452,16 +559,16 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#37</span></code> - working on fixing docs build</p></li>
 </ul>
 </section>
-<section id="id18">
-<h2>0.8.14<a class="headerlink" href="#id18" title="Link to this heading">#</a></h2>
+<section id="id23">
+<h2>0.8.14<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h2>
 <p>July 5, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#165</span></code> - Switch conda package to noarch</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#168</span></code> - Bump version of <code class="docutils literal notranslate"><span class="pre">black</span></code> in <code class="docutils literal notranslate"><span class="pre">redun_server</span></code></p></li>
 </ul>
 </section>
-<section id="id19">
-<h2>0.8.13<a class="headerlink" href="#id19" title="Link to this heading">#</a></h2>
+<section id="id24">
+<h2>0.8.13<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h2>
 <p>June 16, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#162</span></code> - DE-5345 Fx multi-node doing caching</p></li>
@@ -474,23 +581,23 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#152</span></code> - Added docstrings to key Glue job functions</p></li>
 </ul>
 </section>
-<section id="id20">
-<h2>0.8.12<a class="headerlink" href="#id20" title="Link to this heading">#</a></h2>
+<section id="id25">
+<h2>0.8.12<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h2>
 <p>June 01, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#153</span></code> - DE-5198 Don’t drop containerProperties when sanitizing job defs</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#151</span></code> - remove unused and broken extract_tar import</p></li>
 </ul>
 </section>
-<section id="id21">
-<h2>0.8.11<a class="headerlink" href="#id21" title="Link to this heading">#</a></h2>
+<section id="id26">
+<h2>0.8.11<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h2>
 <p>May 29, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#30</span></code> - Add missing data.tsv and fix cleanup default</p></li>
 </ul>
 </section>
-<section id="id22">
-<h2>0.8.10<a class="headerlink" href="#id22" title="Link to this heading">#</a></h2>
+<section id="id27">
+<h2>0.8.10<a class="headerlink" href="#id27" title="Link to this heading">¶</a></h2>
 <p>May 26, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#146</span></code> - Update moto to 3.1.10</p></li>
@@ -499,8 +606,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#137</span></code> - DE-4915 Breakout DockerExecutor and consolidate scratch and code packaging</p></li>
 </ul>
 </section>
-<section id="id23">
-<h2>0.8.9<a class="headerlink" href="#id23" title="Link to this heading">#</a></h2>
+<section id="id28">
+<h2>0.8.9<a class="headerlink" href="#id28" title="Link to this heading">¶</a></h2>
 <p>May 17, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#131</span></code> - [DE-4809] Use AWS job run insights to get better tracebacks for glue jobs</p></li>
@@ -511,8 +618,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#136</span></code> - Ignore flake8 F401 errors in <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> files</p></li>
 </ul>
 </section>
-<section id="id24">
-<h2>0.8.8<a class="headerlink" href="#id24" title="Link to this heading">#</a></h2>
+<section id="id29">
+<h2>0.8.8<a class="headerlink" href="#id29" title="Link to this heading">¶</a></h2>
 <p>April 20, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#129</span></code> - AWS Batch multi-node executor</p></li>
@@ -526,8 +633,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#116</span></code> - Bump version to 0.8.7</p></li>
 </ul>
 </section>
-<section id="id25">
-<h2>0.8.7<a class="headerlink" href="#id25" title="Link to this heading">#</a></h2>
+<section id="id30">
+<h2>0.8.7<a class="headerlink" href="#id30" title="Link to this heading">¶</a></h2>
 <p>March 11, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#115</span></code> - DE-4596 Handle case where containerProperties is missing</p></li>
@@ -536,8 +643,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#112</span></code> - Add apply_job_tags and apply_execution_tags</p></li>
 </ul>
 </section>
-<section id="id26">
-<h2>0.8.6<a class="headerlink" href="#id26" title="Link to this heading">#</a></h2>
+<section id="id31">
+<h2>0.8.6<a class="headerlink" href="#id31" title="Link to this heading">¶</a></h2>
 <p>February 16, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#103</span></code> - <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">setup</span></code> should be runnable more than once in Docker examples</p></li>
@@ -555,8 +662,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#87</span></code> - Use AWS_REGION env variable for DB secret lookup</p></li>
 </ul>
 </section>
-<section id="id27">
-<h2>0.8.5<a class="headerlink" href="#id27" title="Link to this heading">#</a></h2>
+<section id="id32">
+<h2>0.8.5<a class="headerlink" href="#id32" title="Link to this heading">¶</a></h2>
 <p>January 11, 2022</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#66</span></code> - Treat functions as a valid redun Value</p></li>
@@ -582,8 +689,8 @@ where you do not have to import the implementation code.</p>
 <li><p>Clarifying comments on task.source during unpickling</p></li>
 </ul>
 </section>
-<section id="id28">
-<h2>0.8.4<a class="headerlink" href="#id28" title="Link to this heading">#</a></h2>
+<section id="id33">
+<h2>0.8.4<a class="headerlink" href="#id33" title="Link to this heading">¶</a></h2>
 <p>December 02, 2021</p>
 <ul class="simple">
 <li><p>Merge remote-tracking branch ‘pub/main’</p></li>
@@ -597,8 +704,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#5</span></code> - Fix typos discovered by codespell</p></li>
 </ul>
 </section>
-<section id="id29">
-<h2>0.8.3<a class="headerlink" href="#id29" title="Link to this heading">#</a></h2>
+<section id="id34">
+<h2>0.8.3<a class="headerlink" href="#id34" title="Link to this heading">¶</a></h2>
 <p>November 10, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#32</span></code> - Fix version cli arg conflict</p></li>
@@ -607,8 +714,8 @@ where you do not have to import the implementation code.</p>
 <li><p>Merge pull request #33 from insitro/prevent-double-ci-runs - Prevent double github actions runs</p></li>
 </ul>
 </section>
-<section id="id30">
-<h2>0.8.2<a class="headerlink" href="#id30" title="Link to this heading">#</a></h2>
+<section id="id35">
+<h2>0.8.2<a class="headerlink" href="#id35" title="Link to this heading">¶</a></h2>
 <p>November 10, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#23</span></code> - Add support for task wrappers</p></li>
@@ -623,15 +730,15 @@ where you do not have to import the implementation code.</p>
 <li><p>Correctly format extra_py_files arg</p></li>
 </ul>
 </section>
-<section id="id31">
-<h2>0.8.1<a class="headerlink" href="#id31" title="Link to this heading">#</a></h2>
+<section id="id36">
+<h2>0.8.1<a class="headerlink" href="#id36" title="Link to this heading">¶</a></h2>
 <p>October 24, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#11</span></code> - improve job and promise memory usage</p></li>
 </ul>
 </section>
-<section id="id32">
-<h2>0.8.0<a class="headerlink" href="#id32" title="Link to this heading">#</a></h2>
+<section id="id37">
+<h2>0.8.0<a class="headerlink" href="#id37" title="Link to this heading">¶</a></h2>
 <p>October 13, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#7</span></code> - Try relaxing s3fs version range</p></li>
@@ -655,8 +762,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#293</span></code> - add scripts for making a public version of the redun repo</p></li>
 </ul>
 </section>
-<section id="id33">
-<h2>0.7.4<a class="headerlink" href="#id33" title="Link to this heading">#</a></h2>
+<section id="id38">
+<h2>0.7.4<a class="headerlink" href="#id38" title="Link to this heading">¶</a></h2>
 <p>September 30, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#294</span></code> - More redun examples</p></li>
@@ -664,16 +771,16 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#291</span></code> - Add more debugging logs for executors [WIP]</p></li>
 </ul>
 </section>
-<section id="id34">
-<h2>0.7.3<a class="headerlink" href="#id34" title="Link to this heading">#</a></h2>
+<section id="id39">
+<h2>0.7.3<a class="headerlink" href="#id39" title="Link to this heading">¶</a></h2>
 <p>September 21, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#286</span></code> - Revert “Update latest setuptools-conda with dependency version fix “</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#288</span></code> - Move AWS batch statuses to constants</p></li>
 </ul>
 </section>
-<section id="id35">
-<h2>0.7.2<a class="headerlink" href="#id35" title="Link to this heading">#</a></h2>
+<section id="id40">
+<h2>0.7.2<a class="headerlink" href="#id40" title="Link to this heading">¶</a></h2>
 <p>September 20, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#286</span></code> - Update latest setuptools-conda with dependency version fix</p></li>
@@ -681,8 +788,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#250</span></code> - DE-3433 Add <code class="docutils literal notranslate"><span class="pre">--rerun</span></code> option to <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">run</span></code></p></li>
 </ul>
 </section>
-<section id="id36">
-<h2>0.7.1<a class="headerlink" href="#id36" title="Link to this heading">#</a></h2>
+<section id="id41">
+<h2>0.7.1<a class="headerlink" href="#id41" title="Link to this heading">¶</a></h2>
 <p>September 16, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#282</span></code> - DE-3399 Add tag APIs for redun_server</p></li>
@@ -692,8 +799,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#283</span></code> - Ignore self and cls variables for docstring test</p></li>
 </ul>
 </section>
-<section id="id37">
-<h2>0.7.0<a class="headerlink" href="#id37" title="Link to this heading">#</a></h2>
+<section id="id42">
+<h2>0.7.0<a class="headerlink" href="#id42" title="Link to this heading">¶</a></h2>
 <p>September 09, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#209</span></code> - DE-1592 Tag system v2</p></li>
@@ -713,16 +820,16 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#267</span></code> - fix migration with a missing commit</p></li>
 </ul>
 </section>
-<section id="id38">
-<h2>0.6.1<a class="headerlink" href="#id38" title="Link to this heading">#</a></h2>
+<section id="id43">
+<h2>0.6.1<a class="headerlink" href="#id43" title="Link to this heading">¶</a></h2>
 <p>August 04, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#265</span></code> - avoid Session as context use</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#264</span></code> - Abandon release if failures are encountered during install or build</p></li>
 </ul>
 </section>
-<section id="id39">
-<h2>0.6.0<a class="headerlink" href="#id39" title="Link to this heading">#</a></h2>
+<section id="id44">
+<h2>0.6.0<a class="headerlink" href="#id44" title="Link to this heading">¶</a></h2>
 <p>August 02, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#261</span></code> - DE-3105 Add Job.execution_id migration</p></li>
@@ -730,8 +837,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#258</span></code> - Small improvements to File such as file size and staging/copy defaults</p></li>
 </ul>
 </section>
-<section id="id40">
-<h2>0.5.1<a class="headerlink" href="#id40" title="Link to this heading">#</a></h2>
+<section id="id45">
+<h2>0.5.1<a class="headerlink" href="#id45" title="Link to this heading">¶</a></h2>
 <p>July 16, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#256</span></code> - Quote the DB password when creating DB URIs</p></li>
@@ -744,8 +851,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#248</span></code> - DE-2900 Show db too new message</p></li>
 </ul>
 </section>
-<section id="id41">
-<h2>0.5.0<a class="headerlink" href="#id41" title="Link to this heading">#</a></h2>
+<section id="id46">
+<h2>0.5.0<a class="headerlink" href="#id46" title="Link to this heading">¶</a></h2>
 <p>June 28, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#246</span></code> - tee stdout and stderr</p></li>
@@ -757,8 +864,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#237</span></code> - use python3 in Makefile</p></li>
 </ul>
 </section>
-<section id="id42">
-<h2>0.4.15<a class="headerlink" href="#id42" title="Link to this heading">#</a></h2>
+<section id="id47">
+<h2>0.4.15<a class="headerlink" href="#id47" title="Link to this heading">¶</a></h2>
 <p>June 15, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#235</span></code> - fix: bump boto3 floor version for required botocore functionality</p></li>
@@ -768,8 +875,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#228</span></code> - Every time a db.Task is recorded, also record it as a db.Value</p></li>
 </ul>
 </section>
-<section id="id43">
-<h2>0.4.14<a class="headerlink" href="#id43" title="Link to this heading">#</a></h2>
+<section id="id48">
+<h2>0.4.14<a class="headerlink" href="#id48" title="Link to this heading">¶</a></h2>
 <p>June 07, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#224</span></code> - DE-2713 Add batch_tags option</p></li>
@@ -778,8 +885,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#219</span></code> - DE-2660 Use a default root task for non-TaskExpressions</p></li>
 </ul>
 </section>
-<section id="id44">
-<h2>0.4.13<a class="headerlink" href="#id44" title="Link to this heading">#</a></h2>
+<section id="id49">
+<h2>0.4.13<a class="headerlink" href="#id49" title="Link to this heading">¶</a></h2>
 <p>May 18, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#220</span></code> - DE-2637 fix hashing of task_options_update</p></li>
@@ -795,8 +902,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#211</span></code> - DE-2599 Use wait_until in aws batch tests to fix flaky tests</p></li>
 </ul>
 </section>
-<section id="id45">
-<h2>0.4.12<a class="headerlink" href="#id45" title="Link to this heading">#</a></h2>
+<section id="id50">
+<h2>0.4.12<a class="headerlink" href="#id50" title="Link to this heading">¶</a></h2>
 <p>May 07, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#206</span></code> - Add method to clone RedunBackendDB with connection pool sharing</p></li>
@@ -804,8 +911,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#201</span></code> - Add quick script to generate release notes</p></li>
 </ul>
 </section>
-<section id="id46">
-<h2>0.4.11<a class="headerlink" href="#id46" title="Link to this heading">#</a></h2>
+<section id="id51">
+<h2>0.4.11<a class="headerlink" href="#id51" title="Link to this heading">¶</a></h2>
 <p>April 22th, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#198</span></code> - Add support for configuration only task args</p></li>
@@ -816,8 +923,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#190</span></code> - DE-2464 Add postmortem debugging</p></li>
 </ul>
 </section>
-<section id="id47">
-<h2>0.4.10<a class="headerlink" href="#id47" title="Link to this heading">#</a></h2>
+<section id="id52">
+<h2>0.4.10<a class="headerlink" href="#id52" title="Link to this heading">¶</a></h2>
 <p>April 12th, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#188</span></code> - Don’t let docker change terminal to raw mode</p></li>
@@ -827,8 +934,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#182</span></code> - Lazy operators for redun Expressions</p></li>
 </ul>
 </section>
-<section id="id48">
-<h2>0.4.9<a class="headerlink" href="#id48" title="Link to this heading">#</a></h2>
+<section id="id53">
+<h2>0.4.9<a class="headerlink" href="#id53" title="Link to this heading">¶</a></h2>
 <p>March 23rd, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#183</span></code> - add py.typed</p></li>
@@ -844,8 +951,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#172</span></code> - Match python 3.7 and 3.8 micro versions to match codebuild image</p></li>
 </ul>
 </section>
-<section id="id49">
-<h2>0.4.8<a class="headerlink" href="#id49" title="Link to this heading">#</a></h2>
+<section id="id54">
+<h2>0.4.8<a class="headerlink" href="#id54" title="Link to this heading">¶</a></h2>
 <p>March 10th, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#111</span></code> - Add concept of remote repos</p></li>
@@ -857,8 +964,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#155</span></code> - Use config_dir with redun_server</p></li>
 </ul>
 </section>
-<section id="id50">
-<h2>0.4.7<a class="headerlink" href="#id50" title="Link to this heading">#</a></h2>
+<section id="id55">
+<h2>0.4.7<a class="headerlink" href="#id55" title="Link to this heading">¶</a></h2>
 <p>February 24th, 2021</p>
 <p><strong>WARNING:</strong> This version contains a bug in the <code class="docutils literal notranslate"><span class="pre">get_or_create_job_defintion</span></code> call in <code class="docutils literal notranslate"><span class="pre">batch_submit</span></code>. Do not use this version.</p>
 <ul class="simple">
@@ -878,15 +985,15 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#143</span></code> - Package on submit not start</p></li>
 </ul>
 </section>
-<section id="id51">
-<h2>0.4.6<a class="headerlink" href="#id51" title="Link to this heading">#</a></h2>
+<section id="id56">
+<h2>0.4.6<a class="headerlink" href="#id56" title="Link to this heading">¶</a></h2>
 <p>February 3rd, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#141</span></code> - Only gather inflight jobs on batch on first submission</p></li>
 </ul>
 </section>
-<section id="id52">
-<h2>0.4.5<a class="headerlink" href="#id52" title="Link to this heading">#</a></h2>
+<section id="id57">
+<h2>0.4.5<a class="headerlink" href="#id57" title="Link to this heading">¶</a></h2>
 <p>January 28th, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#139</span></code> - Propagate batch script errors</p></li>
@@ -896,8 +1003,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#132</span></code> - Small improvements to File.copy_to and self-stagin</p></li>
 </ul>
 </section>
-<section id="id53">
-<h2>0.4.4<a class="headerlink" href="#id53" title="Link to this heading">#</a></h2>
+<section id="id58">
+<h2>0.4.4<a class="headerlink" href="#id58" title="Link to this heading">¶</a></h2>
 <p>January 15th, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#131</span></code> - Fix catch dataflow</p></li>
@@ -909,8 +1016,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#126</span></code> - Require sorted imports</p></li>
 </ul>
 </section>
-<section id="id54">
-<h2>0.4.3<a class="headerlink" href="#id54" title="Link to this heading">#</a></h2>
+<section id="id59">
+<h2>0.4.3<a class="headerlink" href="#id59" title="Link to this heading">¶</a></h2>
 <p>January 5th, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#122</span></code> - Stronger type checking for task calls</p></li>
@@ -918,45 +1025,45 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#86</span></code> - Scheduler tasks</p></li>
 </ul>
 </section>
-<section id="id55">
-<h2>0.4.2<a class="headerlink" href="#id55" title="Link to this heading">#</a></h2>
+<section id="id60">
+<h2>0.4.2<a class="headerlink" href="#id60" title="Link to this heading">¶</a></h2>
 <p>January 4th, 2021</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#121</span></code> - Array job reuniting fix</p></li>
 </ul>
 </section>
-<section id="id56">
-<h2>0.4.1<a class="headerlink" href="#id56" title="Link to this heading">#</a></h2>
+<section id="id61">
+<h2>0.4.1<a class="headerlink" href="#id61" title="Link to this heading">¶</a></h2>
 <p>December 23rd, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#119</span></code> - Bugfix to correctly restart job array monitor thread</p></li>
 </ul>
 </section>
-<section id="id57">
-<h2>0.4.0<a class="headerlink" href="#id57" title="Link to this heading">#</a></h2>
+<section id="id62">
+<h2>0.4.0<a class="headerlink" href="#id62" title="Link to this heading">¶</a></h2>
 <p>December 15th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#83</span></code> - Detect and submit job arrays to AWS batch</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#114</span></code> - Adds job definition option to run container in privileged mode</p></li>
 </ul>
 </section>
-<section id="id58">
-<h2>0.3.12<a class="headerlink" href="#id58" title="Link to this heading">#</a></h2>
+<section id="id63">
+<h2>0.3.12<a class="headerlink" href="#id63" title="Link to this heading">¶</a></h2>
 <p>December 10th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#76</span></code> - Improve querying of logs</p></li>
 </ul>
 </section>
-<section id="id59">
-<h2>0.3.11<a class="headerlink" href="#id59" title="Link to this heading">#</a></h2>
+<section id="id64">
+<h2>0.3.11<a class="headerlink" href="#id64" title="Link to this heading">¶</a></h2>
 <p>December 8th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#109</span></code> - Permalink update in README</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#108</span></code> - Automated release</p></li>
 </ul>
 </section>
-<section id="id60">
-<h2>0.3.10<a class="headerlink" href="#id60" title="Link to this heading">#</a></h2>
+<section id="id65">
+<h2>0.3.10<a class="headerlink" href="#id65" title="Link to this heading">¶</a></h2>
 <p>December 3rd, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#104</span></code> - use ECR for postgres image</p></li>
@@ -969,8 +1076,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#106</span></code> - Small clean up of batch logs</p></li>
 </ul>
 </section>
-<section id="id61">
-<h2>0.3.9<a class="headerlink" href="#id61" title="Link to this heading">#</a></h2>
+<section id="id66">
+<h2>0.3.9<a class="headerlink" href="#id66" title="Link to this heading">¶</a></h2>
 <p>November 25th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#96</span></code> - Default to interactive debugging</p></li>
@@ -978,8 +1085,8 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#92</span></code> - DE-1922 tolerate missing logs for failed jobs</p></li>
 </ul>
 </section>
-<section id="id62">
-<h2>0.3.8<a class="headerlink" href="#id62" title="Link to this heading">#</a></h2>
+<section id="id67">
+<h2>0.3.8<a class="headerlink" href="#id67" title="Link to this heading">¶</a></h2>
 <p>November 18th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#89</span></code> - Respect no-cache for job reuniting.</p></li>
@@ -989,65 +1096,65 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#84</span></code> - Fix package name in dependencies notes in README.</p></li>
 </ul>
 </section>
-<section id="id63">
-<h2>0.3.7<a class="headerlink" href="#id63" title="Link to this heading">#</a></h2>
+<section id="id68">
+<h2>0.3.7<a class="headerlink" href="#id68" title="Link to this heading">¶</a></h2>
 <p>November 12th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#80</span></code> - redun import paths should take precedence over system imports.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#79</span></code> - fix default arg parsing and prefix args.</p></li>
 </ul>
 </section>
-<section id="id64">
-<h2>0.3.6<a class="headerlink" href="#id64" title="Link to this heading">#</a></h2>
+<section id="id69">
+<h2>0.3.6<a class="headerlink" href="#id69" title="Link to this heading">¶</a></h2>
 <p>November 10th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#73</span></code> - Allow users to customize <code class="docutils literal notranslate"><span class="pre">setup_scheduler()</span></code>.</p></li>
 </ul>
 </section>
-<section id="id65">
-<h2>0.3.5<a class="headerlink" href="#id65" title="Link to this heading">#</a></h2>
+<section id="id70">
+<h2>0.3.5<a class="headerlink" href="#id70" title="Link to this heading">¶</a></h2>
 <p>November 10, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#77</span></code> - Check version of redun cli in docker container.</p></li>
 </ul>
 </section>
-<section id="id66">
-<h2>0.3.4<a class="headerlink" href="#id66" title="Link to this heading">#</a></h2>
+<section id="id71">
+<h2>0.3.4<a class="headerlink" href="#id71" title="Link to this heading">¶</a></h2>
 <p>October 29th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#72</span></code> - Use current working directory when importing a module.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#64</span></code> - Some optimizations for AWS Batch large fanout.</p></li>
 </ul>
 </section>
-<section id="id67">
-<h2>0.3.3<a class="headerlink" href="#id67" title="Link to this heading">#</a></h2>
+<section id="id72">
+<h2>0.3.3<a class="headerlink" href="#id72" title="Link to this heading">¶</a></h2>
 <p>October 28th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#71</span></code> - Don’t fetch batch logs when debug=True</p></li>
 </ul>
 </section>
-<section id="id68">
-<h2>0.3.2<a class="headerlink" href="#id68" title="Link to this heading">#</a></h2>
+<section id="id73">
+<h2>0.3.2<a class="headerlink" href="#id73" title="Link to this heading">¶</a></h2>
 <p>October 27th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#66</span></code> - Fix import_script to properly support module-style</p></li>
 </ul>
 </section>
-<section id="id69">
-<h2>0.3.1<a class="headerlink" href="#id69" title="Link to this heading">#</a></h2>
+<section id="id74">
+<h2>0.3.1<a class="headerlink" href="#id74" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Fix bug with using s3fs &gt;= 0.5</p></li>
 </ul>
 </section>
-<section id="id70">
-<h2>0.3<a class="headerlink" href="#id70" title="Link to this heading">#</a></h2>
+<section id="id75">
+<h2>0.3<a class="headerlink" href="#id75" title="Link to this heading">¶</a></h2>
 <p>October 20th, 2020</p>
 <ul class="simple">
 <li><p>Improve display of errors and logs for AWS Batch jobs.</p></li>
 </ul>
 </section>
-<section id="id71">
-<h2>0.2.5<a class="headerlink" href="#id71" title="Link to this heading">#</a></h2>
+<section id="id76">
+<h2>0.2.5<a class="headerlink" href="#id76" title="Link to this heading">¶</a></h2>
 <p>October 14th, 2020</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#57</span></code> - Improve redun traceback for failed jobs.</p></li>
@@ -1055,50 +1162,50 @@ where you do not have to import the implementation code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#54</span></code> - Add documentation on required dependencies.</p></li>
 </ul>
 </section>
-<section id="id72">
-<h2>0.2.4<a class="headerlink" href="#id72" title="Link to this heading">#</a></h2>
+<section id="id77">
+<h2>0.2.4<a class="headerlink" href="#id77" title="Link to this heading">¶</a></h2>
 <p>October 6, 2020</p>
 <ul class="simple">
 <li><p>Encourage defining task namespaces by raising a warning. The warning can be ignored using a <a class="reference internal" href="config.html#ignore-warnings"><span class="std std-ref">configuration option</span></a>.</p></li>
 </ul>
 </section>
-<section id="id73">
-<h2>0.2.3<a class="headerlink" href="#id73" title="Link to this heading">#</a></h2>
+<section id="id78">
+<h2>0.2.3<a class="headerlink" href="#id78" title="Link to this heading">¶</a></h2>
 <p>September 25, 2020</p>
 <ul class="simple">
 <li><p>Fixes FileNotFoundError occurring when using AWS Batch tasks, by avoiding the s3fs cache.</p></li>
 </ul>
 </section>
-<section id="id74">
-<h2>0.2.2<a class="headerlink" href="#id74" title="Link to this heading">#</a></h2>
+<section id="id79">
+<h2>0.2.2<a class="headerlink" href="#id79" title="Link to this heading">¶</a></h2>
 <p>August 27, 2020</p>
 <ul class="simple">
 <li><p>Require database credentials to be specified by environment variables</p></li>
 </ul>
 </section>
-<section id="id75">
-<h2>0.2.1<a class="headerlink" href="#id75" title="Link to this heading">#</a></h2>
+<section id="id80">
+<h2>0.2.1<a class="headerlink" href="#id80" title="Link to this heading">¶</a></h2>
 <p>August 9, 2020</p>
 <ul class="simple">
 <li><p>Fix duplicate upstream bug.</p></li>
 </ul>
 </section>
-<section id="id76">
-<h2>0.2.0<a class="headerlink" href="#id76" title="Link to this heading">#</a></h2>
+<section id="id81">
+<h2>0.2.0<a class="headerlink" href="#id81" title="Link to this heading">¶</a></h2>
 <p>August 7, 2020</p>
 <ul class="simple">
 <li><p>Add support for Python 3.8</p></li>
 </ul>
 </section>
-<section id="id77">
-<h2>0.1.1<a class="headerlink" href="#id77" title="Link to this heading">#</a></h2>
+<section id="id82">
+<h2>0.1.1<a class="headerlink" href="#id82" title="Link to this heading">¶</a></h2>
 <p>July 29, 2020</p>
 <ul class="simple">
 <li><p>Drop dependency on bcode as it has no conda package and the repo appears abandoned.</p></li>
 </ul>
 </section>
-<section id="id78">
-<h2>0.1<a class="headerlink" href="#id78" title="Link to this heading">#</a></h2>
+<section id="id83">
+<h2>0.1<a class="headerlink" href="#id83" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Initial release.</p></li>
 </ul>
@@ -1161,84 +1268,89 @@ where you do not have to import the implementation code.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Changelog</a><ul>
-<li><a class="reference internal" href="#id1">0.19.0</a></li>
-<li><a class="reference internal" href="#id2">0.18.0</a></li>
-<li><a class="reference internal" href="#id3">0.17.0</a></li>
-<li><a class="reference internal" href="#id4">0.16.2</a></li>
-<li><a class="reference internal" href="#id5">0.16.1</a></li>
-<li><a class="reference internal" href="#id6">0.16.0</a></li>
-<li><a class="reference internal" href="#id7">0.15.0</a></li>
-<li><a class="reference internal" href="#id8">0.14.0</a></li>
-<li><a class="reference internal" href="#id9">0.13.0</a></li>
-<li><a class="reference internal" href="#id10">0.12.0</a></li>
-<li><a class="reference internal" href="#id11">0.11.1</a></li>
-<li><a class="reference internal" href="#id12">0.11.0</a></li>
-<li><a class="reference internal" href="#id13">0.10.1</a></li>
-<li><a class="reference internal" href="#id14">0.10.0</a></li>
-<li><a class="reference internal" href="#id15">0.9.1</a></li>
-<li><a class="reference internal" href="#id16">0.8.16</a></li>
-<li><a class="reference internal" href="#id17">0.8.15</a></li>
-<li><a class="reference internal" href="#id18">0.8.14</a></li>
-<li><a class="reference internal" href="#id19">0.8.13</a></li>
-<li><a class="reference internal" href="#id20">0.8.12</a></li>
-<li><a class="reference internal" href="#id21">0.8.11</a></li>
-<li><a class="reference internal" href="#id22">0.8.10</a></li>
-<li><a class="reference internal" href="#id23">0.8.9</a></li>
-<li><a class="reference internal" href="#id24">0.8.8</a></li>
-<li><a class="reference internal" href="#id25">0.8.7</a></li>
-<li><a class="reference internal" href="#id26">0.8.6</a></li>
-<li><a class="reference internal" href="#id27">0.8.5</a></li>
-<li><a class="reference internal" href="#id28">0.8.4</a></li>
-<li><a class="reference internal" href="#id29">0.8.3</a></li>
-<li><a class="reference internal" href="#id30">0.8.2</a></li>
-<li><a class="reference internal" href="#id31">0.8.1</a></li>
-<li><a class="reference internal" href="#id32">0.8.0</a></li>
-<li><a class="reference internal" href="#id33">0.7.4</a></li>
-<li><a class="reference internal" href="#id34">0.7.3</a></li>
-<li><a class="reference internal" href="#id35">0.7.2</a></li>
-<li><a class="reference internal" href="#id36">0.7.1</a></li>
-<li><a class="reference internal" href="#id37">0.7.0</a></li>
-<li><a class="reference internal" href="#id38">0.6.1</a></li>
-<li><a class="reference internal" href="#id39">0.6.0</a></li>
-<li><a class="reference internal" href="#id40">0.5.1</a></li>
-<li><a class="reference internal" href="#id41">0.5.0</a></li>
-<li><a class="reference internal" href="#id42">0.4.15</a></li>
-<li><a class="reference internal" href="#id43">0.4.14</a></li>
-<li><a class="reference internal" href="#id44">0.4.13</a></li>
-<li><a class="reference internal" href="#id45">0.4.12</a></li>
-<li><a class="reference internal" href="#id46">0.4.11</a></li>
-<li><a class="reference internal" href="#id47">0.4.10</a></li>
-<li><a class="reference internal" href="#id48">0.4.9</a></li>
-<li><a class="reference internal" href="#id49">0.4.8</a></li>
-<li><a class="reference internal" href="#id50">0.4.7</a></li>
-<li><a class="reference internal" href="#id51">0.4.6</a></li>
-<li><a class="reference internal" href="#id52">0.4.5</a></li>
-<li><a class="reference internal" href="#id53">0.4.4</a></li>
-<li><a class="reference internal" href="#id54">0.4.3</a></li>
-<li><a class="reference internal" href="#id55">0.4.2</a></li>
-<li><a class="reference internal" href="#id56">0.4.1</a></li>
-<li><a class="reference internal" href="#id57">0.4.0</a></li>
-<li><a class="reference internal" href="#id58">0.3.12</a></li>
-<li><a class="reference internal" href="#id59">0.3.11</a></li>
-<li><a class="reference internal" href="#id60">0.3.10</a></li>
-<li><a class="reference internal" href="#id61">0.3.9</a></li>
-<li><a class="reference internal" href="#id62">0.3.8</a></li>
-<li><a class="reference internal" href="#id63">0.3.7</a></li>
-<li><a class="reference internal" href="#id64">0.3.6</a></li>
-<li><a class="reference internal" href="#id65">0.3.5</a></li>
-<li><a class="reference internal" href="#id66">0.3.4</a></li>
-<li><a class="reference internal" href="#id67">0.3.3</a></li>
-<li><a class="reference internal" href="#id68">0.3.2</a></li>
-<li><a class="reference internal" href="#id69">0.3.1</a></li>
-<li><a class="reference internal" href="#id70">0.3</a></li>
-<li><a class="reference internal" href="#id71">0.2.5</a></li>
-<li><a class="reference internal" href="#id72">0.2.4</a></li>
-<li><a class="reference internal" href="#id73">0.2.3</a></li>
-<li><a class="reference internal" href="#id74">0.2.2</a></li>
-<li><a class="reference internal" href="#id75">0.2.1</a></li>
-<li><a class="reference internal" href="#id76">0.2.0</a></li>
-<li><a class="reference internal" href="#id77">0.1.1</a></li>
-<li><a class="reference internal" href="#id78">0.1</a></li>
+<li><a class="reference internal" href="#id1">0.19.5</a></li>
+<li><a class="reference internal" href="#id2">0.19.4</a></li>
+<li><a class="reference internal" href="#id3">0.19.3</a></li>
+<li><a class="reference internal" href="#id4">0.19.2</a></li>
+<li><a class="reference internal" href="#id5">0.19.1</a></li>
+<li><a class="reference internal" href="#id6">0.19.0</a></li>
+<li><a class="reference internal" href="#id7">0.18.0</a></li>
+<li><a class="reference internal" href="#id8">0.17.0</a></li>
+<li><a class="reference internal" href="#id9">0.16.2</a></li>
+<li><a class="reference internal" href="#id10">0.16.1</a></li>
+<li><a class="reference internal" href="#id11">0.16.0</a></li>
+<li><a class="reference internal" href="#id12">0.15.0</a></li>
+<li><a class="reference internal" href="#id13">0.14.0</a></li>
+<li><a class="reference internal" href="#id14">0.13.0</a></li>
+<li><a class="reference internal" href="#id15">0.12.0</a></li>
+<li><a class="reference internal" href="#id16">0.11.1</a></li>
+<li><a class="reference internal" href="#id17">0.11.0</a></li>
+<li><a class="reference internal" href="#id18">0.10.1</a></li>
+<li><a class="reference internal" href="#id19">0.10.0</a></li>
+<li><a class="reference internal" href="#id20">0.9.1</a></li>
+<li><a class="reference internal" href="#id21">0.8.16</a></li>
+<li><a class="reference internal" href="#id22">0.8.15</a></li>
+<li><a class="reference internal" href="#id23">0.8.14</a></li>
+<li><a class="reference internal" href="#id24">0.8.13</a></li>
+<li><a class="reference internal" href="#id25">0.8.12</a></li>
+<li><a class="reference internal" href="#id26">0.8.11</a></li>
+<li><a class="reference internal" href="#id27">0.8.10</a></li>
+<li><a class="reference internal" href="#id28">0.8.9</a></li>
+<li><a class="reference internal" href="#id29">0.8.8</a></li>
+<li><a class="reference internal" href="#id30">0.8.7</a></li>
+<li><a class="reference internal" href="#id31">0.8.6</a></li>
+<li><a class="reference internal" href="#id32">0.8.5</a></li>
+<li><a class="reference internal" href="#id33">0.8.4</a></li>
+<li><a class="reference internal" href="#id34">0.8.3</a></li>
+<li><a class="reference internal" href="#id35">0.8.2</a></li>
+<li><a class="reference internal" href="#id36">0.8.1</a></li>
+<li><a class="reference internal" href="#id37">0.8.0</a></li>
+<li><a class="reference internal" href="#id38">0.7.4</a></li>
+<li><a class="reference internal" href="#id39">0.7.3</a></li>
+<li><a class="reference internal" href="#id40">0.7.2</a></li>
+<li><a class="reference internal" href="#id41">0.7.1</a></li>
+<li><a class="reference internal" href="#id42">0.7.0</a></li>
+<li><a class="reference internal" href="#id43">0.6.1</a></li>
+<li><a class="reference internal" href="#id44">0.6.0</a></li>
+<li><a class="reference internal" href="#id45">0.5.1</a></li>
+<li><a class="reference internal" href="#id46">0.5.0</a></li>
+<li><a class="reference internal" href="#id47">0.4.15</a></li>
+<li><a class="reference internal" href="#id48">0.4.14</a></li>
+<li><a class="reference internal" href="#id49">0.4.13</a></li>
+<li><a class="reference internal" href="#id50">0.4.12</a></li>
+<li><a class="reference internal" href="#id51">0.4.11</a></li>
+<li><a class="reference internal" href="#id52">0.4.10</a></li>
+<li><a class="reference internal" href="#id53">0.4.9</a></li>
+<li><a class="reference internal" href="#id54">0.4.8</a></li>
+<li><a class="reference internal" href="#id55">0.4.7</a></li>
+<li><a class="reference internal" href="#id56">0.4.6</a></li>
+<li><a class="reference internal" href="#id57">0.4.5</a></li>
+<li><a class="reference internal" href="#id58">0.4.4</a></li>
+<li><a class="reference internal" href="#id59">0.4.3</a></li>
+<li><a class="reference internal" href="#id60">0.4.2</a></li>
+<li><a class="reference internal" href="#id61">0.4.1</a></li>
+<li><a class="reference internal" href="#id62">0.4.0</a></li>
+<li><a class="reference internal" href="#id63">0.3.12</a></li>
+<li><a class="reference internal" href="#id64">0.3.11</a></li>
+<li><a class="reference internal" href="#id65">0.3.10</a></li>
+<li><a class="reference internal" href="#id66">0.3.9</a></li>
+<li><a class="reference internal" href="#id67">0.3.8</a></li>
+<li><a class="reference internal" href="#id68">0.3.7</a></li>
+<li><a class="reference internal" href="#id69">0.3.6</a></li>
+<li><a class="reference internal" href="#id70">0.3.5</a></li>
+<li><a class="reference internal" href="#id71">0.3.4</a></li>
+<li><a class="reference internal" href="#id72">0.3.3</a></li>
+<li><a class="reference internal" href="#id73">0.3.2</a></li>
+<li><a class="reference internal" href="#id74">0.3.1</a></li>
+<li><a class="reference internal" href="#id75">0.3</a></li>
+<li><a class="reference internal" href="#id76">0.2.5</a></li>
+<li><a class="reference internal" href="#id77">0.2.4</a></li>
+<li><a class="reference internal" href="#id78">0.2.3</a></li>
+<li><a class="reference internal" href="#id79">0.2.2</a></li>
+<li><a class="reference internal" href="#id80">0.2.1</a></li>
+<li><a class="reference internal" href="#id81">0.2.0</a></li>
+<li><a class="reference internal" href="#id82">0.1.1</a></li>
+<li><a class="reference internal" href="#id83">0.1</a></li>
 </ul>
 </li>
 </ul>
@@ -1251,8 +1363,8 @@ where you do not have to import the implementation code.</p>
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    <script src="_static/scripts/furo.js?v=4e2eecee"></script>
     </body>
 </html>

@@ -5,10 +5,10 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Values" href="values.html" /><link rel="prev" title="Install" href="index.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 -->
         <title>Design overview - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=387cc868" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
     
@@ -68,7 +68,7 @@
   <symbol id="svg-sun" viewBox="0 0 24 24">
     <title>Light mode</title>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
       <circle cx="12" cy="12" r="5"></circle>
       <line x1="12" y1="1" x2="12" y2="3"></line>
       <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -83,7 +83,7 @@
   <symbol id="svg-moon" viewBox="0 0 24 24">
     <title>Dark mode</title>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
       <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
     </svg>
@@ -91,7 +91,7 @@
   <symbol id="svg-sun-half" viewBox="0 0 24 24">
     <title>Auto light/dark mode</title>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <circle cx="12" cy="12" r="9" />
       <path d="M13 12h5" />
@@ -99,6 +99,60 @@
       <path d="M13 18h1" />
       <path d="M13 9h4" />
       <path d="M13 6h1" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" /
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
     </svg>
   </symbol>
 </svg>
@@ -111,6 +165,8 @@
 <label class="overlay toc-overlay" for="__toc">
   <div class="visually-hidden">Hide table of contents sidebar</div>
 </label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
 
 
@@ -129,7 +185,8 @@
       <div class="theme-toggle-container theme-toggle-header">
         <button class="theme-toggle">
           <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
-          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
@@ -217,11 +274,17 @@
           <span>Back to top</span>
         </a>
         <div class="content-icon-container">
-          
+          <div class="view-this-page">
+  <a class="muted-link" href="_sources/design.md.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
 <div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
-              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
@@ -231,12 +294,12 @@
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
-        <article role="main">
+        <article role="main" id="furo-main-content">
           <section id="design-overview">
-<h1>Design overview<a class="headerlink" href="#design-overview" title="Link to this heading">#</a></h1>
+<h1>Design overview<a class="headerlink" href="#design-overview" title="Link to this heading">¶</a></h1>
 <p>Here, we describe the high-level design features of redun.</p>
 <section id="motivation">
-<h2>Motivation<a class="headerlink" href="#motivation" title="Link to this heading">#</a></h2>
+<h2>Motivation<a class="headerlink" href="#motivation" title="Link to this heading">¶</a></h2>
 <p>The goal of redun is to provide the benefits of workflow engines for Python code in an easy and unintrusive way. Workflow engines can help run code faster by using parallel distributed execution, they can provide checkpointing for fast resuming of previously halted execution, they can reactively re-execute code based on changes in data or code, and can provide logging for data provenance.</p>
 <p>While there are <a class="reference external" href="https://github.com/pditommaso/awesome-pipeline">A LOT</a> of workflow engines available even for Python, redun differs by avoiding the need to restructure programs in terms of dataflow. In fact, we take the position that writing dataflows directly is unnecessarily restrictive, and by doing so we lose abstractions we have come to rely on in most modern high-level languages (control flow, recursion, higher order functions, etc). redun’s key insight is that workflows can be expressed as lazy expressions, that are then evaluated by a scheduler that performs automatic parallelization, caching, and data provenance logging.</p>
 <p>redun’s key features are:</p>
@@ -252,7 +315,7 @@
 <p>See the <a class="reference internal" href="#influences">influences</a> for more details on how these features relate to other tools.</p>
 </section>
 <section id="first-example">
-<h2>First example<a class="headerlink" href="#first-example" title="Link to this heading">#</a></h2>
+<h2>First example<a class="headerlink" href="#first-example" title="Link to this heading">¶</a></h2>
 <p>redun augments Python to simulate a functional language with lazy evaluation. By writing code as pure functions without side-effects, redun can safely perform parallel execution and cache function results. By using <a class="reference internal" href="#lazy-evaluation-and-parallelism">lazy evaluation</a>, we can execute a Python program quickly to automatically discover the dataflow between functions. Therefore, it is unnecessary to force the developer to specify the dataflow directly (e.g. Airflow’s <code class="docutils literal notranslate"><span class="pre">set_upstream()</span></code> and <code class="docutils literal notranslate"><span class="pre">set_downstream()</span></code>).</p>
 <p>redun does not try to impose a functional style on all code. Python supports multiple programming paradigms and a typical project might include libraries that make use of all of them. Therefore, redun allows the user to annotate which functions are effectively pure using a <code class="docutils literal notranslate"><span class="pre">&#64;task</span></code> decorator. Such functions are called Tasks and they are the main unit of execution in redun. Tasks have several special properties that make them a powerful building block for data pipelines.</p>
 <p>Here, is a small hello world program for redun:</p>
@@ -299,9 +362,9 @@ Hello,<span class="w"> </span>World!
 </div>
 </section>
 <section id="key-features">
-<h2>Key features<a class="headerlink" href="#key-features" title="Link to this heading">#</a></h2>
+<h2>Key features<a class="headerlink" href="#key-features" title="Link to this heading">¶</a></h2>
 <section id="memoization-and-reactivity">
-<h3>Memoization and reactivity<a class="headerlink" href="#memoization-and-reactivity" title="Link to this heading">#</a></h3>
+<h3>Memoization and reactivity<a class="headerlink" href="#memoization-and-reactivity" title="Link to this heading">¶</a></h3>
 <p>The return values of tasks are memoized. When calling the same task with the same arguments, a previously cached result is used instead of re-executing the task. This allows us to quickly resume a past execution, by fast forwarding through old parts of a program and only executing new parts.</p>
 <p>Consider the example above, which is also available in <code class="docutils literal notranslate"><span class="pre">examples/hello_world.py</span></code>. On first execution, every task executes as indicated by the “[redun] Run” log lines:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">redun</span> <span class="n">run</span> <span class="n">hello_world</span><span class="o">.</span><span class="n">py</span> <span class="n">main</span>
@@ -356,7 +419,7 @@ Hello,<span class="w"> </span>World!
 <p>How is this achieved? To make this memoization work, we need to know whether we have seen the same Task called with the same arguments. redun performs <a class="reference internal" href="tasks.html#task-hashing"><span class="std std-ref">hashing of Tasks</span></a> (see below) and arguments and uses those hashes as a cache key for fetching values from a result cache.</p>
 </section>
 <section id="lazy-evaluation-and-parallelism">
-<h3>Lazy evaluation and parallelism<a class="headerlink" href="#lazy-evaluation-and-parallelism" title="Link to this heading">#</a></h3>
+<h3>Lazy evaluation and parallelism<a class="headerlink" href="#lazy-evaluation-and-parallelism" title="Link to this heading">¶</a></h3>
 <p>Tasks are executed in a lazy and asynchronous manner. When a task is called, it returns immediately with an <code class="docutils literal notranslate"><span class="pre">Expression</span></code> object:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span>
 
@@ -439,7 +502,7 @@ Hello,<span class="w"> </span>World!
 <p>Our use of Expressions to build up Task dependency is also similar to <a class="reference external" href="https://docs.python.org/dev/library/concurrent.futures.html">Concurrent Futures in Python</a> and <a class="reference external" href="https://docs.dask.org/en/latest/delayed.html">Dask Delayed</a>.</p>
 </section>
 <section id="tasks-as-pure-functions">
-<h3>Tasks as pure functions<a class="headerlink" href="#tasks-as-pure-functions" title="Link to this heading">#</a></h3>
+<h3>Tasks as pure functions<a class="headerlink" href="#tasks-as-pure-functions" title="Link to this heading">¶</a></h3>
 <p>In order for redun to safely cache results and execute tasks in parallel, a few restrictions must be followed when writing a task. Primarily, tasks must be written such that they are “effectively <a class="reference external" href="https://en.wikipedia.org/wiki/Pure_function">pure functions</a>”. That is, given the same arguments, a task should always return (effectively) the same result. redun does not try to enforce strict purity, so minor side-effects such logging, or caching, are not an issue. A task can even be stochastic as long as the user is ok with using cached results from previous executions.</p>
 <p>Tasks are allowed to call other tasks, just like one would write a function to call other functions. In fact, this is the encouraged way of building up a workflow program. Tasks are also allowed to call plain Python functions, as long as the net result of the task is effectively pure. You may also call tasks from plain Python functions as well. In fact, this often occurs when using functions such as <code class="docutils literal notranslate"><span class="pre">map()</span></code>.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">small_helper</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
@@ -460,7 +523,7 @@ Hello,<span class="w"> </span>World!
 <p>One point of caution about using plain Python functions is that redun cannot hash the contents of a plain Python function, such as <code class="docutils literal notranslate"><span class="pre">small_helper</span></code> above. So changes to that function will not trigger re-execution. It becomes the responsibility of the user to force re-execution if needed, perhaps by bumping the version of the calling task or explicitly indicating the dependency to Redun (see <a class="reference internal" href="tasks.html#task-hashing"><span class="std std-ref">Task Hashing</span></a> for more).</p>
 </section>
 <section id="result-caching">
-<h3>Result caching<a class="headerlink" href="#result-caching" title="Link to this heading">#</a></h3>
+<h3>Result caching<a class="headerlink" href="#result-caching" title="Link to this heading">¶</a></h3>
 <p>As Redun’s scheduler traverses the lazy expression graphs, it looks for opportunities to rely on cached values to avoid repeating computations it has already performed. Redun’s approach to this is designed to be both efficient and correct. For more information on caching and scheduling, see (scheduler)[scheduler.md]. To illustrate how this works, and some of the subtleties therein, consider this example:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
@@ -507,7 +570,7 @@ Hello,<span class="w"> </span>World!
 <p>The end result of this process is that redun correctly skips re-execution of unchanged high level tasks, such as <code class="docutils literal notranslate"><span class="pre">main</span></code>, but properly re-executes updated deeply nested tasks, such as <code class="docutils literal notranslate"><span class="pre">step1</span></code>. It is quite common in large programs that the upper level tasks mostly perform routing of arguments and results, and the lower level tasks perform the actual work. Routing frequently is unaffected by the actual data or implementations of the lower level tasks, so being able to skip re-execution of high level tasks is an important optimization.</p>
 </section>
 <section id="file-reactivity">
-<h3>File reactivity<a class="headerlink" href="#file-reactivity" title="Link to this heading">#</a></h3>
+<h3>File reactivity<a class="headerlink" href="#file-reactivity" title="Link to this heading">¶</a></h3>
 <p>A common use case for workflow engines is to read and write to files, either stored locally or remotely (object storage, S3, etc). Files can be a tricky data type to accommodate in a purely functional setting because the contents of files can change outside of our control. Ideally, we would like our workflow engine to react to those changes. For example, we would want to re-execute our workflow when:</p>
 <ul class="simple">
 <li><p>An input file changes its contents, and now we want to re-execute the tasks that read that input file so we can regenerate our downstream results.</p></li>
@@ -548,10 +611,10 @@ Hello,<span class="w"> </span>World!
 <p>See the <a class="reference internal" href="values.html#Validity"><span class="std std-ref">Validity</span></a> section below for additional discussion on the general feature.</p>
 </section>
 <section id="shell-scripting">
-<h3>Shell scripting<a class="headerlink" href="#shell-scripting" title="Link to this heading">#</a></h3>
+<h3>Shell scripting<a class="headerlink" href="#shell-scripting" title="Link to this heading">¶</a></h3>
 <p>It is common, especially in bioinformatics, to use workflow engines to combine together unix programs into a computational pipeline. Typically, each program exchanges data with each other through input and output files. redun provides several features to ease the calling of programs through scripts and managing their input and output files.</p>
 <section id="script-tasks">
-<h4>Script tasks<a class="headerlink" href="#script-tasks" title="Link to this heading">#</a></h4>
+<h4>Script tasks<a class="headerlink" href="#script-tasks" title="Link to this heading">¶</a></h4>
 <p>A <em>script task</em> is a special task in redun whose definition is a shell script as opposed to a python function. Script tasks are defined by passing the task option <code class="docutils literal notranslate"><span class="pre">script=True</span></code> in the <code class="docutils literal notranslate"><span class="pre">&#64;task()</span></code> decorator and returning a string containing a shell script.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">script</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">task1</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">):</span>
@@ -594,7 +657,7 @@ Hello,<span class="w"> </span>World!
 <p>Feel free to indent lines to match the surrounding code. redun uses <a class="reference external" href="https://docs.python.org/3/library/textwrap.html#textwrap.dedent">dedent()</a> to remove leading whitespace in scripts.</p>
 </section>
 <section id="file-staging">
-<h4>File staging<a class="headerlink" href="#file-staging" title="Link to this heading">#</a></h4>
+<h4>File staging<a class="headerlink" href="#file-staging" title="Link to this heading">¶</a></h4>
 <p>When defining script tasks that run on a remote execution environment (e.g. AWS Batch), it is common to have to copy input files from a cloud storage location (e.g. S3) to the compute node and similarly copy output files from the compute node back to cloud storage. We call this file staging and unstaging, respectively.</p>
 <p>Manually performing file staging would look something like this:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">script</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -721,16 +784,16 @@ Hello,<span class="w"> </span>World!
 </section>
 </section>
 <section id="provenance-and-call-graphs">
-<h3>Provenance and call graphs<a class="headerlink" href="#provenance-and-call-graphs" title="Link to this heading">#</a></h3>
+<h3>Provenance and call graphs<a class="headerlink" href="#provenance-and-call-graphs" title="Link to this heading">¶</a></h3>
 <img src="_static/redun-call-graph.svg" width="100%"/>
 <p>Depicted above is an example call graph and job tree (left) for an execution of a workflow (right). When each task is called, a CallNode is recorded along with all the Values used as arguments and return values. As tasks (<code class="docutils literal notranslate"><span class="pre">main</span></code>) call child tasks, children CallNodes are recorded (<code class="docutils literal notranslate"><span class="pre">task1</span></code> and <code class="docutils literal notranslate"><span class="pre">task2</span></code>). “Horizontal” dataflow is also recorded between sibling tasks, such as <code class="docutils literal notranslate"><span class="pre">task1</span></code> and <code class="docutils literal notranslate"><span class="pre">task2</span></code>. Each node in the call graph is identified by a unique hash and each Job and Execution is identified by a unique UUID. This information is stored by default in the redun database <code class="docutils literal notranslate"><span class="pre">.redun/redun.db</span></code>.</p>
 <p>The redun backend database provides a durable record of these call graphs for every execution redun performs. This not only provides the backend storage for caching, it also is queryable by users to explore the call graph, using the <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">log</span></code>, <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">console</span></code>, and <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">repl</span></code> commands. For example, if we know that a file <code class="docutils literal notranslate"><span class="pre">/tmp/data</span></code> was produced by redun, we can find out exactly which execution did so, and hence can retrieve information about the code and inputs used to do so. See <a class="reference internal" href="db.html#Querying-call-graphs"><span class="std std-ref">querying call graphs</span></a> for more.</p>
 </section>
 </section>
 <section id="advanced-topics">
-<h2>Advanced topics<a class="headerlink" href="#advanced-topics" title="Link to this heading">#</a></h2>
+<h2>Advanced topics<a class="headerlink" href="#advanced-topics" title="Link to this heading">¶</a></h2>
 <section id="working-with-databases-and-apis">
-<h3>Working with databases and APIs<a class="headerlink" href="#working-with-databases-and-apis" title="Link to this heading">#</a></h3>
+<h3>Working with databases and APIs<a class="headerlink" href="#working-with-databases-and-apis" title="Link to this heading">¶</a></h3>
 <p>It’s common to use workflow engines to implement Extract Transform Load (ETL) pipelines which help move data between data stores such as databases, data lakes, and other services. Inevitably, we would need to work with ephemeral objects such as database connections and API clients that would have difficulties with caching and re-execution without providing special treatment. For example:</p>
 <ul class="simple">
 <li><p>Database connections or API clients might have internal state you don’t want to be serialized, such as secrets or overly specific configuration information (IP addresses, port numbers).</p></li>
@@ -741,7 +804,7 @@ Hello,<span class="w"> </span>World!
 <p>redun provides solutions to several of these challenges using a concept called (Handles)[values.md#Handles-for-ephemeral-and-stateful-values].</p>
 </section>
 <section id="running-without-a-scheduler">
-<h3>Running without a scheduler<a class="headerlink" href="#running-without-a-scheduler" title="Link to this heading">#</a></h3>
+<h3>Running without a scheduler<a class="headerlink" href="#running-without-a-scheduler" title="Link to this heading">¶</a></h3>
 <p>Redun is designed to execute workflows in a highly parallel and asynchronous manner. This allows
 it to efficiently orchestrate complex workflows spread over a wide collection of resources.
 If the workflow is configured to use remote resources, this can mean that the scheduler
@@ -773,7 +836,7 @@ the proxy is not long-lived, and we don’t have any way for the caller to monit
 results.</p>
 </section>
 <section id="connections-to-functional-programming">
-<h3>Connections to functional programming<a class="headerlink" href="#connections-to-functional-programming" title="Link to this heading">#</a></h3>
+<h3>Connections to functional programming<a class="headerlink" href="#connections-to-functional-programming" title="Link to this heading">¶</a></h3>
 <p>redun’s use of task decorators and lazy-evaluation can be thought of as a <a class="reference external" href="https://en.wikipedia.org/wiki/Monad_(functional_programming)">monad</a>. The redun monad consists of three components:</p>
 <ul class="simple">
 <li><p>A type constructor <code class="docutils literal notranslate"><span class="pre">M</span></code>:</p>
@@ -820,7 +883,7 @@ results.</p>
 <p>In our use, “reifying” means wrapping the computation into an expression tree that our scheduler can analyze for deciding which tasks can be executed safely in parallel, which tasks can be skipped due to caching, etc. Generating the expression tree is what makes redun <em>declarative</em>, even though we do execute imperative code to generate the expression tree.</p>
 </section>
 <section id="redun-a-language-within">
-<h3>redun: a language within<a class="headerlink" href="#redun-a-language-within" title="Link to this heading">#</a></h3>
+<h3>redun: a language within<a class="headerlink" href="#redun-a-language-within" title="Link to this heading">¶</a></h3>
 <p>redun can be thought of as implementing an asynchronous functional programming language within Python, which is an imperative multi-paradigm language, a general pattern called <a class="reference external" href="https://en.wikipedia.org/wiki/Metaprogramming">metaprogramming</a>. This strategy for implementing a workflow engine allows us to use a very popular programming language, Python (used in data science, ML, web development, ETLs), but adapt it to have language features amenable to distributed computing. The following features map between Python and redun-the-language:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Task</span></code>s are the functions of redun.</p></li>
@@ -848,7 +911,7 @@ results.</p>
 </section>
 </section>
 <section id="influences">
-<h2>Influences<a class="headerlink" href="#influences" title="Link to this heading">#</a></h2>
+<h2>Influences<a class="headerlink" href="#influences" title="Link to this heading">¶</a></h2>
 <p>The development of redun has been inspired by many projects. Here is a brief review of our understanding of how redun’s ideas relate to similar concepts seen elsewhere.</p>
 <ul class="simple">
 <li><p>Bioinformatic workflow languages: <a class="reference external" href="https://github.com/openwdl/wdl">WDL</a>, <a class="reference external" href="https://www.commonwl.org/">CWL</a>, <a class="reference external" href="https://www.nextflow.io/">Nextflow</a>, <a class="reference external" href="https://snakemake.readthedocs.io/en/stable/">Snakemake</a>, <a class="reference external" href="https://github.com/grailbio/reflow">Reflow</a></p>
@@ -1009,8 +1072,8 @@ results.</p>
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    <script src="_static/scripts/furo.js?v=4e2eecee"></script>
     </body>
 </html>
