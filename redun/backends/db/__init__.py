@@ -23,12 +23,12 @@ from typing import (
 )
 from urllib.parse import quote_plus, urlparse, urlunparse
 
+import sqlalchemy
 import sqlalchemy as sa
 from alembic.command import downgrade, upgrade
 from alembic.config import Config as AConfig
-from sqlalchemy import Boolean
-from sqlalchemy import Column as BaseColumn
 from sqlalchemy import (
+    Boolean,
     DateTime,
     Enum,
     ForeignKey,
@@ -82,6 +82,20 @@ from redun.utils import (
 )
 from redun.value import MIME_TYPE_PICKLE, InvalidValueError
 from redun.value import TypeError as RedunTypeError
+
+# Use MappedColumn class from SQLAlchemy 2.0, if possible, to enable better
+# type checks in redun itself and downstream code.
+# We hide this behind a "feature flag" in case it introduces side-effects.
+# We use MappedColumn, not mapped_column factory function so it is still
+# a class and can be a drop-in replacement for base class of Column defined below.
+# Not using the factory function *might* prevent us from using `Mapped[...]` type
+# annotations but it's not really an issue - they're not backwards compatible
+# and if we move to SQLAlchemy 2.0+ only, we could simply use mapped_column
+# and MappedColumn wherever appropriate without any import hacks.
+if os.environ.get("REDUN_MAPPED_COLUMN", False) and sqlalchemy.__version__ >= "2.0.0":
+    from sqlalchemy.orm import MappedColumn as BaseColumn
+else:
+    from sqlalchemy import Column as BaseColumn
 
 if typing.TYPE_CHECKING:
     from redun.scheduler import Job as BaseJob
