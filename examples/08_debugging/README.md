@@ -6,6 +6,8 @@ Here I have a not-at-all contrived example of a workflow that is failing. I'm tr
 to assign some favorite numbers to my favorite pet cows. However, my cows are very picky and only like
 even, square numbers. Your job is to run the redun workflow and figure out what is going wrong!
 
+NOTE: For the purposes of this exercise, do not modify any function signatures and core logic in the functions provided. Please only modify the helper tasks if there is a bug. Otherwise, keep most of your modifications to `main` and feel free to create new tasks as needed.
+
 ```py
 from dataclasses import dataclass
 from typing import Optional
