@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from redun import task
+from redun.functools import eval_, as_task, map_
 
 redun_namespace = "redun.examples.debugging"
 
@@ -28,7 +29,7 @@ def square_number(x: int) -> int:
 
 @task()
 def main() -> list[int]:
-    numbers = [1, 3, 5]
+    numbers = [1, 2, 3, 5, 6, 10]
     squared_numbers = [square_number(x) for x in numbers]
 
     even_squared_numbers = [x for x in squared_numbers if x % 2 == 0]

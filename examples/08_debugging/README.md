@@ -51,7 +51,7 @@ def main() -> list[int]:
 
 Give this workflow a run by running the following command, and seeing if you can get it to succeed!
 ```sh 
-redun run debugging.py main
+redun run workflow.py main
 ```
 
 ## Extension: Run it on AWS Batch!
