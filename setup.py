@@ -27,7 +27,7 @@ requirements = [
     "pyyaml!=6.0.0,!=5.4.0,!=5.4.1",
     "requests>=2.27.1",
     "rich>=13.3.5",
-    "textual>=0.24.1",
+    "textual>=0.63.0",
     # If updating this list, check executors/aws_glue.py stays up to date with
     # packages needed to run in the glue environment.
 ]

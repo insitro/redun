@@ -12,7 +12,7 @@ from textual.binding import Binding
 from textual.containers import Container
 from textual.message import Message
 from textual.reactive import reactive
-from textual.widgets import DataTable, Footer, Input, Static
+from textual.widgets import ClassicFooter, DataTable, Input, Static
 
 from redun.backends.db import CallNode, Execution, Job, Tag, Task, Value
 from redun.cli import format_timedelta
@@ -36,7 +36,7 @@ class RedunHeader(Static):
         super().update("[bold]redun console[/bold] " + title)
 
 
-class RedunFooter(Footer):
+class RedunFooter(ClassicFooter):
     """
     Footer used on Screens that use pagination.
     """
