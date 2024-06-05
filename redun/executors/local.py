@@ -104,7 +104,8 @@ class LocalExecutor(Executor):
                 self._process_executor = ProcessPoolExecutor(max_workers=self.max_workers)
             else:
                 self._process_executor = ProcessPoolExecutor(
-                    max_workers=self.max_workers, mp_context=get_context(self.start_method)
+                    max_workers=self.max_workers,
+                    mp_context=get_context(self.start_method),
                 )
 
     def stop(self) -> None:

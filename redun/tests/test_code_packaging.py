@@ -159,7 +159,10 @@ def test_package_job_code_basename_and_arcname() -> None:
 def test_parse_code_package_config():
     # Parse default code_package patterns.
     config = Config({"batch": {}})
-    assert parse_code_package_config(config["batch"]) == {"excludes": [], "includes": ["**/*.py"]}
+    assert parse_code_package_config(config["batch"]) == {
+        "excludes": [],
+        "includes": ["**/*.py"],
+    }
 
     # Disable code packaging.
     config = Config({"batch": {"code_package": False}})
@@ -174,7 +177,12 @@ def test_parse_code_package_config():
 
     # Multiple patterns with special chars.
     config = Config(
-        {"batch": {"code_includes": '**/*.txt "my file.txt" *.py', "code_excludes": ".venv/**"}}
+        {
+            "batch": {
+                "code_includes": '**/*.txt "my file.txt" *.py',
+                "code_excludes": ".venv/**",
+            }
+        }
     )
     assert parse_code_package_config(config["batch"]) == {
         "includes": ["**/*.txt", "my file.txt", "*.py"],

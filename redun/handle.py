@@ -161,7 +161,11 @@ class Handle(Value):
             return handle2
 
     def __new__(
-        cls, name: Optional[str] = None, *args, namespace: Optional[str] = None, **kwargs
+        cls,
+        name: Optional[str] = None,
+        *args,
+        namespace: Optional[str] = None,
+        **kwargs,
     ) -> "Handle":
         handle = super().__new__(cls)
 

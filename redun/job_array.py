@@ -93,7 +93,6 @@ class JobArrayer:
         min_array_size: int,
         max_array_size: int = MAX_ARRAY_SIZE,
     ):
-
         self.min_array_size = min_array_size
         self.max_array_size = min(max_array_size, MAX_ARRAY_SIZE)
         if self.max_array_size < self.min_array_size:

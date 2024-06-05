@@ -159,9 +159,7 @@ def test_python_script_task(scheduler: Scheduler) -> None:
         return """
         #!/usr/bin/env python
         print('Hello, {message}!')
-        """.format(
-            message=message
-        )
+        """.format(message=message)
 
     assert scheduler.run(task1("World")) == b"Hello, World!\n"
 

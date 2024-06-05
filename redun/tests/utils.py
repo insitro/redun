@@ -22,7 +22,13 @@ from moto.core.botocore_stubber import MockRawResponse
 from urllib3._collections import HTTPHeaderDict
 
 from redun import Scheduler
-from redun.file import FileSystem, GSFileSystem, S3FileSystem, get_filesystem_class, get_proto
+from redun.file import (
+    FileSystem,
+    GSFileSystem,
+    S3FileSystem,
+    get_filesystem_class,
+    get_proto,
+)
 
 """
 Current moto (1.3.16) is not fully compatible with the latest s3fs (2021.11.1),
@@ -141,7 +147,8 @@ def patch_aws(func: Callable) -> Callable:
         ), patch(
             "botocore.endpoint.convert_to_response_dict", convert_to_response_dict_patch
         ), patch(
-            "aiobotocore.endpoint.convert_to_response_dict", async_convert_to_response_dict_patch
+            "aiobotocore.endpoint.convert_to_response_dict",
+            async_convert_to_response_dict_patch,
         ):
             return func(*args, **kwargs)
 

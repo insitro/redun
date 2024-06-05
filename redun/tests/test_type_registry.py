@@ -254,7 +254,11 @@ def test_set():
     assert registry.get_hash({3, 2, 1}) == "0141c474b340215635cbff413fd50b019f3d6244"
     assert registry.get_hash([1, 2, 3]) == "e7d06e9958da58a4162eff3ccbfc83f58b7fb71a"
 
-    assert registry.deserialize("builtins.set", registry.serialize({1, 2, 3})) == {1, 2, 3}
+    assert registry.deserialize("builtins.set", registry.serialize({1, 2, 3})) == {
+        1,
+        2,
+        3,
+    }
 
 
 def test_enum() -> None:

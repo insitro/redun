@@ -537,7 +537,10 @@ def call_hello2(func: Callable) -> str:
     assert client.execute(["redun", "run", "workflow.py", "main"]) == (10, True)
 
     # Parse argument to int.
-    assert client.execute(["redun", "run", "workflow.py", "main", "--x", "20"]) == (20, True)
+    assert client.execute(["redun", "run", "workflow.py", "main", "--x", "20"]) == (
+        20,
+        True,
+    )
 
     # Parse argument to int and bool.
     assert client.execute(
@@ -555,24 +558,60 @@ def call_hello2(func: Callable) -> str:
 
     # Parse argument as list of ints.
     assert client.execute(
-        ["redun", "run", "workflow.py", "multiply", "--numbers", "1", "2", "3", "--m", "30"]
+        [
+            "redun",
+            "run",
+            "workflow.py",
+            "multiply",
+            "--numbers",
+            "1",
+            "2",
+            "3",
+            "--m",
+            "30",
+        ]
     ) == [30, 60, 90]
 
     # Parse argument as list of bools.
     assert client.execute(
-        ["redun", "run", "workflow.py", "apply_not", "--values", "true", "False", "TRUE"]
+        [
+            "redun",
+            "run",
+            "workflow.py",
+            "apply_not",
+            "--values",
+            "true",
+            "False",
+            "TRUE",
+        ]
     ) == [False, True, False]
 
     # Parse argument as list of enums.
     assert client.execute(
-        ["redun", "run", "workflow.py", "color_to_string", "--colors", "Color.red", "blue"]
+        [
+            "redun",
+            "run",
+            "workflow.py",
+            "color_to_string",
+            "--colors",
+            "Color.red",
+            "blue",
+        ]
     ) == ["Color.red", "Color.blue"]
 
     # Confirm list args are validated against their type.
     with pytest.raises(ValueError, match="argument --colors: invalid Color value"):
         # black is not a color in the enum, should raise an error.
         assert client.execute(
-            ["redun", "run", "workflow.py", "color_to_string", "--colors", "Color.red", "black"]
+            [
+                "redun",
+                "run",
+                "workflow.py",
+                "color_to_string",
+                "--colors",
+                "Color.red",
+                "black",
+            ]
         )
 
     # Confirm optional args are not required by the CLI
@@ -593,17 +632,32 @@ def call_hello2(func: Callable) -> str:
 
     # Detect errors when parsing a function name.
     with pytest.raises(
-        ValueError, match="argument --func: invalid function value: 'bad_workflow.hello'"
+        ValueError,
+        match="argument --func: invalid function value: 'bad_workflow.hello'",
     ):
         client.execute(
-            ["redun", "run", "workflow.py", "call_hello2", "--func", "bad_workflow.hello"]
+            [
+                "redun",
+                "run",
+                "workflow.py",
+                "call_hello2",
+                "--func",
+                "bad_workflow.hello",
+            ]
         )
 
     with pytest.raises(
         ValueError, match="argument --func: invalid function value: 'workflow.bad_func'"
     ):
         client.execute(
-            ["redun", "run", "workflow.py", "call_hello2", "--func", "workflow.bad_func"]
+            [
+                "redun",
+                "run",
+                "workflow.py",
+                "call_hello2",
+                "--func",
+                "workflow.bad_func",
+            ]
         )
 
     with pytest.raises(ValueError, match="argument --func: invalid function value: 'hello'"):
@@ -676,8 +730,14 @@ def test_parse_func_path() -> None:
     """
     `parse_func_path()` should be able to parse the pattern 'file_or_module::function_name'.
     """
-    assert parse_func_path("workflow.py::setup_scheduler") == ("workflow.py", "setup_scheduler")
-    assert parse_func_path("workflow::setup_scheduler") == ("workflow", "setup_scheduler")
+    assert parse_func_path("workflow.py::setup_scheduler") == (
+        "workflow.py",
+        "setup_scheduler",
+    )
+    assert parse_func_path("workflow::setup_scheduler") == (
+        "workflow",
+        "setup_scheduler",
+    )
 
 
 @use_tempdir
@@ -970,7 +1030,10 @@ def task1(x: int):
 
 @use_tempdir
 @patch("redun.cli.get_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
-@patch("redun.cli.get_simple_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
+@patch(
+    "redun.cli.get_simple_aws_user",
+    side_effect=botocore.exceptions.NoCredentialsError(),
+)
 @patch("redun.cli.get_gcp_user", lambda: None)
 def test_run_tags(get_simple_aws_user_mock: Mock, get_aws_user_mock: Mock) -> None:
     """
@@ -1126,7 +1189,6 @@ def task1(x: int):
 @patch("redun.cli.aws_describe_jobs")
 @use_tempdir
 def test_aws_logs(aws_describe_jobs_mock1, aws_describe_jobs_mock2) -> None:
-
     timestamp = int(time.time() * 1000)
     stream_name = "redun_aws_batch_example-redun-jd/default/6c939514f4054fdfb5ee65acc8aa4b07"
     job_descriptions = [
@@ -1708,7 +1770,10 @@ def main(x: int):
 
 @use_tempdir
 @patch("redun.cli.get_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
-@patch("redun.cli.get_simple_aws_user", side_effect=botocore.exceptions.NoCredentialsError())
+@patch(
+    "redun.cli.get_simple_aws_user",
+    side_effect=botocore.exceptions.NoCredentialsError(),
+)
 @patch("redun.cli.get_gcp_user", lambda: None)
 def test_cli_log_tags(get_simple_aws_user_mock: Mock, get_aws_user_mock: Mock) -> None:
     """
@@ -2151,10 +2216,22 @@ def main() -> int:
     this_pid = os.getpid()
     client = RedunClient()
     client.execute(
-        ["redun", "launch", "--executor", executor, "redun", "run", "workflow.py", "main"]
+        [
+            "redun",
+            "launch",
+            "--executor",
+            executor,
+            "redun",
+            "run",
+            "workflow.py",
+            "main",
+        ]
     )
 
-    if (sys.version_info.major, sys.version_info.minor) == (3, 8) and executor == "proc":
+    if (sys.version_info.major, sys.version_info.minor) == (
+        3,
+        8,
+    ) and executor == "proc":
         # Process executors are not shut down in py3.8, so it may still be running.
         # This is expected but we skip the test rather than try to wait it out
         return

@@ -44,7 +44,10 @@ def test_docstrings(docstring_owner):
     # Strip leading star(s) for before comparing.
     # https://numpydoc.readthedocs.io/en/latest/format.html#parameters
     documented_param_names = {param.name.lstrip("*") for param in parsed_doc_string["Parameters"]}
-    defined_argument_names = set(signature(docstring_owner).parameters.keys()) - {"cls", "self"}
+    defined_argument_names = set(signature(docstring_owner).parameters.keys()) - {
+        "cls",
+        "self",
+    }
     if documented_param_names:
         assert defined_argument_names == documented_param_names, (
             f"In `{docstring_owner_pretty_name(docstring_owner)}`, "

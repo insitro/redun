@@ -485,7 +485,6 @@ def test_wraps_task() -> None:
         @wraps_task(wrapper_hash_includes=[offset])
         def _doubled_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
             def do_doubling(*task_args, **task_kwargs) -> Any:
-
                 return (
                     inner_task.func(*task_args, **task_kwargs)
                     + inner_task.func(*task_args, **task_kwargs)
@@ -532,7 +531,6 @@ def test_wraps_task() -> None:
         @wraps_task(wrapper_name="renamed_task")
         def _listify_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
             def make_list(*task_args, copies=1, **task_kwargs) -> Any:
-
                 return [inner_task] * copies
 
             return make_list
@@ -548,7 +546,11 @@ def test_wraps_task() -> None:
 
     float_task_inner = get_task_registry()._tasks["renamed_task.float_task"]
     assert float_task.func() == [float_task_inner]
-    assert float_task.func(copies=3) == [float_task_inner, float_task_inner, float_task_inner]
+    assert float_task.func(copies=3) == [
+        float_task_inner,
+        float_task_inner,
+        float_task_inner,
+    ]
 
     # 4. Try using a wrapper that is not defined in this module, so we can tell whether the
     # `load_module` points here, as it should. This is more likely representative of real use,
@@ -573,7 +575,10 @@ def test_wraps_task() -> None:
         return -2
 
     extra_nested_middle_task = get_task_registry()._tasks["renamed_task.extra_nested"]
-    assert extra_nested.func(copies=2) == [extra_nested_middle_task, extra_nested_middle_task]
+    assert extra_nested.func(copies=2) == [
+        extra_nested_middle_task,
+        extra_nested_middle_task,
+    ]
     assert extra_nested_middle_task.func() == -3
     assert get_task_registry()._tasks["_doubled_task.renamed_task.extra_nested"].func() == -2
 
@@ -690,6 +695,7 @@ def test_cache_options() -> None:
     # Check the enum will traverse serialization.
     type_registry = get_type_registry()
     deserialized = type_registry.deserialize(
-        "redun.Task", type_registry.serialize(task4.options(cache_scope=CacheScope.NONE))
+        "redun.Task",
+        type_registry.serialize(task4.options(cache_scope=CacheScope.NONE)),
     )
     assert deserialized.get_task_option("cache_scope") == CacheScope.NONE

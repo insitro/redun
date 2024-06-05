@@ -5,6 +5,7 @@ Revises: 647c510a77b1
 Create Date: 2021-05-19 16:55:43.724884
 
 """
+
 from typing import Iterator
 
 from alembic import context, op

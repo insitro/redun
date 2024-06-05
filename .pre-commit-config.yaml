@@ -1,25 +1,13 @@
 repos:
-  # Isort: Python import linter/formatter
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.4.8
     hooks:
-      - id: isort
-        name: isort (python)
-        types: [ python ]
-        exclude: 'experimental/|redun_server/'
-  # Black: Python code formatter
-  - repo: https://github.com/psf/black
-    rev: 22.10.0
-    hooks:
-      - id: black
-        exclude: 'experimental/|redun_server/'
-  # Flake8: Python linter
-  - repo: https://github.com/pycqa/flake8
-    rev: 5.0.4
-    hooks:
-      - id: flake8
-        exclude: 'experimental/|redun_server/'
-  # Mypy: Python type-checking
+      # Run the linter.
+      - id: ruff
+      # Run the formatter.
+      - id: ruff-format
+    # Mypy: Python type-checking
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.981
     hooks:

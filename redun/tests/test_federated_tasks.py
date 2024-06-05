@@ -32,7 +32,6 @@ def module_task(x, y=3, result_path: Optional[str] = None):
 
 @use_tempdir
 def test_federated_task() -> None:
-
     # Use a process executor
     config_dict = {
         "federated_tasks.sample_task": {

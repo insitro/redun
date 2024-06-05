@@ -5,6 +5,7 @@ Glue related imports are kept isolated, so this can be imported
 people's local machines without issue, and then they call the
 functions that will run when the context is defined.
 """
+
 import functools
 import typing
 from typing import Callable, List, Optional
@@ -18,7 +19,6 @@ if typing.TYPE_CHECKING:
 
 
 def setup_glue_job(job_name: str, job_args: List[str]) -> "GlueJob":
-
     try:
         from awsglue.context import GlueContext
         from awsglue.job import Job as GlueJob

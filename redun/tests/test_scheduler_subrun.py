@@ -405,7 +405,10 @@ workers=10
     # Verify that the sub-scheduler raises exception because it cannot open the local database.
     conf = scheduler.config.get_config_dict(replace_config_dir="/tmp_missing")
     assert conf == {
-        "backend": {"config_dir": "/tmp_missing", "db_uri": "sqlite:////tmp_missing/redun.db"},
+        "backend": {
+            "config_dir": "/tmp_missing",
+            "db_uri": "sqlite:////tmp_missing/redun.db",
+        },
         "executors.process": {
             "mode": "process",
             "start_method": "spawn",
@@ -458,7 +461,10 @@ def test_subrun_nested_list_of_tasks():
     @task
     def local_main(x):
         return subrun(
-            [foo(x), [foo(2 * x), foo(3 * x)]], "default", CONFIG_DICT, new_execution=True
+            [foo(x), [foo(2 * x), foo(3 * x)]],
+            "default",
+            CONFIG_DICT,
+            new_execution=True,
         )
 
     scheduler = Scheduler()

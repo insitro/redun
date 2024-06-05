@@ -28,7 +28,12 @@ from redun.backends.db.query import (
 )
 from redun.cli import format_timedelta
 from redun.console.parser import format_args, parse_args
-from redun.console.utils import format_record, format_tags, format_traceback, style_status
+from redun.console.utils import (
+    format_record,
+    format_tags,
+    format_traceback,
+    style_status,
+)
 from redun.console.widgets import (
     CommandInput,
     ExecutionList,
@@ -177,7 +182,6 @@ class HelpScreen(Screen):
         self.help = parent_screen.parser.format_help()
 
     def compose(self) -> ComposeResult:
-
         yield Container(
             Label("Help:"),
             Static(self.help, classes="help-text"),
@@ -516,7 +520,8 @@ class ValueScreen(RedunScreen):
     def action_repl(self) -> None:
         screen = self.app.get_screen("ReplScreen")
         screen.update(
-            {"value": self.value.value_parsed or self.value.preview}, obj_id=self.value_hash
+            {"value": self.value.value_parsed or self.value.preview},
+            obj_id=self.value_hash,
         )
         self.app.push_screen(screen)
 
@@ -891,7 +896,8 @@ class TaskScreen(RedunScreen):
             self.versions: int = (
                 self.app.session.query(Task)
                 .filter(
-                    Task.namespace == self.redun_task.namespace, Task.name == self.redun_task.name
+                    Task.namespace == self.redun_task.namespace,
+                    Task.name == self.redun_task.name,
                 )
                 .count()
             )
@@ -1562,7 +1568,11 @@ class ExecutionsNamespaceScreen(RedunScreen):
         Callback for when namespace is selected.
         """
         self.app.route(
-            ["executions", "--namespace", self.namespaces[self.table.cursor_coordinate.row]]
+            [
+                "executions",
+                "--namespace",
+                self.namespaces[self.table.cursor_coordinate.row],
+            ]
         )
 
     def action_sort(self, column: str) -> None:

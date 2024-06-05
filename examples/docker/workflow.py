@@ -35,7 +35,12 @@ def task_on_docker(x: int) -> list:
     # One other thing to point out in this example, we are free to call other tasks that
     # don't run in docker, such as `task_on_default`.
 
-    return ["task_on_docker", subprocess.check_output(["uname", "-a"]), task_on_default(x + 5), x]
+    return [
+        "task_on_docker",
+        subprocess.check_output(["uname", "-a"]),
+        task_on_default(x + 5),
+        x,
+    ]
 
 
 @task()

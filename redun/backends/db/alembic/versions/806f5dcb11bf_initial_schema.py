@@ -5,6 +5,7 @@ Revises:
 Create Date: 2020-05-01 10:10:30.843894
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -100,7 +101,10 @@ def upgrade():
         sa.PrimaryKeyConstraint("value_hash", "parent_value_hash"),
     )
     op.create_index(
-        op.f("ix_subvalue_parent_value_hash"), "subvalue", ["parent_value_hash"], unique=False
+        op.f("ix_subvalue_parent_value_hash"),
+        "subvalue",
+        ["parent_value_hash"],
+        unique=False,
     )
     op.create_index(op.f("ix_subvalue_value_hash"), "subvalue", ["value_hash"], unique=False)
     op.create_table(
@@ -154,10 +158,16 @@ def upgrade():
         sa.PrimaryKeyConstraint("call_hash", "task_hash"),
     )
     op.create_index(
-        op.f("ix_call_subtree_task_call_hash"), "call_subtree_task", ["call_hash"], unique=False
+        op.f("ix_call_subtree_task_call_hash"),
+        "call_subtree_task",
+        ["call_hash"],
+        unique=False,
     )
     op.create_index(
-        op.f("ix_call_subtree_task_task_hash"), "call_subtree_task", ["task_hash"], unique=False
+        op.f("ix_call_subtree_task_task_hash"),
+        "call_subtree_task",
+        ["task_hash"],
+        unique=False,
     )
     op.create_table(
         "handle_edge",
@@ -216,7 +226,10 @@ def upgrade():
         sa.PrimaryKeyConstraint("arg_hash", "result_call_hash"),
     )
     op.create_index(
-        op.f("ix_argument_result_arg_hash"), "argument_result", ["arg_hash"], unique=False
+        op.f("ix_argument_result_arg_hash"),
+        "argument_result",
+        ["arg_hash"],
+        unique=False,
     )
     op.create_index(
         op.f("ix_argument_result_result_call_hash"),

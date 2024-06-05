@@ -173,7 +173,11 @@ def find_midpoint(n: int):
 
 @task()
 def merge_regions(
-    out_path: str, sample1_id: int, regions1_file: File, sample2_id: int, regions2_file: File
+    out_path: str,
+    sample1_id: int,
+    regions1_file: File,
+    sample2_id: int,
+    regions2_file: File,
 ) -> File:
     """
     Merge two sorted region files into one.
@@ -233,7 +237,11 @@ def merge_all_regions(out_path: str, id_regions: List[Tuple[int, File]]) -> Tupl
 
 @task()
 def merge_mutations(
-    out_path: str, sample1_id: int, mutations1_file: File, sample2_id: int, mutations2_file: File
+    out_path: str,
+    sample1_id: int,
+    mutations1_file: File,
+    sample2_id: int,
+    mutations2_file: File,
 ) -> File:
     """
     Merge two sorted mutation files.
@@ -275,7 +283,11 @@ def merge_all_mutations(
 
 @task()
 def join_mutations_regions(
-    out_path: str, sample1_id: int, sample2_id: int, mutations_file: File, regions_file: File
+    out_path: str,
+    sample1_id: int,
+    sample2_id: int,
+    mutations_file: File,
+    regions_file: File,
 ) -> File:
     """
     Join mutations and regions together to compute an allele frequence.

@@ -307,7 +307,10 @@ def launch_federated_task(
     ]
 
     launch_script(
-        config, executor=executor, script_command=script_command, execution_id=execution.id
+        config,
+        executor=executor,
+        script_command=script_command,
+        execution_id=execution.id,
     )
 
     return execution.id

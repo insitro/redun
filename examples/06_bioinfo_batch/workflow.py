@@ -509,7 +509,9 @@ def align_sample(
         sites_files=sites_files,
     )
     align_metrics = collect_align_metrics(
-        align3["bam"], os.path.join(output_path, sample_id), genome_ref_file=genome_ref_file
+        align3["bam"],
+        os.path.join(output_path, sample_id),
+        genome_ref_file=genome_ref_file,
     )
     depth_metrics = collect_depth_metrics(align3["bam"], os.path.join(output_path, sample_id))
 

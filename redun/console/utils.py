@@ -67,7 +67,10 @@ def get_links(link_patterns: List[str], tags: List[Tag]) -> List[str]:
     """
     tags_dict: Dict[str, Any] = {tag.key: tag.value for tag in tags}
     return list(
-        filter(None, [format_link(link_pattern, tags_dict) for link_pattern in link_patterns])
+        filter(
+            None,
+            [format_link(link_pattern, tags_dict) for link_pattern in link_patterns],
+        )
     )
 
 
@@ -98,7 +101,8 @@ def format_arguments(args: List[Argument]) -> str:
         'prog', 10, extra_file=File(path=prog.c, hash=763bc10f)
     """
     pos_args = sorted(
-        [arg for arg in args if arg.arg_position is not None], key=lambda arg: arg.arg_position
+        [arg for arg in args if arg.arg_position is not None],
+        key=lambda arg: arg.arg_position,
     )
     kw_args = sorted([arg for arg in args if arg.arg_key is not None], key=lambda arg: arg.arg_key)
 

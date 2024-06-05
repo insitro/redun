@@ -40,7 +40,10 @@ def test_default_credentials(mock_env_default_credentials) -> None:
 
 
 def test_custom_credentials(mock_env_custom_credentials) -> None:
-    conf = {"db_username_env": "CUSTOM_DB_USERNAME", "db_password_env": "CUSTOM_DB_PASSWORD"}
+    conf = {
+        "db_username_env": "CUSTOM_DB_USERNAME",
+        "db_password_env": "CUSTOM_DB_PASSWORD",
+    }
     _check_provided_credentials(conf)
 
 

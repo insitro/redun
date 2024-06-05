@@ -40,7 +40,8 @@ class Executor:
         `reject_job`."""
         assert self._scheduler
         self._scheduler.reject_job(
-            job, ExecutorError("Executor {} does not support submitting tasks.".format(type(self)))
+            job,
+            ExecutorError("Executor {} does not support submitting tasks.".format(type(self))),
         )
 
     def submit_script(self, job: "Job") -> None:

@@ -244,8 +244,7 @@ class CallNodeSerializer(Serializer):
 
     def serialize(self, call_node: "db.Base") -> dict:
         args = {
-            arg.arg_key
-            or str(arg.arg_position): {
+            arg.arg_key or str(arg.arg_position): {
                 "arg_hash": arg.arg_hash,
                 "value_hash": arg.value_hash,
                 "upstream": sorted(arg_result.result_call_hash for arg_result in arg.arg_results),

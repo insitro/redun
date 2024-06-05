@@ -5,6 +5,7 @@ Revises: 647c510a77b1
 Create Date: 2020-08-16 19:39:28.772684
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -27,7 +28,15 @@ def upgrade():
         sa.Column("tag_hash", sa.String(length=40), nullable=False),
         sa.Column(
             "entity_type",
-            sa.Enum("Execution", "Job", "CallNode", "Task", "Value", "Null", name="tagentitytype"),
+            sa.Enum(
+                "Execution",
+                "Job",
+                "CallNode",
+                "Task",
+                "Value",
+                "Null",
+                name="tagentitytype",
+            ),
             nullable=False,
         ),
         sa.Column("entity_id", sa.String(), nullable=False),

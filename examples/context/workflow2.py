@@ -9,7 +9,6 @@ redun_namespace = "redun.examples.context2"
 
 @task
 def main(size: int = 10, flag: Optional[bool] = None) -> dict:
-
     if flag is not None:
         context = {"my_tool": {"flag": flag, "extra_arg": 1}}
     else:

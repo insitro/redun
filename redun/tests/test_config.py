@@ -173,7 +173,8 @@ redun/tests/test_data/federated_configs/federated_import_valid2"""
     config = Config(federated_imports_dict)
 
     with pytest.raises(
-        AssertionError, match="Imported federated_task name `entrypoint_name` is a duplicate"
+        AssertionError,
+        match="Imported federated_task name `entrypoint_name` is a duplicate",
     ):
         postprocess_config(config, "/tmp/config_dir")
 
@@ -201,7 +202,8 @@ redun/tests/test_data/federated_configs/federated_import_duplicate_task"""
     }
     config = Config(federated_imports_dict)
     with pytest.raises(
-        AssertionError, match="Imported federated_task name `entrypoint_name` is a duplicate"
+        AssertionError,
+        match="Imported federated_task name `entrypoint_name` is a duplicate",
     ):
         postprocess_config(config, "/tmp/config_dir")
 

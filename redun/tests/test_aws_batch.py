@@ -410,7 +410,10 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
     describe_job_definitions.return_value = {"jobDefinitions": [job_def]}
     register_job_definition.reset_mock()
     _get_or_create_job_definition(
-        job_def_name="test-jd", image="an-image:latest", role="aRole", job_def_extra=ulimit_option
+        job_def_name="test-jd",
+        image="an-image:latest",
+        role="aRole",
+        job_def_extra=ulimit_option,
     )
     register_job_definition.assert_called_with(
         jobDefinitionName="test-jd",
@@ -467,7 +470,10 @@ def test_job_submit_resources(get_or_create_job_definition_mock, get_aws_client_
 
     # 1. Single node
     batch_submit(
-        batch_job_args={"containerOverrides": {"command": ["test_command"]}, "user": "user-test"},
+        batch_job_args={
+            "containerOverrides": {"command": ["test_command"]},
+            "user": "user-test",
+        },
         job_name="test",
         queue="test_queue",
         image="test_image",
@@ -1225,7 +1231,10 @@ def mock_executor(
 @patch("redun.executors.aws_batch.iter_batch_job_status")
 @patch("redun.executors.aws_batch.batch_submit")
 def test_executor(
-    batch_submit_mock, iter_batch_job_status_mock, parse_job_logs_mock, get_aws_user_mock
+    batch_submit_mock,
+    iter_batch_job_status_mock,
+    parse_job_logs_mock,
+    get_aws_user_mock,
 ) -> None:
     """
     Ensure that we can submit job to AWSBatchExecutor.
@@ -1347,7 +1356,11 @@ def test_executor(
                     "status": SUCCEEDED,
                     "container": {"logStreamName": "log1"},
                 },
-                {"jobId": batch_job2_id, "status": FAILED, "container": {"logStreamName": "log2"}},
+                {
+                    "jobId": batch_job2_id,
+                    "status": FAILED,
+                    "container": {"logStreamName": "log2"},
+                },
             ]
         )
 
@@ -1372,7 +1385,10 @@ def test_executor(
 @patch("redun.executors.aws_batch.iter_batch_job_status")
 @patch("redun.executors.aws_batch.batch_submit")
 def test_executor_multinode(
-    batch_submit_mock, iter_batch_job_status_mock, parse_job_logs_mock, get_aws_user_mock
+    batch_submit_mock,
+    iter_batch_job_status_mock,
+    parse_job_logs_mock,
+    get_aws_user_mock,
 ) -> None:
     """
     Ensure that we can submit job to AWSBatchExecutor.
@@ -1432,7 +1448,10 @@ def test_executor_multinode(
             "share_id": None,
             "scheduling_priority_override": None,
         }
-        job.job_tags == [("aws_batch_job", "batch-job-id#0"), ("aws_log_stream", "log1")]
+        job.job_tags == [
+            ("aws_batch_job", "batch-job-id#0"),
+            ("aws_log_stream", "log1"),
+        ]
     finally:
         # Ensure executor threads stop before continuing.
         executor.stop()
@@ -1853,7 +1872,10 @@ def test_executor_inflight_array_job() -> None:
 
     # Check query for child job happened.
     assert executor.get_array_child_jobs.call_args
-    assert executor.get_array_child_jobs.call_args[0] == ("carrots", BATCH_JOB_STATUSES.inflight)
+    assert executor.get_array_child_jobs.call_args[0] == (
+        "carrots",
+        BATCH_JOB_STATUSES.inflight,
+    )
 
     # Make sure child jobs (and not parent) ended up in pending batch jobs.
     assert executor.preexisting_batch_jobs == {

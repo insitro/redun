@@ -93,7 +93,6 @@ def get_or_create_repo(repo_name: str) -> dict:
 
 
 def ecr_push(repo_name: str, registry: Optional[str] = None) -> None:
-
     # Get default registry based on login.
     if registry is None:
         registry = get_default_registry()
@@ -335,7 +334,9 @@ def make_job_def_name(image_name: str, job_def_suffix: str = "-jd") -> str:
 
 
 def create_job_override_command(
-    command: List[str], command_worker: Optional[List[str]] = None, num_nodes: Optional[int] = None
+    command: List[str],
+    command_worker: Optional[List[str]] = None,
+    num_nodes: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Format the command into the form needed for the AWS Batch `submit_job` API.
 
@@ -350,7 +351,6 @@ def create_job_override_command(
         # Single-node jobs override the container.
         batch_job_args["containerOverrides"] = {"command": command}
     else:
-
         # Make a shallow copy so we can suppress output on these nodes
         node_overrides = [
             {"targetNodes": "0", "containerOverrides": {"command": command}},
@@ -570,7 +570,9 @@ def submit_task(
 
     # Submit to AWS Batch.
     job_name = get_batch_job_name(
-        job_options.get("job_name_prefix", "batch-job"), job_hash, array=bool(array_size)
+        job_options.get("job_name_prefix", "batch-job"),
+        job_hash,
+        array=bool(array_size),
     )
 
     job_batch_options = get_batch_job_options(job_options)
@@ -670,7 +672,9 @@ def parse_job_logs(
 
 
 def aws_describe_jobs(
-    job_ids: List[str], chunk_size: int = 100, aws_region: str = aws_utils.DEFAULT_AWS_REGION
+    job_ids: List[str],
+    chunk_size: int = 100,
+    aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> Iterator[dict]:
     """
     Returns AWS Batch Job descriptions from the AWS API.
@@ -686,7 +690,9 @@ def aws_describe_jobs(
 
 
 def iter_batch_job_status(
-    job_ids: List[str], pending_truncate: int = 10, aws_region: str = aws_utils.DEFAULT_AWS_REGION
+    job_ids: List[str],
+    pending_truncate: int = 10,
+    aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> Iterator[dict]:
     """
     Yields AWS Batch jobs statuses.
@@ -912,7 +918,6 @@ class AWSBatchExecutor(Executor):
         self._docker_executor.set_scheduler(scheduler)
 
     def gather_inflight_jobs(self) -> None:
-
         running_arrays: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
 
         # Get all running jobs by name
@@ -937,7 +942,6 @@ class AWSBatchExecutor(Executor):
 
         # Match up running array jobs with consistent redun job naming scheme.
         for array_name, child_job_indices in running_arrays.items():
-
             # Get path to array file directory on S3 from array job name.
             parent_hash = get_hash_from_job_name(array_name)
             if not parent_hash:

@@ -70,7 +70,13 @@ from redun.task import (
     scheduler_task,
     task,
 )
-from redun.utils import format_table, iter_nested_value, map_nested_value, merge_dicts, trim_string
+from redun.utils import (
+    format_table,
+    iter_nested_value,
+    map_nested_value,
+    merge_dicts,
+    trim_string,
+)
 from redun.value import Value, get_type_registry
 
 # Globals.
@@ -553,7 +559,9 @@ class JobEnv(Job):
         return self._env_context
 
 
-def get_backend_from_config(backend_config: Optional[SectionProxy] = None) -> RedunBackend:
+def get_backend_from_config(
+    backend_config: Optional[SectionProxy] = None,
+) -> RedunBackend:
     """
     Parses a redun :class:`redun.backends.base.RedunBackend` from a config object.
     """
@@ -797,7 +805,11 @@ class ErrorValue(Value):
     def get_hash(self, data: Optional[bytes] = None) -> str:
         registry = get_type_registry()
         return hash_struct(
-            ["redun.ErrorValue", registry.get_hash(self.error), registry.get_hash(self.traceback)]
+            [
+                "redun.ErrorValue",
+                registry.get_hash(self.error),
+                registry.get_hash(self.traceback),
+            ]
         )
 
     def __getstate__(self) -> dict:
@@ -920,9 +932,9 @@ class Scheduler:
         # Tracking for expression cycles. We store pending expressions by their parent_job
         # because the parent_job's lifetime corresponds to the expression's lifetime.
         # This makes for straightforward deallocation.
-        self._pending_expr: Dict[
-            Optional[Job], Dict[str, Tuple[Promise, Expression]]
-        ] = defaultdict(dict)
+        self._pending_expr: Dict[Optional[Job], Dict[str, Tuple[Promise, Expression]]] = (
+            defaultdict(dict)
+        )
 
         # Tracking for Common Subexpression Elimination (CSE) for pending Jobs.
         self._pending_jobs: Dict[Tuple[Optional[str], Optional[str]], Job] = {}
@@ -971,7 +983,11 @@ class Scheduler:
         self.backend.load(migrate=migrate)
 
     def log(
-        self, *messages: Any, indent: int = 0, multiline: bool = False, level: int = logging.INFO
+        self,
+        *messages: Any,
+        indent: int = 0,
+        multiline: bool = False,
+        level: int = logging.INFO,
     ) -> None:
         text = " ".join(map(str, messages))
         if not multiline:
@@ -1096,7 +1112,6 @@ class Scheduler:
             expr = root_task(quote(expr))
 
         # Initialize execution.
-        parent_job: Optional[Job]
         if exec_argv is None:
             exec_argv = ["scheduler.run", trim_string(repr(expr))]
         self._current_execution = Execution(
@@ -1104,7 +1119,9 @@ class Scheduler:
         )
         self.backend.record_execution(self._current_execution.id, exec_argv)
         self.backend.record_tags(
-            TagEntity.Execution, self._current_execution.id, chain(self._exec_tags, tags)
+            TagEntity.Execution,
+            self._current_execution.id,
+            chain(self._exec_tags, tags),
         )
 
         self.log(
@@ -1175,7 +1192,10 @@ class Scheduler:
         parent_job.eval_args = ((quote(None),), {})
 
         result: Promise[Result] = self._run(
-            cast(TaskExpression[Result], expr), parent_job=parent_job, dryrun=dryrun, cache=cache
+            cast(TaskExpression[Result], expr),
+            parent_job=parent_job,
+            dryrun=dryrun,
+            cache=cache,
         )
 
         # There will always be one new job id for this subexecution.
@@ -1376,7 +1396,8 @@ class Scheduler:
                     # context from job.
                     options_job = JobEnv(parent_job, job.get_context())
                     return self.evaluate(
-                        get_arg_defaults(job.task, expr.args, expr.kwargs), parent_job=options_job
+                        get_arg_defaults(job.task, expr.args, expr.kwargs),
+                        parent_job=options_job,
                     )
 
                 # Evaluate task_options, default_kwargs, and then expression args.
@@ -1410,7 +1431,8 @@ class Scheduler:
                 args_promise = self.evaluate((expr.args, expr.kwargs), parent_job=parent_job)
                 promise = args_promise.then(
                     lambda eval_args: self.evaluate(
-                        cast(Callable, func)(*eval_args[0], **eval_args[1]), parent_job=parent_job
+                        cast(Callable, func)(*eval_args[0], **eval_args[1]),
+                        parent_job=parent_job,
                     )
                 )
 
@@ -2178,7 +2200,10 @@ class Scheduler:
 
 @scheduler_task(namespace="redun")
 def merge_handles(
-    scheduler: Scheduler, parent_job: Job, sexpr: SchedulerExpression, handles_expr: List[Handle]
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    handles_expr: List[Handle],
 ) -> Promise:
     """
     Merge multiple handles into one.
@@ -2264,7 +2289,11 @@ def throw(error: Exception) -> None:
 
 @scheduler_task(namespace="redun")
 def catch(
-    scheduler: Scheduler, parent_job: Job, sexpr: SchedulerExpression, expr: Any, *catch_args: Any
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    expr: Any,
+    *catch_args: Any,
 ) -> Promise:
     """
     Catch exceptions `error` of class `error_class` from `expr` and evaluate `recover(error)`.

@@ -6,7 +6,18 @@ import threading
 import time
 import uuid
 from collections import OrderedDict, defaultdict
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import kubernetes
 from kubernetes.client import CoreV1Api, V1Job, V1Pod
@@ -281,7 +292,9 @@ def k8s_describe_jobs(
 
 
 def get_pod_logs(
-    k8s_client: k8s_utils.K8SClient, pod: kubernetes.client.V1Pod, max_lines: Optional[int] = None
+    k8s_client: k8s_utils.K8SClient,
+    pod: kubernetes.client.V1Pod,
+    max_lines: Optional[int] = None,
 ) -> List[str]:
     """
     Returns the logs of a K8S pod.

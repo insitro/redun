@@ -12,7 +12,11 @@ from moto.glue.responses import GlueResponse
 
 from redun import File, task
 from redun.config import Config
-from redun.executors.aws_glue import AWSGlueExecutor, get_redun_lib_files, package_redun_lib
+from redun.executors.aws_glue import (
+    AWSGlueExecutor,
+    get_redun_lib_files,
+    package_redun_lib,
+)
 from redun.executors.aws_utils import get_aws_client
 from redun.executors.code_packaging import create_zip
 from redun.scheduler import Job
@@ -257,10 +261,20 @@ def test_executor_inflight_glue_job(submit_job_mock, describe_jobs_mock) -> None
 
     # Set up mocks to indicate a job is inflight.
     executor.get_jobs.return_value = [
-        {"Id": "carrots", "Arguments": {"--job-hash": "hashbrowns"}, "JobRunState": "RUNNING"}
+        {
+            "Id": "carrots",
+            "Arguments": {"--job-hash": "hashbrowns"},
+            "JobRunState": "RUNNING",
+        }
     ]
     describe_jobs_mock.return_value = iter(
-        [{"Id": "carrots", "Arguments": {"--job-hash": "hashbrowns"}, "JobRunState": "RUNNING"}]
+        [
+            {
+                "Id": "carrots",
+                "Arguments": {"--job-hash": "hashbrowns"},
+                "JobRunState": "RUNNING",
+            }
+        ]
     )
 
     # Force scheduler to gather inflight jobs.
@@ -306,7 +320,8 @@ def test_job_def_creation() -> None:
     assert retval["Job"]["Name"] == executor.glue_job_name
     assert retval["Job"]["Role"] == executor.role
     assert re.match(
-        "s3://example-bucket/redun/glue/oneshot-.*.py", retval["Job"]["Command"]["ScriptLocation"]
+        "s3://example-bucket/redun/glue/oneshot-.*.py",
+        retval["Job"]["Command"]["ScriptLocation"],
     )
 
     # Glue oneshot should now exist on S3.
@@ -360,10 +375,20 @@ def test_glue_submission_retry(describe_jobs_mock) -> None:
 
     # Update mocks to indicate a job is done.
     executor.get_jobs.return_value = [
-        {"Id": "potato", "Arguments": {"--job-hash": "hashbrowns"}, "JobRunState": "SUCCEEDED"}
+        {
+            "Id": "potato",
+            "Arguments": {"--job-hash": "hashbrowns"},
+            "JobRunState": "SUCCEEDED",
+        }
     ]
     describe_jobs_mock.return_value = iter(
-        [{"Id": "potato", "Arguments": {"--job-hash": "hashbrowns"}, "JobRunState": "SUCCEEDED"}]
+        [
+            {
+                "Id": "potato",
+                "Arguments": {"--job-hash": "hashbrowns"},
+                "JobRunState": "SUCCEEDED",
+            }
+        ]
     )
 
     scheduler.batch_wait([rjob.id])

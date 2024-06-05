@@ -9,7 +9,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
 
 from redun import Handle, Scheduler, catch, cond, task
-from redun.backends.db import JSON, REDUN_DB_VERSIONS, CallNode, DBVersionInfo, Execution
+from redun.backends.db import (
+    JSON,
+    REDUN_DB_VERSIONS,
+    CallNode,
+    DBVersionInfo,
+    Execution,
+)
 from redun.backends.db import Handle as DbHandle
 from redun.backends.db import (
     HandleEdge,
@@ -306,7 +312,8 @@ def test_task_args(scheduler: Scheduler, session: Session) -> None:
 
     last_exec = session.query(Execution).one()
     [arg1, arg2, arg3, arg4] = sorted(
-        last_exec.call_node.arguments, key=lambda arg: arg.arg_key or str(arg.arg_position)
+        last_exec.call_node.arguments,
+        key=lambda arg: arg.arg_key or str(arg.arg_position),
     )
 
     # Positional arguments.
@@ -811,7 +818,11 @@ def test_seq_dataflow(scheduler: Scheduler, session: Session) -> None:
     assert scheduler.run(main()) == [2, 3, 4]
 
     exec1 = session.query(Execution).one()
-    assert [job.call_node.value.value_parsed for job in exec1.job.child_jobs] == [2, 3, 4]
+    assert [job.call_node.value.value_parsed for job in exec1.job.child_jobs] == [
+        2,
+        3,
+        4,
+    ]
 
 
 def test_cond_dataflow(scheduler: Scheduler, session: Session) -> None:
@@ -1049,7 +1060,13 @@ def test_json_field(scheduler: Scheduler, session: Session) -> None:
 
     # Add and filter an int value.
     session.add(
-        Tag(tag_hash="222", entity_type=TagEntity.Value, entity_id="2", key="params", value=10)
+        Tag(
+            tag_hash="222",
+            entity_type=TagEntity.Value,
+            entity_id="2",
+            key="params",
+            value=10,
+        )
     )
     session.commit()
 

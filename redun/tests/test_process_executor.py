@@ -128,7 +128,11 @@ def process_task(x: int):
 
 @task()
 def thread_task(x: int) -> dict:
-    return {"thread_count": threading.active_count(), "process": process_task(x), "data": x}
+    return {
+        "thread_count": threading.active_count(),
+        "process": process_task(x),
+        "data": x,
+    }
 
 
 @task()

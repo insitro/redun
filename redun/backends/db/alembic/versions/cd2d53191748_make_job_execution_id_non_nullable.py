@@ -5,6 +5,7 @@ Revises: d4af139b6f53
 Create Date: 2021-08-01 07:18:29.549984
 
 """
+
 import uuid
 from typing import Any
 
@@ -38,7 +39,6 @@ class Execution(Base):
 
 
 def upgrade():
-
     # Create stub executions for root jobs (parent_id is null) that have no execution.
     session = Session(bind=op.get_bind())
     try:

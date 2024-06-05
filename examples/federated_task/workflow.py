@@ -1,7 +1,11 @@
 from typing import Any, List
 
 from redun import Scheduler, task
-from redun.federated_tasks import federated_task, launch_federated_task, rest_federated_task
+from redun.federated_tasks import (
+    federated_task,
+    launch_federated_task,
+    rest_federated_task,
+)
 from redun.scheduler import Execution
 
 redun_namespace = "redun.examples.federated_task"

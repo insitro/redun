@@ -37,8 +37,7 @@ lint: venv
 
 .PHONY: format
 format: venv
-	$(WITH_VENV) pre-commit run isort --all-files
-	$(WITH_VENV) pre-commit run black --all-files
+	$(WITH_VENV) pre-commit run ruff-format --all-files
 
 # Migrate example database to latest version.
 .PHONY: upgrade

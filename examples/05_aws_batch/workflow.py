@@ -39,7 +39,12 @@ def task_on_batch(x: int) -> list:
     # return value from the batch task, and the local scheduler will do a follow up evaluation
     # to run `task_on_default` locally.
 
-    return ["task_on_batch", subprocess.check_output(["uname", "-a"]), task_on_default(x + 5), x]
+    return [
+        "task_on_batch",
+        subprocess.check_output(["uname", "-a"]),
+        task_on_default(x + 5),
+        x,
+    ]
 
 
 @task(executor="batch_debug")

@@ -14,7 +14,12 @@ def task_on_default(x: int):
 
 @task(executor="batch", version="12")
 def task_on_batch(x: int):
-    return ["task_on_batch", subprocess.check_output(["uname", "-a"]), task_on_default(x + 5), x]
+    return [
+        "task_on_batch",
+        subprocess.check_output(["uname", "-a"]),
+        task_on_default(x + 5),
+        x,
+    ]
 
 
 @task(executor="batch_debug", interactive=True)

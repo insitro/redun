@@ -5,7 +5,16 @@ from collections import defaultdict, namedtuple
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, DefaultDict, Dict, Generator, Generic, NamedTuple, Optional, TypeVar
+from typing import (
+    Any,
+    DefaultDict,
+    Dict,
+    Generator,
+    Generic,
+    NamedTuple,
+    Optional,
+    TypeVar,
+)
 
 import pytest
 
@@ -109,7 +118,9 @@ def test_map_nested_value() -> None:
         my_namedtuple(a="1a"),
         "defaultdict(<class 'int'>, {'a': 0})a",
         CustomData1(
-            x="1.0a", y={"fooa": "bara"}, z=CustomData2(x="42a", y={}, z="Nonea")  # type: ignore
+            x="1.0a",  # type: ignore[arg-type]
+            y={"fooa": "bara"},
+            z=CustomData2(x="42a", y={}, z="Nonea"),  # type: ignore[arg-type]
         ),
     ]
 

@@ -67,7 +67,10 @@ def force(x: Task[Callable[[], T]]) -> T:
 
 @scheduler_task(namespace="redun")
 def seq(
-    scheduler: Scheduler, parent_job: Job, sexpr: SchedulerExpression, exprs: Sequence[Any]
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    exprs: Sequence[Any],
 ) -> Promise:
     """
     Evaluate the expressions serially.
@@ -204,7 +207,8 @@ def map_(
 
 
 def starmap(
-    a_task: Task[Callable[..., T]], kwargs: Union[List[Dict], Expression[List[Dict]]] = []
+    a_task: Task[Callable[..., T]],
+    kwargs: Union[List[Dict], Expression[List[Dict]]] = [],
 ) -> List[T]:
     """
     Map a task to a list of keyword arguments.

@@ -101,7 +101,8 @@ def process_page(file: File, url: str, url_prefix: str, out_path: str, depth: in
     # Recursively crawl if desired.
     if depth > 1:
         subfiles = flat_map(
-            crawl.partial(url_prefix=url_prefix, out_path=out_path, depth=depth - 1), links
+            crawl.partial(url_prefix=url_prefix, out_path=out_path, depth=depth - 1),
+            links,
         )
         # We use flatten to concatenate our main file with the subfiles list.
         return flatten([[file], subfiles])
@@ -192,7 +193,9 @@ def main(
 
     word_counts = count_words(files)
     word_counts_file = write_csv(
-        os.path.join(out_path, "computed/word_counts.txt"), ["word", "count"], word_counts
+        os.path.join(out_path, "computed/word_counts.txt"),
+        ["word", "count"],
+        word_counts,
     )
 
     report_file = make_report(

@@ -16,6 +16,7 @@ redun run map_reduce.py main
 redun run map_reduce.py main
 
 """
+
 from typing import List
 
 from redun import File, functools, task
@@ -82,7 +83,6 @@ def use_c(c_val: str) -> str:
 
 @task(check_valid="shallow")
 def map_reduce_no_caching(a_values: List[str]) -> str:
-
     # Maps the values of A to a list of file promises that will be evaluated later
     b_val_file_promises = [map_a_to_b(a) for a in a_values]
     # Promises to reduce the values from the files to generate a string c

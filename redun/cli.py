@@ -62,7 +62,11 @@ from redun.backends.db import (
     Value,
     parse_db_version,
 )
-from redun.backends.db.dataflow import display_dataflow, make_dataflow_dom, walk_dataflow
+from redun.backends.db.dataflow import (
+    display_dataflow,
+    make_dataflow_dom,
+    walk_dataflow,
+)
 from redun.backends.db.query import (
     CallGraphQuery,
     infer_id,
@@ -121,7 +125,13 @@ from redun.tags import (
     parse_tag_key_value,
 )
 from redun.task import Task as BaseTask
-from redun.utils import add_import_path, format_table, merge_dicts, pickle_dump, trim_string
+from redun.utils import (
+    add_import_path,
+    format_table,
+    merge_dicts,
+    pickle_dump,
+    trim_string,
+)
 from redun.value import NoneType, function_type, get_type_registry
 
 # pygraphviz may not be installed. If not, disable
@@ -191,7 +201,8 @@ def format_arguments(args: List[Argument]) -> str:
         'prog', 10, extra_file=File(path=prog.c, hash=763bc10f)
     """
     pos_args = sorted(
-        [arg for arg in args if arg.arg_position is not None], key=lambda arg: arg.arg_position
+        [arg for arg in args if arg.arg_position is not None],
+        key=lambda arg: arg.arg_position,
     )
     kw_args = sorted([arg for arg in args if arg.arg_key is not None], key=lambda arg: arg.arg_key)
 
@@ -837,7 +848,10 @@ def get_default_execution_tags(
         try:
             tags.append(("user_aws_arn", get_aws_user(aws_region)))
             tags.append(("user_aws", get_simple_aws_user(aws_region)))
-        except (botocore.exceptions.NoCredentialsError, botocore.exceptions.ClientError):
+        except (
+            botocore.exceptions.NoCredentialsError,
+            botocore.exceptions.ClientError,
+        ):
             pass
 
     # GCP user tags.
@@ -944,7 +958,11 @@ class RedunClient:
             self.pager.wait()
 
     def display(
-        self, *messages: Any, pretty: bool = False, indent: int = 0, newline: bool = True
+        self,
+        *messages: Any,
+        pretty: bool = False,
+        indent: int = 0,
+        newline: bool = True,
     ) -> None:
         """
         Write text to standard output.
@@ -1025,7 +1043,10 @@ class RedunClient:
             "--rerun", action="store_true", help="Rerun task by job or execution id."
         )
         run_parser.add_argument(
-            "-o", "--option", action="append", help="Override task option (format: key=value)."
+            "-o",
+            "--option",
+            action="append",
+            help="Override task option (format: key=value).",
         )
         run_parser.add_argument(
             "-t", "--tag", action="append", help="Execution tag (format: key=value)."
@@ -1134,7 +1155,8 @@ class RedunClient:
                 "--format", help="Output format. [Universal]", choices=["dot", "png"]
             )
             viz_parser.add_argument(
-                "--output", help="Absolute filepath to save image or dot text into. [Universal]"
+                "--output",
+                help="Absolute filepath to save image or dot text into. [Universal]",
             )
             viz_parser.add_argument(
                 "--horizontal",
@@ -1147,7 +1169,9 @@ class RedunClient:
                 help="Prevent truncation of value nodes. [Universal]",
             )
             viz_parser.add_argument(
-                "--hash", action="store_true", help="Display each object's hash. [Universal]"
+                "--hash",
+                action="store_true",
+                help="Display each object's hash. [Universal]",
             )
             viz_parser.add_argument(
                 "--no-detail",
@@ -1231,7 +1255,9 @@ class RedunClient:
         oneshot_parser.add_argument("-o", "--output", help="Output file for task result.")
         oneshot_parser.add_argument("-e", "--error", help="Output file for task error.")
         oneshot_parser.add_argument(
-            "--array-job", action="store_true", help="Indicates task is part of an array job"
+            "--array-job",
+            action="store_true",
+            help="Indicates task is part of an array job",
         )
         oneshot_parser.add_argument(
             "-p",
@@ -1300,7 +1326,8 @@ class RedunClient:
         repo_add_parser = repo_subparsers.add_parser("add", help="Add a repository")
         repo_add_parser.add_argument("repo_name", help="Repository name")
         repo_add_parser.add_argument(
-            "repo_config_dir", help="Directory with redun configuration. Can be local or on S3"
+            "repo_config_dir",
+            help="Directory with redun configuration. Can be local or on S3",
         )
         repo_add_parser.set_defaults(func=self.repo_add_command)
 
@@ -1355,7 +1382,11 @@ class RedunClient:
         # aws logs
         aws_logs_parser = aws_subparsers.add_parser("logs", help="Fetch AWS Batch job logs.")
         aws_logs_parser.add_argument(
-            "-j", "--job", default=[], action="append", help="Show logs for redun Job id."
+            "-j",
+            "--job",
+            default=[],
+            action="append",
+            help="Show logs for redun Job id.",
         )
         aws_logs_parser.add_argument(
             "-b",
@@ -1365,7 +1396,11 @@ class RedunClient:
             help="Show logs for AWS Batch Job id.",
         )
         aws_logs_parser.add_argument(
-            "-l", "--log-stream", default=[], action="append", help="Show logs for AWS Log Stream."
+            "-l",
+            "--log-stream",
+            default=[],
+            action="append",
+            help="Show logs for AWS Log Stream.",
         )
         aws_logs_parser.add_argument(
             "-a", "--all", action="store_true", help="Show logs for all jobs."
@@ -1700,7 +1735,10 @@ class RedunClient:
         assert self.scheduler.backend.session
 
         return infer_id(
-            self.scheduler.backend.session, id, include_files=include_files, required=required
+            self.scheduler.backend.session,
+            id,
+            include_files=include_files,
+            required=required,
         )
 
     def viz_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
@@ -1856,7 +1894,11 @@ class RedunClient:
             self.log_file(file, kind)
 
     def log_execution(
-        self, execution: Execution, show_jobs: bool = True, indent: int = 0, detail: bool = True
+        self,
+        execution: Execution,
+        show_jobs: bool = True,
+        indent: int = 0,
+        detail: bool = True,
     ) -> None:
         """
         Display an Execution.
@@ -1956,7 +1998,11 @@ class RedunClient:
                     self.display(line.rstrip("\n"), indent=indent)
 
     def log_job(
-        self, job: Job, indent: int = 0, show_children: bool = False, detail: bool = True
+        self,
+        job: Job,
+        indent: int = 0,
+        show_children: bool = False,
+        detail: bool = True,
     ) -> None:
         """
         Display a Job.
@@ -1988,7 +2034,10 @@ class RedunClient:
             if job.call_node:
                 self.display()
                 self.log_call_node(
-                    job.call_node, show_parents=False, show_children=False, indent=indent + 2
+                    job.call_node,
+                    show_parents=False,
+                    show_children=False,
+                    indent=indent + 2,
                 )
             else:
                 self.display()
@@ -2004,7 +2053,10 @@ class RedunClient:
         elif show_children:
             for child_job in job.child_jobs:
                 self.log_job(
-                    child_job, indent=indent + 2, show_children=show_children, detail=False
+                    child_job,
+                    indent=indent + 2,
+                    show_children=show_children,
+                    detail=False,
                 )
 
     def log_task(

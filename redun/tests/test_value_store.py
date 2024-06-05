@@ -4,7 +4,12 @@ from typing import cast
 import boto3
 
 from redun import task
-from redun.backends.db import MAX_VALUE_SIZE_PREVIEW, PreviewValue, RedunBackendDb, Value
+from redun.backends.db import (
+    MAX_VALUE_SIZE_PREVIEW,
+    PreviewValue,
+    RedunBackendDb,
+    Value,
+)
 from redun.config import Config
 from redun.file import Dir
 from redun.scheduler import Scheduler

@@ -5,7 +5,10 @@ from redun import get_context, task
 redun_namespace = "redun.examples.context"
 
 
-@task(executor=get_context("my_tool.executor", "default"), memory=get_context("my_tool.memory", 1))
+@task(
+    executor=get_context("my_tool.executor", "default"),
+    memory=get_context("my_tool.memory", 1),
+)
 def my_tool(
     value: int,
     flag: bool = get_context("my_tool.flag", False),

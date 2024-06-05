@@ -73,11 +73,13 @@ def exec_script(command: str) -> bytes:
         command2 = """\
 chmod +x {command_file}
 {command_file}
-""".format(
-            command_file=command_file
-        )
+""".format(command_file=command_file)
         proc = subprocess.run(
-            command2, check=False, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            command2,
+            check=False,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         result, error = proc.stdout, proc.stderr
     finally:
@@ -142,9 +144,7 @@ rm "$COMMAND_FILE"
 
 exit $RETCODE
 )
-""".format(
-        command=command, eof=get_command_eof(command, eof_prefix=eof_prefix)
-    )
+""".format(command=command, eof=get_command_eof(command, eof_prefix=eof_prefix))
     return wrapped_command
 
 
@@ -283,5 +283,9 @@ def script(
 
     input_args = map_nested_value(get_file, inputs)
     return _script(
-        full_command, input_args, outputs, task_options=task_options, temp_path=temp_path
+        full_command,
+        input_args,
+        outputs,
+        task_options=task_options,
+        temp_path=temp_path,
     )

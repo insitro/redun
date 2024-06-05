@@ -5,6 +5,7 @@ Revises: 30ffbaee18cd
 Create Date: 2021-07-18 13:21:51.711159
 
 """
+
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -32,7 +33,11 @@ def upgrade():
     )
     op.create_index(op.f("ix_file_path"), "file", ["path"], unique=False)
     op.create_index(
-        "ix_job_id_vpo", "job", ["id"], unique=True, postgresql_ops={"id": "varchar_pattern_ops"}
+        "ix_job_id_vpo",
+        "job",
+        ["id"],
+        unique=True,
+        postgresql_ops={"id": "varchar_pattern_ops"},
     )
     op.create_index(
         "ix_task_hash_vpo",
@@ -78,15 +83,21 @@ def downgrade():
         postgresql_ops={"namespace": "varchar_pattern_ops"},
     )
     op.drop_index(
-        "ix_task_name_vpo", table_name="task", postgresql_ops={"name": "varchar_pattern_ops"}
+        "ix_task_name_vpo",
+        table_name="task",
+        postgresql_ops={"name": "varchar_pattern_ops"},
     )
     op.drop_index(
-        "ix_task_hash_vpo", table_name="task", postgresql_ops={"hash": "varchar_pattern_ops"}
+        "ix_task_hash_vpo",
+        table_name="task",
+        postgresql_ops={"hash": "varchar_pattern_ops"},
     )
     op.drop_index("ix_job_id_vpo", table_name="job", postgresql_ops={"id": "varchar_pattern_ops"})
     op.drop_index(op.f("ix_file_path"), table_name="file")
     op.drop_index(
-        "ix_execution_id_vpo", table_name="execution", postgresql_ops={"id": "varchar_pattern_ops"}
+        "ix_execution_id_vpo",
+        table_name="execution",
+        postgresql_ops={"id": "varchar_pattern_ops"},
     )
     op.drop_index(
         "ix_call_node_call_hash_vpo",

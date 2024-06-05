@@ -1,7 +1,6 @@
-[tool.black]
-line-length = 99
+[tool.ruff.lint.per-file-ignores]
+"*/__init__.py" = ["F401"]
+"redun/tests/*" = ["F811"]
 
-[tool.isort]
-profile = "black"
-line_length = 99
-multi_line_output = 3
+[tool.ruff]
+line-length = 99

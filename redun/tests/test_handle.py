@@ -116,7 +116,11 @@ def test_handle_no_namespace(scheduler: Scheduler) -> None:
     @task()
     def task1():
         conn = DbHandle("conn", "data.db", namespace="")
-        return (conn.__handle__.namespace, conn.__handle__.name, conn.__handle__.fullname)
+        return (
+            conn.__handle__.namespace,
+            conn.__handle__.name,
+            conn.__handle__.fullname,
+        )
 
     assert scheduler.run(task1()) == ("", "conn", "conn")
 
@@ -126,7 +130,11 @@ def _test_handle_task_namespace():
     @task(namespace="myspace")
     def task1():
         conn = DbHandle("conn", "data.db")
-        return (conn.__handle__.namespace, conn.__handle__.name, conn.__handle__.fullname)
+        return (
+            conn.__handle__.namespace,
+            conn.__handle__.name,
+            conn.__handle__.fullname,
+        )
 
     scheduler = Scheduler()
     assert scheduler.run(task1()) == ("myspace", "conn", "myspace.conn")
@@ -139,7 +147,11 @@ def _test_handle_scope_namespace():
     @task()
     def task1():
         conn = DbHandle("conn", "data.db")
-        return (conn.__handle__.namespace, conn.__handle__.name, conn.__handle__.fullname)
+        return (
+            conn.__handle__.namespace,
+            conn.__handle__.name,
+            conn.__handle__.fullname,
+        )
 
     namespace()
 

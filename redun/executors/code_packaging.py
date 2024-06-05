@@ -12,7 +12,9 @@ from redun.hashing import hash_stream
 
 
 def find_code_files(
-    basedir: str = ".", includes: Optional[List[str]] = None, excludes: Optional[List[str]] = None
+    basedir: str = ".",
+    includes: Optional[List[str]] = None,
+    excludes: Optional[List[str]] = None,
 ) -> Iterable[str]:
     """
     Find all the workflow code files consistent with the include/exclude patterns.
@@ -61,7 +63,10 @@ def extract_tar(tar_file: File, dest_dir: str = ".") -> None:
 
 
 def create_zip(
-    zip_path: str, base_path: str, file_paths: Iterable[str], arcname_prefix: Optional[str] = None
+    zip_path: str,
+    base_path: str,
+    file_paths: Iterable[str],
+    arcname_prefix: Optional[str] = None,
 ) -> File:
     """
     Create a zip file from local file paths.
@@ -90,7 +95,10 @@ def parse_code_package_config(config) -> Union[dict, bool]:
     include_config = config.get("code_includes", "**/*.py")
     exclude_config = config.get("code_excludes", "")
 
-    return {"includes": shlex.split(include_config), "excludes": shlex.split(exclude_config)}
+    return {
+        "includes": shlex.split(include_config),
+        "excludes": shlex.split(exclude_config),
+    }
 
 
 def package_code(

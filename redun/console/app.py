@@ -105,7 +105,11 @@ class RedunApp(App):
     ]
 
     def __init__(
-        self, scheduler: Scheduler, args: Namespace, extra_args: List[str], argv: List[str]
+        self,
+        scheduler: Scheduler,
+        args: Namespace,
+        extra_args: List[str],
+        argv: List[str],
     ):
         super().__init__()
 

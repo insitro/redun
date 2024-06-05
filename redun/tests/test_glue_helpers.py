@@ -3,6 +3,7 @@ Tests Glue helper functions in `redun.glue`.
 Uses a pytest fixture to provide a spark context.
 Spark imports are kept within the tests to avoid changing the behavior of NamedTuple.
 """
+
 import pytest
 
 from redun import glue
@@ -38,7 +39,6 @@ def test_udf_without_spark():
 
 
 def test_udf_with_spark(spark_session):
-
     from pyspark.sql.column import Column
     from pyspark.sql.types import ArrayType, IntegerType
 
@@ -71,7 +71,9 @@ def test_sql_query(spark_session):
         _ = glue.sql_query(df, "select max(length(name)) as longest from aliased_name")
 
     result = glue.sql_query(
-        df, "select max(length(name)) as longest from aliased_name", dataset_alias="aliased_name"
+        df,
+        "select max(length(name)) as longest from aliased_name",
+        dataset_alias="aliased_name",
     )
 
     assert result.collect()[0].asDict()["longest"] == 10

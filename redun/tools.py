@@ -76,7 +76,10 @@ def copy_dir(
     return seq(
         [
             copy_files(
-                src_files, dest_paths, skip_if_exists=skip_if_exists, copy_options=copy_options
+                src_files,
+                dest_paths,
+                skip_if_exists=skip_if_exists,
+                copy_options=copy_options,
             ),
             dest_dir,
         ]

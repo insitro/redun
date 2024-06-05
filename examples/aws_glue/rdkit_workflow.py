@@ -7,6 +7,7 @@ Usage:
         --output-dir <s3_path> \
         --smiles-col "smiles"
 """
+
 import logging
 
 from redun import ShardedS3Dataset, glue, task
@@ -15,7 +16,6 @@ from redun.contrib.spark_helpers import enable_rdkit
 
 @glue.udf
 def get_inchi(smiles: str) -> str:
-
     enable_rdkit()
     from rdkit import Chem
 

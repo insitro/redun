@@ -476,7 +476,8 @@ def walk_dataflow_callnode_value(
 
     def is_subvalue(query_value: Value, target_value: Value) -> bool:
         value_hashes = chain(
-            [target_value.value_hash], (child.value_hash for child in target_value.children)
+            [target_value.value_hash],
+            (child.value_hash for child in target_value.children),
         )
         return query_value.value_hash in value_hashes
 
@@ -993,7 +994,7 @@ def iter_dataflow_sections(
     data_sections = node2data_section.values()
 
     def get_order_section(
-        int_edges: List[Tuple[int, DataflowEdge]]
+        int_edges: List[Tuple[int, DataflowEdge]],
     ) -> Tuple[int, List[DataflowEdge]]:
         """
         Returns a tuple of section appearance order and the section.

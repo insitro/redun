@@ -226,12 +226,10 @@ class Task(Value, Generic[Func]):
         return nout
 
     @overload
-    def get_task_option(self, option_name: str) -> Optional[Any]:
-        ...
+    def get_task_option(self, option_name: str) -> Optional[Any]: ...
 
     @overload
-    def get_task_option(self, option_name: str, default: T) -> T:
-        ...
+    def get_task_option(self, option_name: str, default: T) -> T: ...
 
     def get_task_option(self, option_name: str, default: Optional[T] = None) -> Optional[T]:
         """
@@ -618,12 +616,10 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
         )
 
     @overload
-    def get_task_option(self, option_name: str) -> Optional[Any]:
-        ...
+    def get_task_option(self, option_name: str) -> Optional[Any]: ...
 
     @overload
-    def get_task_option(self, option_name: str, default: T) -> T:
-        ...
+    def get_task_option(self, option_name: str, default: T) -> T: ...
 
     def get_task_option(self, option_name: str, default: Optional[T] = None) -> Optional[T]:
         """
@@ -648,7 +644,9 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
     # Note: we can't parameterize PartialTask to a more specific type at this
     # time, due to the complexity of calculating the remaining parameter signature.
     def partial(
-        self: "PartialTask[Callable[..., Result], Callable[..., Result]]", *args, **kwargs
+        self: "PartialTask[Callable[..., Result], Callable[..., Result]]",
+        *args,
+        **kwargs,
     ) -> "PartialTask[Callable[..., Result], Callable[..., Result]]":
         """
         Partially apply some arguments to the Task.
@@ -665,8 +663,7 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
 @overload
 def task(
     func: Func,
-) -> Task[Func]:
-    ...
+) -> Task[Func]: ...
 
 
 @overload
@@ -680,8 +677,7 @@ def task(
     hash_includes: Optional[list] = None,
     source: Optional[str] = None,
     **task_options_base: Any,
-) -> Callable[[Func], Task[Func]]:
-    ...
+) -> Callable[[Func], Task[Func]]: ...
 
 
 def task(
@@ -810,7 +806,9 @@ def scheduler_task(
             return cond(result, task2(), task3())
     """
 
-    def deco(func: Callable[..., Promise[Result]]) -> SchedulerTask[Callable[..., Result]]:
+    def deco(
+        func: Callable[..., Promise[Result]],
+    ) -> SchedulerTask[Callable[..., Result]]:
         nonlocal name, namespace
 
         _task: SchedulerTask[Callable[..., Result]] = SchedulerTask(
@@ -913,9 +911,10 @@ def wraps_task(
         the computation. Each list item must be hashable by `redun.value.TypeRegistry.get_hash`
     """
 
-    def transform_wrapper(wrapper_func: Callable[[Task], Func]) -> Callable[[Func], Task[Func]]:
+    def transform_wrapper(
+        wrapper_func: Callable[[Task], Func],
+    ) -> Callable[[Func], Task[Func]]:
         def create_tasks(inner_func_or_task: Union[Func, Task[Func]]) -> Task[Func]:
-
             # As a convenience, create the lowest level Task on the fly.
             if isinstance(inner_func_or_task, Task):
                 hidden_inner_task = inner_func_or_task

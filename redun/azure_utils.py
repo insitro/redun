@@ -1,6 +1,7 @@
 """
 Helper functions for Azure integration.
 """
+
 import os
 
 import requests

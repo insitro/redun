@@ -61,7 +61,12 @@ from redun.backends.db import serializers
 from redun.backends.value_store import ValueStore
 from redun.config import Section, create_config_section
 from redun.db_utils import filter_in, get_or_create, query_filter_in
-from redun.expression import AnyExpression, Expression, SchedulerExpression, TaskExpression
+from redun.expression import (
+    AnyExpression,
+    Expression,
+    SchedulerExpression,
+    TaskExpression,
+)
 from redun.file import File as BaseFile
 from redun.file import get_proto
 from redun.handle import Handle as BaseHandle
@@ -458,7 +463,10 @@ class ArgumentResult(Base):
         String(HASH_LEN), ForeignKey("argument.arg_hash"), primary_key=True, index=True
     )
     result_call_hash = Column(
-        String(HASH_LEN), ForeignKey("call_node.call_hash"), primary_key=True, index=True
+        String(HASH_LEN),
+        ForeignKey("call_node.call_hash"),
+        primary_key=True,
+        index=True,
     )
 
     arg = relationship("Argument", foreign_keys=[arg_hash], backref="arg_results")
@@ -539,10 +547,16 @@ class CallEdge(Base):
     __tablename__ = "call_edge"
 
     parent_id = Column(
-        String(HASH_LEN), ForeignKey("call_node.call_hash"), primary_key=True, index=True
+        String(HASH_LEN),
+        ForeignKey("call_node.call_hash"),
+        primary_key=True,
+        index=True,
     )
     child_id = Column(
-        String(HASH_LEN), ForeignKey("call_node.call_hash"), primary_key=True, index=True
+        String(HASH_LEN),
+        ForeignKey("call_node.call_hash"),
+        primary_key=True,
+        index=True,
     )
     call_order = Column(Integer, primary_key=True)
 
@@ -666,7 +680,9 @@ class CallNode(Base):
     @property
     def args_display(self) -> str:
         return trim_string(
-            repr([arg.value_parsed for arg in self.arguments]), max_length=100, ellipsis="...]"
+            repr([arg.value_parsed for arg in self.arguments]),
+            max_length=100,
+            ellipsis="...]",
         )
 
 
@@ -674,7 +690,10 @@ class CallSubtreeTask(Base):
     __tablename__ = "call_subtree_task"
 
     call_hash = Column(
-        String(HASH_LEN), ForeignKey("call_node.call_hash"), primary_key=True, index=True
+        String(HASH_LEN),
+        ForeignKey("call_node.call_hash"),
+        primary_key=True,
+        index=True,
     )
     task_hash = Column(String(HASH_LEN), ForeignKey("task.hash"), primary_key=True, index=True)
 
@@ -696,7 +715,10 @@ class Handle(Base):
     is_valid = Column(Boolean, default=True)
 
     value = relationship(
-        "Value", foreign_keys=[value_hash], backref=backref("handle", uselist=False), uselist=False
+        "Value",
+        foreign_keys=[value_hash],
+        backref=backref("handle", uselist=False),
+        uselist=False,
     )
     parent_values = relationship(
         "Value",
@@ -842,7 +864,9 @@ class Job(Base):
     )
     parent_id = Column(String, ForeignKey("job.id"), nullable=True, index=True)
     execution_id = Column(
-        String, ForeignKey("execution.id", deferrable=True, initially="deferred"), index=True
+        String,
+        ForeignKey("execution.id", deferrable=True, initially="deferred"),
+        index=True,
     )
 
     id_idx = Index(
@@ -1112,7 +1136,7 @@ def get_execution_child_edges(session: Session, ids: Iterable[str]) -> Iterable[
 
 def get_job_child_edges(session: Session, ids: Iterable[str]) -> Iterable[RecordEdgeType]:
     # Get Job child Task and CallNode ids.
-    for (task_hash, call_hash) in filter_in(
+    for task_hash, call_hash in filter_in(
         session.query(Job.task_hash, Job.call_hash), Job.id, ids
     ):
         yield "Job.task", Task, task_hash
@@ -1125,7 +1149,7 @@ def get_job_child_edges(session: Session, ids: Iterable[str]) -> Iterable[Record
 
 def get_call_node_child_edges(session: Session, ids: Iterable[str]) -> Iterable[RecordEdgeType]:
     # Get CallNode task and result ids.
-    for (task_hash, value_hash) in filter_in(
+    for task_hash, value_hash in filter_in(
         session.query(CallNode.task_hash, CallNode.value_hash), CallNode.call_hash, ids
     ):
         yield "CallNode.task", Task, task_hash
@@ -1336,11 +1360,16 @@ class RedunBackendDb(RedunBackend):
 
         # If client does not recognize the migration id, it is too new for the client.
         return DBVersionInfo(
-            "ffffffffffff", major, REDUN_DB_UNKNOWN_VERSION, "DB version newer than client."
+            "ffffffffffff",
+            major,
+            REDUN_DB_UNKNOWN_VERSION,
+            "DB version newer than client.",
         )
 
     def migrate(
-        self, desired_version: Optional[DBVersionInfo] = None, upgrade_only: bool = False
+        self,
+        desired_version: Optional[DBVersionInfo] = None,
+        upgrade_only: bool = False,
     ) -> None:
         """
         Migrate database to desired version.
@@ -1548,7 +1577,10 @@ class RedunBackendDb(RedunBackend):
                 yield from self._find_arg_upstreams(value._upstreams)
 
     def _record_args(
-        self, call_hash: str, expr_args: Tuple[Tuple, dict], eval_args: Tuple[Tuple, dict]
+        self,
+        call_hash: str,
+        expr_args: Tuple[Tuple, dict],
+        eval_args: Tuple[Tuple, dict],
     ) -> None:
         """
         Record the Arguments for a CallNode.
@@ -1991,7 +2023,12 @@ class RedunBackendDb(RedunBackend):
         return self._get_value(value_row)
 
     def set_eval_cache(
-        self, eval_hash: str, task_hash: str, args_hash: str, value: Any, value_hash: str = None
+        self,
+        eval_hash: str,
+        task_hash: str,
+        args_hash: str,
+        value: Any,
+        value_hash: str = None,
     ) -> None:
         """
         Sets a new value in the Evaluation cache.
@@ -2343,7 +2380,10 @@ class RedunBackendDb(RedunBackend):
         return db_job
 
     def record_job_end(
-        self, job: "BaseJob", now: Optional[datetime] = None, status: Optional[str] = None
+        self,
+        job: "BaseJob",
+        now: Optional[datetime] = None,
+        status: Optional[str] = None,
     ) -> None:
         """
         Records the end of a Job.
@@ -2565,7 +2605,9 @@ class RedunBackendDb(RedunBackend):
         parents = [
             tag_hash
             for (tag_hash,) in self.session.query(Tag.tag_hash).filter(
-                Tag.is_current.is_(True), Tag.entity_id == entity_id, Tag.key.in_(old_keys)
+                Tag.is_current.is_(True),
+                Tag.entity_id == entity_id,
+                Tag.key.in_(old_keys),
             )
         ]
         return self.record_tags(entity_type, entity_id, new_tags, parents=parents)

@@ -1,6 +1,17 @@
 import operator
 from itertools import chain
-from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from redun.hashing import hash_arguments, hash_bytes, hash_struct
 from redun.utils import iter_nested_value, pickle_dumps
@@ -105,7 +116,10 @@ def format_arguments(args, kwargs) -> str:
     """
     kwargs_items = sorted(kwargs.items())
     text = ", ".join(
-        chain((repr(arg) for arg in args), (f"{key}={repr(value)}" for key, value in kwargs_items))
+        chain(
+            (repr(arg) for arg in args),
+            (f"{key}={repr(value)}" for key, value in kwargs_items),
+        )
     )
     return text
 

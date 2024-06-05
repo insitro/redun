@@ -8,7 +8,11 @@ from typing import Any, Deque, Dict, Iterator, List, Optional, Tuple, Union, cas
 
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
-from redun.executors.code_packaging import create_zip, package_code, parse_code_package_config
+from redun.executors.code_packaging import (
+    create_zip,
+    package_code,
+    parse_code_package_config,
+)
 from redun.executors.command import REDUN_PROG, REDUN_REQUIRED_VERSION
 from redun.executors.scratch import (
     SCRATCH_ERROR,
@@ -32,7 +36,16 @@ ONESHOT_FILE = "glue_oneshot.py.txt"
 
 # AWS Glue job statuses
 GLUE_JOB_STATUSES = aws_utils.JobStatus(
-    all=["STARTING", "RUNNING", "STOPPING", "SUCCEEDED", "FAILED", "ERROR", "STOPPED", "TIMEOUT"],
+    all=[
+        "STARTING",
+        "RUNNING",
+        "STOPPING",
+        "SUCCEEDED",
+        "FAILED",
+        "ERROR",
+        "STOPPED",
+        "TIMEOUT",
+    ],
     inflight=["STARTING", "RUNNING", "STOPPING"],
     pending=["STARTING"],
     success=["SUCCEEDED"],
@@ -473,7 +486,9 @@ class AWSGlueExecutor(Executor):
             # Make sure glue API still has a status on this job
             existing_job = next(
                 glue_describe_jobs(
-                    [glue_job_id], glue_job_name=self.glue_job_name, aws_region=self.aws_region
+                    [glue_job_id],
+                    glue_job_name=self.glue_job_name,
+                    aws_region=self.aws_region,
                 )
             )
 
@@ -666,9 +681,10 @@ def submit_glue_job(
 
 
 def glue_describe_jobs(
-    job_ids: List[str], glue_job_name: str, aws_region: str = aws_utils.DEFAULT_AWS_REGION
+    job_ids: List[str],
+    glue_job_name: str,
+    aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> Iterator[Dict[str, Any]]:
-
     glue_client = aws_utils.get_aws_client("glue", aws_region=aws_region)
 
     for id in job_ids:
@@ -689,7 +705,8 @@ def parse_job_error(
     # Handle AWS Batch-specific errors.
     if isinstance(error, ExceptionNotFoundError) and glue_job_metadata:
         message = glue_job_metadata.get(
-            "ErrorMessage", "Exception and traceback could not be found for AWS Glue Job"
+            "ErrorMessage",
+            "Exception and traceback could not be found for AWS Glue Job",
         )
         error = AWSGlueError(message)
         error_traceback = Traceback.from_error(error)

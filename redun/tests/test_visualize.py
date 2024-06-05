@@ -98,7 +98,11 @@ def main(x: str = "hi", y: bool = True):
     produced_edges = graph.edges()
     # Checking twice because there may be duplicate edges that disappear when added to the set
     assert len(produced_edges) == 3
-    expected_edges = {(call_node, result), (arguments[0], call_node), (arguments[1], call_node)}
+    expected_edges = {
+        (call_node, result),
+        (arguments[0], call_node),
+        (arguments[1], call_node),
+    }
     expected_edges.update(produced_edges)
     assert len(expected_edges) == 3
 

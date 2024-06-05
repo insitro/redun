@@ -47,10 +47,12 @@ def setup_query_parser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     parser.add_argument("--value", action="store_true", help="Show related values.")
     parser.add_argument("--file", action="store_true", help="Show related files.")
     parser.add_argument(
-        "--exec-status", help="Filter executions by status (comma separated: RUNNING,FAILED,DONE)."
+        "--exec-status",
+        help="Filter executions by status (comma separated: RUNNING,FAILED,DONE).",
     )
     parser.add_argument(
-        "--job-status", help="Filter jobs by status (comma separated: RUNNING,FAILED,CACHED,DONE)."
+        "--job-status",
+        help="Filter jobs by status (comma separated: RUNNING,FAILED,CACHED,DONE).",
     )
     parser.add_argument("--task-name", action="append", help="Filter tasks and jobs by task name.")
     parser.add_argument("--task-hash", action="append", help="Filter tasks and jobs by task hash.")
@@ -65,7 +67,9 @@ def setup_query_parser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     )
     parser.add_argument("-t", "--tag", action="append", help="Filter by tag (format: key=value).")
     parser.add_argument(
-        "--exec-tag", action="append", help="Filter by execution tag (format: key=value)."
+        "--exec-tag",
+        action="append",
+        help="Filter by execution tag (format: key=value).",
     )
     return parser
 
@@ -524,7 +528,11 @@ class CallGraphQuery:
         )
 
     def _query_filter_tags(
-        self, query: Query, entity_id_col: Any, table: Any, tags: Iterable[Tuple[str, Any]]
+        self,
+        query: Query,
+        entity_id_col: Any,
+        table: Any,
+        tags: Iterable[Tuple[str, Any]],
     ) -> Query:
         """
         Build query for filtering tags.

@@ -14,10 +14,8 @@ make setup
 pytest redun
 
 # Other targets
-make black
-make mypy
 make lint
-make isort
+make format
 ```
 
 ## Release

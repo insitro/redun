@@ -208,7 +208,12 @@ class RedunBackend(abc.ABC):
         pass
 
     def set_eval_cache(
-        self, eval_hash: str, task_hash: str, args_hash: str, value: Any, value_hash: str = None
+        self,
+        eval_hash: str,
+        task_hash: str,
+        args_hash: str,
+        value: Any,
+        value_hash: str = None,
     ) -> None:
         """
         Sets a new value in the Evaluation cache.

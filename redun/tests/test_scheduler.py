@@ -1414,7 +1414,11 @@ def test_catch_cache(scheduler: Scheduler) -> None:
     # Caching should not be used if turned off at the task level or the scheduler level.
     assert (
         scheduler.run(
-            catch(faulty.options(cache_scope=CacheScope.NONE)(), ZeroDivisionError, recover),
+            catch(
+                faulty.options(cache_scope=CacheScope.NONE)(),
+                ZeroDivisionError,
+                recover,
+            ),
         )
         == 1.0
     )
@@ -1597,7 +1601,11 @@ def test_catch_all(scheduler: Scheduler) -> None:
     assert scheduler.run(catch_all([good(1), good(2), good(3)], ValueError, recover)) == [1, 2, 3]
 
     # Failed tasks should be caught.
-    assert scheduler.run(catch_all([good(4), bad(), good(5)], ValueError, recover)) == [4, 0, 5]
+    assert scheduler.run(catch_all([good(4), bad(), good(5)], ValueError, recover)) == [
+        4,
+        0,
+        5,
+    ]
     assert scheduler.run(catch_all([good(6), bad(), bad(), good(7)], ValueError, recover)) == [
         6,
         0,
@@ -1608,7 +1616,9 @@ def test_catch_all(scheduler: Scheduler) -> None:
     # We should be able to catch multiple error classes.
     assert scheduler.run(
         catch_all(
-            [throw(KeyError()), throw(ValueError()), good()], (KeyError, ValueError), recover
+            [throw(KeyError()), throw(ValueError()), good()],
+            (KeyError, ValueError),
+            recover,
         )
     ) == [0, 0, 10]
 
@@ -1745,7 +1755,10 @@ def test_default_args_parent_job(scheduler: Scheduler, session: Session) -> None
     # get_offset() should be a sibling to add().
     execution = session.query(Execution).one()
     assert execution.job.task.name == "root_task"
-    assert [child.task.name for child in execution.job.child_jobs] == ["get_offset", "add"]
+    assert [child.task.name for child in execution.job.child_jobs] == [
+        "get_offset",
+        "add",
+    ]
 
 
 def test_job_clear(scheduler: Scheduler) -> None:
@@ -2029,7 +2042,6 @@ def foo(x):
 
 @use_tempdir
 def test_federated_task() -> None:
-
     # Use a process executor
     config_dict = {
         "federated_tasks.sample_task": {

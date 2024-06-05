@@ -7,6 +7,7 @@ Usage::
 Example::
     python release_notes.py 0.4.10 0.4.11
 """
+
 import argparse
 import re
 import subprocess

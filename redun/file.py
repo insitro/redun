@@ -551,7 +551,6 @@ class LocalFileSystem(FileSystem):
 
 
 class FsspecFileSystem(FileSystem):
-
     name: str = "fsspec"
 
     def __init__(self):
@@ -1767,7 +1766,16 @@ class ShardedS3Dataset(Value):
         self._recurse = recurse
         self._hash: Optional[str] = None
 
-        if format not in ["avro", "csv", "ion", "grokLog", "json", "orc", "parquet", "xml"]:
+        if format not in [
+            "avro",
+            "csv",
+            "ion",
+            "grokLog",
+            "json",
+            "orc",
+            "parquet",
+            "xml",
+        ]:
             raise ValueError(f"Invalid format {format}")
         self._format = format
 
@@ -1775,7 +1783,6 @@ class ShardedS3Dataset(Value):
         self._filenames: List[str] = self._gather_files()
 
     def _gather_files(self) -> List[str]:
-
         # If recursing, look in subdirectories too.
         files = glob_file(f"{self._path}/*.{self._format}")
         if self.recurse:
@@ -2099,7 +2106,10 @@ class ShardedS3Dataset(Value):
 
     @classmethod
     def from_files(
-        cls, files: List[File], format: Optional[str] = None, allow_additional_files: bool = False
+        cls,
+        files: List[File],
+        format: Optional[str] = None,
+        allow_additional_files: bool = False,
     ) -> "ShardedS3Dataset":
         """
         Helper function to create a ShardedS3Dataset from a list of redun Files.

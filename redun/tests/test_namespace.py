@@ -98,7 +98,6 @@ def test_no_namespace_ignore() -> None:
 
 
 def test_bad_namespace() -> None:
-
     with pytest.raises(ValueError):
 
         @task(name="1bad_task")

@@ -157,18 +157,15 @@ def test_eval(scheduler: Scheduler) -> None:
         scheduler.run(eval_("x + y", 1, 2, pos_args=["x"]))
 
     # Allow indented code.
-    assert (
-        scheduler.run(
-            eval_(
-                """
+    assert scheduler.run(
+        eval_(
+            """
                 {a, b}
                 """,
-                a=1,
-                b=2,
-            )
+            a=1,
+            b=2,
         )
-        == {1, 2}
-    )
+    ) == {1, 2}
 
     # eval_ should work with partial application.
     assert scheduler.run(eval_.partial("{a, b}")(a=1, b=2)) == {1, 2}
@@ -217,7 +214,10 @@ def test_map(scheduler: Scheduler, session: Session) -> None:
 
     for job in exec1.job.child_jobs:
         assert job.task.name == "compose_apply"
-        assert [child_job.task.name for child_job in job.child_jobs] == ["double", "inc"]
+        assert [child_job.task.name for child_job in job.child_jobs] == [
+            "double",
+            "inc",
+        ]
 
 
 def test_starmap(scheduler: Scheduler, session: Session) -> None:
@@ -266,7 +266,10 @@ def test_starmap(scheduler: Scheduler, session: Session) -> None:
 
     for job in exec1.job.child_jobs:
         assert job.task.name == "compose_apply"
-        assert [child_job.task.name for child_job in job.child_jobs] == ["eval_", "eval_"]
+        assert [child_job.task.name for child_job in job.child_jobs] == [
+            "eval_",
+            "eval_",
+        ]
         assert [child_job.child_jobs[0].task.name for child_job in job.child_jobs] == [
             "swap",
             "add",
@@ -290,7 +293,13 @@ def test_flatten(scheduler: Scheduler) -> None:
         "invented",
         "here",
     ]
-    assert scheduler.run(flat_map(split, texts)) == ["hello", "world", "not", "invented", "here"]
+    assert scheduler.run(flat_map(split, texts)) == [
+        "hello",
+        "world",
+        "not",
+        "invented",
+        "here",
+    ]
 
 
 def test_zip(scheduler: Scheduler) -> None:

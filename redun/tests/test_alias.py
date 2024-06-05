@@ -8,7 +8,6 @@ from redun.executors.base import ExecutorError
 
 
 def test_alias_executor(scheduler: Scheduler) -> None:
-
     config = Config({"batch": {"target": "default"}})
     executor = AliasExecutor("batch", scheduler, config["batch"])
     scheduler.executors["default"] = Mock()
@@ -36,5 +35,8 @@ def test_alias_executor(scheduler: Scheduler) -> None:
         AssertionError, match="Exactly one of `target` or `config` should be provided"
     ):
         AliasExecutor(
-            "batch", scheduler, config=config["batch"], target=scheduler.executors["default"]
+            "batch",
+            scheduler,
+            config=config["batch"],
+            target=scheduler.executors["default"],
         )

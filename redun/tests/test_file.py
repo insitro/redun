@@ -64,7 +64,7 @@ def test_encoding() -> None:
     """
     File read/write/open should support encodings.
     """
-    text = "hello \u1F600"
+    text = "hello \u1f600"
 
     # Read and write utf-8.
     file = File("hello.txt")
@@ -92,7 +92,6 @@ def test_encoding() -> None:
 
 @use_tempdir
 def test_dir_api() -> None:
-
     dir = Dir("hi")
     assert dir.rel_path(os.getcwd()) == ".."
 
@@ -154,7 +153,6 @@ def test_dir_subvalues() -> None:
 
 @use_tempdir
 def test_workflow(scheduler: Scheduler) -> None:
-
     task_calls = []
 
     @task()
@@ -200,7 +198,6 @@ def test_workflow(scheduler: Scheduler) -> None:
 
 @use_tempdir
 def test_infile(scheduler: Scheduler) -> None:
-
     task_calls = []
 
     @task()
@@ -947,7 +944,8 @@ def test_non_existent_file_error() -> None:
     """
 
     with pytest.raises(
-        FileNotFoundError, match=r"\[Errno 2\] No such file or directory\. not_exist_file"
+        FileNotFoundError,
+        match=r"\[Errno 2\] No such file or directory\. not_exist_file",
     ):
         File("not_exist_file").open()
 
@@ -1072,7 +1070,6 @@ def test_content_file_classes() -> None:
 @patch("adlfs.AzureBlobFileSystem")
 @patch("redun.azure_utils.get_az_credential")
 def test_azure_glob(_, adlfs_mock):
-
     glob_mock = MagicMock()
     glob_mock.return_value = [
         "container1/sample/path/",
@@ -1096,7 +1093,6 @@ def test_azure_glob(_, adlfs_mock):
 @patch("adlfs.AzureBlobFileSystem")
 @patch("redun.azure_utils.get_az_credential")
 def test_azure_list_files_in_dir(_, adlfs_mock):
-
     glob_mock = MagicMock()
     glob_mock.return_value = [
         "container1/sample/path/",

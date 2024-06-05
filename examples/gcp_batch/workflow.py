@@ -7,7 +7,6 @@ redun_namespace = "redun.examples.gcp_batch"
 
 @task(executor="gcp_batch")
 def hello_world(greet: str) -> str:
-
     batch_task_index = os.getenv("BATCH_TASK_INDEX")
     batch_task_count = os.getenv("BATCH_TASK_COUNT")
 
@@ -27,7 +26,6 @@ def hello_world_script(greet: str) -> str:
 
 @task()
 def main(greet: str = "Hello") -> list:
-
     return [
         "main",
         hello_world_script(greet),
