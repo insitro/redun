@@ -490,9 +490,11 @@ def test_job_submit_resources(get_or_create_job_definition_mock, get_aws_client_
         retryStrategy={"attempts": 1},
         containerOverrides={
             "command": ["test_command"],
-            "vcpus": 4,
-            "memory": 8192,
-            "resourceRequirements": [{"type": "GPU", "value": "2"}],
+            "resourceRequirements": [
+                {"type": "VCPU", "value": "4"},
+                {"type": "MEMORY", "value": "8192"},
+                {"type": "GPU", "value": "2"},
+            ],
         },
         propagateTags=True,
         user="user-test",
@@ -535,18 +537,22 @@ def test_job_submit_resources(get_or_create_job_definition_mock, get_aws_client_
                     "targetNodes": "0",
                     "containerOverrides": {
                         "command": ["command_rank_0"],
-                        "vcpus": 4,
-                        "memory": 8192,
-                        "resourceRequirements": [{"type": "GPU", "value": "2"}],
+                        "resourceRequirements": [
+                            {"type": "VCPU", "value": "4"},
+                            {"type": "MEMORY", "value": "8192"},
+                            {"type": "GPU", "value": "2"},
+                        ],
                     },
                 },
                 {
                     "targetNodes": "1:",
                     "containerOverrides": {
                         "command": ["command_rank_1"],
-                        "vcpus": 4,
-                        "memory": 8192,
-                        "resourceRequirements": [{"type": "GPU", "value": "2"}],
+                        "resourceRequirements": [
+                            {"type": "VCPU", "value": "4"},
+                            {"type": "MEMORY", "value": "8192"},
+                            {"type": "GPU", "value": "2"},
+                        ],
                     },
                 },
             ]

@@ -425,9 +425,20 @@ def batch_submit(
         # Switch units, redun configs are in GB but AWS uses MB.
         memory_mb = int(memory * 1024)
 
-        container_properties.update({"vcpus": vcpus, "memory": memory_mb})
+        container_properties["resourceRequirements"] = [
+            {
+                "type": "VCPU",
+                "value": str(vcpus),
+            },
+            {
+                "type": "MEMORY",
+                "value": str(memory_mb),
+            },
+        ]
         if gpus > 0:
-            container_properties["resourceRequirements"] = [{"type": "GPU", "value": str(gpus)}]
+            container_properties["resourceRequirements"].append(
+                {"type": "GPU", "value": str(gpus)}
+            )
 
     if "containerOverrides" in batch_job_args:
         apply_resources(batch_job_args["containerOverrides"])
