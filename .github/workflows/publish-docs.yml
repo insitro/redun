@@ -9,7 +9,7 @@ jobs:
       runs-on: ubuntu-latest
       steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Build sphinx docs
         run: |
@@ -18,7 +18,7 @@ jobs:
           make api html
 
       - name: Checkout gh-pages branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: gh-pages
           path: gh-pages

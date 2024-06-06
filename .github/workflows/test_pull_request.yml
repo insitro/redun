@@ -6,13 +6,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Pinned to ubuntu-20.04 as that is the last version to include Python 3.6 support.
-        os: [ubuntu-20.04]
+        # Pinned to ubuntu-22.04 as that is the last version to include Python 3.8 support.
+        # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md#python
+        os: [ubuntu-22.04]
         python: ['3.8', '3.9', '3.10']
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - run: pip install --upgrade pip
@@ -23,8 +24,8 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       - run: sudo apt-get install graphviz graphviz-dev
@@ -33,8 +34,8 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       - run: sudo apt-get install graphviz graphviz-dev
