@@ -12,7 +12,7 @@ redun_namespace = "redun.examples.context"
 def my_tool(
     value: int,
     flag: bool = get_context("my_tool.flag", False),
-    param: int = get_context("my_tool.missing"),
+    param: int = get_context("my_tool.param"),
 ) -> str:
     # Perform desired computation with executor, memory, flag and param set by context.
     return f"Ran my_tool with flag: {flag} and param: {param}"
