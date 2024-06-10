@@ -162,13 +162,14 @@ def get_job_details(
     container_props = {
         "command": command,
         "image": image,
-        "vcpus": vcpus,
-        "memory": memory,
         "jobRoleArn": role,
         "environment": [],
         "mountPoints": [],
         "volumes": [],
-        "resourceRequirements": [],
+        "resourceRequirements": [
+            {"type": "VCPU", "value": str(vcpus)},
+            {"type": "MEMORY", "value": str(memory * 1024)},  # Convert Gb to Mb.
+        ],
         "ulimits": [],
         "privileged": privileged,
     }
@@ -213,8 +214,6 @@ def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
     # At submission-time we override resource properties, so ignore them when
     # looking for an equivalent job def.
     no_resource_container_properties = {
-        "vcpus": "any_vcpus",
-        "memory": "any_memory",
         "resourceRequirements": ["any_requirements"],
     }
 

@@ -153,13 +153,14 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
         containerProperties={
             "command": ["ls"],
             "image": "an-image:latest",
-            "vcpus": 1,
-            "memory": 4,
             "jobRoleArn": "aRole",
             "environment": [],
             "mountPoints": [],
             "volumes": [],
-            "resourceRequirements": [],
+            "resourceRequirements": [
+                {"type": "VCPU", "value": "1"},
+                {"type": "MEMORY", "value": "4096"},
+            ],
             "ulimits": [],
             "privileged": False,
         },
@@ -218,13 +219,14 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
                 "containerProperties": {
                     "command": ["ls"],
                     "image": "an-image:latest",
-                    "vcpus": 2,
-                    "memory": 4,
                     "jobRoleArn": "aRole",
                     "environment": [],
                     "mountPoints": [],
                     "volumes": [],
-                    "resourceRequirements": [],
+                    "resourceRequirements": [
+                        {"type": "VCPU", "value": "2"},
+                        {"type": "MEMORY", "value": "4096"},
+                    ],
                     "ulimits": [],
                     "privileged": False,
                 },
@@ -242,13 +244,14 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
         containerProperties={
             "command": ["ls"],
             "image": "an-image:latest",
-            "vcpus": 1,
-            "memory": 4,
             "jobRoleArn": "aRole",
             "environment": [],
             "mountPoints": [],
             "volumes": [],
-            "resourceRequirements": [],
+            "resourceRequirements": [
+                {"type": "VCPU", "value": "1"},
+                {"type": "MEMORY", "value": "4096"},
+            ],
             "ulimits": [],
             "privileged": False,
         },
@@ -263,13 +266,14 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
                 "containerProperties": {
                     "command": ["ls"],
                     "image": "an-image:latest",
-                    "vcpus": 2,
-                    "memory": 4,
                     "jobRoleArn": "aRole",
                     "environment": [],
                     "mountPoints": [],
                     "volumes": [],
-                    "resourceRequirements": [],
+                    "resourceRequirements": [
+                        {"type": "VCPU", "value": "1"},
+                        {"type": "MEMORY", "value": "4096"},
+                    ],
                     "ulimits": [],
                     "privileged": False,
                 },
@@ -291,13 +295,14 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
                     "container": {
                         "command": ["ls"],
                         "image": "an-image:latest",
-                        "vcpus": 1,
-                        "memory": 4,
                         "jobRoleArn": "aRole",
                         "environment": [],
                         "mountPoints": [],
                         "volumes": [],
-                        "resourceRequirements": [],
+                        "resourceRequirements": [
+                            {"type": "VCPU", "value": "1"},
+                            {"type": "MEMORY", "value": "4096"},
+                        ],
                         "ulimits": [
                             {
                                 "name": "nofile",
@@ -313,13 +318,14 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
                     "container": {
                         "command": ["ls"],
                         "image": "an-image:latest",
-                        "vcpus": 1,
-                        "memory": 4,
                         "jobRoleArn": "aRole",
                         "environment": [],
                         "mountPoints": [],
                         "volumes": [],
-                        "resourceRequirements": [],
+                        "resourceRequirements": [
+                            {"type": "VCPU", "value": "1"},
+                            {"type": "MEMORY", "value": "4096"},
+                        ],
                         "ulimits": [
                             {
                                 "name": "nofile",
@@ -358,13 +364,14 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
                 "containerProperties": {
                     "command": ["ls"],
                     "image": "an-image:latest",
-                    "vcpus": 2,
-                    "memory": 4,
                     "jobRoleArn": "aRole",
                     "environment": [],
                     "mountPoints": [],
                     "volumes": [],
-                    "resourceRequirements": [],
+                    "resourceRequirements": [
+                        {"type": "VCPU", "value": "2"},
+                        {"type": "MEMORY", "value": "4096"},
+                    ],
                     "ulimits": [],
                     "privileged": False,
                 },
@@ -382,13 +389,14 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
         containerProperties={
             "command": ["ls"],
             "image": "an-image:custom",
-            "vcpus": 1,
-            "memory": 4,
             "jobRoleArn": "aRole",
             "environment": [],
             "mountPoints": [],
             "volumes": [],
-            "resourceRequirements": [],
+            "resourceRequirements": [
+                {"type": "VCPU", "value": "1"},
+                {"type": "MEMORY", "value": "4096"},
+            ],
             "ulimits": [],
             "privileged": False,
         },
@@ -421,13 +429,14 @@ def test_get_or_create_job_definition(get_aws_client_mock) -> None:
         containerProperties={
             "command": ["ls"],
             "image": "an-image:latest",
-            "vcpus": 1,
-            "memory": 4,
             "jobRoleArn": "aRole",
             "environment": [],
             "mountPoints": [],
             "volumes": [],
-            "resourceRequirements": [],
+            "resourceRequirements": [
+                {"type": "VCPU", "value": "1"},
+                {"type": "MEMORY", "value": "4096"},
+            ],
             "ulimits": [
                 {
                     "name": "nofile",
