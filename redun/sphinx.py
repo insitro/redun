@@ -31,10 +31,10 @@ Use ``.. autotask::`` to alternatively manually document a task.
 # This technique is inspired by:
 # https://docs.celeryq.dev/en/latest/_modules/celery/contrib/sphinx.html
 
-from inspect import formatargspec, getfullargspec
+from inspect import getfullargspec, signature
 from typing import Any, List, Optional
 
-from docutils import nodes  # type: ignore
+from docutils import nodes  # type: ignore[import]
 from sphinx.domains.python import PyFunction
 from sphinx.ext.autodoc import FunctionDocumenter
 from sphinx.util.docstrings import prepare_docstring
@@ -60,10 +60,7 @@ class TaskDocumenter(FunctionDocumenter):
         """
         wrapped = self.object.func
         if wrapped is not None:
-            argspec = getfullargspec(wrapped)
-            fmt = formatargspec(*argspec)
-            fmt = fmt.replace("\\", "\\\\")
-            return fmt
+            return str(signature(wrapped))
         return ""
 
     def get_doc(self, ignore: int = None) -> List[List[str]]:
@@ -119,16 +116,16 @@ class SchedulerTaskDocumenter(TaskDocumenter):
         """
         wrapped = self.object.func
         if wrapped is not None:
-            argspec = getfullargspec(wrapped)
+            sig = signature(wrapped)
+
             # Remove SchedulerTask-specific internal parameters.
-            del argspec.args[:3]
+            params = list(sig.parameters.values())[3:]
 
             # Unwrap the Promise return value.
-            argspec.annotations["return"] = argspec.annotations["return"].__parameters__[0]
+            argspec = getfullargspec(wrapped)
+            return_annotation = argspec.annotations["return"].__parameters__[0]
 
-            fmt = formatargspec(*argspec)
-            fmt = fmt.replace("\\", "\\\\")
-            return fmt
+            return str(sig.replace(parameters=params, return_annotation=return_annotation))
         return ""
 
 

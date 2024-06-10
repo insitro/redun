@@ -103,12 +103,18 @@ def get_tuple_type_length(tuple_type: Any) -> Optional[int]:
         else:
             tuple_type_args = tuple_type.__args__
 
-        if Ellipsis in tuple_type_args or len(tuple_type_args) == 0:
+        if Ellipsis in tuple_type_args or tuple_type is Tuple:
             # Tuple of unknown length.
             return None
-
-        if tuple_type_args == ((),):
+        elif tuple_type_args == ((),):
             # Special case for length zero.
+            # Note that the representation of empty tuple types changed in python 3.11
+            # Specifically: get_args(Tuple[()]) now evaluates to () instead of ((),)
+            # which is the same value that get_args(Tuple) evaluates to.
+            # https://docs.python.org/3/whatsnew/3.11.html
+            #
+            # Because of this we need to check for the type `Tuple` above before entering
+            # this branch.
             return 0
 
         return len(tuple_type_args)

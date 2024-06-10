@@ -459,8 +459,8 @@ def test_tuple_type_length() -> None:
     assert get_tuple_type_length(Tuple[int, int]) == 2
     assert get_tuple_type_length(Tuple[int, int, int]) == 3
     assert get_tuple_type_length(Tuple[()]) == 0
-    assert get_tuple_type_length(Tuple[Any, ...]) is None
     assert get_tuple_type_length(Tuple) is None
+    assert get_tuple_type_length(Tuple[Any, ...]) is None
 
     User = namedtuple("User", ["name", "age", "friend"])
     assert get_tuple_type_length(User) == 3
