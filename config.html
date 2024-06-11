@@ -227,6 +227,7 @@
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
 <li class="toctree-l1"><a class="reference internal" href="console.html">Console (TUI)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context.html">Context</a></li>
 <li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
 </ul>
@@ -409,7 +410,7 @@ in an error being raised.</p>
 </section>
 <section id="context">
 <h4><code class="docutils literal notranslate"><span class="pre">context</span></code><a class="headerlink" href="#context" title="Link to this heading">¶</a></h4>
-<p>Redun’s context allows users to specify workflow arguments in the redun.ini config file and then pass those arguments to deeply nested sub-tasks, without having to pass the argument explicitly through all the intermediate tasks along the way.
+<p>Redun’s <a class="reference internal" href="context.html"><span class="doc std std-doc">context</span></a> allows users to specify workflow arguments in the redun.ini config file and then pass those arguments to deeply nested sub-tasks, without having to pass the argument explicitly through all the intermediate tasks along the way.
 This is useful for avoiding tedious argument passing (what React developers call “prop-drilling”) and avoids triggering rerunning tasks that don’t even look at such config (they just pass it along).</p>
 <div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[scheduler]</span>
 <span class="c1"># Here, we define context variables for our tool, my_tool.</span>

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.0
+June 04, 2024
+
+* `#358` - Optional feature: use MappedColumn 
+
 ## 0.19.5
 April 16, 2024
 

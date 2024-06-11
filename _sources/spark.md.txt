@@ -105,7 +105,7 @@ def do_stuff():
 ### Accessing Spark contexts
 
 The `redun.glue` module contains helper functions to access the Spark Session and Context objects:
-`get_spark_context()` and `get_spark_session()`. [Full Documentation](spark.md)
+`get_spark_context()` and `get_spark_session()`.
 
 ### User-defined functions
 

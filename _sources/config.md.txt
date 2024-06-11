@@ -130,7 +130,7 @@ in an error being raised.
 
 #### `context`
 
-Redun's context allows users to specify workflow arguments in the redun.ini config file and then pass those arguments to deeply nested sub-tasks, without having to pass the argument explicitly through all the intermediate tasks along the way.
+Redun's [context](./context) allows users to specify workflow arguments in the redun.ini config file and then pass those arguments to deeply nested sub-tasks, without having to pass the argument explicitly through all the intermediate tasks along the way.
 This is useful for avoiding tedious argument passing (what React developers call "prop-drilling") and avoids triggering rerunning tasks that don't even look at such config (they just pass it along).
 
 ```ini

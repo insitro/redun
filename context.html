@@ -2,10 +2,12 @@
 <html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Visualization" href="visualization.html" /><link rel="prev" title="Console (TUI)" href="console.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 --><title>Python Module Index - redun documentation</title>
-<link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 -->
+        <title>Context - redun documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=387cc868" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -189,7 +191,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -213,7 +215,7 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">User guide</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="values.html">Values</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tasks.html">Tasks</a></li>
@@ -225,7 +227,7 @@
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
 <li class="toctree-l1"><a class="reference internal" href="console.html">Console (TUI)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="context.html">Context</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Context</a></li>
 <li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FAQ.html">FAQ</a></li>
 </ul>
@@ -273,7 +275,13 @@
           <span>Back to top</span>
         </a>
         <div class="content-icon-container">
-          <div class="theme-toggle-container theme-toggle-content">
+          <div class="view-this-page">
+  <a class="muted-link" href="_sources/context.md.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
@@ -282,358 +290,103 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          
-<section class="domainindex-section">
-  <h1>Python Module Index</h1>
-  <div class="domainindex-jumpbox"><a href="#cap-r"><strong>r</strong></a></div>
+          <section id="context">
+<h1>Context<a class="headerlink" href="#context" title="Link to this heading">¶</a></h1>
+<p>Sometimes users have parameters or configuration that they want to pass to a task that is deeply nested inside a workflow. Typically, this might require adding the parameter to every task along the path from the top-level task (e.g. <code class="docutils literal notranslate"><span class="pre">main</span></code>) to the intended task. This has two negative consequences: (1) a lot of code change and bloat is added to all the intermediate tasks, (2) when the parameter is changed between executions, we may unnecessarily rerun intermediate that otherwise do not care about the parameter.</p>
+<p>To address this need, redun provides a feature called <strong>Context</strong> that allows propagating values directly to deep parts of a workflow, while still providing correct behavior for workflow caching and reactivity (e.g. rerunning tasks when arguments change). You can think of this like passing values through an “underground pipeline” that skips pass all the intermediate tasks and resurfaces in a low-level task. This is inspired by <a class="reference external" href="https://react.dev/learn/passing-data-deeply-with-context">React’s Context feature</a> as well as the functional programming concept called the <a class="reference external" href="https://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Reader.html">Reader Monad</a>.</p>
+<section id="context-example">
+<h2>Context example<a class="headerlink" href="#context-example" title="Link to this heading">¶</a></h2>
+<p>Consider the following example of using Context in a bioinformatics workflow. First, context variables can be defined using JSON in the redun configuration file:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="c1"># .redun/redun.ini</span>
+<span class="na">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>
+<span class="w">  </span><span class="na">{</span>
+<span class="w">    </span><span class="na">“bwa”</span><span class="o">:</span><span class="w"> </span><span class="s">{</span>
+<span class="w">      </span><span class="na">&quot;executor&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;batch&quot;,</span>
+<span class="w">      </span><span class="na">“memory”</span><span class="o">:</span><span class="w"> </span><span class="s">10,</span>
+<span class="w">      </span><span class="na">“platform”</span><span class="o">:</span><span class="w"> </span><span class="s">“illumina”</span>
+<span class="w">    </span><span class="na">}</span>
+<span class="w">  </span><span class="na">}</span>
+</pre></div>
+</div>
+<p>These values can be fetched from anywhere in the workflow using the <code class="docutils literal notranslate"><span class="pre">get_context(context_path)</span></code> task, where <code class="docutils literal notranslate"><span class="pre">context_path</span></code> is a dot separated path into the JSON (e.g. `”bwa.memory” or “bwa.platform”). Now let’s see how this can be used in the workflow:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="c1"># workflow.py</span>
+
+<span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="n">get_executor</span><span class="p">(</span><span class="s2">&quot;batch&quot;</span><span class="p">),</span> <span class="n">memory</span><span class="o">=</span><span class="n">get_context</span><span class="p">(</span><span class="err">“</span><span class="n">bwa</span><span class="o">.</span><span class="n">memory</span><span class="err">”</span><span class="p">))</span>
+<span class="k">def</span> <span class="nf">run_read_aligner</span><span class="p">(</span>
+    <span class="n">input_file</span><span class="p">:</span> <span class="n">File</span><span class="p">,</span> 
+    <span class="n">platform</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">get_context</span><span class="p">(</span><span class="err">“</span><span class="n">bwa</span><span class="o">.</span><span class="n">platform</span><span class="err">”</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">File</span><span class="p">:</span>
+    <span class="c1"># At runtime, `platform` will be set to “illumina”.</span>
+    <span class="c1"># Notice, the task options `executor` and `memory` can also be parameterized from the context.</span>
+    <span class="c1"># ...</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">align_sample</span><span class="p">(</span><span class="n">input_file</span><span class="p">:</span> <span class="n">File</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">File</span><span class="p">:</span>
+    <span class="c1"># Notice we don’t need to specify `platform`. </span>
+    <span class="c1"># It will be set by the default value, which reads from the context at runtime.</span>
+    <span class="n">bam</span> <span class="o">=</span> <span class="n">run_read_aligner</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span>
+    <span class="n">bam2</span> <span class="o">=</span> <span class="n">postprocess_bam</span><span class="p">(</span><span class="n">bam</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bam2</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">input_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">File</span><span class="p">:</span>
+    <span class="c1"># This top-level task calls align_sample() which calls run_read_aligner().</span>
+    <span class="c1"># The `memory` and `platform` values don’t need to be passed as arguments</span>
+    <span class="c1"># to intermediate tasks like align_sample().</span>
+    <span class="n">output_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">align_sample</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span> <span class="k">for</span> <span class="n">input_file</span> <span class="ow">in</span> <span class="n">input_files</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">output_file</span>
+</pre></div>
+</div>
+<p>In the above workflow, parameters are configured in the configuration file <code class="docutils literal notranslate"><span class="pre">.redun/redun.ini</span></code> and are accessible in low-level tasks like <code class="docutils literal notranslate"><span class="pre">run_read_aligner()</span></code>. In particular, this workflow makes use of context to define the default argument of <code class="docutils literal notranslate"><span class="pre">platform</span></code> as well as how much memory to use for the job.</p>
+<p>See the <a class="reference external" href="https://github.com/insitro/redun/tree/main/examples/context">context example</a>, for a working example.</p>
 </section>
-<table class="domainindex-table">
-  <tr class="pcap">
-    <td></td><td>&#160;</td><td></td>
-  </tr>
-  <tr class="cap" id="cap-r">
-    <td></td><td><strong>r</strong></td><td></td>
-  </tr>
-  <tr>
-    <td><img src="_static/minus.png" class="toggler"
-              id="toggle-1" style="display: none" alt="-" /></td>
-    <td>
-        <a href="redun/redun.html#module-redun"><code class="xref">redun</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.azure_utils"><code class="xref">redun.azure_utils</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.html#module-redun.backends"><code class="xref">redun.backends</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.html#module-redun.backends.base"><code class="xref">redun.backends.base</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.db.html#module-redun.backends.db"><code class="xref">redun.backends.db</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.db.html#module-redun.backends.db.dataflow"><code class="xref">redun.backends.db.dataflow</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.db.html#module-redun.backends.db.query"><code class="xref">redun.backends.db.query</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.db.html#module-redun.backends.db.serializers"><code class="xref">redun.backends.db.serializers</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.backends.html#module-redun.backends.value_store"><code class="xref">redun.backends.value_store</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.bcoding"><code class="xref">redun.bcoding</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.cli"><code class="xref">redun.cli</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.config"><code class="xref">redun.config</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console"><code class="xref">redun.console</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.app"><code class="xref">redun.console.app</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.parser"><code class="xref">redun.console.parser</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.screens"><code class="xref">redun.console.screens</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.upstream_screen"><code class="xref">redun.console.upstream_screen</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.utils"><code class="xref">redun.console.utils</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.console.html#module-redun.console.widgets"><code class="xref">redun.console.widgets</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.context"><code class="xref">redun.context</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.db_utils"><code class="xref">redun.db_utils</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors"><code class="xref">redun.executors</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.alias"><code class="xref">redun.executors.alias</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.aws_batch"><code class="xref">redun.executors.aws_batch</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.aws_glue"><code class="xref">redun.executors.aws_glue</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.aws_utils"><code class="xref">redun.executors.aws_utils</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.base"><code class="xref">redun.executors.base</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.code_packaging"><code class="xref">redun.executors.code_packaging</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.command"><code class="xref">redun.executors.command</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.docker"><code class="xref">redun.executors.docker</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.launch"><code class="xref">redun.executors.launch</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.local"><code class="xref">redun.executors.local</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.executors.html#module-redun.executors.scratch"><code class="xref">redun.executors.scratch</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.expression"><code class="xref">redun.expression</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.federated_tasks"><code class="xref">redun.federated_tasks</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.file"><code class="xref">redun.file</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.functools"><code class="xref">redun.functools</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.glue"><code class="xref">redun.glue</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.handle"><code class="xref">redun.handle</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.hashing"><code class="xref">redun.hashing</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.job_array"><code class="xref">redun.job_array</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.logging"><code class="xref">redun.logging</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.namespace"><code class="xref">redun.namespace</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.promise"><code class="xref">redun.promise</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.scheduler"><code class="xref">redun.scheduler</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.scheduler_config"><code class="xref">redun.scheduler_config</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.scripting"><code class="xref">redun.scripting</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.sphinx"><code class="xref">redun.sphinx</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.tags"><code class="xref">redun.tags</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.task"><code class="xref">redun.task</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.tools"><code class="xref">redun.tools</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.utils"><code class="xref">redun.utils</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.value"><code class="xref">redun.value</code></a></td><td>
-    <em></em></td>
-  </tr>
-  <tr class="cg-1">
-    <td></td>
-    <td>&#160;&#160;&#160;
-        <a href="redun/redun.html#module-redun.version"><code class="xref">redun.version</code></a></td><td>
-    <em></em></td>
-  </tr>
-</table>
+<section id="defining-the-context">
+<h2>Defining the context<a class="headerlink" href="#defining-the-context" title="Link to this heading">¶</a></h2>
+<p>The context can be defined using several mechanisms:</p>
+<ul class="simple">
+<li><p>Context can be defined within the configuration file using <a class="reference internal" href="config.html#context"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">context</span></code></span></a>.</p></li>
+<li><p>Context can be defined in a separate JSON file using <a class="reference internal" href="config.html#context-file"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">context_file</span></code></span></a>.</p></li>
+<li><p>Context can be defined from the command-line using <code class="docutils literal notranslate"><span class="pre">--context</span></code> and <code class="docutils literal notranslate"><span class="pre">--context-file</span></code>. See <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">run</span> <span class="pre">-h</span></code> for more.</p></li>
+<li><p>Context can be updated within the workflow using <a class="reference external" href="https://insitro.github.io/redun/redun/redun.html#redun.Task.update_context"><code class="docutils literal notranslate"><span class="pre">Task.update_context(context)</span></code></a>.</p>
+<ul>
+<li><p>See <a class="reference external" href="https://github.com/insitro/redun/tree/main/examples/context/workflow2.py">context/workflow2.py</a> for an example.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          
-          
+          <a class="next-page" href="visualization.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Visualization</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="console.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Console (TUI)</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -652,8 +405,28 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Context</a><ul>
+<li><a class="reference internal" href="#context-example">Context example</a></li>
+<li><a class="reference internal" href="#defining-the-context">Defining the context</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
