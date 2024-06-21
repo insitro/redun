@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.21.0
+June 21, 2024
+
+* `#363` - DE-9920 python 3.11 compatibility
+* `#364` - Use newer aws batch resource config
+* `#366` - Add more redun context docs
+* `#95` - Specify vcpu and memory as resourceRequirements in AWS Batch executor
+* `#362` - Update github actions and ubuntu
+* `#361` - DE-9915 switch to ruff
+* `#360` - Use correct base class for Footer
+
 ## 0.20.0
 June 04, 2024
 
