@@ -172,6 +172,7 @@ REDUN_DB_VERSIONS = [
     DBVersionInfo("cd2d53191748", 3, 0, "Make job.execution_id non-nullable"),
     DBVersionInfo("cc4f663817b6", 3, 1, "Add Tag schemas."),
     DBVersionInfo("eb7b95e4e8bf", 3, 2, "Remove length restriction on value type names."),
+    DBVersionInfo("f68b3aaee9cc", 3, 3, "Add job and value indexes."),
 ]
 REDUN_DB_MIN_VERSION = DBVersionInfo("", 3, 1, "")  # Min db version needed by redun library.
 REDUN_DB_MAX_VERSION = DBVersionInfo("", 3, 99, "")  # Max db version needed by redun library.
@@ -311,7 +312,7 @@ class Value(Base):
     __tablename__ = "value"
 
     value_hash = Column(String(HASH_LEN), primary_key=True)
-    type = Column(String(length=None))
+    type = Column(String(length=None), index=True)
     format = Column(String(100))
     value = Column(LargeBinary())
 
@@ -855,8 +856,8 @@ class Job(Base):
     __tablename__ = "job"
 
     id = Column(String, primary_key=True)
-    start_time = Column(DateTime)
-    end_time = Column(DateTime, nullable=True)
+    start_time = Column(DateTime, index=True)
+    end_time = Column(DateTime, nullable=True, index=True)
     task_hash = Column(String(HASH_LEN), ForeignKey("task.hash"), index=True)
     cached = Column(Boolean, default=False)
     call_hash = Column(
