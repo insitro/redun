@@ -14,7 +14,7 @@ from textual.containers import Container, Vertical
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import Screen
-from textual.widgets import Footer, Input, Label, RichLog, Static
+from textual.widgets import ClassicFooter, Input, Label, RichLog, Static
 
 from redun import File
 from redun.backends.db import Argument, CallNode, Execution
@@ -129,7 +129,7 @@ class RedunScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Container(
             self.header,
-            Footer(),
+            ClassicFooter(),
         )
 
 
@@ -347,7 +347,7 @@ class ReplScreen(RedunScreen):
                 self.input,
                 id="repl-screen",
             ),
-            Footer(),
+            ClassicFooter(),
         )
 
 
@@ -576,7 +576,7 @@ class ValueScreen(RedunScreen):
                 body,
                 id="value-screen",
             ),
-            Footer(),
+            ClassicFooter(),
         )
 
 
@@ -784,7 +784,7 @@ class TasksScreen(RedunScreen):
         yield Container(
             self.header,
             self.table,
-            Footer(),
+            ClassicFooter(),
         )
 
 
@@ -870,7 +870,7 @@ class TaskVersionsScreen(RedunScreen):
         yield Container(
             self.header,
             self.table,
-            Footer(),
+            ClassicFooter(),
         )
 
 
@@ -943,7 +943,7 @@ class TaskScreen(RedunScreen):
             yield Container(
                 self.header,
                 Static(f"[bold red]Unknown Task {self.task_hash}[/]"),
-                Footer(),
+                ClassicFooter(),
             )
             return
 
@@ -975,7 +975,7 @@ class TaskScreen(RedunScreen):
                 ),
                 id="task-screen",
             ),
-            Footer(),
+            ClassicFooter(),
         )
 
 
@@ -1092,7 +1092,7 @@ class JobScreen(RedunScreen):
             yield Container(
                 self.header,
                 Static(f"[red bold]Unknown Job {self.job_id}[/]"),
-                Footer(),
+                ClassicFooter(),
             )
             return
 
@@ -1176,7 +1176,7 @@ class JobScreen(RedunScreen):
                 ),
                 id="job-screen",
             ),
-            Footer(),
+            ClassicFooter(),
         )
 
 
@@ -1628,7 +1628,7 @@ class ExecutionsNamespaceScreen(RedunScreen):
         yield Container(
             self.header,
             self.table,
-            Footer(),
+            ClassicFooter(),
         )
 
 
