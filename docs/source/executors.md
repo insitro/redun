@@ -253,7 +253,7 @@ A list of additional Python libraries that will be `pip install`'ed before the r
 A list of files that will be made available in the root directory of the run.
 
 
-### Kubernetes (k8s) executor
+## Kubernetes (k8s) executor
 
 The **k8s executor** executes tasks as jobs on a [Kubernetes](https://kubernetes.io/) cluster. This executors works similar to the [AWS Batch Executor](#aws-batch-executor) in terms of using scratch object storage to transfer task arguments, results, and code packaging. See the [configuration documentation](config.md#kubernetes-k8s-executor) for more details.
 
