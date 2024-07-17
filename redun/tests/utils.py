@@ -353,7 +353,7 @@ class MatchEnv:
     An environment for generating Match objects.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.vars: Dict[str, Any] = {}
 
     def match(self, *args, **kwargs) -> "Match":

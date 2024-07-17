@@ -19,7 +19,7 @@ class K8SClient:
     This class manages multiple k8s clients and their config loading.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._is_loaded = False
         self._core: Optional[client.CoreV1Api] = None
         self._custom_objects: Optional[client.CustomObjectsApi] = None

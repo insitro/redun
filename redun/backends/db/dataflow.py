@@ -293,7 +293,7 @@ class DataflowVars:
     Manages variable names for nodes in a dataflow.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.var2name: Dict[DataflowNode, str] = {}
         self.name2var: Dict[str, DataflowNode] = {}
         self.task2args: Dict[Task, List[str]] = {}

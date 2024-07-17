@@ -37,7 +37,7 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
 
     from moto.core import BaseBackend, BaseModel
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.job_id_num = 0
         self.job_defs: Dict[str, dict] = {}  # Job definitions.
         super(RedunGlueBackend, self).__init__()

@@ -33,7 +33,7 @@ class TypeRegistry:
     A registry for redun types and a dispatch for value methods.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._type_name2value_type: Dict[str, Type["Value"]] = {}
         self._raw2proxy_type: Dict[Any, Type["ProxyValue"]] = {}
 
@@ -233,21 +233,6 @@ class MetaValue(type):
         if getattr(cls, "register", True):
             registry = get_type_registry()
             registry.register(cls)
-
-
-# In Python 3.6, in order to use metaclass for a Generic class we need to
-# inherit from GenericMeta.
-# https://github.com/python/typing/issues/449
-try:
-    # Types are ignored here because GenericMeta has been removed in python 3.7+
-    from typing import GenericMeta  # type: ignore
-
-    class MetaValue(MetaValue, GenericMeta):  # type: ignore
-        def __init__(cls, name, bases, dct, **kwargs):
-            super().__init__(name, bases, dct, **kwargs)
-
-except ImportError:
-    pass
 
 
 class Value(metaclass=MetaValue):

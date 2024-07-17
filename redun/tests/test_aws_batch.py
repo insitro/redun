@@ -1228,10 +1228,10 @@ def mock_executor(
     )
     executor = AWSBatchExecutor("batch", scheduler, config["batch"])
 
-    executor.get_jobs = Mock()  # type: ignore[assignment]
+    executor.get_jobs = Mock()  # type:ignore[method-assign]
     executor.get_jobs.return_value = []
 
-    executor.get_array_child_jobs = Mock()  # type: ignore[assignment]
+    executor.get_array_child_jobs = Mock()  # type:ignore[method-assign]
     executor.get_array_child_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")

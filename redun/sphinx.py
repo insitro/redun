@@ -34,7 +34,7 @@ Use ``.. autotask::`` to alternatively manually document a task.
 from inspect import getfullargspec, signature
 from typing import Any, List, Optional
 
-from docutils import nodes  # type: ignore[import]
+from docutils import nodes
 from sphinx.domains.python import PyFunction
 from sphinx.ext.autodoc import FunctionDocumenter
 from sphinx.util.docstrings import prepare_docstring
@@ -63,7 +63,7 @@ class TaskDocumenter(FunctionDocumenter):
             return str(signature(wrapped))
         return ""
 
-    def get_doc(self, ignore: int = None) -> List[List[str]]:
+    def get_doc(self, ignore: Optional[int] = None) -> List[List[str]]:
         """
         Returns the formatted docstring for the task.
         """

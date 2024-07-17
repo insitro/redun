@@ -44,6 +44,7 @@ class RedunBackend(abc.ABC):
     def __init__(self, type_registry: Optional[TypeRegistry] = None):
         self.type_registry: TypeRegistry = type_registry or get_type_registry()
 
+    @abc.abstractmethod
     def load(self, migrate: Optional[bool] = None) -> None:
         """
         Load the backend for use.
@@ -56,6 +57,7 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def record_call_node(
         self,
         task_name: str,
@@ -94,6 +96,7 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def record_call_node_context(
         self, call_hash: str, context_hash: Optional[str], context: dict
     ) -> str:
@@ -102,6 +105,7 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def record_value(self, value: Any, data: Optional[bytes] = None) -> str:
         """
         Record a Value into the backend.
@@ -120,6 +124,7 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def get_value(self, value_hash: str) -> Any:
         """
         Returns a Value from the datastore using the value content address (value_hash).
@@ -137,6 +142,7 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def check_cache(
         self,
         task_hash: str,
@@ -207,13 +213,14 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def set_eval_cache(
         self,
         eval_hash: str,
         task_hash: str,
         args_hash: str,
         value: Any,
-        value_hash: str = None,
+        value_hash: Optional[str] = None,
     ) -> None:
         """
         Sets a new value in the Evaluation cache.
@@ -233,30 +240,35 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def explain_cache_miss(self, task: "BaseTask", args_hash: str) -> Optional[Dict[str, Any]]:
         """
         Determine the reason for a cache miss.
         """
         pass
 
+    @abc.abstractmethod
     def advance_handle(self, handles: List[Handle], child_handle: Handle):
         """
         Record parent-child relationships between Handles.
         """
         pass
 
+    @abc.abstractmethod
     def rollback_handle(self, handle: Handle) -> None:
         """
         Rollback all descendant handles.
         """
         pass
 
+    @abc.abstractmethod
     def is_valid_handle(self, handle: Handle) -> bool:
         """
         A handle is valid if it current or ancestral to the current handle.
         """
         pass
 
+    @abc.abstractmethod
     def record_execution(self, exec_id, args: List[str]) -> None:
         """
         Records an Execution to the backend.
@@ -275,12 +287,14 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def record_job_start(self, job: "Job", now: Optional[datetime] = None) -> Any:
         """
         Records the start of a new Job.
         """
         pass
 
+    @abc.abstractmethod
     def record_job_end(
         self, job: "Job", now: Optional[datetime] = None, status: Optional[str] = None
     ) -> None:
@@ -292,12 +306,14 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def get_job(self, job_id: str) -> Optional[dict]:
         """
         Returns details for a Job.
         """
         pass
 
+    @abc.abstractmethod
     def record_tags(
         self,
         entity_type: TagEntity,
@@ -334,6 +350,7 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def delete_tags(
         self, entity_id: str, tags: Iterable[KeyValue], keys: Iterable[str] = ()
     ) -> List[Tuple[str, str, str, Any]]:
@@ -342,6 +359,7 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def update_tags(
         self,
         entity_type: TagEntity,
@@ -354,12 +372,14 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def get_tags(self, entity_ids: List[str]) -> Dict[str, TagMap]:
         """
         Get the tags of an entity (Execution, Job, CallNode, Task, Value).
         """
         pass
 
+    @abc.abstractmethod
     def get_records(self, ids: Iterable[str], sorted=True) -> Iterable[dict]:
         """
         Returns serialized records for the given ids.
@@ -373,12 +393,14 @@ class RedunBackend(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def put_records(self, records: Iterable[dict]) -> int:
         """
         Writes records to the database and returns number of new records written.
         """
         pass
 
+    @abc.abstractmethod
     def iter_record_ids(self, root_ids: Iterable[str]) -> Iterator[str]:
         """
         Iterate the record ids of descendants of root_ids.

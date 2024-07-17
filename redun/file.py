@@ -260,18 +260,21 @@ class FileSystem(abc.ABC):
 
         return stream
 
+    @abc.abstractmethod
     def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
         """
         Private open method for subclasses to implement.
         """
         pass
 
+    @abc.abstractmethod
     def exists(self, path: str) -> bool:
         """
         Returns True if path exists on filesystem.
         """
         pass
 
+    @abc.abstractmethod
     def remove(self, path: str) -> None:
         """
         Delete a path from the filesystem.
@@ -287,12 +290,14 @@ class FileSystem(abc.ABC):
         assert time is None, "time is not supported."
         self.open(path, "a").close()
 
+    @abc.abstractmethod
     def mkdir(self, path: str) -> None:
         """
         Creates the directory in the filesystem.
         """
         pass
 
+    @abc.abstractmethod
     def rmdir(self, path: str, recursive: bool = False) -> None:
         """
         Removes a directory from the filesystem.
@@ -301,6 +306,7 @@ class FileSystem(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
     def get_hash(self, path: str) -> str:
         """
         Return a hash for the file at path.
@@ -363,24 +369,28 @@ class FileSystem(abc.ABC):
             # At least one path must be defined.
             raise ValueError("At least one path must be defined.")
 
+    @abc.abstractmethod
     def glob(self, pattern: str) -> List[str]:
         """
         Returns filenames matching pattern.
         """
         pass
 
+    @abc.abstractmethod
     def isfile(self, path: str) -> bool:
         """
         Returns True if path is a file.
         """
         pass
 
+    @abc.abstractmethod
     def isdir(self, path: str) -> bool:
         """
         Returns True if path is a directory.
         """
         pass
 
+    @abc.abstractmethod
     def filesize(self, path: str) -> int:
         """
         Returns file size of path in bytes.
@@ -1461,15 +1471,19 @@ class Staging(Value, Generic[T]):
         self.local: Any = None
         self.remote: Any = None
 
+    @abc.abstractmethod
     def stage(self) -> T:
         pass
 
+    @abc.abstractmethod
     def unstage(self) -> T:
         pass
 
+    @abc.abstractmethod
     def render_unstage(self, as_mount: bool = False) -> str:
         pass
 
+    @abc.abstractmethod
     def render_stage(self, as_mount: bool = False) -> str:
         pass
 

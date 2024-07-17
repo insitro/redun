@@ -56,7 +56,7 @@ def test_task_config() -> None:
     assert my_task.fullname == "my_task"
     assert my_task.load_module == "redun.tests.test_tasks"
     assert my_task.hash
-    assert my_task.func
+    assert callable(my_task.func)
     assert (
         my_task.source
         == """\

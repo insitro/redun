@@ -412,10 +412,8 @@ class Task(Value, Generic[Func]):
         if self.version is None:
             if self.source:
                 source = self.source
-            elif self.func:
-                source = get_func_source(self.func)
             else:
-                source = ""
+                source = get_func_source(self.func)
             return hash_struct(
                 ["Task", self.fullname, "source", source] + hash_includes_hash + task_options_hash
             )
@@ -502,7 +500,6 @@ class Task(Value, Generic[Func]):
         """
         Signature of the function wrapped by the task.
         """
-        assert self.func
         if not self._signature:
             self._signature = inspect.signature(self.func)
         return self._signature
@@ -990,10 +987,9 @@ class TaskRegistry:
     The @task() decorator registers tasks to the current registry.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._tasks: Dict[str, Task] = {}
-
-        self.task_hashes = set()
+        self.task_hashes: set[str] = set()
 
     def add(self, task: Task) -> None:
         self._tasks[task.fullname] = task

@@ -35,7 +35,7 @@ from typing import (
 try:
     from typing import Protocol
 except ImportError:
-    from typing_extensions import Protocol  # type: ignore
+    from typing_extensions import Protocol  # type: ignore[assignment]
 
 
 T = TypeVar("T")
@@ -415,7 +415,7 @@ class PreviewingUnpickler(Unpickler):
     unknown classes.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         # Registry of stub classes for unknown classes.

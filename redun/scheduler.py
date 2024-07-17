@@ -636,7 +636,7 @@ def format_job_statuses(
     yield ""
 
 
-class Frame(FrameSummary, Value):
+class Frame(FrameSummary, Value):  # type:ignore[misc]
     """
     Frame of a :class:`Traceback` for :class:`Job` failure.
     """
@@ -652,7 +652,7 @@ class Frame(FrameSummary, Value):
         lookup_line: bool = True,
         line: Optional[str] = None,
         job: Optional[Job] = None,
-    ):
+    ) -> None:
         self.filename = filename
         self.lineno = lineno
         self.name = name
@@ -1401,7 +1401,7 @@ class Scheduler:
                     )
 
                 # Evaluate task_options, default_kwargs, and then expression args.
-                default_kwargs_promise = self.evaluate(
+                default_kwargs_promise: Promise = self.evaluate(
                     job.get_raw_options(), parent_job=parent_job
                 ).then(options_then)
 

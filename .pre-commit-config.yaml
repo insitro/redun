@@ -5,13 +5,14 @@ repos:
     hooks:
       # Run the linter.
       - id: ruff
+        args: [--fix]
       # Run the formatter.
       - id: ruff-format
     # Mypy: Python type-checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.981
+    rev: v1.10.0
     hooks:
       - id: mypy
         args: ['--show-error-codes', '--warn-unused-ignores']
         exclude: 'bin/|docs/|examples/|experimental/|redun_server/|setup.py'
-        additional_dependencies: [types-freezegun, types-python-dateutil, types-requests]
+        additional_dependencies: [types-freezegun, types-python-dateutil, types-requests, types-docutils]

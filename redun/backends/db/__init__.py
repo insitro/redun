@@ -787,7 +787,7 @@ class Execution(Base):
         self._load()
 
     @reconstructor
-    def _load(self):
+    def _load(self) -> None:
         self._status: Optional[str] = None
 
     def __repr__(self):
@@ -896,7 +896,7 @@ class Job(Base):
     )
 
     @reconstructor
-    def _load(self):
+    def _load(self) -> None:
         self._status: Optional[str] = None
 
     def __repr__(self) -> str:
@@ -2029,7 +2029,7 @@ class RedunBackendDb(RedunBackend):
         task_hash: str,
         args_hash: str,
         value: Any,
-        value_hash: str = None,
+        value_hash: Optional[str] = None,
     ) -> None:
         """
         Sets a new value in the Evaluation cache.

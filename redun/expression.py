@@ -44,7 +44,7 @@ class Expression(Value, Generic[Result]):
     to execute it.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._hash: Optional[str] = None
         self._upstreams: List[Any] = []
         self._length: Optional[int] = None

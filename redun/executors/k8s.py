@@ -676,7 +676,7 @@ class K8SExecutor(Executor):
         pod: V1Pod,
         job_status: str,
         status_reason: Optional[str],
-        k8s_labels: List[Tuple[str, str]] = None,
+        k8s_labels: Optional[List[Tuple[str, str]]] = None,
     ) -> None:
         """
         Complete a redun job (done or reject).

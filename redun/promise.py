@@ -105,8 +105,8 @@ class Promise(Generic[T]):
 
     def then(
         self,
-        resolver: Optional[Callable[[T], S]] = None,
-        rejector: Optional[Callable[[Exception], S]] = None,
+        resolver: Optional[Callable[[T], Any]] = None,
+        rejector: Optional[Callable[[Exception], Any]] = None,
     ) -> "Promise[S]":
         """
         Register callbacks to the promise.
@@ -133,12 +133,12 @@ class Promise(Generic[T]):
             self._resolvers.append(wrap_callback(resolver))
         else:
             # By default propagate result.
-            self._resolvers.append(cast(Callable[[T], S], promise.do_resolve))
+            self._resolvers.append(cast(Callable[[T], Any], promise.do_resolve))
         if rejector:
             self._rejectors.append(wrap_callback(rejector))
         else:
             # By default propagate error.
-            self._rejectors.append(cast(Callable[[Exception], S], promise.do_reject))
+            self._rejectors.append(cast(Callable[[Exception], Any], promise.do_reject))
 
         self._notify()
         return promise

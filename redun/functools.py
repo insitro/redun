@@ -4,9 +4,8 @@ from typing import Any, Callable, Dict, List, Sequence, Tuple, TypeVar, Union
 from redun.expression import Expression, SchedulerExpression
 from redun.promise import Promise
 from redun.scheduler import Job, Scheduler, scheduler_task
-from redun.task import Task, task
+from redun.task import Task, task, PartialTask
 
-S = TypeVar("S")
 T = TypeVar("T")
 
 
@@ -37,7 +36,7 @@ def identity(x: T) -> T:
     return x
 
 
-def delay(x: T) -> Task[Callable[[], T]]:
+def delay(x: T) -> PartialTask:
     """
     Delay the evaluation of a value x.
 
@@ -122,7 +121,7 @@ def apply_func(func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
     return func(*args, **kwargs)
 
 
-def as_task(func: Callable[..., T]) -> Task[Callable[..., T]]:
+def as_task(func: Callable[..., T]) -> PartialTask:
     """
     Transform a plain Python function into a redun Task.
 

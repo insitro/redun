@@ -1,6 +1,6 @@
 from enum import Enum
 from functools import lru_cache
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, List, Tuple, Union, Optional
 
 from google.api_core import gapic_v1
 from google.cloud import batch_v1, compute_v1
@@ -48,13 +48,13 @@ def batch_submit(
     memory: int,
     retries: int,
     priority: int,
-    max_duration: str = None,
+    max_duration: Optional[str] = None,
     task_count: int = 1,
     mount_buckets: List[str] = [],
-    boot_disk_size: int = None,
-    min_cpu_platform: MinCPUPlatform = None,
+    boot_disk_size: Optional[int] = None,
+    min_cpu_platform: Optional[MinCPUPlatform] = None,
     accelerators: List[Tuple[str, int]] = [],
-    image: str = None,
+    image: Optional[str] = None,
     script: str = "exit 0",
     commands: List[str] = ["exit 0"],
     service_account_email: str = "",

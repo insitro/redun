@@ -189,7 +189,7 @@ def test_import_paths() -> None:
 
 # Class to pickle for test functions.
 class User:
-    def __init__(self, name: str, age: int, friend: "User" = None):
+    def __init__(self, name: str, age: int, friend: Optional["User"] = None):
         self.name = name
         self.age = age
         self.friend = friend

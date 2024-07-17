@@ -89,7 +89,9 @@ def get_num_workers() -> int:
     return int(workers)
 
 
-def udf(wrapped_func: Callable = None, return_type: Optional["DataType"] = None) -> Callable:
+def udf(
+    wrapped_func: Optional[Callable] = None, return_type: Optional["DataType"] = None
+) -> Callable:
     """
     Creates a spark user defined function.
     Wraps `pyspark.sql.functions.udf` so spark context is only needed at
