@@ -606,6 +606,11 @@ def test_dir_subvalues(scheduler: Scheduler, session: Session) -> None:
     paths = {subvalue.value_parsed.path for subvalue in subvalues}
     assert paths == {"dir/file1", "dir/file2"}
 
+    # they are also accessible by "subfiles" property
+    subfiles = arg_value.subfiles
+    subfile_paths = {subfile.value.value_parsed.path for subfile in subfiles}
+    assert subfile_paths == {"dir/file1", "dir/file2"}
+
 
 @use_tempdir
 def test_nested_dir_subvalues(scheduler: Scheduler, session: Session) -> None:

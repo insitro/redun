@@ -300,8 +300,8 @@ class Subvalue(Base):
         String(HASH_LEN), ForeignKey("value.value_hash"), primary_key=True, index=True
     )
 
-    parent = relationship("Value", foreign_keys=[parent_value_hash], backref="child_edges")
-    child = relationship("Value", foreign_keys=[value_hash], backref="parent_edges")
+    parent = relationship("Value", foreign_keys=[parent_value_hash], back_populates="child_edges")
+    child = relationship("Value", foreign_keys=[value_hash], back_populates="parent_edges")
 
 
 class Value(Base):
@@ -330,7 +330,7 @@ class Value(Base):
         secondary=Subvalue.__table__,
         primaryjoin=(value_hash == Subvalue.parent_value_hash),
         secondaryjoin=(value_hash == Subvalue.value_hash),
-        backref="parents",
+        back_populates="parents",
         viewonly=True,
         sync_backref=False,
     )
@@ -338,8 +338,66 @@ class Value(Base):
         "Tag",
         foreign_keys=[value_hash],
         primaryjoin="(Value.value_hash == Tag.entity_id) & (Tag.is_current == True)",
-        backref="values",
+        back_populates="values",
         uselist=True,
+    )
+
+    parents = relationship(
+        "Value",
+        secondary=Subvalue.__table__,
+        primaryjoin=(value_hash == Subvalue.value_hash),
+        secondaryjoin=(value_hash == Subvalue.parent_value_hash),
+        back_populates="children",
+        viewonly=True,
+        sync_backref=False,
+    )
+
+    child_edges = relationship(
+        "Subvalue", primaryjoin=(value_hash == Subvalue.parent_value_hash), back_populates="parent"
+    )
+    parent_edges = relationship(
+        "Subvalue", primaryjoin=(value_hash == Subvalue.value_hash), back_populates="child"
+    )
+
+    file = relationship("File", uselist=False, back_populates="value")
+    subfiles = relationship(
+        "File",
+        secondary=Subvalue.__table__,
+        primaryjoin=(value_hash == Subvalue.parent_value_hash),
+        secondaryjoin="Subvalue.value_hash == File.value_hash",
+        back_populates="parent_values",
+        viewonly=True,
+        sync_backref=False,
+    )
+
+    arguments = relationship("Argument", back_populates="value")
+    evals = relationship("Evaluation", back_populates="value")
+    results = relationship("CallNode", back_populates="value")
+
+    handle = relationship(
+        "Handle",
+        back_populates="value",
+        uselist=False,
+    )
+
+    subhandles = relationship(
+        "Handle",
+        secondary=Subvalue.__table__,
+        primaryjoin=(value_hash == Subvalue.parent_value_hash),
+        secondaryjoin="Subvalue.value_hash == Handle.value_hash",
+        uselist=True,
+        back_populates="parent_values",
+        viewonly=True,
+        sync_backref=False,
+    )
+
+    task = relationship(
+        "Task",
+        foreign_keys=[value_hash],
+        primaryjoin="Task.hash == Value.value_hash",
+        back_populates="value",
+        uselist=False,
+        viewonly=True,
     )
 
     @property
@@ -424,16 +482,14 @@ class File(Base):
     value_hash = Column(String(HASH_LEN), ForeignKey("value.value_hash"), primary_key=True)
     path = Column(String(1024), index=True)
 
-    value = relationship(
-        "Value", foreign_keys=[value_hash], backref=backref("file", uselist=False)
-    )
+    value = relationship("Value", foreign_keys=[value_hash], back_populates="file", uselist=False)
     parent_values = relationship(
         "Value",
         secondary=Subvalue.__table__,
         primaryjoin=(value_hash == Subvalue.value_hash),
         secondaryjoin=(Subvalue.parent_value_hash == Value.value_hash),
         uselist=True,
-        backref=backref("subfiles", uselist=True),
+        back_populates="subfiles",
         viewonly=True,
         sync_backref=False,
     )
@@ -470,9 +526,9 @@ class ArgumentResult(Base):
         index=True,
     )
 
-    arg = relationship("Argument", foreign_keys=[arg_hash], backref="arg_results")
+    arg = relationship("Argument", foreign_keys=[arg_hash], back_populates="arg_results")
     result_call_node = relationship(
-        "CallNode", foreign_keys=[result_call_hash], backref="arg_results"
+        "CallNode", foreign_keys=[result_call_hash], back_populates="arg_results"
     )
 
 
@@ -489,8 +545,8 @@ class Argument(Base):
     arg_position = Column(Integer, nullable=True)
     arg_key = Column(String(100), nullable=True)
 
-    value = relationship("Value", foreign_keys=[value_hash], backref="arguments")
-    call_node = relationship("CallNode", foreign_keys=[call_hash], backref="arguments")
+    value = relationship("Value", foreign_keys=[value_hash], back_populates="arguments")
+    call_node = relationship("CallNode", foreign_keys=[call_hash], back_populates="arguments")
     upstream = relationship(
         "CallNode",
         secondary=ArgumentResult.__table__,
@@ -498,10 +554,12 @@ class Argument(Base):
         secondaryjoin=(
             lambda: ArgumentResult.result_call_hash == CallNode.call_hash  # type: ignore
         ),
-        backref="downstream",
+        back_populates="downstream",
         viewonly=True,
         sync_backref=False,
     )
+
+    arg_results = relationship("ArgumentResult", back_populates="arg")
 
     @property
     def value_parsed(self) -> Optional[Any]:
@@ -530,8 +588,8 @@ class Evaluation(Base):
     args_hash = Column(String(HASH_LEN))
     value_hash = Column(String(HASH_LEN), ForeignKey("value.value_hash"), index=True)
 
-    task = relationship("Task", uselist=False, foreign_keys=[task_hash], backref="evals")
-    value = relationship("Value", foreign_keys=[value_hash], backref="evals")
+    task = relationship("Task", uselist=False, foreign_keys=[task_hash], back_populates="evals")
+    value = relationship("Value", foreign_keys=[value_hash], back_populates="evals")
 
     @property
     def value_parsed(self) -> Optional[Any]:
@@ -561,8 +619,8 @@ class CallEdge(Base):
     )
     call_order = Column(Integer, primary_key=True)
 
-    parent_node = relationship("CallNode", foreign_keys=[parent_id], backref="child_edges")
-    child_node = relationship("CallNode", foreign_keys=[child_id], backref="parent_edges")
+    parent_node = relationship("CallNode", foreign_keys=[parent_id], back_populates="child_edges")
+    child_node = relationship("CallNode", foreign_keys=[child_id], back_populates="parent_edges")
 
 
 class CallNode(Base):
@@ -592,22 +650,46 @@ class CallNode(Base):
         },
     )
 
-    task = relationship("Task", uselist=False, foreign_keys=[task_hash], backref="call_nodes")
-    value = relationship("Value", uselist=False, foreign_keys=[value_hash], backref="results")
+    task = relationship(
+        "Task", uselist=False, foreign_keys=[task_hash], back_populates="call_nodes"
+    )
+    value = relationship(
+        "Value", uselist=False, foreign_keys=[value_hash], back_populates="results"
+    )
     task_set = relationship(
         "CallSubtreeTask",
-        primaryjoin=(lambda: CallNode.call_hash == CallSubtreeTask.call_hash),  # type: ignore
-        foreign_keys=[call_hash],
-        backref="call_node",
+        back_populates="call_node",
+        uselist=True,
     )
     tags = relationship(
         "Tag",
         foreign_keys=[call_hash],
         primaryjoin="(CallNode.call_hash == Tag.entity_id) & (Tag.is_current == True)",
-        backref="call_nodes",
         viewonly=True,
         uselist=True,
     )
+
+    arguments = relationship("Argument", back_populates="call_node")
+    downstream = relationship(
+        "Argument",
+        secondary=ArgumentResult.__table__,
+        primaryjoin=(ArgumentResult.result_call_hash == call_hash),
+        secondaryjoin=(lambda: Argument.arg_hash == ArgumentResult.arg_hash),
+        back_populates="upstream",
+        viewonly=True,
+        sync_backref=False,
+    )
+
+    arg_results = relationship("ArgumentResult", back_populates="result_call_node")
+
+    child_edges = relationship(
+        "CallEdge", primaryjoin=(call_hash == CallEdge.parent_id), back_populates="parent_node"
+    )
+    parent_edges = relationship(
+        "CallEdge", primaryjoin=(call_hash == CallEdge.child_id), back_populates="child_node"
+    )
+
+    jobs = relationship("Job", back_populates="call_node")
 
     def __repr__(self) -> str:
         return "CallNode(hash='{call_hash}', task_name='{task_name}', args={args})".format(
@@ -698,6 +780,10 @@ class CallSubtreeTask(Base):
     )
     task_hash = Column(String(HASH_LEN), ForeignKey("task.hash"), primary_key=True, index=True)
 
+    call_node = relationship(
+        "CallNode", foreign_keys=[call_hash], back_populates="task_set", uselist=False
+    )
+
 
 class HandleEdge(Base):
     __tablename__ = "handle_edge"
@@ -718,7 +804,7 @@ class Handle(Base):
     value = relationship(
         "Value",
         foreign_keys=[value_hash],
-        backref=backref("handle", uselist=False),
+        back_populates="handle",
         uselist=False,
     )
     parent_values = relationship(
@@ -727,7 +813,7 @@ class Handle(Base):
         primaryjoin=(value_hash == Subvalue.value_hash),
         secondaryjoin=(Subvalue.parent_value_hash == Value.value_hash),
         uselist=True,
-        backref=backref("subhandles", uselist=True),
+        back_populates="subhandles",
         viewonly=True,
         sync_backref=False,
     )
@@ -736,7 +822,16 @@ class Handle(Base):
         secondary=HandleEdge.__table__,
         primaryjoin=(hash == HandleEdge.parent_id),
         secondaryjoin=(hash == HandleEdge.child_id),
-        backref="parents",
+        back_populates="parents",
+        viewonly=True,
+        sync_backref=False,
+    )
+    parents = relationship(
+        "Handle",
+        secondary=HandleEdge.__table__,
+        primaryjoin=(hash == HandleEdge.child_id),
+        secondaryjoin=(hash == HandleEdge.parent_id),
+        back_populates="children",
         viewonly=True,
         sync_backref=False,
     )
@@ -774,11 +869,16 @@ class Execution(Base):
     )
 
     job = relationship("Job", foreign_keys=[job_id], uselist=False)
+    jobs = relationship(
+        "Job",
+        primaryjoin="Job.execution_id == Execution.id",
+        uselist=True,
+        back_populates="execution",
+    )
     tags = relationship(
         "Tag",
         foreign_keys=[id],
         primaryjoin="(Execution.id == Tag.entity_id) & (Tag.is_current == True)",
-        backref="executions",
         uselist=True,
     )
 
@@ -879,19 +979,19 @@ class Job(Base):
         },
     )
 
-    task = relationship("Task", uselist=False, backref="jobs")
-    call_node = relationship("CallNode", uselist=False, backref="jobs")
+    task = relationship("Task", uselist=False, back_populates="jobs")
+    call_node = relationship("CallNode", uselist=False, back_populates="jobs")
     child_jobs = relationship(
-        "Job", backref=backref("parent_job", remote_side=id), order_by="Job.start_time"
+        "Job", foreign_keys=[parent_id], back_populates="parent_job", order_by="Job.start_time"
     )
+    parent_job = relationship("Job", uselist=False, remote_side=id)
     execution = relationship(
-        "Execution", foreign_keys=[execution_id], uselist=False, backref="jobs"
+        "Execution", foreign_keys=[execution_id], uselist=False, back_populates="jobs"
     )
     tags = relationship(
         "Tag",
         foreign_keys=[id],
         primaryjoin="(Job.id == Tag.entity_id) & (Tag.is_current == True)",
-        backref="jobs",
         uselist=True,
     )
 
@@ -997,7 +1097,7 @@ class Task(Base):
         "Value",
         foreign_keys=[Value.value_hash],
         primaryjoin=(hash == Value.value_hash),
-        backref=backref("task", uselist=False),
+        back_populates="task",
         uselist=False,
         viewonly=True,
     )
@@ -1005,9 +1105,12 @@ class Task(Base):
         "Tag",
         foreign_keys=[hash],
         primaryjoin="(Task.hash == Tag.entity_id) & (Tag.is_current == True)",
-        backref="tasks",
         uselist=True,
     )
+
+    evals = relationship("Evaluation", back_populates="task")
+    call_nodes = relationship("CallNode", back_populates="task")
+    jobs = relationship("Job", back_populates="task")
 
     @property
     def fullname(self) -> str:
@@ -1029,8 +1132,12 @@ class TagEdit(Base):
     parent_id = Column(String, ForeignKey("tag.tag_hash"), primary_key=True)
     child_id = Column(String, ForeignKey("tag.tag_hash"), primary_key=True)
 
-    parent = relationship("Tag", foreign_keys=[parent_id], backref="child_edits", viewonly=True)
-    child = relationship("Tag", foreign_keys=[child_id], backref="parent_edits", viewonly=True)
+    parent = relationship(
+        "Tag", foreign_keys=[parent_id], back_populates="child_edits", viewonly=True
+    )
+    child = relationship(
+        "Tag", foreign_keys=[child_id], back_populates="parent_edits", viewonly=True
+    )
 
 
 class Tag(Base):
@@ -1057,7 +1164,63 @@ class Tag(Base):
         secondary=TagEdit.__table__,
         primaryjoin="Tag.tag_hash == TagEdit.child_id",
         secondaryjoin="Tag.tag_hash == TagEdit.parent_id",
-        backref="children",
+        back_populates="children",
+    )
+
+    children = relationship(
+        "Tag",
+        secondary=TagEdit.__table__,
+        primaryjoin="Tag.tag_hash == TagEdit.parent_id",
+        secondaryjoin="Tag.tag_hash == TagEdit.child_id",
+        back_populates="parents",
+    )
+
+    child_edits = relationship(
+        "TagEdit",
+        primaryjoin="Tag.tag_hash == TagEdit.parent_id",
+        back_populates="parent",
+        viewonly=True,
+    )
+    parent_edits = relationship(
+        "TagEdit",
+        primaryjoin="Tag.tag_hash == TagEdit.child_id",
+        back_populates="child",
+        viewonly=True,
+    )
+
+    call_nodes = relationship(
+        "CallNode",
+        foreign_keys=[entity_id],
+        primaryjoin="(CallNode.call_hash == Tag.entity_id) & (Tag.is_current == True)",
+        viewonly=True,
+    )
+
+    executions = relationship(
+        "Execution",
+        foreign_keys=[entity_id],
+        primaryjoin="(Execution.id == Tag.entity_id) & (Tag.is_current == True)",
+        viewonly=True,
+    )
+
+    jobs = relationship(
+        "Job",
+        foreign_keys=[entity_id],
+        primaryjoin="(Job.id == Tag.entity_id) & (Tag.is_current == True)",
+        viewonly=True,
+    )
+
+    values = relationship(
+        "Value",
+        foreign_keys=[entity_id],
+        primaryjoin="(Value.value_hash == Tag.entity_id) & (Tag.is_current == True)",
+        viewonly=True,
+    )
+
+    tasks = relationship(
+        "Task",
+        foreign_keys=[entity_id],
+        primaryjoin="(Task.hash == Tag.entity_id) & (Tag.is_current == True)",
+        viewonly=True,
     )
 
     def __repr__(self) -> str:
