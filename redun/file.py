@@ -1192,7 +1192,6 @@ class File(Value):
     def __init__(self, path: str):
         self.filesystem: FileSystem = get_filesystem(url=path)
         self.path: str = path
-        self.stream: Optional[IO] = None
         self._hash: Optional[str] = None
 
     def __repr__(self) -> str:
@@ -1242,19 +1241,21 @@ class File(Value):
         """
 
         def close():
+            nonlocal stream
+
             original_close()
             self.update_hash()
 
             # Restore original close. This way double closing doesn't trigger
             # unnecessary hashing.
-            self.stream.close = original_close
+            stream.close = original_close
 
-        self.stream = self.filesystem.open(self.path, mode, encoding=encoding, **kwargs)
+        stream = self.filesystem.open(self.path, mode, encoding=encoding, **kwargs)
 
-        original_close = self.stream.close
-        self.stream.close = close  # type: ignore
+        original_close = stream.close
+        stream.close = close  # type: ignore
 
-        return self.stream
+        return stream
 
     def touch(self, time: Union[Tuple[int, int], Tuple[float, float], None] = None) -> None:
         self.filesystem.touch(self.path, time)

@@ -2,7 +2,7 @@ from typing import Dict, Iterator, Optional, Tuple
 
 from textual.app import ComposeResult
 from textual.containers import Container
-from textual.widgets import Footer, Static
+from textual.widgets import ClassicFooter, Static
 
 from redun.backends.db import CallNode, Value
 from redun.backends.db.dataflow import (
@@ -170,7 +170,7 @@ class UpstreamDataflowScreen(RedunScreen):
             yield Container(
                 self.header,
                 Static(f"[bold red]Unknown value {self.value_hash}[/]"),
-                Footer(),
+                ClassicFooter(),
             )
             return
 
@@ -191,5 +191,5 @@ class UpstreamDataflowScreen(RedunScreen):
                 Static("\n".join(lines), classes="dataflow"),
                 id="upstreams-screen",
             ),
-            Footer(),
+            ClassicFooter(),
         )
