@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.22.0
+August 28, 2024
+
+* `#373` - fix file stream closing bug. fix lack of ClassicFooter in ReplScreen
+* `#372` - Replace backref with back_populates
+* `#369` - DE-9968 upgrade mypy to 1.10.0
+* `#370` - always use ClassicFooter
+* `#367` - [CHS-677] Add job and value indexes to redun-db
+
 ## 0.21.0
 June 21, 2024
 
