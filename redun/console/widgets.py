@@ -12,7 +12,8 @@ from textual.binding import Binding
 from textual.containers import Container
 from textual.message import Message
 from textual.reactive import reactive
-from textual.widgets import ClassicFooter, DataTable, Input, Static
+from textual.widget import Widget
+from textual.widgets import DataTable, Footer, Input, Static
 
 from redun.backends.db import CallNode, Execution, Job, Tag, Task, Value
 from redun.cli import format_timedelta
@@ -36,7 +37,18 @@ class RedunHeader(Static):
         super().update("[bold]redun console[/bold] " + title)
 
 
-class RedunFooter(ClassicFooter):
+class PageLabel(Widget):
+    page = reactive(1)
+
+    def __init__(self, page: int):
+        super().__init__()
+        self.page = page
+
+    def render(self) -> RenderableType:
+        return Text(f" Page {self.page} ", style=Style(color="black", bgcolor="green"))
+
+
+class RedunFooter(Footer):
     """
     Footer used on Screens that use pagination.
     """
@@ -47,12 +59,14 @@ class RedunFooter(ClassicFooter):
         super().__init__()
         self.page = page
 
-    def render(self) -> RenderableType:
-        text = self._make_key_text()
-        text.append_text(
-            Text(f" Page {self.page} ", justify="right", style=Style(bgcolor="green"))
-        )
-        return text
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        self.styles.grid_size_columns += 1
+        yield PageLabel(self.page)
+
+    def watch_page(self) -> None:
+        for page_label in self.query(PageLabel):
+            page_label.page = self.page
 
 
 class Table(DataTable):
