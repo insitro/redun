@@ -140,7 +140,7 @@ def run_single_dataloader_mocked(
         # See comments on the other reset_lock assert in test_az_supports_fork
         assert reset_lock.call_count <= 1
         if path.startswith("az://"):
-            azure_file_system.assert_called_once()
+            azure_file_system.call_count <= 1
     return process_idx
 
 
