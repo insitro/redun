@@ -80,6 +80,7 @@ from redun.utils import (
     MultiMap,
     iter_nested_value,
     json_dumps,
+    format_timestamp,
     pickle_loads,
     pickle_preview,
     str2bool,
@@ -1034,7 +1035,7 @@ class Job(Base):
     def __repr__(self) -> str:
         return "Job(id='{id}', start_time='{start_time}', task_name={task_name})".format(
             id=self.id[:8],
-            start_time=self.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+            start_time=format_timestamp(self.start_time),
             task_name=repr(self.task.fullname if self.task else "None"),
         )
 
