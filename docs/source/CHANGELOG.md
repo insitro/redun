@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.23.0
+August 29, 2024
+
+* `#374` - Migration for job timestamps to be UTC timezone
+
 ## 0.22.0
 August 28, 2024
 

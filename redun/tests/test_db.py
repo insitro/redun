@@ -1,4 +1,5 @@
 from collections import Counter
+from datetime import timedelta, timezone
 from typing import Callable, Dict, List, Set, cast
 from unittest import mock
 from unittest.mock import patch
@@ -35,7 +36,7 @@ from redun.config import Config, create_config_section
 from redun.file import Dir, File
 from redun.functools import seq
 from redun.tests.utils import use_tempdir
-from redun.utils import PreviewClass
+from redun.utils import PreviewClass, utcnow
 
 
 def test_cache_db() -> None:
@@ -428,6 +429,28 @@ def test_parent_job_simple(scheduler: Scheduler, session: Session) -> None:
     last_exec = session.query(Execution).one()
     assert last_exec.job.task.name == "task2"
     assert last_exec.job.child_jobs[0].task.name == "task1"
+
+
+def test_job_time_utc(scheduler: Scheduler, session: Session) -> None:
+    """
+    Parent job start_time and end_time should be timezone aware and UTC.
+    """
+
+    @task()
+    def task1():
+        return 10
+
+    now = utcnow()
+    assert scheduler.run(task1()) == 10
+
+    job = session.query(Job).one()
+    assert job.start_time.tzinfo == timezone.utc
+    assert job.end_time.tzinfo == timezone.utc
+    assert job.call_node.timestamp.tzinfo == timezone.utc
+
+    # Check that we have not somehow misconverted timezones and caused a difference
+    # on the order of several hours.
+    assert abs(now - job.start_time) < timedelta(seconds=5)
 
 
 def test_parent_job_simple_arg(scheduler: Scheduler, session: Session) -> None:

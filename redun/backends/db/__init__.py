@@ -6,7 +6,7 @@ import uuid
 import warnings
 from collections import defaultdict
 from copy import copy as shallowcopy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from itertools import chain
 from typing import (
     Any,
@@ -37,6 +37,7 @@ from sqlalchemy import (
     String,
     and_,
     create_engine,
+    event,
     inspect,
     or_,
     select,
@@ -84,9 +85,11 @@ from redun.utils import (
     str2bool,
     trim_string,
     with_pickle_preview,
+    utcnow,
 )
 from redun.value import MIME_TYPE_PICKLE, InvalidValueError
 from redun.value import TypeError as RedunTypeError
+from redun.version import version as redun_version
 
 # Use MappedColumn class from SQLAlchemy 2.0, if possible, to enable better
 # type checks in redun itself and downstream code.
@@ -173,8 +176,9 @@ REDUN_DB_VERSIONS = [
     DBVersionInfo("cc4f663817b6", 3, 1, "Add Tag schemas."),
     DBVersionInfo("eb7b95e4e8bf", 3, 2, "Remove length restriction on value type names."),
     DBVersionInfo("f68b3aaee9cc", 3, 3, "Add job and value indexes."),
+    DBVersionInfo("3b0a6e67cc58", 3, 4, "Add UTC timezone to timestamps."),
 ]
-REDUN_DB_MIN_VERSION = DBVersionInfo("", 3, 1, "")  # Min db version needed by redun library.
+REDUN_DB_MIN_VERSION = DBVersionInfo("", 3, 4, "")  # Min db version needed by redun library.
 REDUN_DB_MAX_VERSION = DBVersionInfo("", 3, 99, "")  # Max db version needed by redun library.
 
 
@@ -264,6 +268,33 @@ class JSON(TypeDecorator):
             return json.loads(value)
 
 
+class DateTimeUTC(TypeDecorator):
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_bind_param(self, value: Any, dialect):
+        if value is None:
+            # Handle nullable case.
+            return None
+        elif value.tzinfo is None:
+            # Hard fail on attempts to use naive timestamps.
+            raise ValueError(f"timezone naive datetimes are not allowed: {value}")
+        else:
+            # Use timestamp as is.
+            return value
+
+    def process_result_value(self, value: Any, dialect):
+        if value is None:
+            # Handle nullable case.
+            return None
+        elif value.tzinfo is None:
+            # Sqlite will return UTC timestamps as naive, so convert here.
+            return value.replace(tzinfo=timezone.utc)
+        else:
+            # Use timestamp as is.
+            return value
+
+
 class RedunVersion(Base):
     """
     Version of redun database.
@@ -273,7 +304,7 @@ class RedunVersion(Base):
 
     id = Column(String, default=lambda: str(uuid.uuid4()), primary_key=True)
     version = Column(Integer, comment="Current database version.")
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTimeUTC, default=utcnow)
 
 
 class RedunMigration(Base):
@@ -639,7 +670,7 @@ class CallNode(Base):
     # eval_hash = Column(String(HASH_LEN), ForeignKey('evaluation.eval_hash'), index=True, nullable=True)  # noqa: E501
 
     value_hash = Column(String(HASH_LEN), ForeignKey("value.value_hash"), index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTimeUTC, default=utcnow)
 
     call_hash_idx = Index(
         "ix_call_node_call_hash_vpo",
@@ -956,8 +987,9 @@ class Job(Base):
     __tablename__ = "job"
 
     id = Column(String, primary_key=True)
-    start_time = Column(DateTime, index=True)
-    end_time = Column(DateTime, nullable=True, index=True)
+    start_time = Column(DateTimeUTC, index=True)
+    end_time = Column(DateTimeUTC, nullable=True, index=True)
+
     task_hash = Column(String(HASH_LEN), ForeignKey("task.hash"), index=True)
     cached = Column(Boolean, default=False)
     call_hash = Column(
@@ -1473,6 +1505,16 @@ class RedunBackendDb(RedunBackend):
         )
         self.Session = sessionmaker(bind=self.engine, class_=RedunSession)
         self.session = self.Session(backend=self)
+
+        # If we are connecting to postgresql, setup connection settings.
+        if self.engine.dialect.name == "postgresql":
+
+            @event.listens_for(self.engine, "connect")
+            def connect(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute(f"SET redun.version = '{redun_version}'")
+                cursor.close()
+
         return self.engine
 
     @staticmethod
@@ -2529,7 +2571,7 @@ class RedunBackendDb(RedunBackend):
             self.session.add(self.current_execution)
 
         if not now:
-            now = datetime.now()
+            now = utcnow()
 
         db_job = Job(
             id=job.id,
@@ -2561,7 +2603,7 @@ class RedunBackendDb(RedunBackend):
         if status == "FAILED":
             now = None
         elif not now:
-            now = datetime.now()
+            now = utcnow()
         db_job = self.session.query(Job).filter_by(id=job.id).first()
         if not db_job:
             db_job = self.record_job_start(job, now=now)

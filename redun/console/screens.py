@@ -48,7 +48,7 @@ from redun.console.widgets import (
 )
 from redun.scheduler import ErrorValue
 from redun.task import split_task_fullname
-from redun.utils import trim_string
+from redun.utils import format_timestamp, trim_string
 
 NULL = object()
 DEFAULT_PAGE_SIZE = 100
@@ -861,7 +861,10 @@ class TaskVersionsScreen(RedunScreen):
         self.table.add_columns(f"Task ({len(self.tasks)})", "Version", "Jobs", "Most recent job")
         for task, jobs, start_time in self.results:
             self.table.add_row(
-                task.fullname, task.hash, jobs, start_time.strftime("%Y-%m-%d %H:%M:%S")
+                task.fullname,
+                task.hash,
+                jobs,
+                format_timestamp(start_time),
             )
 
     def compose(self) -> ComposeResult:
@@ -1096,7 +1099,7 @@ class JobScreen(RedunScreen):
             )
             return
 
-        start_time = self.job.start_time.strftime("%Y-%m-%d %H:%M:%S")
+        start_time = format_timestamp(self.job.start_time)
         duration = format_timedelta(self.job.duration) if self.job.duration else "Unknown"
 
         if self.job.call_node:
@@ -1118,7 +1121,7 @@ class JobScreen(RedunScreen):
 
             if self.job.status == "FAILED":
                 error_value = self.job.call_node.value.value_parsed
-                error = error_value if isinstance(error_value, ErrorValue) else "Unknown"
+                error = error_value.error if isinstance(error_value, ErrorValue) else "Unknown"
                 result = Static(f"[bold]Raised:[/] {error}")
 
                 lines = ["", "[bold]Traceback:[/]"]
@@ -1492,7 +1495,7 @@ class ExecutionScreen(RedunScreen):
         self.job_list.focus()
 
         exec_status = self.execution.status_display
-        start_time = self.execution.job.start_time.strftime("%Y-%m-%d %H:%M:%S")
+        start_time = format_timestamp(self.execution.job.start_time)
         args = " ".join(json.loads(self.execution.args)[1:])
 
         yield Container(
@@ -1620,7 +1623,7 @@ class ExecutionsNamespaceScreen(RedunScreen):
 
         self.table.clear()
         for namespace, count, start_time in self.results:
-            self.table.add_row(namespace, count, start_time.strftime("%Y-%m-%d %H:%M:%S"))
+            self.table.add_row(namespace, count, format_timestamp(start_time))
 
     def compose(self) -> ComposeResult:
         self.table.focus()

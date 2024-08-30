@@ -1,5 +1,4 @@
 import argparse
-import datetime
 import enum
 import getpass
 import importlib
@@ -128,6 +127,8 @@ from redun.task import Task as BaseTask
 from redun.utils import (
     add_import_path,
     format_table,
+    format_timedelta,
+    format_timestamp,
     merge_dicts,
     pickle_dump,
     trim_string,
@@ -164,21 +165,6 @@ class ArgFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescripti
     """
 
     pass
-
-
-def format_timedelta(duration: datetime.timedelta) -> str:
-    """
-    Format timedelta as a string.
-    """
-    hours, remainder_seconds = divmod(duration.seconds, 3600)
-    minutes, seconds = divmod(remainder_seconds, 60)
-    centiseconds = int(duration.microseconds / 10000)
-    return "{}:{:02}:{:02}.{:02}".format(
-        hours,
-        minutes,
-        seconds,
-        centiseconds,
-    )
 
 
 def format_id(id: str, detail: bool = False, prefix=8) -> str:
@@ -1909,7 +1895,7 @@ class RedunClient:
             "Exec {id} [{status}] {start_time}:  {args} {tags}".format(
                 id=format_id(execution.id, detail),
                 status=status.center(self.STATUS_WIDTH),
-                start_time=execution.job.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                start_time=format_timestamp(execution.job.start_time),
                 args=" ".join(json.loads(execution.args)[1:]),
                 tags=format_tags(execution.tags),
             ),
@@ -2013,7 +1999,7 @@ class RedunClient:
             "Job {id} [{status}] {start_time}:  {task_name}({args}) {tags}".format(
                 id=format_id(job.id, detail),
                 status=job.status_display.center(self.STATUS_WIDTH),
-                start_time=job.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                start_time=format_timestamp(job.start_time),
                 task_name=job.task.fullname,
                 args=args,
                 tags=format_tags(job.tags),

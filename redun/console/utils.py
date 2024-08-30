@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from redun.backends.db import Argument, Execution, Job, Tag, Task, Value
 from redun.tags import format_tag_value
-from redun.utils import trim_string
+from redun.utils import format_timestamp, trim_string
 
 NULL = object()
 logger = logging.getLogger("redun.console")
@@ -186,13 +186,13 @@ def format_record(record: Any) -> str:
     if isinstance(record, Execution):
         return (
             f"Exec {record.id[:8]} {style_status(record.status)} "
-            f"{record.job.start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            f"{format_timestamp(record.job.start_time)}"
             f"[[bold]{record.job.task.namespace or 'no namespace'}[/bold]] "
         )
     elif isinstance(record, Job):
         return (
             f"Job {record.id[:8]} {style_status(record.status)} "
-            f"{record.start_time.strftime('%Y-%m-%d %H:%M:%S')} "
+            f"{format_timestamp(record.start_time)} "
         ) + format_job(record)
     elif isinstance(record, Task):
         return f"Task {record.hash[:8]} {record.fullname}"

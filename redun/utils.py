@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable as IterableABC
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone, tzinfo
 from functools import lru_cache, wraps
 from pickle import Unpickler
 from pickle import dump as allowed_dump_func
@@ -25,6 +26,7 @@ from typing import (
     Iterator,
     List,
     NoReturn,
+    Optional,
     Tuple,
     Type,
     TypeVar,
@@ -333,6 +335,37 @@ def get_func_source(func: Callable) -> str:
             return "\n".join(lines[i:])
 
     return source
+
+
+def utcnow() -> datetime:
+    """
+    Returns the current timestamp in UTC timezone.
+    """
+    return datetime.now(timezone.utc)
+
+
+def format_timestamp(timestamp: datetime, tz: Optional[tzinfo] = None) -> str:
+    """
+    Returns a timestamp as a local time string.
+
+    If tz is given, use it as the local timezone, otherwise use system local timezone.
+    """
+    return timestamp.astimezone(tz).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def format_timedelta(duration: timedelta) -> str:
+    """
+    Format timedelta as a string.
+    """
+    hours, remainder_seconds = divmod(duration.seconds, 3600)
+    minutes, seconds = divmod(remainder_seconds, 60)
+    centiseconds = int(duration.microseconds / 10000)
+    return "{}:{:02}:{:02}.{:02}".format(
+        hours,
+        minutes,
+        seconds,
+        centiseconds,
+    )
 
 
 def format_table(table: List[List], justs: str, min_width: int = 0) -> Iterator[str]:

@@ -484,7 +484,8 @@ Each version of the redun library requires the redun database to be within a spe
 | <=0.4.10                | >=1 <2                          |
 | >=0.4.11 <=0.5.0        | >=2 <3                          |
 | >=0.5.1 <=0.6.0         | >=3.0 <4                        |
-| >=0.6.1                 | >=3.1 <4                        |
+| >=0.6.1 <=0.22.0        | >=3.1 <4                        |
+| >=0.23.0                | >=3.4 <4                        |
 
 
 ### No downtime migrations
@@ -494,6 +495,15 @@ The compatibility ranges between the library and database are designed to allow 
 - Migrations are designed to be *pre-deploy*, that is, they are always applied to the database (e.g. `redun db upgrade`) before upgrading clients.
 - Minor database versions (e.g `3.0 --> 3.1`) can be upgraded to without disruption of current clients, because they typically contain non-breaking changes such as adding indexes or changing constraints.
 - To upgrade to a major database version (e.g. `3.0 --> 4.0`) without downtime, all clients need to allow the new major version (see table above for details) before the migration is applied.
+
+**Migration playbook:** To avoid downtime, perform database migrations and client upgrades in the following order:
+1. Assume we start with clients at redun==0.5.1
+2. Upgrade db using `redun db upgrade 3.1`
+3. Clients can now upgrade to redun==0.6.1
+4. Upgrade db using `redun db upgrade 3.2`
+5. Upgrade db using `redun db upgrade 3.3`
+6. Upgrade db using `redun db upgrade 3.4`
+7. Clients can now upgrade to redun==0.23.0
 
 
 ## Optional value store
