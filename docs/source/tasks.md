@@ -240,12 +240,12 @@ Lastly, several task options, such as [`image`](config.md) or [`memory`](config.
 Generally not a user-facing option, this is a `Optional[Set[CacheResult]]` specifying an upper bound on which kind of cache results are may be used (default: `None`, indicating that any are allowed). 
 
 ### `cache`
-A bool (default: `true`) that defines whether the backend cache can be used to fast-forward through the task's execution. See [Scheduler](scheduler.md#Configuration-options) for more explanation.
+A bool (default: `true`) that defines whether the backend cache can be used to fast-forward through the task's execution. See [Scheduler](scheduler.md#configuration-options) for more explanation.
 A value of `true` is implemented by setting `cache_scope=CacheScope.BACKEND` and `false` by setting `cache_scope=CacheScope.CSE`.
 
 ### `cache_scope`
 
-A `CacheScope` enum value (default: `CacheScope.BACKEND`) that indicates the upper bound on what scope a cache result may come from. See [Scheduler](scheduler.md#Configuration-options) for more explanation. 
+A `CacheScope` enum value (default: `CacheScope.BACKEND`) that indicates the upper bound on what scope a cache result may come from. See [Scheduler](scheduler.md#configuration-options) for more explanation.
 
 * `NONE`: Disable both CSE and cache hits
 * `CSE`: Only reuse computations from within this execution
@@ -254,7 +254,7 @@ A `CacheScope` enum value (default: `CacheScope.BACKEND`) that indicates the upp
 ### `check_valid`
 An enum value `CacheCheckValid` (or a string that can be coerced, default: `"full"`) that defines whether the entire subtree
 of results is checked for validity (`"full"`) or whether just this task's ultimate results need to be valid (`"shallow"`). This can be used to dramatically speed up resuming large workflows.
-See [Scheduler](scheduler.md#Configuration-options) for more explanation.
+See [Scheduler](scheduler.md#configuration-options) for more explanation.
 
 ### `config_args`
 
@@ -716,7 +716,7 @@ which are additional config files that are allowed to specify additional `federa
 In addition to primary federated tasks, we provide tools to support REST-based proxy.
 See `redun.federated_tasks.rest_federated_task` and `redun.federated_tasks.launch_federated_task`.
 The proxy has two main features. First, it is designed to help facilitate a fire-and-forget approach
-to launching jobs (see [Running without a scheduler](design.md#Running-without-a-scheduler) ), 
+to launching jobs (see [Running without a scheduler](design.md#running-without-a-scheduler) ),
 which is useful in implementing a UI. Second, it can help arrange for permissions, such as 
 facilitating AWS role switches.
 
