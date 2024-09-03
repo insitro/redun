@@ -178,7 +178,7 @@ with CSE, that the cached value is appropriate to use.
 Task caching operates at the granularity of a single
 call to a `Task` with concrete arguments. Recall that the result of a `Task` might be a value,
 or another expression that needs further evaluation. In its normal mode, caching uses single
-reductions, stepping through the evaluation. See the [Results caching](design.md#Result-caching)
+reductions, stepping through the evaluation. See the [Results caching](design.md#result-caching)
 section, for more information on how this recursive checking works.
 
 Consider the following example:
@@ -206,9 +206,9 @@ To evaluate `out`, the following three task executions might be considered for c
 
 For CSE, we could simply assume that the code was identical for a task, but for caching, 
 need to actually check that the code is identical, as defined by the 
-[hash of the Task](tasks.md#Task-hashing). Since `Value` objects can represent state in addition 
+[hash of the Task](tasks.md#task-hashing). Since `Value` objects can represent state in addition
 to their natural values, we need to check that the output is actually valid before using a cache
-result; see [Validity](values.md#Validity).
+result; see [Validity](values.md#validity).
 
 The normal caching mode (so-called "full") is fully recursive (i.e., uses single reductions), 
 hence the scheduler must visit every node in the entire call graph produced by an expression,

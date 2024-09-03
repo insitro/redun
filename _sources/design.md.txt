@@ -378,7 +378,7 @@ We call File an example of an *External Value*, because Files can change in an e
 
 redun naturally understands which Files are used for input vs output based on whether they are passed as arguments or returned as results, respectively. Note, it can lead to confusing behavior to pass a File as input to a Task, alter it, and then return it as a result. That would lead to the recorded call node to be immediately out of date (its input File hash doesn't match anymore). The user should be careful to avoid this pattern.
 
-See the [Validity](values.md#Validity) section below for additional discussion on the general feature.
+See the [Validity](values.md#validity) section below for additional discussion on the general feature.
 
 ### Shell scripting
 
@@ -575,7 +575,7 @@ def main():
 
 Depicted above is an example call graph and job tree (left) for an execution of a workflow (right). When each task is called, a CallNode is recorded along with all the Values used as arguments and return values. As tasks (`main`) call child tasks, children CallNodes are recorded (`task1` and `task2`). "Horizontal" dataflow is also recorded between sibling tasks, such as `task1` and `task2`. Each node in the call graph is identified by a unique hash and each Job and Execution is identified by a unique UUID. This information is stored by default in the redun database `.redun/redun.db`.
 
-The redun backend database provides a durable record of these call graphs for every execution redun performs. This not only provides the backend storage for caching, it also is queryable by users to explore the call graph, using the `redun log`, `redun console`, and `redun repl` commands. For example, if we know that a file `/tmp/data` was produced by redun, we can find out exactly which execution did so, and hence can retrieve information about the code and inputs used to do so. See [querying call graphs](db.md#Querying-call-graphs) for more.
+The redun backend database provides a durable record of these call graphs for every execution redun performs. This not only provides the backend storage for caching, it also is queryable by users to explore the call graph, using the `redun log`, `redun console`, and `redun repl` commands. For example, if we know that a file `/tmp/data` was produced by redun, we can find out exactly which execution did so, and hence can retrieve information about the code and inputs used to do so. See [querying call graphs](db.md#querying-call-graphs) for more.
 
 ## Advanced topics
 
@@ -588,7 +588,7 @@ It's common to use workflow engines to implement Extract Transform Load (ETL) pi
 - With files, we were able to double check if their current state was consistent with our cache by hashing them. With a database or API, it's typically not feasible to hash a whole database. Is there something else we could do?
 - The redun cache contains cached results from all previous runs. Conveniently, that allows for fast reverting to old results if code or input data is changed back to the old state. However, for a stateful system like a database, we likely can't just re-execute arbitrary tasks in any order. Similar to database migration frameworks (South, Alembic, etc), we may need to roll back past tasks before applying new ones.
 
-redun provides solutions to several of these challenges using a concept called (Handles)[values.md#Handles-for-ephemeral-and-stateful-values].
+redun provides solutions to several of these challenges using a concept called [Handles](values.md#handles-for-ephemeral-and-stateful-values).
 
 ### Running without a scheduler
 
@@ -618,7 +618,7 @@ task is far more independent of the parent scheduler, able to interact with the 
 resolve complex expressions or recursive tasks.
 
 Third, federated task for submitting to a REST proxy is fire-and-forget; see 
-[Federated task](tasks.md#Federated-task) It will trigger a
+[Federated task](tasks.md#federated-task) It will trigger a
 completely separate redun execution to occur, but it only provides the execution id back to the
 caller. It doesn't make sense for the REST proxy to be a full executor, since it's not
 capable enough to handle arbitrary tasks, by design it only handles federated tasks. Plus,
