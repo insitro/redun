@@ -720,6 +720,23 @@ def test_job_status(scheduler: Scheduler, session: Session) -> None:
     assert Counter(job.status for job in exec2.jobs) == Counter({"FAILED": 2, "CACHED": 1})
 
 
+def test_failed_job_end_time(scheduler: Scheduler, session: Session) -> None:
+    """
+    A failed job should have an end_time.
+    """
+
+    @task()
+    def main(x):
+        assert x != 0
+        return x + 1
+
+    with pytest.raises(AssertionError):
+        scheduler.run(main(0))
+
+    [exec1] = session.query(Execution).all()
+    assert exec1.job.status == "FAILED" and exec1.job.end_time is not None
+
+
 def test_catch_downstream(scheduler: Scheduler) -> None:
     """
     Result from catch should properly propagate to downstream tasks.

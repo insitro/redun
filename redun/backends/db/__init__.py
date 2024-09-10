@@ -2600,10 +2600,7 @@ class RedunBackendDb(RedunBackend):
         """
         assert self.session
 
-        # Currently, we denote failed Jobs by not recording the end_time.
-        if status == "FAILED":
-            now = None
-        elif not now:
+        if not now:
             now = utcnow()
         db_job = self.session.query(Job).filter_by(id=job.id).first()
         if not db_job:
