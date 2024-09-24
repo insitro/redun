@@ -501,7 +501,10 @@ class Task(Value, Generic[Func]):
         Signature of the function wrapped by the task.
         """
         if not self._signature:
-            self._signature = inspect.signature(self.func)
+            if self.wrapped_task and not self.get_task_option("use_wrapper_signature", False):
+                self._signature = inspect.signature(self.inner_task.func)
+            else:
+                self._signature = inspect.signature(self.func)
         return self._signature
 
     @property
@@ -511,6 +514,35 @@ class Task(Value, Generic[Func]):
             return load_module
         else:
             return self.func.__module__
+
+    @property
+    def wrapped_task(self) -> Optional["Task"]:
+        """
+        Returns the wrapped task if this task is a task decorator, `None` otherwise.
+        """
+        registry = get_task_registry()
+        inner_task_name = self.get_task_option("wrapped_task")
+        if inner_task_name:
+            return registry.get(inner_task_name)
+        else:
+            return None
+
+    @property
+    def inner_task(self) -> "Task":
+        """
+        Returns the inner most wrapped task, or self if one doesn't exist.
+        """
+        registry = get_task_registry()
+        _inner_task = self
+        while True:
+            inner_task_name = _inner_task.get_task_option("wrapped_task")
+            if not inner_task_name:
+                break
+            next_task = registry.get(inner_task_name)
+            if not next_task:
+                break
+            _inner_task = next_task
+        return _inner_task
 
 
 class SchedulerTask(Task[Func]):
@@ -830,6 +862,7 @@ def scheduler_task(
 def wraps_task(
     wrapper_name: Optional[str] = None,
     wrapper_hash_includes: list = [],
+    use_wrapper_signature: bool = False,
     **wrapper_task_options_base: Any,
 ) -> Callable[[Callable[[Task[Func]], Func]], Callable[[Func], Task[Func]]]:
     """A helper for creating new decorators that can be used like `@task`, that allow us to
@@ -912,6 +945,10 @@ def wraps_task(
         If provided, extra data that should be hashed. That is, extra data that should be
         considered as part of cache invalidation. This list may be reordered without impacting
         the computation. Each list item must be hashable by `redun.value.TypeRegistry.get_hash`
+    use_wrapper_signature : bool
+        By default (False), the resulting task will keep the parameter signature of its inner most wrapped
+        task. Set this to True, in order to use the parameter signature of the wrapper task.
+        Signatures are used to automatically infer command line options, among other things.
     """
 
     def transform_wrapper(
@@ -969,6 +1006,7 @@ def wraps_task(
                 name=visible_name,
                 namespace=visible_namespace,
                 wrapped_task=hidden_inner_task.fullname,
+                use_wrapper_signature=use_wrapper_signature,
                 load_module=hidden_inner_task.load_module,
                 hash_includes=wrapper_hash_includes + wrapped_hash_data,
                 **wrapper_task_options_base,

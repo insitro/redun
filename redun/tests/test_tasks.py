@@ -9,7 +9,7 @@ import redun
 from redun import Task, task
 from redun.expression import Expression
 from redun.namespace import compute_namespace
-from redun.scheduler import set_arg_defaults
+from redun.scheduler import Scheduler, set_arg_defaults
 from redun.task import (
     CacheCheckValid,
     CacheScope,
@@ -632,6 +632,69 @@ def test_wraps_task() -> None:
     # After all our renaming, make sure our registry is still a correct index of task names.
     for task_name, task_ in get_task_registry()._tasks.items():
         assert task_name == task_.fullname
+
+
+def test_wraps_task_inner_task(scheduler: Scheduler) -> None:
+    """
+    wraps_task should maintain a reference to the inner task.
+    """
+
+    def doubled_task(offset: int = 0) -> Callable[[Func], Task[Func]]:
+        @wraps_task(wrapper_hash_includes=[offset])
+        def _doubled_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
+            def do_doubling(*task_args, **task_kwargs) -> Any:
+                return (
+                    inner_task.func(*task_args, **task_kwargs)
+                    + inner_task.func(*task_args, **task_kwargs)
+                    + offset
+                )
+
+            return do_doubling
+
+        return _doubled_task
+
+    @doubled_task()
+    def plus_one(x: int):
+        return 1 + x
+
+    assert scheduler.run(plus_one(2)) == 6
+    assert plus_one.hash == "eb330208b0723c0c478899869da03eb18d20ef33"
+
+    assert plus_one.inner_task.hash == "16ebc98096f780d2fe24d0d6f56dfce29008f5a3"
+    wrapped_task = plus_one.wrapped_task
+    assert wrapped_task and wrapped_task.hash == "16ebc98096f780d2fe24d0d6f56dfce29008f5a3"
+    assert plus_one.signature.parameters["x"].annotation == int
+
+    @doubled_task()
+    @doubled_task()
+    def plus_two(x: int):
+        return 2 + x
+
+    assert scheduler.run(plus_two(2)) == 16
+
+    assert plus_two.inner_task.hash == "5636d44845593eb5845f2ced8d204f1295d26653"
+    assert plus_one.signature.parameters["x"].annotation == int
+
+
+def test_use_wrapper_signature(scheduler: Scheduler) -> None:
+    """
+    Users can change the signature of the wrapped task.
+    """
+
+    @wraps_task(use_wrapper_signature=True)
+    def doubled_task(inner_task: Task) -> Callable[[int, int], int]:
+        def do_doubling(x: int, offset: int) -> Any:
+            return inner_task.func(x) + inner_task.func(x) + offset
+
+        return do_doubling
+
+    @doubled_task
+    def plus_one(x: int):
+        return x + 1
+
+    assert scheduler.run(plus_one(3, 1)) == 9
+    assert plus_one.signature.parameters["x"].annotation == int
+    assert plus_one.signature.parameters["offset"].annotation == int
 
 
 def test_cache_options() -> None:
