@@ -68,6 +68,21 @@ class AsyncMockedRawResponse(MockRawResponse):
         return self
 
 
+async def ident(x):
+    return x
+
+
+class AsyncBytes(bytes):
+    def __await__(self):
+        return ident(bytes(self)).__await__()
+
+
+class PatchedStreamingBody(StreamingBody):
+    def read(self, amt=None):
+        # This is a read method that can be used sync or async.
+        return AsyncBytes(self._sync_read(amt))
+
+
 class PatchedAWSResponse(AWSResponse):
     """
     Subclasses AWSRespnse in order to provide an async read and raw headers.
@@ -76,7 +91,9 @@ class PatchedAWSResponse(AWSResponse):
     """
 
     def __init__(self, url, status_code, headers, raw):
-        async_raw = StreamingBody(AsyncMockedRawResponse(raw), headers.get("content-length"))
+        async_raw = PatchedStreamingBody(
+            AsyncMockedRawResponse(raw), headers.get("content-length")
+        )
         super().__init__(url, status_code, headers, async_raw)
 
     @property
@@ -119,7 +136,7 @@ def convert_to_response_dict_patch(http_response, operation_model):
         response_dict["body"] = http_response.raw
     elif operation_model.has_streaming_output:
         length = response_dict["headers"].get("content-length")
-        response_dict["body"] = StreamingBody(http_response.raw, length)
+        response_dict["body"] = PatchedStreamingBody(http_response.raw, length)
     else:
         response_dict["body"] = http_response.raw._sync_read()
     return response_dict
