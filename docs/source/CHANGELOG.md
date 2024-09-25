@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.24.0
+September 25, 2024
+
+* `#382` - "Cloud native" download and upload
+* `#383` - Improve wraps_task signature and source
+* `#380` - [CHS-820] Set end_time for failed jobs
+* `#102` - fix links between doc pages
+* `#379` - found a few more timestamps that needed to do timezone conversion before display
+
 ## 0.23.0
 August 29, 2024
 
