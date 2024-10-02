@@ -178,8 +178,9 @@ REDUN_DB_VERSIONS = [
     DBVersionInfo("eb7b95e4e8bf", 3, 2, "Remove length restriction on value type names."),
     DBVersionInfo("f68b3aaee9cc", 3, 3, "Add job and value indexes."),
     DBVersionInfo("3b0a6e67cc58", 3, 4, "Add UTC timezone to timestamps."),
+    DBVersionInfo("0bee3d6dba76", 3, 5, "Add updated_time."),
 ]
-REDUN_DB_MIN_VERSION = DBVersionInfo("", 3, 4, "")  # Min db version needed by redun library.
+REDUN_DB_MIN_VERSION = DBVersionInfo("", 3, 5, "")  # Min db version needed by redun library.
 REDUN_DB_MAX_VERSION = DBVersionInfo("", 3, 99, "")  # Max db version needed by redun library.
 
 
@@ -887,6 +888,7 @@ class Execution(Base):
 
     id = Column(String, primary_key=True)
     args = Column(String)
+    updated_time = Column(DateTimeUTC, nullable=True)
     job_id = Column(
         String, ForeignKey("job.id", deferrable=True, initially="deferred"), index=True
     )
@@ -2550,6 +2552,17 @@ class RedunBackendDb(RedunBackend):
             id=exec_id,
             args=json.dumps(args),
         )
+
+    def record_updated_time(self) -> None:
+        """
+        Updates updated_time (heartbeat) timestamp for the current Execution.
+        """
+        assert self.session
+        if not self.current_execution:
+            return
+        # ignore mypy error until we migrate to SQLAlchemy 2.0
+        self.current_execution.updated_time = utcnow()  # type: ignore
+        self.session.commit()
 
     def record_job_start(self, job: "BaseJob", now: Optional[datetime] = None) -> Job:
         """

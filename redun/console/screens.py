@@ -1496,6 +1496,7 @@ class ExecutionScreen(RedunScreen):
 
         exec_status = self.execution.status_display
         start_time = format_timestamp(self.execution.job.start_time)
+        updated_time = format_timestamp(self.execution.updated_time)
         args = " ".join(json.loads(self.execution.args)[1:])
 
         yield Container(
@@ -1505,6 +1506,7 @@ class ExecutionScreen(RedunScreen):
                 f"{start_time}: {args}",
                 id="execution-title",
             ),
+            Static(f"[bold]Updated time: [/]{updated_time}"),
             Static("[bold]Tags:[/] " + format_tags(self.execution.tags)),
             TagLinks(self.app.link_patterns, self.execution.tags),
             Static(),

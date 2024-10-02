@@ -1226,6 +1226,7 @@ class Scheduler:
         blocking until the provided `workflow_promise` is resolved.
         """
         self.workflow_promise = workflow_promise
+        self.backend.record_updated_time()
 
         while self.workflow_promise.is_pending:
             if self._dryrun and self.events_queue.empty():
@@ -1239,6 +1240,7 @@ class Scheduler:
                 self.log("Shutting down... Ctrl+C again to force shutdown.")
                 sys.exit(1)
             except queue.Empty:
+                self.backend.record_updated_time()
                 if not is_debugger_active():
                     # Print job statuses periodically.
                     # For convenience, do not print statuses if the debugger is

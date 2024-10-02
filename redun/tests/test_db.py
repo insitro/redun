@@ -692,6 +692,29 @@ def test_execution_job(scheduler: Scheduler, session: Session) -> None:
     assert {job.task.name for job in last_exec.jobs} == {"task1", "main"}
 
 
+def test_updated_time(scheduler: Scheduler, session: Session) -> None:
+    """
+    We should be able to query an Execution's updated_time,
+    which should be somewhere between the start and end times.
+    """
+
+    @task()
+    def task1(x):
+        return x * 2
+
+    @task()
+    def main(x):
+        return task1(x + 1)
+
+    start_time = utcnow()
+    assert scheduler.run(main(20)) == 42
+    end_time = utcnow()
+
+    last_exec = session.query(Execution).one()
+    assert last_exec.updated_time is not None
+    assert start_time < last_exec.updated_time < end_time
+
+
 def test_job_status(scheduler: Scheduler, session: Session) -> None:
     """
     We should be able to classify a Job's status.
