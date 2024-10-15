@@ -22,13 +22,10 @@ def exec_script_func(func: Callable) -> Callable:
 def queue_wrapper(func: Callable) -> Callable:
     def wrapper(id: str, queue: modal.Queue, *args, **kwargs):
         try:
-            print("calling func")
             res = func(*args, **kwargs)
-            print("putting success")
             queue.put((id, "success"))
             return res
         except Exception:
-            print("putting error")
             queue.put((id, "error"))
             raise
 
@@ -93,9 +90,7 @@ class ModalExecutor(Executor):
     def result_thread_func(self):
         while not self.stopped:
             try:
-                print("getting results")
                 res = self.queue.get_many(100, timeout=1)
-                print(f"got results {len(res)}")
                 for job_id, status in res:
                     job = self.jobs[job_id]
                     try:
@@ -111,7 +106,6 @@ class ModalExecutor(Executor):
                 continue
 
     def stop(self):
-        print("stopping")
         self.stopped = True
         self.result_thread.join()
         self.run_ctx.__exit__(None, None, None)

@@ -1,5 +1,4 @@
-from redun import task, File
-from typing import List
+from redun import task
 import modal
 
 redun_namespace = "redun.examples.modal_workflow"
@@ -83,24 +82,17 @@ def ls(path: str):
     },
 )
 def main(x: str = "hi", y: str = "bye"):
-    # print("main")
-    # a = task4(x)
-    # b = task1({"list": [y], "first": a[0], "second": a[1]})
+    print("main")
+    a = task4(x)
+    b = task1({"list": [y], "first": a[0], "second": a[1]})
 
-    # # a = task5()
+    with open("/mnt/vol/test.txt", "w") as f:
+        f.write("hello")
 
-    # # print(a)
+    import os
 
-    # # write to volume
-    # with open("/mnt/vol/test.txt", "w") as f:
-    #     f.write("hello")
+    print(os.listdir("/mnt/vol"))
 
-    # import os
 
-    # print(os.listdir("/mnt/vol"))
+    return a + b + [ls("/root")]
 
-    # # return a
-
-    # return a + b + [ls("/root")]
-
-    return [ls("./"), ls("/root"), ls("./redun")]
