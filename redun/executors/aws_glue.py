@@ -121,6 +121,7 @@ def package_redun_lib(s3_scratch_prefix: str) -> File:
 def get_or_create_glue_job_definition(
     script_location: str,
     role: str,
+    glue_version: str,
     temp_dir: str,
     extra_py_files: str,
     spark_history_dir: str,
@@ -137,6 +138,9 @@ def get_or_create_glue_job_definition(
 
     role : str
         ARN of IAM role to associate with Glue job.
+
+    glue_version : str
+        Glue version to use for the job.
 
     temp_dir : str
         S3 path of scratch directory associated with job data and code.
@@ -186,7 +190,7 @@ def get_or_create_glue_job_definition(
         MaxRetries=0,
         NumberOfWorkers=2,  # Jobs will override this, so set to minimum value.
         WorkerType="Standard",
-        GlueVersion="3.0",
+        GlueVersion=glue_version,
         Timeout=2880,
     )
     glue_job_def_hash = hash_text(json.dumps(glue_job_def, sort_keys=True))
@@ -231,6 +235,7 @@ class AWSGlueExecutor(Executor):
 
         # Optional config
         self.aws_region = config.get("aws_region", aws_utils.get_default_region())
+        self.glue_version = config.get("glue_version", "4.0")
         self.role = config.get("role") or get_default_glue_service_role(aws_region=self.aws_region)
         self.code_package = parse_code_package_config(config)
         self.code_file: Optional[File] = None
@@ -309,6 +314,7 @@ class AWSGlueExecutor(Executor):
             temp_dir=self.s3_scratch_prefix,
             extra_py_files=self.redun_zip_location,
             aws_region=self.aws_region,
+            glue_version=self.glue_version,
         )
 
     def _start(self) -> None:

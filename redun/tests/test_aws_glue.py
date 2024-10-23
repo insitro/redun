@@ -200,6 +200,7 @@ def test_executor_config(scheduler):
                 "glue_job_name": "test_glue_job",
                 "glue_code_location": "s3://example-bucket/",
                 "redun_zip_path": "s3://example-bucket/redun.zip",
+                "glue_version": "3.0",
             }
         }
     )
@@ -216,6 +217,7 @@ def test_executor_config(scheduler):
     assert executor.interval == 1.0
     assert executor.code_package["includes"] == ["*.txt"]
     assert executor.debug is False
+    assert executor.glue_version == "3.0"
 
 
 @use_tempdir

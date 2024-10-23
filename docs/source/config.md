@@ -503,6 +503,10 @@ A string (default: your account's `AWSGlueServiceRole`) that specifies the ARN o
 
 This key is mapped to the [`Role` property](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-jobs-job.html) of the Glue API.
 
+##### `glue_version`
+
+A string (default: `4.0`) that specifies the version of the AWS Glue backend. The executor has been tested on `3.0`
+and `4.0` versions.
 
 ##### `glue_job_prefix`
 
