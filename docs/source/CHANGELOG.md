@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.25.0
+October 24, 2024
+
+* `#386` - Use AWS Glue version 4, expose Glue version in config
+* `#385` - CHS-869 Add heartbeat to the execution object
+
 ## 0.24.0
 September 25, 2024
 
