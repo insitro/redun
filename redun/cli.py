@@ -75,6 +75,7 @@ from redun.backends.db.query import (
 )
 from redun.backends.db.serializers import RecordSerializer
 from redun.config import Config, create_config_section
+from redun.executors import aws_utils
 from redun.executors.aws_batch import (
     BATCH_LOG_GROUP,
     AWSBatchExecutor,
@@ -629,6 +630,10 @@ def setup_scheduler(
 
     if migrate_if_local and is_config_local_db(config):
         migrate = True
+
+    boto_config = config.get("scheduler", {}).get("boto_config")
+    if boto_config:
+        aws_utils.set_boto_config(json.loads(boto_config))
 
     scheduler.load(migrate=migrate)
     return scheduler

@@ -98,6 +98,22 @@ We could then call this workflow using:
 redun --setup profile=dev run workflow.py main --x 1 --y 2
 ```
 
+#### `boto_config`
+
+A JSON object used to construct a `boto3.session.Config` object, which is provided when creating
+Boto session clients. 
+
+For example, we might want to change the retry strategy and raise the number of retries 
+across boto. This can be helpful when spawning a large number of AWS Batch jobs.
+
+```ini
+[scheduler]
+boto_config = {"retries": {
+      "max_attempts": 10,
+      "mode": "standard"
+   }}
+```
+
 
 #### `job_status_interval`
 
