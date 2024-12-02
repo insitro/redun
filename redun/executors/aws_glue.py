@@ -125,6 +125,7 @@ def get_or_create_glue_job_definition(
     temp_dir: str,
     extra_py_files: str,
     spark_history_dir: str,
+    enable_metrics: bool = False,
     additional_python_modules: List[str] = DEFAULT_ADDITIONAL_PYTHON_MODULES,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> str:
@@ -151,6 +152,9 @@ def get_or_create_glue_job_definition(
     spark_history_dir : str
         S3 path where Spark event logs are stored.
 
+    enable_metrics : bool
+        Whether to enable observability and profiling via Cloudwatch.
+
     additional_python_modules : List[str]
         Python modules to be installed with pip before job start.
 
@@ -163,6 +167,9 @@ def get_or_create_glue_job_definition(
         Unique Glue job definition name.
     """
     client = aws_utils.get_aws_client("glue", aws_region=aws_region)
+
+    # Ensure spark_history_dir ends with a trailing slash.
+    spark_history_dir = spark_history_dir.rstrip("/") + "/"
 
     # Define job definition.
     glue_job_def = dict(
@@ -186,6 +193,8 @@ def get_or_create_glue_job_definition(
             "--enable-spark-ui": "true",
             "--enable-job-insights": "true",
             "--spark-event-logs-path": spark_history_dir,
+            "--enable-metrics": str(enable_metrics).lower(),
+            "--enable-observability-metrics": str(enable_metrics).lower(),
         },
         MaxRetries=0,
         NumberOfWorkers=2,  # Jobs will override this, so set to minimum value.
@@ -247,6 +256,7 @@ class AWSGlueExecutor(Executor):
         self.spark_history_dir = config.get(
             "spark_history_dir", get_spark_history_dir(self.s3_scratch_prefix)
         )
+        self.enable_metrics = config.get("enable_metrics", False)
 
         # Default task options
         self.default_task_options = {
@@ -315,6 +325,7 @@ class AWSGlueExecutor(Executor):
             extra_py_files=self.redun_zip_location,
             aws_region=self.aws_region,
             glue_version=self.glue_version,
+            enable_metrics=self.enable_metrics,
         )
 
     def _start(self) -> None:
