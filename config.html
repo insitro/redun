@@ -5,9 +5,9 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Backend and database" href="db.html" /><link rel="prev" title="Scheduling redun workflows" href="scheduler.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Configuration - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
     
@@ -331,10 +331,10 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">{function_name}</span></code> should the name of a function, typically <code class="docutils literal notranslate"><span class="pre">setup_scheduler</span></code>.</p></li>
 </ul>
 <p>The user function <code class="docutils literal notranslate"><span class="pre">setup_scheduler()</span></code> should take as its first argument <code class="docutils literal notranslate"><span class="pre">config</span></code> (see <a class="reference internal" href="redun/redun.html#redun.config.Config" title="redun.config.Config"><span class="xref myst py py-class">Config</span></a>) and it should return an instantiated <code class="docutils literal notranslate"><span class="pre">scheduler</span></code> (see <a class="reference internal" href="redun/redun.html#redun.scheduler.Scheduler" title="redun.scheduler.Scheduler"><span class="xref myst py py-class">Scheduler</span></a>).</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun.config</span> <span class="kn">import</span> <span class="n">Config</span>
-<span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">Scheduler</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">redun.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">redun</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scheduler</span>
 
-<span class="k">def</span> <span class="nf">setup_scheduler</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Scheduler</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_scheduler</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Scheduler</span><span class="p">:</span>
     <span class="n">scheduler</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
     <span class="c1"># Perform additional setup such as</span>
     <span class="c1">#   scheduler.add_executor(...)</span>
@@ -343,21 +343,21 @@
 </div>
 <p>If <code class="docutils literal notranslate"><span class="pre">setup_scheduler()</span></code> has additional arguments, they are automatically parsed from the command line using <code class="docutils literal notranslate"><span class="pre">--setup</span> <span class="pre">&lt;option&gt;=&lt;value&gt;</span></code>. For example, say we had the following workflow script which supports customizing the executors depending on whether we are in a production or development environment.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="c1"># workflow.py</span>
-<span class="kn">from</span> <span class="nn">redun.config</span> <span class="kn">import</span> <span class="n">Config</span>
-<span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">Scheduler</span><span class="p">,</span> <span class="n">task</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">redun.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">redun</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scheduler</span><span class="p">,</span> <span class="n">task</span>
 
-<span class="kn">from</span> <span class="nn">my_workflow_lib.executors</span> <span class="kn">import</span> <span class="n">ProdExecutor</span><span class="p">,</span> <span class="n">DevExecutor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">my_workflow_lib.executors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProdExecutor</span><span class="p">,</span> <span class="n">DevExecutor</span>
 
 
 <span class="n">redun_namespace</span> <span class="o">=</span> <span class="s2">&quot;acme&quot;</span>
 
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="c1"># ...</span>
 
 
-<span class="k">def</span> <span class="nf">setup_scheduler</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;prod&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Scheduler</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_scheduler</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;prod&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Scheduler</span><span class="p">:</span>
     <span class="n">scheduler</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">profile</span> <span class="o">==</span> <span class="s2">&quot;prod&quot;</span><span class="p">:</span>
         <span class="n">scheduler</span><span class="o">.</span><span class="n">add_executor</span><span class="p">(</span><span class="n">ProdExecutor</span><span class="p">())</span>
@@ -368,6 +368,20 @@
 </div>
 <p>We could then call this workflow using:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>redun<span class="w"> </span>--setup<span class="w"> </span><span class="nv">profile</span><span class="o">=</span>dev<span class="w"> </span>run<span class="w"> </span>workflow.py<span class="w"> </span>main<span class="w"> </span>--x<span class="w"> </span><span class="m">1</span><span class="w"> </span>--y<span class="w"> </span><span class="m">2</span>
+</pre></div>
+</div>
+</section>
+<section id="boto-config">
+<h4><code class="docutils literal notranslate"><span class="pre">boto_config</span></code><a class="headerlink" href="#boto-config" title="Link to this heading">¶</a></h4>
+<p>A JSON object used to construct a <code class="docutils literal notranslate"><span class="pre">boto3.session.Config</span></code> object, which is provided when creating
+Boto session clients.</p>
+<p>For example, we might want to change the retry strategy and raise the number of retries
+across boto. This can be helpful when spawning a large number of AWS Batch jobs.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[scheduler]</span>
+<span class="na">boto_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{&quot;retries&quot;: {</span>
+<span class="w">      </span><span class="na">&quot;max_attempts&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">10,</span>
+<span class="w">      </span><span class="na">&quot;mode&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;standard&quot;</span>
+<span class="w">   </span><span class="na">}}</span>
 </pre></div>
 </div>
 </section>
@@ -411,7 +425,7 @@ This is useful for avoiding tedious argument passing (what React developers call
 </div>
 <p>Then in the task definition, we can access the context variable using the <code class="docutils literal notranslate"><span class="pre">get_context</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">my_tool</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">get_context</span><span class="p">(</span><span class="s2">&quot;my_tool.ratio&quot;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_tool</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">get_context</span><span class="p">(</span><span class="s2">&quot;my_tool.ratio&quot;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="c1"># Perform desired computation with flag set by context.</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Ran my_tool with argument: </span><span class="si">{</span><span class="n">ratio</span><span class="si">}</span><span class="s2">&quot;</span>
 </pre></div>
@@ -489,14 +503,14 @@ If a local, non-absolute path is specified, it is assumed relative to <code clas
 </div>
 <p>specifies two resource limits <code class="docutils literal notranslate"><span class="pre">db</span></code> and <code class="docutils literal notranslate"><span class="pre">web_api</span></code> with available amounts of 10 and 5, respectively. Users can specify that certain tasks require a resource using the <code class="docutils literal notranslate"><span class="pre">limit</span></code> task option:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">limits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">read_from_database</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_from_database</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
     <span class="c1"># ...</span>
 </pre></div>
 </div>
 <p>Every time the task <code class="docutils literal notranslate"><span class="pre">read_from_database</span></code> is executing, it consumes one unit of resource <code class="docutils literal notranslate"><span class="pre">db</span></code>. It releases its resource when the task completes. This limit allows users to define a maximum concurrency on a per task or resource basis, which is useful for preventing overloading databases or APIs with too many concurrent connections.</p>
 <p>Tasks may specify multiple resources within the <code class="docutils literal notranslate"><span class="pre">limits</span></code> list. Tasks may also consume multiples of a resource by specifying <code class="docutils literal notranslate"><span class="pre">limits</span></code> with a <code class="docutils literal notranslate"><span class="pre">dict</span></code>:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">limits</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
-<span class="k">def</span> <span class="nf">read_from_database</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_from_database</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
     <span class="c1"># ...</span>
 </pre></div>
 </div>
@@ -513,7 +527,7 @@ If a local, non-absolute path is specified, it is assumed relative to <code clas
 </div>
 <p>Within a workflow, users can specify which tasks should execute on this executor using the <code class="docutils literal notranslate"><span class="pre">executor</span></code> task option:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;local_exec&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">task1</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task1</span><span class="p">():</span>
     <span class="c1"># ...</span>
 </pre></div>
 </div>
@@ -680,7 +694,7 @@ For backwards-compatibility, the deprecated <code class="docutils literal notran
 <section id="batch-tags">
 <h5><code class="docutils literal notranslate"><span class="pre">batch_tags</span></code><a class="headerlink" href="#batch-tags" title="Link to this heading">¶</a></h5>
 <p>An optional JSON mapping of string key-value pairs to use as Batch job tags. This could be used to track jobs or query them after execution.</p>
-<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">batch_tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{&quot;project&quot;: &quot;acme&quot;, &quot;user&quot;: &quot;alice&quot;}</span>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">batch_tags = {&quot;project&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;acme&quot;</span><span class="na">, &quot;user&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;alice&quot;</span><span class="na">}</span>
 </pre></div>
 </div>
 </section>
@@ -744,6 +758,11 @@ as expensive as the others.</p></li>
 <p>A string (default: your account’s <code class="docutils literal notranslate"><span class="pre">AWSGlueServiceRole</span></code>) that specifies the ARN of the IAM role that AWS Glue jobs should adopt while executing. AWS provides a <a class="reference external" href="https://docs.aws.amazon.com/glue/latest/dg/create-service-policy.html">managed policy</a>, <code class="docutils literal notranslate"><span class="pre">AWSGlueServiceRole</span></code> that has the minimal permissions to run glue jobs, but you may need to provide access to S3 or other resources.</p>
 <p>This key is mapped to the <a class="reference external" href="https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-jobs-job.html"><code class="docutils literal notranslate"><span class="pre">Role</span></code> property</a> of the Glue API.</p>
 </section>
+<section id="glue-version">
+<h5><code class="docutils literal notranslate"><span class="pre">glue_version</span></code><a class="headerlink" href="#glue-version" title="Link to this heading">¶</a></h5>
+<p>A string (default: <code class="docutils literal notranslate"><span class="pre">4.0</span></code>) that specifies the version of the AWS Glue backend. The executor has been tested on <code class="docutils literal notranslate"><span class="pre">3.0</span></code>
+and <code class="docutils literal notranslate"><span class="pre">4.0</span></code> versions.</p>
+</section>
 <section id="glue-job-prefix">
 <h5><code class="docutils literal notranslate"><span class="pre">glue_job_prefix</span></code><a class="headerlink" href="#glue-job-prefix" title="Link to this heading">¶</a></h5>
 <p>A string specifying the prefix for Glue job definitions created and used by redun. Defaults to <code class="docutils literal notranslate"><span class="pre">REDUN</span></code>.</p>
@@ -756,6 +775,10 @@ Spark History Server to visualize and monitor job progress. Defaults to <code cl
 <section id="id8">
 <h5><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code><a class="headerlink" href="#id8" title="Link to this heading">¶</a></h5>
 <p>Float specifying how frequently to query AWS for the status of running Glue jobs. Defaults to 10.0 seconds.</p>
+</section>
+<section id="enable-metrics">
+<h5><code class="docutils literal notranslate"><span class="pre">enable_metrics</span></code><a class="headerlink" href="#enable-metrics" title="Link to this heading">¶</a></h5>
+<p>A bool (default: False) that will enable observability and profiling of running jobs via Cloudwatch and the AWS Glue console.</p>
 </section>
 <section id="job-retry-interval">
 <h5><code class="docutils literal notranslate"><span class="pre">job_retry_interval</span></code><a class="headerlink" href="#job-retry-interval" title="Link to this heading">¶</a></h5>
@@ -999,6 +1022,7 @@ Can be further overridden on a per-task basis using task options.</p>
 <li><a class="reference internal" href="#scheduler">Scheduler</a><ul>
 <li><a class="reference internal" href="#ignore-warnings"><code class="docutils literal notranslate"><span class="pre">ignore_warnings</span></code></a></li>
 <li><a class="reference internal" href="#setup-scheduler"><code class="docutils literal notranslate"><span class="pre">setup_scheduler</span></code></a></li>
+<li><a class="reference internal" href="#boto-config"><code class="docutils literal notranslate"><span class="pre">boto_config</span></code></a></li>
 <li><a class="reference internal" href="#job-status-interval"><code class="docutils literal notranslate"><span class="pre">job_status_interval</span></code></a></li>
 <li><a class="reference internal" href="#federated-configs"><code class="docutils literal notranslate"><span class="pre">federated_configs</span></code></a></li>
 <li><a class="reference internal" href="#context"><code class="docutils literal notranslate"><span class="pre">context</span></code></a></li>
@@ -1074,9 +1098,11 @@ Can be further overridden on a per-task basis using task options.</p>
 <li><a class="reference internal" href="#worker-type"><code class="docutils literal notranslate"><span class="pre">worker_type</span></code></a></li>
 <li><a class="reference internal" href="#id6"><code class="docutils literal notranslate"><span class="pre">aws_region</span></code></a></li>
 <li><a class="reference internal" href="#id7"><code class="docutils literal notranslate"><span class="pre">role</span></code></a></li>
+<li><a class="reference internal" href="#glue-version"><code class="docutils literal notranslate"><span class="pre">glue_version</span></code></a></li>
 <li><a class="reference internal" href="#glue-job-prefix"><code class="docutils literal notranslate"><span class="pre">glue_job_prefix</span></code></a></li>
 <li><a class="reference internal" href="#spark-history-dir"><code class="docutils literal notranslate"><span class="pre">spark_history_dir</span></code></a></li>
 <li><a class="reference internal" href="#id8"><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code></a></li>
+<li><a class="reference internal" href="#enable-metrics"><code class="docutils literal notranslate"><span class="pre">enable_metrics</span></code></a></li>
 <li><a class="reference internal" href="#job-retry-interval"><code class="docutils literal notranslate"><span class="pre">job_retry_interval</span></code></a></li>
 <li><a class="reference internal" href="#id9"><code class="docutils literal notranslate"><span class="pre">timeout</span></code></a></li>
 <li><a class="reference internal" href="#id10"><code class="docutils literal notranslate"><span class="pre">code_package</span></code></a></li>
@@ -1137,7 +1163,7 @@ Can be further overridden on a per-task basis using task options.</p>
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=5fa4622c"></script>
     </body>

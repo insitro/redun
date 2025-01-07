@@ -5,9 +5,9 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Tags" href="tags.html" /><link rel="prev" title="Configuration" href="config.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Backend and database - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
     
@@ -293,14 +293,14 @@ See the <a class="reference internal" href="config.html#backend"><span class="st
 <section id="querying-call-graphs">
 <h2>Querying call graphs<a class="headerlink" href="#querying-call-graphs" title="Link to this heading">¶</a></h2>
 <p>Every time redun executes a workflow, it records the execution as a CallGraph. The <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">log</span></code> command can be used to query past executions and walk through the CallGraph (see also the <a class="reference internal" href="console.html"><span class="std std-doc">Console (TUI)</span></a>). Here we’ll walk through the <code class="docutils literal notranslate"><span class="pre">examples/compile/</span></code> example. The workflow script should look something like this:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
 
-<span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">File</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">redun</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">File</span>
 
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">compile</span><span class="p">(</span><span class="n">c_file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span><span class="n">c_file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compile one C file into an object file.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -309,7 +309,7 @@ See the <a class="reference internal" href="config.html#backend"><span class="st
 
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Link several object files together into one program.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -321,7 +321,7 @@ See the <a class="reference internal" href="config.html#backend"><span class="st
 
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">make_prog</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">c_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_prog</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">c_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compile one program from its source C files.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -347,7 +347,7 @@ See the <a class="reference internal" href="config.html#backend"><span class="st
 
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">make</span><span class="p">(</span><span class="n">files</span> <span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]]</span><span class="o">=</span><span class="n">files</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">make</span><span class="p">(</span><span class="n">files</span> <span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]]</span><span class="o">=</span><span class="n">files</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Top-level task for compiling all the programs in the project.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -479,7 +479,7 @@ Recent<span class="w"> </span>executions:
 <span class="n">Task</span> <span class="n">link</span> <span class="n">e73b3cd20246b559ac2b9c2933efe953612cc3ab</span>
     <span class="n">First</span> <span class="n">job</span> <span class="mi">88</span><span class="n">eb9fd6</span> <span class="mi">2020</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">26</span> <span class="mi">22</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mf">07.424194</span>
 
-    <span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Link several object files together into one program.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -507,7 +507,7 @@ Recent<span class="w"> </span>executions:
   <span class="o">-</span> <span class="n">During</span> <span class="n">Job</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;96681441&#39;</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="s1">&#39;2020-06-26 22:21:32&#39;</span><span class="p">,</span> <span class="n">task_name</span><span class="o">=</span><span class="s1">&#39;link&#39;</span><span class="p">)</span>
 
   <span class="n">Task</span> <span class="n">link</span> <span class="n">e73b3cd20246b559ac2b9c2933efe953612cc3ab</span>
-      <span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
+      <span class="k">def</span><span class="w"> </span><span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
 <span class="w">          </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">          Link several object files together into one program.</span>
 <span class="sd">          &quot;&quot;&quot;</span>
@@ -526,7 +526,7 @@ Recent<span class="w"> </span>executions:
   <span class="o">-</span> <span class="n">During</span> <span class="n">Job</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;1f4b4a76&#39;</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="s1">&#39;2020-06-26 22:21:32&#39;</span><span class="p">,</span> <span class="n">task_name</span><span class="o">=</span><span class="s1">&#39;compile&#39;</span><span class="p">)</span>
 
   <span class="n">Task</span> <span class="nb">compile</span> <span class="n">d2b031e48e7f491a3d05a12f243f967517b25236</span>
-      <span class="k">def</span> <span class="nf">compile</span><span class="p">(</span><span class="n">c_file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
+      <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span><span class="n">c_file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
 <span class="w">          </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">          Compile one C file into an object file.</span>
 <span class="sd">          &quot;&quot;&quot;</span>
@@ -554,7 +554,7 @@ Recent<span class="w"> </span>executions:
 <span class="n">Task</span><span class="p">(</span><span class="nb">hash</span><span class="o">=</span><span class="s1">&#39;e73b3cd2&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;link&#39;</span><span class="p">)</span>
 
 <span class="p">(</span><span class="n">redun</span><span class="p">)</span> <span class="nb">print</span><span class="p">(</span><span class="n">call_node</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">link</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">o_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Link several object files together into one program.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -568,7 +568,7 @@ Recent<span class="w"> </span>executions:
 <span class="n">CallNode</span><span class="p">(</span><span class="nb">hash</span><span class="o">=</span><span class="s1">&#39;4453e6cd&#39;</span><span class="p">,</span> <span class="n">task_name</span><span class="o">=</span><span class="s1">&#39;make_prog&#39;</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prog2&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">File</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">prog2</span><span class="o">.</span><span class="n">c</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="n">b262cdb5130e8984ed3bb0dba8c83e56173ed702</span><span class="p">),</span> <span class="n">File</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">lib</span><span class="o">.</span><span class="n">c</span><span class="p">,</span> <span class="n">h</span><span class="o">...</span><span class="p">])</span>
 
 <span class="p">(</span><span class="n">redun</span><span class="p">)</span> <span class="nb">print</span><span class="p">(</span><span class="n">call_node</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">make_prog</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">c_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_prog</span><span class="p">(</span><span class="n">prog_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">c_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compile one program from its source C files.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -627,7 +627,7 @@ Recent<span class="w"> </span>executions:
 <span class="c1"># 0</span>
 
 <span class="c1"># Import logs into second database.</span>
-<span class="n">redun</span> <span class="o">--</span><span class="n">config</span> <span class="n">redun2</span> <span class="kn">import</span> <span class="o">&lt;</span> <span class="n">logs</span><span class="o">.</span><span class="n">json</span>
+<span class="n">redun</span> <span class="o">--</span><span class="n">config</span> <span class="n">redun2</span> <span class="kn">import</span><span class="w"> </span><span class="o">&lt;</span> <span class="n">logs</span><span class="o">.</span><span class="n">json</span>
 
 <span class="c1"># Second database is now populated.</span>
 <span class="n">redun</span> <span class="o">--</span><span class="n">config</span> <span class="n">redun2</span> <span class="n">export</span> <span class="o">|</span> <span class="n">wc</span> <span class="o">-</span><span class="n">l</span>
@@ -720,8 +720,11 @@ Automigration is not used for non-sqlite databases, since a centrally used datab
 <tr class="row-even"><td><p>&gt;=0.5.1 &lt;=0.6.0</p></td>
 <td><p>&gt;=3.0 &lt;4</p></td>
 </tr>
-<tr class="row-odd"><td><p>&gt;=0.6.1</p></td>
+<tr class="row-odd"><td><p>&gt;=0.6.1 &lt;=0.22.0</p></td>
 <td><p>&gt;=3.1 &lt;4</p></td>
+</tr>
+<tr class="row-even"><td><p>&gt;=0.23.0</p></td>
+<td><p>&gt;=3.4 &lt;4</p></td>
 </tr>
 </tbody>
 </table>
@@ -735,6 +738,16 @@ Automigration is not used for non-sqlite databases, since a centrally used datab
 <li><p>Minor database versions (e.g <code class="docutils literal notranslate"><span class="pre">3.0</span> <span class="pre">--&gt;</span> <span class="pre">3.1</span></code>) can be upgraded to without disruption of current clients, because they typically contain non-breaking changes such as adding indexes or changing constraints.</p></li>
 <li><p>To upgrade to a major database version (e.g. <code class="docutils literal notranslate"><span class="pre">3.0</span> <span class="pre">--&gt;</span> <span class="pre">4.0</span></code>) without downtime, all clients need to allow the new major version (see table above for details) before the migration is applied.</p></li>
 </ul>
+<p><strong>Migration playbook:</strong> To avoid downtime, perform database migrations and client upgrades in the following order:</p>
+<ol class="arabic simple">
+<li><p>Assume we start with clients at redun==0.5.1</p></li>
+<li><p>Upgrade db using <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">db</span> <span class="pre">upgrade</span> <span class="pre">3.1</span></code></p></li>
+<li><p>Clients can now upgrade to redun==0.6.1</p></li>
+<li><p>Upgrade db using <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">db</span> <span class="pre">upgrade</span> <span class="pre">3.2</span></code></p></li>
+<li><p>Upgrade db using <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">db</span> <span class="pre">upgrade</span> <span class="pre">3.3</span></code></p></li>
+<li><p>Upgrade db using <code class="docutils literal notranslate"><span class="pre">redun</span> <span class="pre">db</span> <span class="pre">upgrade</span> <span class="pre">3.4</span></code></p></li>
+<li><p>Clients can now upgrade to redun==0.23.0</p></li>
+</ol>
 </section>
 </section>
 <section id="optional-value-store">
@@ -829,7 +842,7 @@ See <code class="docutils literal notranslate"><span class="pre">ValueStore</spa
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=5fa4622c"></script>
     </body>

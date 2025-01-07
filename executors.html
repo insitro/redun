@@ -5,9 +5,9 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Scheduling redun workflows" href="scheduler.html" /><link rel="prev" title="Tasks" href="tasks.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Executors - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
     
@@ -288,32 +288,32 @@
 <p>redun is able to perform task execution across various compute infrastructure using modules called Executors. For example, redun supports executors that execute jobs on threads, processes, and AWS Batch jobs. New kinds of infrastructure can be utilized by registering additional Executor modules.</p>
 <p>Executors are instantiated by sections in the <a class="reference internal" href="config.html"><span class="doc std std-doc">redun configuration</span></a> (<code class="docutils literal notranslate"><span class="pre">.redun/redun.ini</span></code>) following the format <code class="docutils literal notranslate"><span class="pre">[executors.{executor_name}]</span></code>, where <code class="docutils literal notranslate"><span class="pre">{executor_name}</span></code> is a user-specific name for the executor, such as <code class="docutils literal notranslate"><span class="pre">default</span></code>, <code class="docutils literal notranslate"><span class="pre">batch</span></code>, or <code class="docutils literal notranslate"><span class="pre">my_executor</span></code>. These names can then be referenced in workflows using the <code class="docutils literal notranslate"><span class="pre">executor</span></code> task option to indicate on which executor the task should execute:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;my_executor&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">task1</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task1</span><span class="p">():</span>
     <span class="c1"># ...</span>
 </pre></div>
 </div>
 <p>By default, tasks execute on the <code class="docutils literal notranslate"><span class="pre">default</span></code> executor, which is a <a class="reference internal" href="#local-executor">Local executor</a> that executes tasks on multiple threads (or processes, if configured).</p>
 <p>In terms of executors, there is no restriction on which tasks can call which other tasks. For example, an AWS Batch task can seemingly “call” a local task, even though AWS Batch jobs don’t have access to the local machine. This is possible because all task calls are lazy and are performed by the scheduler after the calling task completes.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">task_on_batch</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task_on_batch</span><span class="p">():</span>
     <span class="c1"># This code runs on AWS Batch.</span>
     <span class="k">return</span> <span class="n">task_on_default</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># This appears to be a call back to a local task.</span>
 
 <span class="nd">@task</span><span class="p">()</span>  <span class="c1"># option `executor` has default value &quot;default&quot;</span>
-<span class="k">def</span> <span class="nf">task_on_default</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task_on_default</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="c1"># This code runs on the local machine.</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
 </pre></div>
 </div>
 <p>Some executor options can be overridden per task using task options. For example, a user can specify a specific memory requirement (e.g. 10Gb) for a task using the <code class="docutils literal notranslate"><span class="pre">memory</span></code> task option:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">,</span> <span class="n">memory</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">task2</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task2</span><span class="p">():</span>
     <span class="c1"># ...</span>
 </pre></div>
 </div>
 <p>Options can also be dynamic and overridden at call-time using the <code class="docutils literal notranslate"><span class="pre">Task.options</span></code> method:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
     <span class="n">memory</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">*</span> <span class="n">gigs_per_row</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">task_on_batch</span><span class="o">.</span><span class="n">options</span><span class="p">(</span><span class="n">memory</span><span class="o">=</span><span class="n">memory</span><span class="p">)(</span><span class="n">data</span><span class="p">)</span>
     <span class="c1"># ...</span>
@@ -330,16 +330,16 @@ executors with distinct names to resolve to the same underlying implementation.<
 <p>For example, consider these tasks:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
 <span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;foo_exec&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Hello world&#39;</span>
 
 
 <span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;bar_exec&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">bar</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">bar</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">return</span> <span class="nb">input</span><span class="s1">&#39;</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">greet</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Hello&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">greet</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Hello&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">foo</span><span class="p">(</span><span class="n">bar</span><span class="p">())</span>
 </pre></div>
 </div>
@@ -600,7 +600,7 @@ as expensive as the others.</p></li>
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=5fa4622c"></script>
     </body>

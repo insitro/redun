@@ -5,9 +5,9 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun.backends package" href="redun.backends.html" /><link rel="prev" title="redun" href="modules.html" />
 
-    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
+    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>redun package - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
     
@@ -322,6 +322,7 @@
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.html#redun.backends.base.RedunBackend.record_job_end"><code class="docutils literal notranslate"><span class="pre">RedunBackend.record_job_end()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.html#redun.backends.base.RedunBackend.record_job_start"><code class="docutils literal notranslate"><span class="pre">RedunBackend.record_job_start()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.html#redun.backends.base.RedunBackend.record_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackend.record_tags()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="redun.backends.html#redun.backends.base.RedunBackend.record_updated_time"><code class="docutils literal notranslate"><span class="pre">RedunBackend.record_updated_time()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.html#redun.backends.base.RedunBackend.record_value"><code class="docutils literal notranslate"><span class="pre">RedunBackend.record_value()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.html#redun.backends.base.RedunBackend.rollback_handle"><code class="docutils literal notranslate"><span class="pre">RedunBackend.rollback_handle()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.html#redun.backends.base.RedunBackend.set_eval_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackend.set_eval_cache()</span></code></a></li>
@@ -835,6 +836,7 @@
 <li class="toctree-l3"><a class="reference internal" href="redun.executors.html#redun.executors.aws_utils.get_simple_aws_user"><code class="docutils literal notranslate"><span class="pre">get_simple_aws_user()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.executors.html#redun.executors.aws_utils.is_ec2_instance"><code class="docutils literal notranslate"><span class="pre">is_ec2_instance()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="redun.executors.html#redun.executors.aws_utils.iter_log_stream"><code class="docutils literal notranslate"><span class="pre">iter_log_stream()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="redun.executors.html#redun.executors.aws_utils.set_boto_config"><code class="docutils literal notranslate"><span class="pre">set_boto_config()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="redun.executors.html#module-redun.executors.base">redun.executors.base module</a><ul>
@@ -1428,12 +1430,6 @@ display that as:</p>
 <dt class="sig sig-object py" id="redun.cli.format_tags">
 <span class="sig-prename descclassname"><span class="pre">redun.cli.</span></span><span class="sig-name descname"><span class="pre">format_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="redun.backends.db.html#redun.backends.db.Tag" title="redun.backends.db.Tag"><span class="pre">Tag</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.cli.format_tags" title="Link to this definition">¶</a></dt>
 <dd><p>Format a set of tags.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="redun.cli.format_timedelta">
-<span class="sig-prename descclassname"><span class="pre">redun.cli.</span></span><span class="sig-name descname"><span class="pre">format_timedelta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">timedelta</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.cli.format_timedelta" title="Link to this definition">¶</a></dt>
-<dd><p>Format timedelta as a string.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -3130,6 +3126,12 @@ Otherwise, raises OSError on non-empty directories</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="redun.file.S3FileSystem.get_bucket_and_key">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_bucket_and_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.file.S3FileSystem.get_bucket_and_key" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the bucket and key from an S3 path, useful for boto calls.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="redun.file.S3FileSystem.get_hash">
 <span class="sig-name descname"><span class="pre">get_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.file.S3FileSystem.get_hash" title="Link to this definition">¶</a></dt>
 <dd><p>Return a hash for the file at path.</p>
@@ -4114,7 +4116,7 @@ be in (<cite>min_array_size</cite>, <cite>MAX_ARRAY_SIZE</cite>].</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.job_array.get_job_array_index">
-<span class="sig-prename descclassname"><span class="pre">redun.job_array.</span></span><span class="sig-name descname"><span class="pre">get_job_array_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">environ({'GITHUB_STATE':</span> <span class="pre">'/home/runner/work/_temp/_runner_file_commands/save_state_9e2b1e65-1f25-46b5-818e-a0af8d8b4118',</span> <span class="pre">'STATS_TRP':</span> <span class="pre">'true',</span> <span class="pre">'DOTNET_NOLOGO':</span> <span class="pre">'1',</span> <span class="pre">'DEPLOYMENT_BASEPATH':</span> <span class="pre">'/opt/runner',</span> <span class="pre">'USER':</span> <span class="pre">'runner',</span> <span class="pre">'CI':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_ENV':</span> <span class="pre">'/home/runner/work/_temp/_runner_file_commands/set_env_9e2b1e65-1f25-46b5-818e-a0af8d8b4118',</span> <span class="pre">'PIPX_HOME':</span> <span class="pre">'/opt/pipx',</span> <span class="pre">'RUNNER_ENVIRONMENT':</span> <span class="pre">'github-hosted',</span> <span class="pre">'JAVA_HOME_8_X64':</span> <span class="pre">'/usr/lib/jvm/temurin-8-jdk-amd64',</span> <span class="pre">'SHLVL':</span> <span class="pre">'1',</span> <span class="pre">'OLDPWD':</span> <span class="pre">'/home/runner/work/redun/redun',</span> <span class="pre">'HOME':</span> <span class="pre">'/home/runner',</span> <span class="pre">'RUNNER_TEMP':</span> <span class="pre">'/home/runner/work/_temp',</span> <span class="pre">'GITHUB_EVENT_PATH':</span> <span class="pre">'/home/runner/work/_temp/_github_workflow/event.json',</span> <span class="pre">'GITHUB_REPOSITORY_OWNER':</span> <span class="pre">'insitro',</span> <span class="pre">'JAVA_HOME_11_X64':</span> <span class="pre">'/usr/lib/jvm/temurin-11-jdk-amd64',</span> <span class="pre">'PIPX_BIN_DIR':</span> <span class="pre">'/opt/pipx_bin',</span> <span class="pre">'STATS_RDCL':</span> <span class="pre">'true',</span> <span class="pre">'ANDROID_NDK_LATEST_HOME':</span> <span class="pre">'/usr/local/lib/android/sdk/ndk/27.0.12077973',</span> <span class="pre">'GRADLE_HOME':</span> <span class="pre">'/usr/share/gradle-8.10',</span> <span class="pre">'GITHUB_RETENTION_DAYS':</span> <span class="pre">'90',</span> <span class="pre">'JAVA_HOME_21_X64':</span> <span class="pre">'/usr/lib/jvm/temurin-21-jdk-amd64',</span> <span class="pre">'POWERSHELL_DISTRIBUTION_CHANNEL':</span> <span class="pre">'GitHub-Actions-ubuntu22',</span> <span class="pre">'GITHUB_HEAD_REF':</span> <span class="pre">'',</span> <span class="pre">'GITHUB_REPOSITORY_OWNER_ID':</span> <span class="pre">'41341906',</span> <span class="pre">'AZURE_EXTENSION_DIR':</span> <span class="pre">'/opt/az/azcliextensions',</span> <span class="pre">'MAKEFLAGS':</span> <span class="pre">'',</span> <span class="pre">'SYSTEMD_EXEC_PID':</span> <span class="pre">'603',</span> <span class="pre">'GITHUB_GRAPHQL_URL':</span> <span class="pre">'https://api.github.com/graphql',</span> <span class="pre">'NVM_DIR':</span> <span class="pre">'/home/runner/.nvm',</span> <span class="pre">'GOROOT_1_20_X64':</span> <span class="pre">'/opt/hostedtoolcache/go/1.20.14/x64',</span> <span class="pre">'DOTNET_SKIP_FIRST_TIME_EXPERIENCE':</span> <span class="pre">'1',</span> <span class="pre">'JAVA_HOME_17_X64':</span> <span class="pre">'/usr/lib/jvm/temurin-17-jdk-amd64',</span> <span class="pre">'GOROOT_1_21_X64':</span> <span class="pre">'/opt/hostedtoolcache/go/1.21.13/x64',</span> <span class="pre">'ImageVersion':</span> <span class="pre">'20240825.1.0',</span> <span class="pre">'RUNNER_OS':</span> <span class="pre">'Linux',</span> <span class="pre">'GITHUB_API_URL':</span> <span class="pre">'https://api.github.com',</span> <span class="pre">'SWIFT_PATH':</span> <span class="pre">'/usr/share/swift/usr/bin',</span> <span class="pre">'GOROOT_1_22_X64':</span> <span class="pre">'/opt/hostedtoolcache/go/1.22.6/x64',</span> <span class="pre">'RUNNER_USER':</span> <span class="pre">'runner',</span> <span class="pre">'CHROMEWEBDRIVER':</span> <span class="pre">'/usr/local/share/chromedriver-linux64',</span> <span class="pre">'_':</span> <span class="pre">'/usr/bin/make',</span> <span class="pre">'JOURNAL_STREAM':</span> <span class="pre">'8:19072',</span> <span class="pre">'GITHUB_WORKFLOW':</span> <span class="pre">'sphinx-docs',</span> <span class="pre">'STATS_V3PS':</span> <span class="pre">'true',</span> <span class="pre">'STATS_D':</span> <span class="pre">'false',</span> <span class="pre">'GITHUB_RUN_ID':</span> <span class="pre">'10689224296',</span> <span class="pre">'ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE':</span> <span class="pre">'/opt/actionarchivecache',</span> <span class="pre">'STATS_VMFE':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_WORKFLOW_SHA':</span> <span class="pre">'f40bc65ab1e5df59849821e15abd11feacf5fe05',</span> <span class="pre">'BOOTSTRAP_HASKELL_NONINTERACTIVE':</span> <span class="pre">'1',</span> <span class="pre">'GITHUB_REF_TYPE':</span> <span class="pre">'branch',</span> <span class="pre">'ImageOS':</span> <span class="pre">'ubuntu22',</span> <span class="pre">'GITHUB_BASE_REF':</span> <span class="pre">'',</span> <span class="pre">'GITHUB_ACTION_REPOSITORY':</span> <span class="pre">'',</span> <span class="pre">'PERFLOG_LOCATION_SETTING':</span> <span class="pre">'RUNNER_PERFLOG',</span> <span class="pre">'GITHUB_WORKFLOW_REF':</span> <span class="pre">'insitro/redun/.github/workflows/publish-docs.yml&#64;refs/heads/main',</span> <span class="pre">'PATH':</span> <span class="pre">'/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin',</span> <span class="pre">'RUNNER_TRACKING_ID':</span> <span class="pre">'github_1d03e39e-bd08-43be-ae9d-a3f999b9dfc4',</span> <span class="pre">'DOTNET_MULTILEVEL_LOOKUP':</span> <span class="pre">'0',</span> <span class="pre">'INVOCATION_ID':</span> <span class="pre">'aaf837147a074239b4ecb063b20de5ab',</span> <span class="pre">'RUNNER_TOOL_CACHE':</span> <span class="pre">'/opt/hostedtoolcache',</span> <span class="pre">'ANT_HOME':</span> <span class="pre">'/usr/share/ant',</span> <span class="pre">'GITHUB_TRIGGERING_ACTOR':</span> <span class="pre">'mattrasmus',</span> <span class="pre">'GITHUB_RUN_NUMBER':</span> <span class="pre">'59',</span> <span class="pre">'RUNNER_ARCH':</span> <span class="pre">'X64',</span> <span class="pre">'XDG_RUNTIME_DIR':</span> <span class="pre">'/run/user/1001',</span> <span class="pre">'AGENT_TOOLSDIRECTORY':</span> <span class="pre">'/opt/hostedtoolcache',</span> <span class="pre">'GITHUB_ACTION':</span> <span class="pre">'__run',</span> <span class="pre">'MAKELEVEL':</span> <span class="pre">'1',</span> <span class="pre">'LANG':</span> <span class="pre">'C.UTF-8',</span> <span class="pre">'VCPKG_INSTALLATION_ROOT':</span> <span class="pre">'/usr/local/share/vcpkg',</span> <span class="pre">'RUNNER_NAME':</span> <span class="pre">'GitHub</span> <span class="pre">Actions</span> <span class="pre">225',</span> <span class="pre">'GITHUB_REF_NAME':</span> <span class="pre">'main',</span> <span class="pre">'STATS_D_D':</span> <span class="pre">'false',</span> <span class="pre">'XDG_CONFIG_HOME':</span> <span class="pre">'/home/runner/.config',</span> <span class="pre">'CONDA':</span> <span class="pre">'/usr/share/miniconda',</span> <span class="pre">'STATS_VMD':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_REPOSITORY':</span> <span class="pre">'insitro/redun',</span> <span class="pre">'STATS_UE':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_ACTION_REF':</span> <span class="pre">'',</span> <span class="pre">'ANDROID_NDK_ROOT':</span> <span class="pre">'/usr/local/lib/android/sdk/ndk/27.0.12077973',</span> <span class="pre">'DEBIAN_FRONTEND':</span> <span class="pre">'noninteractive',</span> <span class="pre">'GITHUB_REPOSITORY_ID':</span> <span class="pre">'424419603',</span> <span class="pre">'GITHUB_ACTIONS':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_REF_PROTECTED':</span> <span class="pre">'true',</span> <span class="pre">'ACCEPT_EULA':</span> <span class="pre">'Y',</span> <span class="pre">'RUNNER_PERFLOG':</span> <span class="pre">'/home/runner/perflog',</span> <span class="pre">'GITHUB_JOB':</span> <span class="pre">'build',</span> <span class="pre">'GITHUB_WORKSPACE':</span> <span class="pre">'/home/runner/work/redun/redun',</span> <span class="pre">'GITHUB_SHA':</span> <span class="pre">'f40bc65ab1e5df59849821e15abd11feacf5fe05',</span> <span class="pre">'GITHUB_RUN_ATTEMPT':</span> <span class="pre">'1',</span> <span class="pre">'GITHUB_REF':</span> <span class="pre">'refs/heads/main',</span> <span class="pre">'ANDROID_SDK_ROOT':</span> <span class="pre">'/usr/local/lib/android/sdk',</span> <span class="pre">'GITHUB_ACTOR':</span> <span class="pre">'mattrasmus',</span> <span class="pre">'LEIN_HOME':</span> <span class="pre">'/usr/local/lib/lein',</span> <span class="pre">'JAVA_HOME':</span> <span class="pre">'/usr/lib/jvm/temurin-11-jdk-amd64',</span> <span class="pre">'PWD':</span> <span class="pre">'/home/runner/work/redun/redun/docs',</span> <span class="pre">'RUNNER_WORKSPACE':</span> <span class="pre">'/home/runner/work/redun',</span> <span class="pre">'GITHUB_ACTOR_ID':</span> <span class="pre">'56042231',</span> <span class="pre">'GITHUB_PATH':</span> <span class="pre">'/home/runner/work/_temp/_runner_file_commands/add_path_9e2b1e65-1f25-46b5-818e-a0af8d8b4118',</span> <span class="pre">'GHCUP_INSTALL_BASE_PREFIX':</span> <span class="pre">'/usr/local',</span> <span class="pre">'GITHUB_EVENT_NAME':</span> <span class="pre">'push',</span> <span class="pre">'GITHUB_SERVER_URL':</span> <span class="pre">'https://github.com',</span> <span class="pre">'STATS_TIS':</span> <span class="pre">'mining',</span> <span class="pre">'ANDROID_HOME':</span> <span class="pre">'/usr/local/lib/android/sdk',</span> <span class="pre">'LEIN_JAR':</span> <span class="pre">'/usr/local/lib/lein/self-installs/leiningen-2.11.2-standalone.jar',</span> <span class="pre">'GECKOWEBDRIVER':</span> <span class="pre">'/usr/local/share/gecko_driver',</span> <span class="pre">'HOMEBREW_CLEANUP_PERIODIC_FULL_DAYS':</span> <span class="pre">'3650',</span> <span class="pre">'GITHUB_OUTPUT':</span> <span class="pre">'/home/runner/work/_temp/_runner_file_commands/set_output_9e2b1e65-1f25-46b5-818e-a0af8d8b4118',</span> <span class="pre">'HOMEBREW_NO_AUTO_UPDATE':</span> <span class="pre">'1',</span> <span class="pre">'EDGEWEBDRIVER':</span> <span class="pre">'/usr/local/share/edge_driver',</span> <span class="pre">'STATS_EXT':</span> <span class="pre">'true',</span> <span class="pre">'SGX_AESM_ADDR':</span> <span class="pre">'1',</span> <span class="pre">'CHROME_BIN':</span> <span class="pre">'/usr/bin/google-chrome',</span> <span class="pre">'MFLAGS':</span> <span class="pre">'',</span> <span class="pre">'ANDROID_NDK':</span> <span class="pre">'/usr/local/lib/android/sdk/ndk/27.0.12077973',</span> <span class="pre">'SELENIUM_JAR_PATH':</span> <span class="pre">'/usr/share/java/selenium-server.jar',</span> <span class="pre">'STATS_EXTP':</span> <span class="pre">'https://provjobdsettingscdn.blob.core.windows.net/settings/provjobdsettings-0.5.181+6/provjobd.data',</span> <span class="pre">'ANDROID_NDK_HOME':</span> <span class="pre">'/usr/local/lib/android/sdk/ndk/27.0.12077973',</span> <span class="pre">'GITHUB_STEP_SUMMARY':</span> <span class="pre">'/home/runner/work/_temp/_runner_file_commands/step_summary_9e2b1e65-1f25-46b5-818e-a0af8d8b4118',</span> <span class="pre">'DOCUTILSCONFIG':</span> <span class="pre">'/home/runner/work/redun/redun/docs/source/docutils.conf'})</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#redun.job_array.get_job_array_index" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">redun.job_array.</span></span><span class="sig-name descname"><span class="pre">get_job_array_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">environ({'GITHUB_STATE':</span> <span class="pre">'/home/runner/work/_temp/_runner_file_commands/save_state_53f414fc-dac2-4f2a-98fc-63617cccc994',</span> <span class="pre">'STATS_TRP':</span> <span class="pre">'true',</span> <span class="pre">'DOTNET_NOLOGO':</span> <span class="pre">'1',</span> <span class="pre">'DEPLOYMENT_BASEPATH':</span> <span class="pre">'/opt/runner',</span> <span class="pre">'USER':</span> <span class="pre">'runner',</span> <span class="pre">'CI':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_ENV':</span> <span class="pre">'/home/runner/work/_temp/_runner_file_commands/set_env_53f414fc-dac2-4f2a-98fc-63617cccc994',</span> <span class="pre">'PIPX_HOME':</span> <span class="pre">'/opt/pipx',</span> <span class="pre">'RUNNER_ENVIRONMENT':</span> <span class="pre">'github-hosted',</span> <span class="pre">'JAVA_HOME_8_X64':</span> <span class="pre">'/usr/lib/jvm/temurin-8-jdk-amd64',</span> <span class="pre">'SHLVL':</span> <span class="pre">'1',</span> <span class="pre">'OLDPWD':</span> <span class="pre">'/home/runner/work/redun/redun',</span> <span class="pre">'HOME':</span> <span class="pre">'/home/runner',</span> <span class="pre">'RUNNER_TEMP':</span> <span class="pre">'/home/runner/work/_temp',</span> <span class="pre">'GITHUB_EVENT_PATH':</span> <span class="pre">'/home/runner/work/_temp/_github_workflow/event.json',</span> <span class="pre">'GITHUB_REPOSITORY_OWNER':</span> <span class="pre">'insitro',</span> <span class="pre">'JAVA_HOME_11_X64':</span> <span class="pre">'/usr/lib/jvm/temurin-11-jdk-amd64',</span> <span class="pre">'PIPX_BIN_DIR':</span> <span class="pre">'/opt/pipx_bin',</span> <span class="pre">'STATS_RDCL':</span> <span class="pre">'true',</span> <span class="pre">'ANDROID_NDK_LATEST_HOME':</span> <span class="pre">'/usr/local/lib/android/sdk/ndk/27.2.12479018',</span> <span class="pre">'GRADLE_HOME':</span> <span class="pre">'/usr/share/gradle-8.11.1',</span> <span class="pre">'GITHUB_RETENTION_DAYS':</span> <span class="pre">'90',</span> <span class="pre">'JAVA_HOME_21_X64':</span> <span class="pre">'/usr/lib/jvm/temurin-21-jdk-amd64',</span> <span class="pre">'POWERSHELL_DISTRIBUTION_CHANNEL':</span> <span class="pre">'GitHub-Actions-ubuntu22',</span> <span class="pre">'GITHUB_HEAD_REF':</span> <span class="pre">'',</span> <span class="pre">'GITHUB_REPOSITORY_OWNER_ID':</span> <span class="pre">'41341906',</span> <span class="pre">'AZURE_EXTENSION_DIR':</span> <span class="pre">'/opt/az/azcliextensions',</span> <span class="pre">'MAKEFLAGS':</span> <span class="pre">'',</span> <span class="pre">'SYSTEMD_EXEC_PID':</span> <span class="pre">'602',</span> <span class="pre">'GITHUB_GRAPHQL_URL':</span> <span class="pre">'https://api.github.com/graphql',</span> <span class="pre">'NVM_DIR':</span> <span class="pre">'/home/runner/.nvm',</span> <span class="pre">'DOTNET_SKIP_FIRST_TIME_EXPERIENCE':</span> <span class="pre">'1',</span> <span class="pre">'JAVA_HOME_17_X64':</span> <span class="pre">'/usr/lib/jvm/temurin-17-jdk-amd64',</span> <span class="pre">'GOROOT_1_21_X64':</span> <span class="pre">'/opt/hostedtoolcache/go/1.21.13/x64',</span> <span class="pre">'ImageVersion':</span> <span class="pre">'20241215.1.0',</span> <span class="pre">'RUNNER_OS':</span> <span class="pre">'Linux',</span> <span class="pre">'GITHUB_API_URL':</span> <span class="pre">'https://api.github.com',</span> <span class="pre">'SWIFT_PATH':</span> <span class="pre">'/usr/share/swift/usr/bin',</span> <span class="pre">'GOROOT_1_22_X64':</span> <span class="pre">'/opt/hostedtoolcache/go/1.22.10/x64',</span> <span class="pre">'RUNNER_USER':</span> <span class="pre">'runner',</span> <span class="pre">'GOROOT_1_23_X64':</span> <span class="pre">'/opt/hostedtoolcache/go/1.23.4/x64',</span> <span class="pre">'CHROMEWEBDRIVER':</span> <span class="pre">'/usr/local/share/chromedriver-linux64',</span> <span class="pre">'_':</span> <span class="pre">'/usr/bin/make',</span> <span class="pre">'JOURNAL_STREAM':</span> <span class="pre">'8:16366',</span> <span class="pre">'GITHUB_WORKFLOW':</span> <span class="pre">'sphinx-docs',</span> <span class="pre">'STATS_V3PS':</span> <span class="pre">'true',</span> <span class="pre">'STATS_D':</span> <span class="pre">'false',</span> <span class="pre">'GITHUB_RUN_ID':</span> <span class="pre">'12642622334',</span> <span class="pre">'ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE':</span> <span class="pre">'/opt/actionarchivecache',</span> <span class="pre">'STATS_VMFE':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_WORKFLOW_SHA':</span> <span class="pre">'147c19dedf762ae1ebd76805e6d4328726a4ee12',</span> <span class="pre">'BOOTSTRAP_HASKELL_NONINTERACTIVE':</span> <span class="pre">'1',</span> <span class="pre">'GITHUB_REF_TYPE':</span> <span class="pre">'branch',</span> <span class="pre">'ImageOS':</span> <span class="pre">'ubuntu22',</span> <span class="pre">'GITHUB_BASE_REF':</span> <span class="pre">'',</span> <span class="pre">'STATS_BLT':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_ACTION_REPOSITORY':</span> <span class="pre">'',</span> <span class="pre">'PERFLOG_LOCATION_SETTING':</span> <span class="pre">'RUNNER_PERFLOG',</span> <span class="pre">'GITHUB_WORKFLOW_REF':</span> <span class="pre">'insitro/redun/.github/workflows/publish-docs.yml&#64;refs/heads/main',</span> <span class="pre">'PATH':</span> <span class="pre">'/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin',</span> <span class="pre">'RUNNER_TRACKING_ID':</span> <span class="pre">'github_97d27f0a-2a1a-4882-8ba5-5250b359e9de',</span> <span class="pre">'DOTNET_MULTILEVEL_LOOKUP':</span> <span class="pre">'0',</span> <span class="pre">'INVOCATION_ID':</span> <span class="pre">'b059134d0b6747d0a3d27be9e4962019',</span> <span class="pre">'RUNNER_TOOL_CACHE':</span> <span class="pre">'/opt/hostedtoolcache',</span> <span class="pre">'ANT_HOME':</span> <span class="pre">'/usr/share/ant',</span> <span class="pre">'GITHUB_TRIGGERING_ACTOR':</span> <span class="pre">'mattrasmus',</span> <span class="pre">'GITHUB_RUN_NUMBER':</span> <span class="pre">'60',</span> <span class="pre">'RUNNER_ARCH':</span> <span class="pre">'X64',</span> <span class="pre">'XDG_RUNTIME_DIR':</span> <span class="pre">'/run/user/1001',</span> <span class="pre">'AGENT_TOOLSDIRECTORY':</span> <span class="pre">'/opt/hostedtoolcache',</span> <span class="pre">'GITHUB_ACTION':</span> <span class="pre">'__run',</span> <span class="pre">'MAKELEVEL':</span> <span class="pre">'1',</span> <span class="pre">'LANG':</span> <span class="pre">'C.UTF-8',</span> <span class="pre">'VCPKG_INSTALLATION_ROOT':</span> <span class="pre">'/usr/local/share/vcpkg',</span> <span class="pre">'RUNNER_NAME':</span> <span class="pre">'GitHub</span> <span class="pre">Actions</span> <span class="pre">414',</span> <span class="pre">'GITHUB_REF_NAME':</span> <span class="pre">'main',</span> <span class="pre">'STATS_D_D':</span> <span class="pre">'false',</span> <span class="pre">'XDG_CONFIG_HOME':</span> <span class="pre">'/home/runner/.config',</span> <span class="pre">'CONDA':</span> <span class="pre">'/usr/share/miniconda',</span> <span class="pre">'STATS_VMD':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_REPOSITORY':</span> <span class="pre">'insitro/redun',</span> <span class="pre">'STATS_UE':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_ACTION_REF':</span> <span class="pre">'',</span> <span class="pre">'ANDROID_NDK_ROOT':</span> <span class="pre">'/usr/local/lib/android/sdk/ndk/27.2.12479018',</span> <span class="pre">'DEBIAN_FRONTEND':</span> <span class="pre">'noninteractive',</span> <span class="pre">'GITHUB_REPOSITORY_ID':</span> <span class="pre">'424419603',</span> <span class="pre">'STATS_PIP':</span> <span class="pre">'false',</span> <span class="pre">'GITHUB_ACTIONS':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_REF_PROTECTED':</span> <span class="pre">'true',</span> <span class="pre">'ACCEPT_EULA':</span> <span class="pre">'Y',</span> <span class="pre">'RUNNER_PERFLOG':</span> <span class="pre">'/home/runner/perflog',</span> <span class="pre">'GITHUB_JOB':</span> <span class="pre">'build',</span> <span class="pre">'GITHUB_WORKSPACE':</span> <span class="pre">'/home/runner/work/redun/redun',</span> <span class="pre">'GITHUB_SHA':</span> <span class="pre">'147c19dedf762ae1ebd76805e6d4328726a4ee12',</span> <span class="pre">'GITHUB_RUN_ATTEMPT':</span> <span class="pre">'1',</span> <span class="pre">'STATS_D_TC':</span> <span class="pre">'true',</span> <span class="pre">'GITHUB_REF':</span> <span class="pre">'refs/heads/main',</span> <span class="pre">'ANDROID_SDK_ROOT':</span> <span class="pre">'/usr/local/lib/android/sdk',</span> <span class="pre">'GITHUB_ACTOR':</span> <span class="pre">'mattrasmus',</span> <span class="pre">'LEIN_HOME':</span> <span class="pre">'/usr/local/lib/lein',</span> <span class="pre">'JAVA_HOME':</span> <span class="pre">'/usr/lib/jvm/temurin-11-jdk-amd64',</span> <span class="pre">'PWD':</span> <span class="pre">'/home/runner/work/redun/redun/docs',</span> <span class="pre">'RUNNER_WORKSPACE':</span> <span class="pre">'/home/runner/work/redun',</span> <span class="pre">'GITHUB_ACTOR_ID':</span> <span class="pre">'56042231',</span> <span class="pre">'GITHUB_PATH':</span> <span class="pre">'/home/runner/work/_temp/_runner_file_commands/add_path_53f414fc-dac2-4f2a-98fc-63617cccc994',</span> <span class="pre">'GHCUP_INSTALL_BASE_PREFIX':</span> <span class="pre">'/usr/local',</span> <span class="pre">'GITHUB_EVENT_NAME':</span> <span class="pre">'push',</span> <span class="pre">'GITHUB_SERVER_URL':</span> <span class="pre">'https://github.com',</span> <span class="pre">'STATS_TIS':</span> <span class="pre">'mining',</span> <span class="pre">'ANDROID_HOME':</span> <span class="pre">'/usr/local/lib/android/sdk',</span> <span class="pre">'LEIN_JAR':</span> <span class="pre">'/usr/local/lib/lein/self-installs/leiningen-2.11.2-standalone.jar',</span> <span class="pre">'GECKOWEBDRIVER':</span> <span class="pre">'/usr/local/share/gecko_driver',</span> <span class="pre">'HOMEBREW_CLEANUP_PERIODIC_FULL_DAYS':</span> <span class="pre">'3650',</span> <span class="pre">'GITHUB_OUTPUT':</span> <span class="pre">'/home/runner/work/_temp/_runner_file_commands/set_output_53f414fc-dac2-4f2a-98fc-63617cccc994',</span> <span class="pre">'HOMEBREW_NO_AUTO_UPDATE':</span> <span class="pre">'1',</span> <span class="pre">'EDGEWEBDRIVER':</span> <span class="pre">'/usr/local/share/edge_driver',</span> <span class="pre">'STATS_EXT':</span> <span class="pre">'true',</span> <span class="pre">'SGX_AESM_ADDR':</span> <span class="pre">'1',</span> <span class="pre">'CHROME_BIN':</span> <span class="pre">'/usr/bin/google-chrome',</span> <span class="pre">'MFLAGS':</span> <span class="pre">'',</span> <span class="pre">'ANDROID_NDK':</span> <span class="pre">'/usr/local/lib/android/sdk/ndk/27.2.12479018',</span> <span class="pre">'SELENIUM_JAR_PATH':</span> <span class="pre">'/usr/share/java/selenium-server.jar',</span> <span class="pre">'STATS_EXTP':</span> <span class="pre">'https://provjobdprod.z13.web.core.windows.net/settings/provjobdsettings-latest/provjobd.data',</span> <span class="pre">'ANDROID_NDK_HOME':</span> <span class="pre">'/usr/local/lib/android/sdk/ndk/27.2.12479018',</span> <span class="pre">'GITHUB_STEP_SUMMARY':</span> <span class="pre">'/home/runner/work/_temp/_runner_file_commands/step_summary_53f414fc-dac2-4f2a-98fc-63617cccc994',</span> <span class="pre">'DOCUTILSCONFIG':</span> <span class="pre">'/home/runner/work/redun/redun/docs/source/docutils.conf'})</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#redun.job_array.get_job_array_index" title="Link to this definition">¶</a></dt>
 <dd><p>Finds any Job Array Index environment variables and returns the index.</p>
 </dd></dl>
 
@@ -4634,19 +4636,19 @@ information pertaining to the sub-scheduler as follows:
 <dd><p>Apply tags to a value, job, or execution.</p>
 <p>Returns the original value.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">task1</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task1</span><span class="p">():</span>
     <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="c1"># Apply tags on the value 10.</span>
     <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">[(</span><span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">)])</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">task2</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task2</span><span class="p">():</span>
     <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="c1"># Apply tags on the current job.</span>
     <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">job_tags</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">)])</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">task3</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task3</span><span class="p">():</span>
     <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="c1"># Apply tags on the current execution.</span>
     <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">execution_tags</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">)])</span>
@@ -4661,15 +4663,15 @@ information pertaining to the sub-scheduler as follows:
 <p>The following example catches the <cite>ZeroDivisionError</cite> raised by <cite>divider(0)</cite>
 and returns 0.0 instead.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
     <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">denom</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">recover</span><span class="p">(</span><span class="n">error</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">recover</span><span class="p">(</span><span class="n">error</span><span class="p">):</span>
     <span class="k">return</span> <span class="mf">0.0</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">catch</span><span class="p">(</span>
         <span class="n">divider</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
         <span class="ne">ZeroDivisionError</span><span class="p">,</span>
@@ -4678,10 +4680,10 @@ and returns 0.0 instead.</p>
 </pre></div>
 </div>
 <p>This is equivalent to the regular python code:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
     <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">denom</span>
 
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">denom</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ZeroDivisionError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
@@ -4691,7 +4693,7 @@ and returns 0.0 instead.</p>
 <p><cite>catch()</cite> can also handle multiple Exception classes as well as multiple
 recover expressions.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">catch</span><span class="p">(</span>
         <span class="n">task1</span><span class="p">(),</span>
         <span class="p">(</span><span class="ne">ZeroDivisionError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">),</span>
@@ -4741,16 +4743,16 @@ all expressions succeed or fail. For example, this can be useful in large
 fanouts where the user wants to avoid one small error stopping the whole
 workflow immediately. Consider the following code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
     <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">denom</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">recover</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">recover</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
     <span class="n">nerrors</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">))</span>
     <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">nerrors</span><span class="si">}</span><span class="s2"> error(s) occurred.&quot;</span><span class="p">)</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="n">result</span> <span class="n">catch_all</span><span class="p">([</span><span class="n">divider</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">divider</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">divider</span><span class="p">(</span><span class="mi">2</span><span class="p">)],</span> <span class="ne">ZeroDivisionError</span><span class="p">,</span> <span class="n">recover</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -4778,19 +4780,19 @@ value containing both successful results and errors.</p></li>
 <em class="property"><span class="pre">(scheduler_task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.scheduler.</span></span><span class="sig-name descname"><span class="pre">cond</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond_expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">then_expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">rest</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.scheduler.cond" title="Link to this definition">¶</a></dt>
 <dd><p>Conditionally execute expressions, i.e. a lazy if-statement.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">is_even</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_even</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">task1</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task1</span><span class="p">():</span>
     <span class="c1"># ...</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">task2</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task2</span><span class="p">():</span>
     <span class="c1"># ...</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">cond</span><span class="p">(</span>
         <span class="n">is_even</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
         <span class="n">task1</span><span class="p">(),</span>
@@ -5446,7 +5448,7 @@ hash might no longer exist in the code base (registered tasks).</p>
 <p>Tasks are the basic unit of execution in redun. Tasks are often defined
 using the <a class="reference internal" href="#redun.task.task" title="redun.task.task"><code class="xref py py-func docutils literal notranslate"><span class="pre">redun.task.task()</span></code></a> decorator:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">my_task</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_task</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
 </pre></div>
 </div>
@@ -5501,6 +5503,12 @@ a <cite>KeyError</cite> on missing keys.</p>
 <dt class="sig sig-object py" id="redun.task.Task.has_task_option">
 <span class="sig-name descname"><span class="pre">has_task_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.task.Task.has_task_option" title="Link to this definition">¶</a></dt>
 <dd><p>Return true if the task has an option with name <cite>option_name</cite></p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="redun.task.Task.inner_task">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inner_task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a></em><a class="headerlink" href="#redun.task.Task.inner_task" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the inner most wrapped task, or self if one doesn’t exist.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -5558,6 +5566,12 @@ hash might no longer exist in the code base (registered tasks).</p>
 <dt class="sig sig-object py" id="redun.task.Task.update_context">
 <span class="sig-name descname"><span class="pre">update_context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Func</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.task.Task.update_context" title="Link to this definition">¶</a></dt>
 <dd><p>Update the context variables for the task.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="redun.task.Task.wrapped_task">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">wrapped_task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#redun.task.Task.wrapped_task" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the wrapped task if this task is a task decorator, <cite>None</cite> otherwise.</p>
 </dd></dl>
 
 </dd></dl>
@@ -5624,9 +5638,9 @@ must return a <code class="xref py py-class docutils literal notranslate"><span 
 <p>For example, one could implement a lazy if-statement called <cite>cond</cite> using
 this scheduler task:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@scheduler_task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">cond</span><span class="p">(</span><span class="n">scheduler</span><span class="p">:</span> <span class="n">Scheduler</span><span class="p">,</span> <span class="n">parent_job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">scheduler_expr</span><span class="p">:</span> <span class="n">SchedulerExpression</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cond</span><span class="p">(</span><span class="n">scheduler</span><span class="p">:</span> <span class="n">Scheduler</span><span class="p">,</span> <span class="n">parent_job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">scheduler_expr</span><span class="p">:</span> <span class="n">SchedulerExpression</span><span class="p">,</span>
          <span class="n">pred_expr</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">then_expr</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">else_expr</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Promise</span><span class="p">:</span>
-    <span class="k">def</span> <span class="nf">then</span><span class="p">(</span><span class="n">pred</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">then</span><span class="p">(</span><span class="n">pred</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">pred</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">then_expr</span><span class="p">,</span> <span class="n">parent_job</span><span class="o">=</span><span class="n">parent_job</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -5637,7 +5651,7 @@ this scheduler task:</p>
 </div>
 <p>Once defined, the new <cite>cond</cite> expression can be used like this:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">task1</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">cond</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">task2</span><span class="p">(),</span> <span class="n">task3</span><span class="p">())</span>
 </pre></div>
@@ -5698,7 +5712,7 @@ time), they are the “base” set. Example keys:</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.task.wraps_task">
-<span class="sig-prename descclassname"><span class="pre">redun.task.</span></span><span class="sig-name descname"><span class="pre">wraps_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wrapper_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrapper_hash_includes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">wrapper_task_options_base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Func</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Func</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Func</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Func</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.task.wraps_task" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">redun.task.</span></span><span class="sig-name descname"><span class="pre">wraps_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wrapper_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrapper_hash_includes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_wrapper_signature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">wrapper_task_options_base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Func</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Func</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Func</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Func</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.task.wraps_task" title="Link to this definition">¶</a></dt>
 <dd><p>A helper for creating new decorators that can be used like <cite>&#64;task</cite>, that allow us to
 wrap the task in another one. Conceptually inspired by <cite>&#64;functools.wraps</cite>, which makes it
 easier to create decorators that enclose functions.</p>
@@ -5710,16 +5724,16 @@ the hiding step is recursive. The <cite>load_module</cite> for all of the layers
 innermost concrete <cite>Task</cite> object.</p>
 <p>A simple usage example is a new decorator <cite>&#64;doubled_task</cite>, which simply runs the original
 task and multiplies by two.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">doubled_task</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Func</span><span class="p">],</span> <span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]]:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">doubled_task</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Func</span><span class="p">],</span> <span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]]:</span>
 
     <span class="c1"># The name of this inner function is used to create the nested namespace,</span>
     <span class="c1"># so idiomatically, use the same name as the decorator with a leading underscore.</span>
     <span class="nd">@wraps_task</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">_doubled_task</span><span class="p">(</span><span class="n">inner_task</span><span class="p">:</span> <span class="n">Task</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]],</span> <span class="n">Func</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_doubled_task</span><span class="p">(</span><span class="n">inner_task</span><span class="p">:</span> <span class="n">Task</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]],</span> <span class="n">Func</span><span class="p">]:</span>
 
         <span class="c1"># The behavior when the task is run. Note we have both the task and the</span>
         <span class="c1"># runtime args.</span>
-        <span class="k">def</span> <span class="nf">do_doubling</span><span class="p">(</span><span class="o">*</span><span class="n">task_args</span><span class="p">,</span> <span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">do_doubling</span><span class="p">(</span><span class="o">*</span><span class="n">task_args</span><span class="p">,</span> <span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
             <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">inner_task</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">task_args</span><span class="p">,</span> <span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">do_doubling</span>
@@ -5728,19 +5742,19 @@ task and multiplies by two.</p>
 <span class="c1"># The simplest use is to wrap a task that is already created</span>
 <span class="nd">@doubled_task</span><span class="p">()</span>
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">value_task1</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">value_task1</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">x</span>
 
 <span class="c1"># We can skip the inner decorator and the task will get created implicitly</span>
 <span class="c1"># Use the explicit form if you need to pass arguments to task creation.</span>
 <span class="nd">@doubled_task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">value_task2</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">value_task2</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">x</span>
 
 <span class="c1"># We can keep going</span>
 <span class="nd">@doubled_task</span><span class="p">()</span>
 <span class="nd">@doubled_task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">value_task3</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">value_task3</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">x</span>
 </pre></div>
 </div>
@@ -5748,14 +5762,14 @@ task and multiplies by two.</p>
 along to the wrapper so they are visible to the scheduler. Needing to do this manually is
 the cost of the extra powers we have.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># An example of arguments consumed by the wrapper</span>
-<span class="k">def</span> <span class="nf">wrapper_with_args</span><span class="p">(</span><span class="n">wrapper_arg</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Func</span><span class="p">],</span> <span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">wrapper_with_args</span><span class="p">(</span><span class="n">wrapper_arg</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Func</span><span class="p">],</span> <span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]]:</span>
 
     <span class="c1"># WARNING: Be sure to pass the extra data for hashing so it participates in the cache</span>
     <span class="c1"># evaluation</span>
     <span class="nd">@wraps_task</span><span class="p">(</span><span class="n">wrapper_hash_includes</span><span class="o">=</span><span class="p">[</span><span class="n">wrapper_arg</span><span class="p">])</span>
-    <span class="k">def</span> <span class="nf">_wrapper_with_args</span><span class="p">(</span><span class="n">inner_task</span><span class="p">:</span> <span class="n">Task</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]],</span> <span class="n">Func</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_wrapper_with_args</span><span class="p">(</span><span class="n">inner_task</span><span class="p">:</span> <span class="n">Task</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Task</span><span class="p">[</span><span class="n">Func</span><span class="p">]],</span> <span class="n">Func</span><span class="p">]:</span>
 
-        <span class="k">def</span> <span class="nf">do_wrapper_with_args</span><span class="p">(</span><span class="o">*</span><span class="n">task_args</span><span class="p">,</span> <span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">do_wrapper_with_args</span><span class="p">(</span><span class="o">*</span><span class="n">task_args</span><span class="p">,</span> <span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">wrapper_arg</span> <span class="o">*</span> <span class="n">inner_task</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">task_args</span><span class="p">,</span> <span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">do_wrapper_with_args</span>
@@ -5771,6 +5785,9 @@ from the wrapper <cite>wrapper_func.__name__</cite>)</p></li>
 <li><p><strong>wrapper_hash_includes</strong> (<em>Optional</em><em>[</em><em>list</em><em>]</em>) – If provided, extra data that should be hashed. That is, extra data that should be
 considered as part of cache invalidation. This list may be reordered without impacting
 the computation. Each list item must be hashable by <cite>redun.value.TypeRegistry.get_hash</cite></p></li>
+<li><p><strong>use_wrapper_signature</strong> (<em>bool</em>) – By default (False), the resulting task will keep the parameter signature of its inner most wrapped
+task. Set this to True, in order to use the parameter signature of the wrapper task.
+Signatures are used to automatically infer command line options, among other things.</p></li>
 </ul>
 </dd>
 </dl>
@@ -5937,6 +5954,19 @@ needed.  Both arguments passed are str objects.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="redun.utils.format_timedelta">
+<span class="sig-prename descclassname"><span class="pre">redun.utils.</span></span><span class="sig-name descname"><span class="pre">format_timedelta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">timedelta</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.utils.format_timedelta" title="Link to this definition">¶</a></dt>
+<dd><p>Format timedelta as a string.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.utils.format_timestamp">
+<span class="sig-prename descclassname"><span class="pre">redun.utils.</span></span><span class="sig-name descname"><span class="pre">format_timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tzinfo</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.utils.format_timestamp" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a timestamp as a local time string.</p>
+<p>If tz is given, use it as the local timezone, otherwise use system local timezone.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="redun.utils.get_func_source">
 <span class="sig-prename descclassname"><span class="pre">redun.utils.</span></span><span class="sig-name descname"><span class="pre">get_func_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.utils.get_func_source" title="Link to this definition">¶</a></dt>
 <dd><p>Return the source code for a function.</p>
@@ -6049,6 +6079,12 @@ subclass that can be used to peek at attributes.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="redun.utils.utcnow">
+<span class="sig-prename descclassname"><span class="pre">redun.utils.</span></span><span class="sig-name descname"><span class="pre">utcnow</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">datetime</span></span></span><a class="headerlink" href="#redun.utils.utcnow" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the current timestamp in UTC timezone.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="redun.utils.with_pickle_preview">
 <span class="sig-prename descclassname"><span class="pre">redun.utils.</span></span><span class="sig-name descname"><span class="pre">with_pickle_preview</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raise_error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.utils.with_pickle_preview" title="Link to this definition">¶</a></dt>
 <dd><p>Enable pickle preview within a context.</p>
@@ -6138,14 +6174,14 @@ subclass that can be used to peek at attributes.</p>
 <p>This baseclass can be used to control where the serialized data of
 potentially large values is stored.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example of user-specific data type.</span>
-<span class="k">class</span> <span class="nc">Data</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Data</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
 
 <span class="c1"># Subclassing from FileCache and setting `type = Data` will register</span>
 <span class="c1"># with redun that File-caching should be used for any Value of type</span>
 <span class="c1"># `Data`.</span>
-<span class="k">class</span> <span class="nc">DataType</span><span class="p">(</span><span class="n">FileCache</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataType</span><span class="p">(</span><span class="n">FileCache</span><span class="p">):</span>
     <span class="nb">type</span> <span class="o">=</span> <span class="n">Data</span>
 
     <span class="c1"># This path specifies where the files containing serialized</span>
@@ -6154,7 +6190,7 @@ potentially large values is stored.</p>
     <span class="n">base_path</span> <span class="o">=</span> <span class="s2">&quot;tmp&quot;</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">task1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Data</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Data</span><span class="p">:</span>
     <span class="c1"># This value will be serialized to a File instead of the default</span>
     <span class="c1"># redun database.</span>
     <span class="k">return</span> <span class="n">Data</span><span class="p">(</span><span class="s2">&quot;my data&quot;</span><span class="p">)</span>
@@ -7333,7 +7369,7 @@ with the indicated table name.</p></li>
 <p>Tasks are the basic unit of execution in redun. Tasks are often defined
 using the <a class="reference internal" href="#redun.task.task" title="redun.task.task"><code class="xref py py-func docutils literal notranslate"><span class="pre">redun.task.task()</span></code></a> decorator:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">my_task</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_task</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
 </pre></div>
 </div>
@@ -7388,6 +7424,12 @@ a <cite>KeyError</cite> on missing keys.</p>
 <dt class="sig sig-object py" id="redun.Task.has_task_option">
 <span class="sig-name descname"><span class="pre">has_task_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.Task.has_task_option" title="Link to this definition">¶</a></dt>
 <dd><p>Return true if the task has an option with name <cite>option_name</cite></p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="redun.Task.inner_task">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inner_task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a></em><a class="headerlink" href="#redun.Task.inner_task" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the inner most wrapped task, or self if one doesn’t exist.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -7447,6 +7489,12 @@ hash might no longer exist in the code base (registered tasks).</p>
 <dd><p>Update the context variables for the task.</p>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="redun.Task.wrapped_task">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">wrapped_task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#redun.Task.wrapped_task" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the wrapped task if this task is a task decorator, <cite>None</cite> otherwise.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py scheduler_task">
@@ -7455,19 +7503,19 @@ hash might no longer exist in the code base (registered tasks).</p>
 <dd><p>Apply tags to a value, job, or execution.</p>
 <p>Returns the original value.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">task1</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task1</span><span class="p">():</span>
     <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="c1"># Apply tags on the value 10.</span>
     <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">[(</span><span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">)])</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">task2</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task2</span><span class="p">():</span>
     <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="c1"># Apply tags on the current job.</span>
     <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">job_tags</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">)])</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">task3</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task3</span><span class="p">():</span>
     <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="c1"># Apply tags on the current execution.</span>
     <span class="k">return</span> <span class="n">apply_tags</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">execution_tags</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">)])</span>
@@ -7482,15 +7530,15 @@ hash might no longer exist in the code base (registered tasks).</p>
 <p>The following example catches the <cite>ZeroDivisionError</cite> raised by <cite>divider(0)</cite>
 and returns 0.0 instead.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
     <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">denom</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">recover</span><span class="p">(</span><span class="n">error</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">recover</span><span class="p">(</span><span class="n">error</span><span class="p">):</span>
     <span class="k">return</span> <span class="mf">0.0</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">catch</span><span class="p">(</span>
         <span class="n">divider</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
         <span class="ne">ZeroDivisionError</span><span class="p">,</span>
@@ -7499,10 +7547,10 @@ and returns 0.0 instead.</p>
 </pre></div>
 </div>
 <p>This is equivalent to the regular python code:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">divider</span><span class="p">(</span><span class="n">denom</span><span class="p">):</span>
     <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">denom</span>
 
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">denom</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ZeroDivisionError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
@@ -7512,7 +7560,7 @@ and returns 0.0 instead.</p>
 <p><cite>catch()</cite> can also handle multiple Exception classes as well as multiple
 recover expressions.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">catch</span><span class="p">(</span>
         <span class="n">task1</span><span class="p">(),</span>
         <span class="p">(</span><span class="ne">ZeroDivisionError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">),</span>
@@ -7556,19 +7604,19 @@ caching the error until we see that it has been successfully handled.</p>
 <em class="property"><span class="pre">(scheduler_task)</span></em><span class="sig-prename descclassname"><span class="pre">redun.</span></span><span class="sig-name descname"><span class="pre">cond</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond_expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">then_expr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">rest</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="headerlink" href="#redun.cond" title="Link to this definition">¶</a></dt>
 <dd><p>Conditionally execute expressions, i.e. a lazy if-statement.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">is_even</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_even</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">task1</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task1</span><span class="p">():</span>
     <span class="c1"># ...</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">task2</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task2</span><span class="p">():</span>
     <span class="c1"># ...</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">cond</span><span class="p">(</span>
         <span class="n">is_even</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
         <span class="n">task1</span><span class="p">(),</span>
@@ -7846,7 +7894,6 @@ time), they are the “base” set. Example keys:</p>
 <li><a class="reference internal" href="#redun.cli.format_id"><code class="docutils literal notranslate"><span class="pre">format_id()</span></code></a></li>
 <li><a class="reference internal" href="#redun.cli.format_setup_help"><code class="docutils literal notranslate"><span class="pre">format_setup_help()</span></code></a></li>
 <li><a class="reference internal" href="#redun.cli.format_tags"><code class="docutils literal notranslate"><span class="pre">format_tags()</span></code></a></li>
-<li><a class="reference internal" href="#redun.cli.format_timedelta"><code class="docutils literal notranslate"><span class="pre">format_timedelta()</span></code></a></li>
 <li><a class="reference internal" href="#redun.cli.get_abs_path"><code class="docutils literal notranslate"><span class="pre">get_abs_path()</span></code></a></li>
 <li><a class="reference internal" href="#redun.cli.get_anno_origin"><code class="docutils literal notranslate"><span class="pre">get_anno_origin()</span></code></a></li>
 <li><a class="reference internal" href="#redun.cli.get_config_dir"><code class="docutils literal notranslate"><span class="pre">get_config_dir()</span></code></a></li>
@@ -8169,6 +8216,7 @@ time), they are the “base” set. Example keys:</p>
 <li><a class="reference internal" href="#redun.file.S3FileSystem.copy"><code class="docutils literal notranslate"><span class="pre">S3FileSystem.copy()</span></code></a></li>
 <li><a class="reference internal" href="#redun.file.S3FileSystem.exists"><code class="docutils literal notranslate"><span class="pre">S3FileSystem.exists()</span></code></a></li>
 <li><a class="reference internal" href="#redun.file.S3FileSystem.filesize"><code class="docutils literal notranslate"><span class="pre">S3FileSystem.filesize()</span></code></a></li>
+<li><a class="reference internal" href="#redun.file.S3FileSystem.get_bucket_and_key"><code class="docutils literal notranslate"><span class="pre">S3FileSystem.get_bucket_and_key()</span></code></a></li>
 <li><a class="reference internal" href="#redun.file.S3FileSystem.get_hash"><code class="docutils literal notranslate"><span class="pre">S3FileSystem.get_hash()</span></code></a></li>
 <li><a class="reference internal" href="#redun.file.S3FileSystem.glob"><code class="docutils literal notranslate"><span class="pre">S3FileSystem.glob()</span></code></a></li>
 <li><a class="reference internal" href="#redun.file.S3FileSystem.isdir"><code class="docutils literal notranslate"><span class="pre">S3FileSystem.isdir()</span></code></a></li>
@@ -8542,6 +8590,7 @@ time), they are the “base” set. Example keys:</p>
 <li><a class="reference internal" href="#redun.task.Task.get_task_option"><code class="docutils literal notranslate"><span class="pre">Task.get_task_option()</span></code></a></li>
 <li><a class="reference internal" href="#redun.task.Task.get_task_options"><code class="docutils literal notranslate"><span class="pre">Task.get_task_options()</span></code></a></li>
 <li><a class="reference internal" href="#redun.task.Task.has_task_option"><code class="docutils literal notranslate"><span class="pre">Task.has_task_option()</span></code></a></li>
+<li><a class="reference internal" href="#redun.task.Task.inner_task"><code class="docutils literal notranslate"><span class="pre">Task.inner_task</span></code></a></li>
 <li><a class="reference internal" href="#redun.task.Task.is_valid"><code class="docutils literal notranslate"><span class="pre">Task.is_valid()</span></code></a></li>
 <li><a class="reference internal" href="#redun.task.Task.load_module"><code class="docutils literal notranslate"><span class="pre">Task.load_module</span></code></a></li>
 <li><a class="reference internal" href="#redun.task.Task.nout"><code class="docutils literal notranslate"><span class="pre">Task.nout</span></code></a></li>
@@ -8551,6 +8600,7 @@ time), they are the “base” set. Example keys:</p>
 <li><a class="reference internal" href="#redun.task.Task.signature"><code class="docutils literal notranslate"><span class="pre">Task.signature</span></code></a></li>
 <li><a class="reference internal" href="#redun.task.Task.type_name"><code class="docutils literal notranslate"><span class="pre">Task.type_name</span></code></a></li>
 <li><a class="reference internal" href="#redun.task.Task.update_context"><code class="docutils literal notranslate"><span class="pre">Task.update_context()</span></code></a></li>
+<li><a class="reference internal" href="#redun.task.Task.wrapped_task"><code class="docutils literal notranslate"><span class="pre">Task.wrapped_task</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#redun.task.TaskRegistry"><code class="docutils literal notranslate"><span class="pre">TaskRegistry</span></code></a><ul>
@@ -8600,6 +8650,8 @@ time), they are the “base” set. Example keys:</p>
 <li><a class="reference internal" href="#redun.utils.assert_never"><code class="docutils literal notranslate"><span class="pre">assert_never()</span></code></a></li>
 <li><a class="reference internal" href="#redun.utils.clear_import_paths"><code class="docutils literal notranslate"><span class="pre">clear_import_paths()</span></code></a></li>
 <li><a class="reference internal" href="#redun.utils.format_table"><code class="docutils literal notranslate"><span class="pre">format_table()</span></code></a></li>
+<li><a class="reference internal" href="#redun.utils.format_timedelta"><code class="docutils literal notranslate"><span class="pre">format_timedelta()</span></code></a></li>
+<li><a class="reference internal" href="#redun.utils.format_timestamp"><code class="docutils literal notranslate"><span class="pre">format_timestamp()</span></code></a></li>
 <li><a class="reference internal" href="#redun.utils.get_func_source"><code class="docutils literal notranslate"><span class="pre">get_func_source()</span></code></a></li>
 <li><a class="reference internal" href="#redun.utils.get_import_paths"><code class="docutils literal notranslate"><span class="pre">get_import_paths()</span></code></a></li>
 <li><a class="reference internal" href="#redun.utils.iter_nested_value"><code class="docutils literal notranslate"><span class="pre">iter_nested_value()</span></code></a></li>
@@ -8615,6 +8667,7 @@ time), they are the “base” set. Example keys:</p>
 <li><a class="reference internal" href="#redun.utils.pickle_preview"><code class="docutils literal notranslate"><span class="pre">pickle_preview()</span></code></a></li>
 <li><a class="reference internal" href="#redun.utils.str2bool"><code class="docutils literal notranslate"><span class="pre">str2bool()</span></code></a></li>
 <li><a class="reference internal" href="#redun.utils.trim_string"><code class="docutils literal notranslate"><span class="pre">trim_string()</span></code></a></li>
+<li><a class="reference internal" href="#redun.utils.utcnow"><code class="docutils literal notranslate"><span class="pre">utcnow()</span></code></a></li>
 <li><a class="reference internal" href="#redun.utils.with_pickle_preview"><code class="docutils literal notranslate"><span class="pre">with_pickle_preview()</span></code></a></li>
 </ul>
 </li>
@@ -8831,6 +8884,7 @@ time), they are the “base” set. Example keys:</p>
 <li><a class="reference internal" href="#redun.Task.get_task_option"><code class="docutils literal notranslate"><span class="pre">Task.get_task_option()</span></code></a></li>
 <li><a class="reference internal" href="#redun.Task.get_task_options"><code class="docutils literal notranslate"><span class="pre">Task.get_task_options()</span></code></a></li>
 <li><a class="reference internal" href="#redun.Task.has_task_option"><code class="docutils literal notranslate"><span class="pre">Task.has_task_option()</span></code></a></li>
+<li><a class="reference internal" href="#redun.Task.inner_task"><code class="docutils literal notranslate"><span class="pre">Task.inner_task</span></code></a></li>
 <li><a class="reference internal" href="#redun.Task.is_valid"><code class="docutils literal notranslate"><span class="pre">Task.is_valid()</span></code></a></li>
 <li><a class="reference internal" href="#redun.Task.load_module"><code class="docutils literal notranslate"><span class="pre">Task.load_module</span></code></a></li>
 <li><a class="reference internal" href="#redun.Task.nout"><code class="docutils literal notranslate"><span class="pre">Task.nout</span></code></a></li>
@@ -8840,6 +8894,7 @@ time), they are the “base” set. Example keys:</p>
 <li><a class="reference internal" href="#redun.Task.signature"><code class="docutils literal notranslate"><span class="pre">Task.signature</span></code></a></li>
 <li><a class="reference internal" href="#redun.Task.type_name"><code class="docutils literal notranslate"><span class="pre">Task.type_name</span></code></a></li>
 <li><a class="reference internal" href="#redun.Task.update_context"><code class="docutils literal notranslate"><span class="pre">Task.update_context()</span></code></a></li>
+<li><a class="reference internal" href="#redun.Task.wrapped_task"><code class="docutils literal notranslate"><span class="pre">Task.wrapped_task</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#redun.apply_tags"><code class="docutils literal notranslate"><span class="pre">apply_tags</span></code></a></li>
@@ -8869,7 +8924,7 @@ time), they are the “base” set. Example keys:</p>
     </aside>
   </div>
 </div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
     </body>

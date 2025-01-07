@@ -5,9 +5,9 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Configuration" href="config.html" /><link rel="prev" title="Executors" href="executors.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Scheduling redun workflows - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
     
@@ -327,15 +327,15 @@ execution. We explain these in detail in the following sections.</p>
 For a longer exposition, see <a class="reference internal" href="implementation/graph_reduction_caching.html"><span class="std std-doc">Graph reduction caching</span></a>.
 Consider the following snippet:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">deeply_nested</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">deeply_nested</span><span class="p">():</span>
     <span class="k">return</span> <span class="s2">&quot;hello&quot;</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">nested</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">nested</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">deeply_nested</span><span class="p">()</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">nested</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -352,7 +352,7 @@ careful.</p>
 <section id="unique-evaluation-of-expressions">
 <h2>Unique evaluation of expressions<a class="headerlink" href="#unique-evaluation-of-expressions" title="Link to this heading">¶</a></h2>
 <p>To introduce expression caching, consider the following basic Python code:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="nb">input</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="nb">input</span><span class="p">):</span>
   <span class="n">result</span> <span class="o">=</span> <span class="o">...</span>
   <span class="k">return</span> <span class="n">result</span>
 
@@ -367,10 +367,10 @@ would only invoke <code class="docutils literal notranslate"><span class="pre">f
 would invoke <code class="docutils literal notranslate"><span class="pre">f</span></code> twice and would produce two distinct objects with the same value. To ensure that
 redun behaves the same way, we ensure that each expression object is executed exactly once.</p>
 <p>Consider the following example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">rand</span><span class="p">():</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">rand</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
 
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
   <span class="n">x</span> <span class="o">=</span> <span class="n">rand</span><span class="p">()</span>
   <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">rand</span><span class="p">(),</span> <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="n">rand</span><span class="p">()}</span> 
 </pre></div>
@@ -382,11 +382,11 @@ this:</p>
 </div>
 <p>If we make this a redun task:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">cache_scope</span><span class="o">=</span><span class="n">CacheScope</span><span class="o">.</span><span class="n">NONE</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">rand</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rand</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
   <span class="n">x</span> <span class="o">=</span> <span class="n">rand</span><span class="p">()</span>
   <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">rand</span><span class="p">(),</span> <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="n">rand</span><span class="p">()}</span> 
 </pre></div>
@@ -445,15 +445,15 @@ reductions, stepping through the evaluation. See the <a class="reference interna
 section, for more information on how this recursive checking works.</p>
 <p>Consider the following example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">inner</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>
     <span class="k">return</span> <span class="o">...</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">prep</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">prep</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>
   <span class="k">return</span> <span class="o">...</span>
 
 <span class="nd">@task</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="ow">in</span><span class="p">):</span>
   <span class="k">return</span> <span class="n">inner</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span>
 
 <span class="n">data</span> <span class="o">=</span> <span class="o">...</span>
@@ -547,7 +547,7 @@ tool for debugging.</p></li>
 <section id="summary-of-evaluation-algorithm">
 <h2>Summary of evaluation algorithm<a class="headerlink" href="#summary-of-evaluation-algorithm" title="Link to this heading">¶</a></h2>
 <p>redun’s evaluation process can be summarized with the following pseudo-code:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
   <span class="mf">1.</span> <span class="n">If</span> <span class="n">we</span><span class="s1">&#39;ve already evaluated this expression, return the pre-existing result</span>
   <span class="mf">2.</span> <span class="n">Else</span><span class="p">,</span> <span class="k">if</span> <span class="n">the</span> <span class="n">expression</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">collection</span><span class="p">:</span>
     <span class="mf">1.</span> <span class="n">Recurse</span><span class="p">:</span> <span class="n">call</span> <span class="n">evaluate</span> <span class="n">on</span> <span class="n">each</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">collection</span> <span class="ow">and</span> <span class="k">return</span> <span class="n">the</span> <span class="n">result</span>
@@ -682,7 +682,7 @@ reduces this penalty in practice.</p>
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=5fa4622c"></script>
     </body>

@@ -98,6 +98,22 @@ We could then call this workflow using:
 redun --setup profile=dev run workflow.py main --x 1 --y 2
 ```
 
+#### `boto_config`
+
+A JSON object used to construct a `boto3.session.Config` object, which is provided when creating
+Boto session clients.
+
+For example, we might want to change the retry strategy and raise the number of retries
+across boto. This can be helpful when spawning a large number of AWS Batch jobs.
+
+```ini
+[scheduler]
+boto_config = {"retries": {
+      "max_attempts": 10,
+      "mode": "standard"
+   }}
+```
+
 
 #### `job_status_interval`
 
@@ -275,7 +291,7 @@ A string that specifies the executor module (e.g. `local`, `aws_batch`, etc) to 
 
 #### Local executor
 
-The [Local executor](executors.md#local-executor) (`type = local`) executes tasks on the local machine using either multiple threads or processes. 
+The [Local executor](executors.md#local-executor) (`type = local`) executes tasks on the local machine using either multiple threads or processes.
 
 ##### `mode`
 
@@ -291,12 +307,12 @@ A string (default: `fork`) that specifies the [start method](https://docs.python
 
 #### Alias executor
 
-The [Alias executor](executors.md#alias-executor) (`type = alias`) is a "symlink" to 
+The [Alias executor](executors.md#alias-executor) (`type = alias`) is a "symlink" to
 another underlying executor.
 
 ##### `target`
 
-A string containing the  name of another executor to defer to. It is lazily resolved 
+A string containing the  name of another executor to defer to. It is lazily resolved
 at execution time.
 
 
@@ -453,7 +469,7 @@ A bool (default: True) that specifies whether redun should add default tags to a
 
 ##### `num_nodes`
 
-If not none, use a multi-node job and set the number of workers. 
+If not none, use a multi-node job and set the number of workers.
 
 ##### `job_def_extra`
 
@@ -503,6 +519,10 @@ A string (default: your account's `AWSGlueServiceRole`) that specifies the ARN o
 
 This key is mapped to the [`Role` property](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-jobs-job.html) of the Glue API.
 
+##### `glue_version`
+
+A string (default: `4.0`) that specifies the version of the AWS Glue backend. The executor has been tested on `3.0`
+and `4.0` versions.
 
 ##### `glue_job_prefix`
 
@@ -516,6 +536,10 @@ Spark History Server to visualize and monitor job progress. Defaults to `f"{s3_s
 ##### `job_monitor_interval`
 
 Float specifying how frequently to query AWS for the status of running Glue jobs. Defaults to 10.0 seconds.
+
+##### `enable_metrics`
+
+A bool (default: False) that will enable observability and profiling of running jobs via Cloudwatch and the AWS Glue console.
 
 ##### `job_retry_interval`
 
@@ -542,7 +566,7 @@ A string (default: None) that specifies a pattern for which files should be excl
 
 ### Federated tasks
 
-The following config keys are required. All other data is passed to the `subrun` that 
+The following config keys are required. All other data is passed to the `subrun` that
 implements the bulk of the federated task behavior, hence they are either consumed by `subrun` directly or
 are set as task options.
 
@@ -565,7 +589,7 @@ The name of the executor that has the execution context for this federated task.
 #### `config_dir`
 
 The path to the configuration to use for the remainder of the execution. Either an absolute
-path or relative to the executor entrypoint. 
+path or relative to the executor entrypoint.
 
 #### `task_signature`
 
@@ -665,15 +689,15 @@ A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wa
 
 ##### `share_id`
 
-Queues with Scheduling Policies require all jobs be assigned a Fair Share 
+Queues with Scheduling Policies require all jobs be assigned a Fair Share
 Scheduling `shareIdentifier`. Can be further overridden on a per-task basis using task options.
 
 ##### `scheduling_priority_override`
 
-Queues with Scheduling Policies require that all job definitions specify a `schedulingPriority` 
-Alternatively, if the batch job definition does *not* configure a `schedulingPriority`, you 
-must provide a `schedulingPriorityOverride` by setting this variable. 
-Can be further overridden on a per-task basis using task options. 
+Queues with Scheduling Policies require that all job definitions specify a `schedulingPriority`
+Alternatively, if the batch job definition does *not* configure a `schedulingPriority`, you
+must provide a `schedulingPriorityOverride` by setting this variable.
+Can be further overridden on a per-task basis using task options.
 
 ## Configuration variables
 

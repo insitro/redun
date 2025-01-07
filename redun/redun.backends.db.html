@@ -5,9 +5,9 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun.console package" href="redun.console.html" /><link rel="prev" title="redun.backends package" href="redun.backends.html" />
 
-    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
+    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>redun.backends.db package - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
     
@@ -976,7 +976,7 @@ like this:</p>
 <p>Query class for efficiently querying across all models in a CallGraph.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.ExecTag">
-<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7f2fa79df1f0;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7f730b44b850;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1723,6 +1723,211 @@ defined SQL constructs.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="redun.backends.db.DateTimeUTC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.</span></span><span class="sig-name descname"><span class="pre">DateTimeUTC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.DateTimeUTC" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypeDecorator</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.backends.db.DateTimeUTC.cache_ok">
+<span class="sig-name descname"><span class="pre">cache_ok</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#redun.backends.db.DateTimeUTC.cache_ok" title="Link to this definition">¶</a></dt>
+<dd><p>Indicate if statements using this <code class="xref py py-class docutils literal notranslate"><span class="pre">ExternalType</span></code> are “safe to
+cache”.</p>
+<p>The default value <code class="docutils literal notranslate"><span class="pre">None</span></code> will emit a warning and then not allow caching
+of a statement which includes this type.   Set to <code class="docutils literal notranslate"><span class="pre">False</span></code> to disable
+statements using this type from being cached at all without a warning.
+When set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, the object’s class and selected elements from its
+state will be used as part of the cache key.  For example, using a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TypeDecorator</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MyType</span><span class="p">(</span><span class="n">TypeDecorator</span><span class="p">):</span>
+    <span class="n">impl</span> <span class="o">=</span> <span class="n">String</span>
+
+    <span class="n">cache_ok</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">choices</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">choices</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">choices</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">internal_only</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>The cache key for the above type would be equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">MyType</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">_static_cache_key</span>
+<span class="go">(&lt;class &#39;__main__.MyType&#39;&gt;, (&#39;choices&#39;, (&#39;a&#39;, &#39;b&#39;, &#39;c&#39;)))</span>
+</pre></div>
+</div>
+<p>The caching scheme will extract attributes from the type that correspond
+to the names of parameters in the <code class="docutils literal notranslate"><span class="pre">__init__()</span></code> method.  Above, the
+“choices” attribute becomes part of the cache key but “internal_only”
+does not, because there is no parameter named “internal_only”.</p>
+<p>The requirements for cacheable elements is that they are hashable
+and also that they indicate the same SQL rendered for expressions using
+this type every time for a given cache value.</p>
+<p>To accommodate for datatypes that refer to unhashable structures such
+as dictionaries, sets and lists, these objects can be made “cacheable”
+by assigning hashable structures to the attributes whose names
+correspond with the names of the arguments.  For example, a datatype
+which accepts a dictionary of lookup values may publish this as a sorted
+series of tuples.   Given a previously un-cacheable type as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
+
+<span class="sd">    this is the non-cacheable version, as &quot;self.lookup&quot; is not</span>
+<span class="sd">    hashable.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span> <span class="o">=</span> <span class="n">lookup</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_col_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;VARCHAR(255)&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
+        <span class="c1"># ...  works with &quot;self.lookup&quot; ...</span>
+</pre></div>
+</div>
+<p>Where “lookup” is a dictionary.  The type will not be able to generate
+a cache key:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">type_</span> <span class="o">=</span> <span class="n">LookupType</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">type_</span><span class="o">.</span><span class="n">_static_cache_key</span>
+<span class="go">&lt;stdin&gt;:1: SAWarning: UserDefinedType LookupType({&#39;a&#39;: 10, &#39;b&#39;: 20}) will not</span>
+<span class="go">produce a cache key because the ``cache_ok`` flag is not set to True.</span>
+<span class="go">Set this flag to True if this type object&#39;s state is safe to use</span>
+<span class="go">in a cache key, or False to disable this warning.</span>
+<span class="go">symbol(&#39;no_cache&#39;)</span>
+</pre></div>
+</div>
+<p>If we <strong>did</strong> set up such a cache key, it wouldn’t be usable. We would
+get a tuple structure that contains a dictionary inside of it, which
+cannot itself be used as a key in a “cache dictionary” such as SQLAlchemy’s
+statement cache, since Python dictionaries aren’t hashable:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># set cache_ok = True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">type_</span><span class="o">.</span><span class="n">cache_ok</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># this is the cache key it would generate</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">key</span> <span class="o">=</span> <span class="n">type_</span><span class="o">.</span><span class="n">_static_cache_key</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">key</span>
+<span class="go">(&lt;class &#39;__main__.LookupType&#39;&gt;, (&#39;lookup&#39;, {&#39;a&#39;: 10, &#39;b&#39;: 20}))</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># however this key is not hashable, will fail when used with</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># SQLAlchemy statement cache</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">some_cache</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="s2">&quot;some sql value&quot;</span><span class="p">}</span>
+<span class="go">Traceback (most recent call last): File &quot;&lt;stdin&gt;&quot;, line 1,</span>
+<span class="go">in &lt;module&gt; TypeError: unhashable type: &#39;dict&#39;</span>
+</pre></div>
+</div>
+<p>The type may be made cacheable by assigning a sorted tuple of tuples
+to the “.lookup” attribute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
+
+<span class="sd">    The dictionary is stored both as itself in a private variable,</span>
+<span class="sd">    and published in a public variable as a sorted tuple of tuples,</span>
+<span class="sd">    which is hashable and will also return the same value for any</span>
+<span class="sd">    two equivalent dictionaries.  Note it assumes the keys and</span>
+<span class="sd">    values of the dictionary are themselves hashable.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">cache_ok</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lookup</span> <span class="o">=</span> <span class="n">lookup</span>
+
+        <span class="c1"># assume keys/values of &quot;lookup&quot; are hashable; otherwise</span>
+        <span class="c1"># they would also need to be converted in some way here</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">lookup</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">lookup</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_col_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;VARCHAR(255)&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
+        <span class="c1"># ...  works with &quot;self._lookup&quot; ...</span>
+</pre></div>
+</div>
+<p>Where above, the cache key for <code class="docutils literal notranslate"><span class="pre">LookupType({&quot;a&quot;:</span> <span class="pre">10,</span> <span class="pre">&quot;b&quot;:</span> <span class="pre">20})</span></code> will be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">LookupType</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">})</span><span class="o">.</span><span class="n">_static_cache_key</span>
+<span class="go">(&lt;class &#39;__main__.LookupType&#39;&gt;, (&#39;lookup&#39;, ((&#39;a&#39;, 10), (&#39;b&#39;, 20))))</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.4.14: </span>- added the <code class="docutils literal notranslate"><span class="pre">cache_ok</span></code> flag to allow
+some configurability of caching for <code class="xref py py-class docutils literal notranslate"><span class="pre">TypeDecorator</span></code> classes.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.4.28: </span>- added the <code class="xref py py-class docutils literal notranslate"><span class="pre">ExternalType</span></code> mixin which
+generalizes the <code class="docutils literal notranslate"><span class="pre">cache_ok</span></code> flag to both the <code class="xref py py-class docutils literal notranslate"><span class="pre">TypeDecorator</span></code>
+and <code class="xref py py-class docutils literal notranslate"><span class="pre">UserDefinedType</span></code> classes.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><span class="xref std std-ref">sql_caching</span></p>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.backends.db.DateTimeUTC.impl">
+<span class="sig-name descname"><span class="pre">impl</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">TypeEngine</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">TypeEngine</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">DateTime(timezone=True)</span></em><a class="headerlink" href="#redun.backends.db.DateTimeUTC.impl" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.backends.db.DateTimeUTC.process_bind_param">
+<span class="sig-name descname"><span class="pre">process_bind_param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dialect</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.DateTimeUTC.process_bind_param" title="Link to this definition">¶</a></dt>
+<dd><p>Receive a bound parameter value to be converted.</p>
+<p>Custom subclasses of <code class="xref py py-class docutils literal notranslate"><span class="pre">_types.TypeDecorator</span></code> should override
+this method to provide custom behaviors for incoming data values.
+This method is called at <strong>statement execution time</strong> and is passed
+the literal Python data value which is to be associated with a bound
+parameter in the statement.</p>
+<p>The operation could be anything desired to perform custom
+behavior, such as transforming or serializing data.
+This could also be used as a hook for validating logic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> – Data to operate upon, of any type expected by
+this method in the subclass.  Can be <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>dialect</strong> – the <code class="xref py py-class docutils literal notranslate"><span class="pre">Dialect</span></code> in use.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><span class="xref std std-ref">types_typedecorator</span></p>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">_types.TypeDecorator.process_result_value()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.backends.db.DateTimeUTC.process_result_value">
+<span class="sig-name descname"><span class="pre">process_result_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dialect</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.DateTimeUTC.process_result_value" title="Link to this definition">¶</a></dt>
+<dd><p>Receive a result-row column value to be converted.</p>
+<p>Custom subclasses of <code class="xref py py-class docutils literal notranslate"><span class="pre">_types.TypeDecorator</span></code> should override
+this method to provide custom behaviors for data values
+being received in result rows coming from the database.
+This method is called at <strong>result fetching time</strong> and is passed
+the literal Python data value that’s extracted from a database result
+row.</p>
+<p>The operation could be anything desired to perform custom
+behavior, such as transforming or deserializing data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> – Data to operate upon, of any type expected by
+this method in the subclass.  Can be <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>dialect</strong> – the <code class="xref py py-class docutils literal notranslate"><span class="pre">Dialect</span></code> in use.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><span class="xref std std-ref">types_typedecorator</span></p>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">_types.TypeDecorator.process_bind_param()</span></code></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="redun.backends.db.Evaluation">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.backends.db.</span></span><span class="sig-name descname"><span class="pre">Evaluation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.Evaluation" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Base</span></code></p>
@@ -1831,6 +2036,11 @@ value_hash is the cached value.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="redun.backends.db.Execution.task">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#redun.backends.db.Task" title="redun.backends.db.Task"><span class="pre">Task</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#redun.backends.db.Execution.task" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.backends.db.Execution.updated_time">
+<span class="sig-name descname"><span class="pre">updated_time</span></span><a class="headerlink" href="#redun.backends.db.Execution.updated_time" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1959,12 +2169,12 @@ statements using this type from being cached at all without a warning.
 When set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, the object’s class and selected elements from its
 state will be used as part of the cache key.  For example, using a
 <code class="xref py py-class docutils literal notranslate"><span class="pre">TypeDecorator</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyType</span><span class="p">(</span><span class="n">TypeDecorator</span><span class="p">):</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MyType</span><span class="p">(</span><span class="n">TypeDecorator</span><span class="p">):</span>
     <span class="n">impl</span> <span class="o">=</span> <span class="n">String</span>
 
     <span class="n">cache_ok</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">choices</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">choices</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">choices</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">choices</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">internal_only</span> <span class="o">=</span> <span class="kc">True</span>
 </pre></div>
@@ -1987,7 +2197,7 @@ by assigning hashable structures to the attributes whose names
 correspond with the names of the arguments.  For example, a datatype
 which accepts a dictionary of lookup values may publish this as a sorted
 series of tuples.   Given a previously un-cacheable type as:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
 
 <span class="sd">    this is the non-cacheable version, as &quot;self.lookup&quot; is not</span>
@@ -1995,13 +2205,13 @@ series of tuples.   Given a previously un-cacheable type as:</p>
 
 <span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span> <span class="o">=</span> <span class="n">lookup</span>
 
-    <span class="k">def</span> <span class="nf">get_col_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_col_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;VARCHAR(255)&quot;</span>
 
-    <span class="k">def</span> <span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
         <span class="c1"># ...  works with &quot;self.lookup&quot; ...</span>
 </pre></div>
 </div>
@@ -2037,7 +2247,7 @@ statement cache, since Python dictionaries aren’t hashable:</p>
 </div>
 <p>The type may be made cacheable by assigning a sorted tuple of tuples
 to the “.lookup” attribute:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
 
 <span class="sd">    The dictionary is stored both as itself in a private variable,</span>
@@ -2050,7 +2260,7 @@ to the “.lookup” attribute:</p>
 
     <span class="n">cache_ok</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lookup</span> <span class="o">=</span> <span class="n">lookup</span>
 
         <span class="c1"># assume keys/values of &quot;lookup&quot; are hashable; otherwise</span>
@@ -2059,10 +2269,10 @@ to the “.lookup” attribute:</p>
             <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">lookup</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">lookup</span><span class="p">)</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_col_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_col_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;VARCHAR(255)&quot;</span>
 
-    <span class="k">def</span> <span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
         <span class="c1"># ...  works with &quot;self._lookup&quot; ...</span>
 </pre></div>
 </div>
@@ -2576,6 +2786,12 @@ This also implies <cite>new=True</cite>.</p></li>
 <dd class="field-odd"><p>List[Tuple[str, str, str, Any]]</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.backends.db.RedunBackendDb.record_updated_time">
+<span class="sig-name descname"><span class="pre">record_updated_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.db.RedunBackendDb.record_updated_time" title="Link to this definition">¶</a></dt>
+<dd><p>Updates updated_time (heartbeat) timestamp for the current Execution.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -3393,6 +3609,13 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.DBVersionInfo.minor"><code class="docutils literal notranslate"><span class="pre">DBVersionInfo.minor</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#redun.backends.db.DateTimeUTC"><code class="docutils literal notranslate"><span class="pre">DateTimeUTC</span></code></a><ul>
+<li><a class="reference internal" href="#redun.backends.db.DateTimeUTC.cache_ok"><code class="docutils literal notranslate"><span class="pre">DateTimeUTC.cache_ok</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.DateTimeUTC.impl"><code class="docutils literal notranslate"><span class="pre">DateTimeUTC.impl</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.DateTimeUTC.process_bind_param"><code class="docutils literal notranslate"><span class="pre">DateTimeUTC.process_bind_param()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.DateTimeUTC.process_result_value"><code class="docutils literal notranslate"><span class="pre">DateTimeUTC.process_result_value()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#redun.backends.db.Evaluation"><code class="docutils literal notranslate"><span class="pre">Evaluation</span></code></a><ul>
 <li><a class="reference internal" href="#redun.backends.db.Evaluation.args_hash"><code class="docutils literal notranslate"><span class="pre">Evaluation.args_hash</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.Evaluation.eval_hash"><code class="docutils literal notranslate"><span class="pre">Evaluation.eval_hash</span></code></a></li>
@@ -3416,6 +3639,7 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.Execution.status_display"><code class="docutils literal notranslate"><span class="pre">Execution.status_display</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.Execution.tags"><code class="docutils literal notranslate"><span class="pre">Execution.tags</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.Execution.task"><code class="docutils literal notranslate"><span class="pre">Execution.task</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.Execution.updated_time"><code class="docutils literal notranslate"><span class="pre">Execution.updated_time</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#redun.backends.db.File"><code class="docutils literal notranslate"><span class="pre">File</span></code></a><ul>
@@ -3506,6 +3730,7 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_job_end"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_job_end()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_job_start"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_job_start()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_tags()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_updated_time"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_updated_time()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.record_value"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.record_value()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.rollback_handle"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.rollback_handle()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.set_eval_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.set_eval_cache()</span></code></a></li>
@@ -3626,7 +3851,7 @@ This also implies <cite>new=True</cite>.</p></li>
     </aside>
   </div>
 </div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
     </body>

@@ -5,9 +5,9 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Values" href="values.html" /><link rel="prev" title="Install" href="index.html" />
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Design overview - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
     
@@ -308,20 +308,20 @@
 <p>redun does not try to impose a functional style on all code. Python supports multiple programming paradigms and a typical project might include libraries that make use of all of them. Therefore, redun allows the user to annotate which functions are effectively pure using a <code class="docutils literal notranslate"><span class="pre">&#64;task</span></code> decorator. Such functions are called Tasks and they are the main unit of execution in redun. Tasks have several special properties that make them a powerful building block for data pipelines.</p>
 <p>Here, is a small hello world program for redun:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="c1"># hello_world.py</span>
-<span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">Scheduler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">redun</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">Scheduler</span>
 
 <span class="n">redun_namespace</span> <span class="o">=</span> <span class="s2">&quot;hello_world&quot;</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">get_planet</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_planet</span><span class="p">():</span>
     <span class="k">return</span> <span class="s2">&quot;World&quot;</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">greeter</span><span class="p">(</span><span class="n">greet</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">thing</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">greeter</span><span class="p">(</span><span class="n">greet</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">thing</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">greet</span><span class="p">,</span> <span class="n">thing</span><span class="p">)</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">greet</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s2">&quot;Hello&quot;</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">greet</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s2">&quot;Hello&quot;</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">greeter</span><span class="p">(</span><span class="n">greet</span><span class="p">,</span> <span class="n">get_planet</span><span class="p">())</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
@@ -389,7 +389,7 @@ Hello,<span class="w"> </span>World!
 <p>Also, notice that <code class="docutils literal notranslate"><span class="pre">get_planet()</span></code> did not need to be run again, because it arguments <code class="docutils literal notranslate"><span class="pre">()</span></code> are unchanged.</p>
 <p>redun not only reacts to new input data changes, but it can also react to new <em>code changes</em>. Say we updated <code class="docutils literal notranslate"><span class="pre">get_planet()</span></code> to</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">get_planet</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_planet</span><span class="p">():</span>
     <span class="k">return</span> <span class="s1">&#39;Venus&#39;</span>
 </pre></div>
 </div>
@@ -409,10 +409,10 @@ Hello,<span class="w"> </span>World!
 <section id="lazy-evaluation-and-parallelism">
 <h3>Lazy evaluation and parallelism<a class="headerlink" href="#lazy-evaluation-and-parallelism" title="Link to this heading">¶</a></h3>
 <p>Tasks are executed in a lazy and asynchronous manner. When a task is called, it returns immediately with an <code class="docutils literal notranslate"><span class="pre">Expression</span></code> object:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">redun</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
 
 <span class="n">result</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
@@ -424,7 +424,7 @@ Hello,<span class="w"> </span>World!
 </pre></div>
 </div>
 <p>This expression means, “apply Task ‘add’ to arguments <code class="docutils literal notranslate"><span class="pre">10</span></code> and <code class="docutils literal notranslate"><span class="pre">y=3</span></code>”. Expressions are evaluated to their concrete values by the redun scheduler:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">Scheduler</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">redun</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scheduler</span>
 
 <span class="n">scheduler</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">scheduler</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">add</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">)))</span>
@@ -457,16 +457,16 @@ Hello,<span class="w"> </span>World!
 <p>Every argument of a task can be a concrete value (e.g. <code class="docutils literal notranslate"><span class="pre">10</span></code>, <code class="docutils literal notranslate"><span class="pre">'red'</span></code>, <code class="docutils literal notranslate"><span class="pre">True</span></code>, a DataFrame, etc) or a lazy Expression of a value (e.g. <code class="docutils literal notranslate"><span class="pre">result1</span></code>). Just before a task executes, any arguments that were Expressions are resolved and replaced with concrete values. A task can also return an Expression received from subtasks as if it were a concrete value.</p>
 <p>Working with lazy expressions requires some changes to how programs are structured. Briefly, once you have an Expression, the only way to “look inside” it, is to pass it to another task.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">adder</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">adder</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
     <span class="c1"># Arguments, such as `values` here, are always guaranteed to be concrete values.</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">step1</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">step1</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">step1</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
     <span class="c1"># `results` is now a list of Expressions.</span>
     <span class="c1"># To add them together we need to pass them to another task.</span>
@@ -493,18 +493,18 @@ Hello,<span class="w"> </span>World!
 <h3>Tasks as pure functions<a class="headerlink" href="#tasks-as-pure-functions" title="Link to this heading">¶</a></h3>
 <p>In order for redun to safely cache results and execute tasks in parallel, a few restrictions must be followed when writing a task. Primarily, tasks must be written such that they are “effectively <a class="reference external" href="https://en.wikipedia.org/wiki/Pure_function">pure functions</a>”. That is, given the same arguments, a task should always return (effectively) the same result. redun does not try to enforce strict purity, so minor side-effects such logging, or caching, are not an issue. A task can even be stochastic as long as the user is ok with using cached results from previous executions.</p>
 <p>Tasks are allowed to call other tasks, just like one would write a function to call other functions. In fact, this is the encouraged way of building up a workflow program. Tasks are also allowed to call plain Python functions, as long as the net result of the task is effectively pure. You may also call tasks from plain Python functions as well. In fact, this often occurs when using functions such as <code class="docutils literal notranslate"><span class="pre">map()</span></code>.</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">small_helper</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">small_helper</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
     <span class="c1"># Small plain Python code...</span>
     <span class="k">return</span> <span class="n">item2</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">process_item</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">process_item</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
     <span class="c1"># Process an item...</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">small_helper</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">result</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">process_items</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">process_items</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">process_item</span><span class="p">,</span> <span class="n">items</span><span class="p">))</span>
 </pre></div>
 </div>
@@ -514,15 +514,15 @@ Hello,<span class="w"> </span>World!
 <h3>Result caching<a class="headerlink" href="#result-caching" title="Link to this heading">¶</a></h3>
 <p>As Redun’s scheduler traverses the lazy expression graphs, it looks for opportunities to rely on cached values to avoid repeating computations it has already performed. Redun’s approach to this is designed to be both efficient and correct. For more information on caching and scheduling, see (scheduler)[scheduler.md]. To illustrate how this works, and some of the subtleties therein, consider this example:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
 
 <span class="nd">@task</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">step2</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">step2</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
 
 <span class="nd">@task</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="n">result1</span> <span class="o">=</span> <span class="n">step1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
     <span class="n">result2</span> <span class="o">=</span> <span class="n">step2</span><span class="p">(</span><span class="n">result1</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">result2</span>
@@ -531,7 +531,7 @@ Hello,<span class="w"> </span>World!
 <p>When we execute <code class="docutils literal notranslate"><span class="pre">main(10)</span></code>, we get the result <code class="docutils literal notranslate"><span class="pre">(10</span> <span class="pre">+</span> <span class="pre">1)</span> <span class="pre">*</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">22</span></code>.</p>
 <p>Now, say we updated <code class="docutils literal notranslate"><span class="pre">step1</span></code> to be:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;2&#39;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">2</span>
 </pre></div>
 </div>
@@ -566,14 +566,14 @@ Hello,<span class="w"> </span>World!
 </ul>
 <p>These behaviors are what we typically get from a workflow engine like <code class="docutils literal notranslate"><span class="pre">make</span></code>. Changing a C source code file gets detected by <code class="docutils literal notranslate"><span class="pre">make</span></code> and it recompiles the source file. Deleting the final compiled program, forces <code class="docutils literal notranslate"><span class="pre">make</span></code> to regenerate the program from earlier steps (source compiling, object linking, etc). In data science workflows, we would often like to re-execute a calculation when the input CSV changes, or if an output plot was deleted or altered.</p>
 <p>redun achieves this behavior by wrapping file input/output (IO) in a special class called <code class="docutils literal notranslate"><span class="pre">redun.File</span></code>. Here, is an example usage:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">csv</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">csv</span>
 
-<span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">File</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">redun</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">File</span>
 
 <span class="n">redun_namespace</span> <span class="o">=</span> <span class="s2">&quot;examples.files&quot;</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">process_data</span><span class="p">(</span><span class="n">input_file</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">process_data</span><span class="p">(</span><span class="n">input_file</span><span class="p">):</span>
     <span class="k">with</span> <span class="n">input_file</span><span class="o">.</span><span class="n">open</span><span class="p">()</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
         <span class="n">rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">infile</span><span class="p">))</span>
 
@@ -585,7 +585,7 @@ Hello,<span class="w"> </span>World!
     <span class="k">return</span> <span class="n">output_file</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="n">input_file</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="s1">&#39;input.csv&#39;</span><span class="p">)</span>
     <span class="n">output_file</span> <span class="o">=</span> <span class="n">process_data</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">output_file</span>
@@ -605,7 +605,7 @@ Hello,<span class="w"> </span>World!
 <h4>Script tasks<a class="headerlink" href="#script-tasks" title="Link to this heading">¶</a></h4>
 <p>A <em>script task</em> is a special task in redun whose definition is a shell script as opposed to a python function. Script tasks are defined by passing the task option <code class="docutils literal notranslate"><span class="pre">script=True</span></code> in the <code class="docutils literal notranslate"><span class="pre">&#64;task()</span></code> decorator and returning a string containing a shell script.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">script</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">task1</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task1</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">):</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">    mkdir dir</span>
 <span class="s2">    cd dir</span>
@@ -616,14 +616,14 @@ Hello,<span class="w"> </span>World!
 <p>The user can use even use f-string interpolation to conveniently pass task arguments (e.g. <code class="docutils literal notranslate"><span class="pre">arg1</span></code> and <code class="docutils literal notranslate"><span class="pre">arg2</span></code>) to the script.</p>
 <p>The return value of a script task is the standard output of the script. Here, is an example of a normal task, <code class="docutils literal notranslate"><span class="pre">grep_files()</span></code> calling a script task <code class="docutils literal notranslate"><span class="pre">grep()</span></code>:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">script</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">grep</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">grep</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
     <span class="c1"># Calls grep to find pattern in a file.</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">    grep </span><span class="si">{</span><span class="n">pattern</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">path</span><span class="si">}</span>
 <span class="s2">    &quot;&quot;&quot;</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">grep_files</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">grep_files</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
     <span class="c1"># Calls grep to find a pattern on a list of files.</span>
     <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">grep</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>  <span class="c1"># Result is stdout of `grep {pattern} {file.path}`</span>
@@ -634,7 +634,7 @@ Hello,<span class="w"> </span>World!
 </div>
 <p>Scripts are assumed to be <code class="docutils literal notranslate"><span class="pre">sh</span></code> scripts by default, but custom interpreters (e.g. <code class="docutils literal notranslate"><span class="pre">python</span></code>) can be specified using <code class="docutils literal notranslate"><span class="pre">#!</span></code> in the first line.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">script</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">grep</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">grep</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">):</span>
     <span class="c1"># Calls grep to find pattern in a file.</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">    #!/usr/bin/python</span>
@@ -649,7 +649,7 @@ Hello,<span class="w"> </span>World!
 <p>When defining script tasks that run on a remote execution environment (e.g. AWS Batch), it is common to have to copy input files from a cloud storage location (e.g. S3) to the compute node and similarly copy output files from the compute node back to cloud storage. We call this file staging and unstaging, respectively.</p>
 <p>Manually performing file staging would look something like this:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">script</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">align_dna_reads_to_genome</span><span class="p">(</span><span class="n">input_reads_file</span><span class="p">:</span> <span class="n">File</span><span class="p">,</span> <span class="n">output_align_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sample_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">align_dna_reads_to_genome</span><span class="p">(</span><span class="n">input_reads_file</span><span class="p">:</span> <span class="n">File</span><span class="p">,</span> <span class="n">output_align_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sample_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">        # Stage input file from cloud storage to compute node (local disk).</span>
 <span class="s2">        aws s3 cp </span><span class="si">{</span><span class="n">input_reads_file</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2"> reads.fastq.gz</span>
@@ -667,7 +667,7 @@ Hello,<span class="w"> </span>World!
 <span class="s2">    &quot;&quot;&quot;</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="c1"># Example of calling script task.</span>
     <span class="n">input_reads_file</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="s1">&#39;s3://bucket/a/b/c/100.fastq.gz&#39;</span><span class="p">)</span>
     <span class="n">output_align_path</span> <span class="o">=</span> <span class="s1">&#39;s3://bucket/a/b/c/100.aln.bam&#39;</span>
@@ -678,10 +678,10 @@ Hello,<span class="w"> </span>World!
 </pre></div>
 </div>
 <p>The above code should work perfectly fine, however, manually writing input/output staging commands can be tedious. redun provides a utility function <code class="docutils literal notranslate"><span class="pre">script()</span></code> that can further simplify file staging.</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">script</span><span class="p">,</span> <span class="n">File</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">redun</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">script</span><span class="p">,</span> <span class="n">File</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">align_dna_reads_to_genome</span><span class="p">(</span><span class="n">input_reads_file</span><span class="p">:</span> <span class="n">File</span><span class="p">,</span> <span class="n">output_align_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sample_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">align_dna_reads_to_genome</span><span class="p">(</span><span class="n">input_reads_file</span><span class="p">:</span> <span class="n">File</span><span class="p">,</span> <span class="n">output_align_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sample_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">script</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">        # Run a unix program that processes input reads.fastq.gz and outputs sample.aln.bam</span>
 <span class="s2">        run-bwamem </span><span class="se">\</span>
@@ -696,7 +696,7 @@ Hello,<span class="w"> </span>World!
    <span class="p">)</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="c1"># Example of calling script task.</span>
     <span class="n">input_reads_file</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="s1">&#39;s3://bucket/a/b/c/100.fastq.gz&#39;</span><span class="p">)</span>
     <span class="n">output_align_path</span> <span class="o">=</span> <span class="s1">&#39;s3://bucket/a/b/c/100.aln.bam&#39;</span>
@@ -710,10 +710,10 @@ Hello,<span class="w"> </span>World!
 </pre></div>
 </div>
 <p>The final result of <code class="docutils literal notranslate"><span class="pre">script()</span></code> will be the same shape of <code class="docutils literal notranslate"><span class="pre">outputs</span></code>, with all <code class="docutils literal notranslate"><span class="pre">StagingFile</span></code>s replaced by their remote <code class="docutils literal notranslate"><span class="pre">File</span></code>s. This allows easy definition of multiple output files:</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">redun</span> <span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">script</span><span class="p">,</span> <span class="n">File</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">redun</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span><span class="p">,</span> <span class="n">script</span><span class="p">,</span> <span class="n">File</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">align_dna_reads_to_genome</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">align_dna_reads_to_genome</span><span class="p">(</span>
         <span class="n">input_reads1_file</span><span class="p">:</span> <span class="n">File</span><span class="p">,</span>
         <span class="n">input_reads2_file</span><span class="p">:</span> <span class="n">File</span><span class="p">,</span>
         <span class="n">output_align_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -744,7 +744,7 @@ Hello,<span class="w"> </span>World!
    <span class="p">)</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="c1"># Example of calling script task.</span>
     <span class="n">input_reads1_file</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="s1">&#39;s3://bucket/a/b/c/100.1.fastq.gz&#39;</span><span class="p">)</span>
     <span class="n">input_reads2_file</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="s1">&#39;s3://bucket/a/b/c/100.2.fastq.gz&#39;</span><span class="p">)</span>
@@ -845,11 +845,11 @@ results.</p>
 </ul>
 <p>Let’s look at the following example:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">task1</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task1</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">x</span>
 
 <span class="nd">@task</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">task2</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">task2</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">task1</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1060,7 +1060,7 @@ results.</p>
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=5fa4622c"></script>
     </body>
