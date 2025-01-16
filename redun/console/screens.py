@@ -1496,7 +1496,9 @@ class ExecutionScreen(RedunScreen):
 
         exec_status = self.execution.status_display
         start_time = format_timestamp(self.execution.job.start_time)
-        updated_time = format_timestamp(self.execution.updated_time)
+        updated_time = (
+            format_timestamp(self.execution.updated_time) if self.execution.updated_time else ""
+        )
         args = " ".join(json.loads(self.execution.args)[1:])
 
         yield Container(

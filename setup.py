@@ -43,7 +43,7 @@ extras = {
     ],
     "azure": [
         "adlfs>=2024.2.0",
-        "azure-ai-ml>=1.12.0",
+        "azure-ai-ml>=1.23.1",
     ],
 }
 
