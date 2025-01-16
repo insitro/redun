@@ -77,63 +77,54 @@ class Inner:
 
 
 def test_lazy_operators(scheduler: Scheduler) -> None:
-    @task()
-    def task1(x: int, y: int = 1) -> int:
-        return x + y
-
-    @task()
-    def task2(x: str, y: int = 3) -> str:
-        return x * y
+    """
+    Ensure expressions can be combined with operators into SimpleExpressions.
+    """
+    id = identity
 
     @task()
     def get_task():
-        return task1
+        return identity
 
-    true_expressions = [
-        task1(0) == ValueExpression(1),
-        task1(1) != ValueExpression(1),
-        task1(2) < task1(3),
-        task1(2) <= task1(3),
-        task1(3) > task1(2),
-        task1(3) >= task1(2),
-        task1(4) + task1(5) == 11,
-        task1(3) - task1(1) == 2,
-        task1(1) * task1(2) == 6,
-        task1(3) / task1(1) == 2,
-        task2("a") + task2("bc") == "aaabcbcbc",
-        identity(True) & identity(True),
-        identity(False) | identity(True),
-        get_task()(7) == 8,
-        ValueExpression(Inner(7)).a == 7,
-        ValueExpression(["a", "b", "c"])[1] == "b",
+    expressions = [
+        (id(0) == id(0), True),
+        (id(1) != id(0), True),
+        (id(2) < id(3), True),
+        (id(2) <= id(3), True),
+        (id(3) > id(2), True),
+        (id(3) >= id(2), True),
+        (id(1) + id(2), 3),
+        (id(1) + 2, 3),
+        (1 + id(2), 3),
+        (id("a") + id("b"), "ab"),
+        (id("a") + "b", "ab"),
+        ("a" + id("b"), "ab"),
+        (id(4) - id(3), 1),
+        (id(4) - 3, 1),
+        (4 - id(3), 1),
+        (id(4) * id(3), 12),
+        (id(4) * 3, 12),
+        (4 * id(3), 12),
+        (id(12) / id(3), 4),
+        (id(12) / 3, 4),
+        (12 / id(3), 4),
+        (id(True) & id(False), False),
+        (id(True) & id(True), True),
+        (id(True) & True, True),
+        (True & id(True), True),
+        (id(False) | id(False), False),
+        (id(True) | id(False), True),
+        (id(True) | id(True), True),
+        (id(True) | True, True),
+        (True | id(True), True),
+        (get_task()(7), 7),
+        (id(Inner(7)).a, 7),
+        (id(["a", "b", "c"])[1], "b"),
     ]
 
-    for expr in true_expressions:
+    for expr, expected in expressions:
         assert isinstance(expr, SimpleExpression)
-        assert scheduler.run(expr) is True
-
-    false_expressions = [
-        task1(0) != ValueExpression(1),
-        task1(1) == ValueExpression(1),
-        task1(2) >= task1(3),
-        task1(2) > task1(3),
-        task1(3) <= task1(2),
-        task1(3) < task1(2),
-        task1(4) + task1(5) != 11,
-        task1(3) - task1(1) != 2,
-        task1(1) * task1(2) != 6,
-        task1(3) / task1(1) != 2,
-        task2("a") + task2("bc") == "aaabcbcbcd",
-        identity(False) & identity(True),
-        identity(False) | (False),
-        get_task()(7) == 9,
-        ValueExpression(Inner(7)).a == 8,
-        ValueExpression(["a", "b", "c"])[1] == "f",
-    ]
-
-    for expr in false_expressions:
-        assert isinstance(expr, SimpleExpression)
-        assert scheduler.run(expr) is False
+        assert scheduler.run(expr) == expected
 
 
 def test_task_expression(scheduler: Scheduler) -> None:
@@ -242,6 +233,7 @@ def test_repr() -> None:
 
     # Simple expression operators.
     assert repr(add(1, 2) + 3) == "(add(1, 2) + 3)"
+    assert repr(3 + add(1, 2)) == "(3 + add(1, 2))"
     assert repr(add(1, 2) + 3 + 4) == "((add(1, 2) + 3) + 4)"
     assert repr(add(1, 2) == 3) == "(add(1, 2) == 3)"
     assert repr(add(1, 2) & add(3, 4)) == "(add(1, 2) & add(3, 4))"
