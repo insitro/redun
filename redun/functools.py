@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Sequence, Tuple, TypeVar, Union
 from redun.expression import Expression, SchedulerExpression
 from redun.promise import Promise
 from redun.scheduler import Job, Scheduler, scheduler_task
-from redun.task import Task, task, PartialTask
+from redun.task import PartialTask, Task, task
 
 T = TypeVar("T")
 
