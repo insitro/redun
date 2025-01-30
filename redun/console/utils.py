@@ -10,7 +10,8 @@ from redun.utils import format_timestamp, trim_string
 NULL = object()
 logger = logging.getLogger("redun.console")
 logger.setLevel(logging.INFO)
-logger.addHandler(logging.FileHandler("/tmp/redun.log"))
+# log to current directory to avoid logfiles produced by other users
+logger.addHandler(logging.FileHandler("redun.log"))
 
 
 def log_write(*args: Any) -> None:
