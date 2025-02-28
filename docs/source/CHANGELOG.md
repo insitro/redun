@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.26.0
+February 28, 2025
+
+* `#393` - add reverse operators
+* `#392` - fix using File in script outputs
+* `#325` - Add fork_thread and join_thread
+* `#391` - DE-10267 Handle null update timestamps in execution screen
+* `#390` - [CDE-560] Add enable_metrics config option for glue executor
+* `#388` - Allow configuration of boto retrying
+
 ## 0.25.0
 October 24, 2024
 
