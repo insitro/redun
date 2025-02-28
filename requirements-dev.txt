@@ -7,7 +7,7 @@ pdbpp
 pre-commit
 pyarrow
 pyspark==3.4.3
-pytest==6.2.5
+pytest==8.3.4
 tox
 vcrpy==4.1.1
 pygraphviz
@@ -17,3 +17,9 @@ google-cloud-compute==1.11.0
 urllib3<2
 adlfs==2024.2.0
 azure-ai-ml==1.23.1
+
+# Pin boto for testing. We can unpinned if moto is updated.
+aiobotocore==2.12.3
+boto3==1.34.69
+botocore==1.34.69
+s3fs==2024.3.1
