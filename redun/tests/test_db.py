@@ -1101,8 +1101,6 @@ def test_db_backend_clone() -> None:
     backend.load()
     clone = backend.clone()
     assert clone.engine is backend.engine
-    assert clone.current_execution is backend.current_execution
-
     assert clone.session is not backend.session
 
 

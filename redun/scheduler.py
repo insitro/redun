@@ -1226,8 +1226,9 @@ class Scheduler:
         Main scheduler event loop for evaluating the current expression. Loop over events,
         blocking until the provided `workflow_promise` is resolved.
         """
+        assert self._current_execution
         self.workflow_promise = workflow_promise
-        self.backend.record_updated_time()
+        self.backend.record_updated_time(self._current_execution.id)
 
         while self.workflow_promise.is_pending:
             if self._dryrun and self.events_queue.empty():
@@ -1241,7 +1242,7 @@ class Scheduler:
                 self.log("Shutting down... Ctrl+C again to force shutdown.")
                 sys.exit(1)
             except queue.Empty:
-                self.backend.record_updated_time()
+                self.backend.record_updated_time(self._current_execution.id)
                 if not is_debugger_active():
                     # Print job statuses periodically.
                     # For convenience, do not print statuses if the debugger is

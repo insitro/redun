@@ -288,7 +288,7 @@ class RedunBackend(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def record_updated_time(self) -> None:
+    def record_updated_time(self, execution_id: str) -> None:
         """
         Updates updated_time (heartbeat) timestamp for the current Execution.
         """
