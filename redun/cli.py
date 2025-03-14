@@ -1481,7 +1481,7 @@ class RedunClient:
         """
         new_context = {}
         if context_file:
-            with open(context_file, "r") as fp:
+            with BaseFile(context_file).open() as fp:
                 new_context = json.load(fp)
 
         if context_updates:
