@@ -8,16 +8,6 @@ from redun.tags import format_tag_value
 from redun.utils import format_timestamp, trim_string
 
 NULL = object()
-logger = logging.getLogger("redun.console")
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.FileHandler("/tmp/redun.log"))
-
-
-def log_write(*args: Any) -> None:
-    """
-    Debugging function to use when developing with Textual.
-    """
-    logger.info(" ".join(map(str, args)))
 
 
 def format_link(link_pattern: str, tags: Dict[str, Any]) -> Optional[str]:
