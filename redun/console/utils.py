@@ -1,4 +1,3 @@
-import logging
 import re
 from itertools import chain
 from typing import Any, Dict, List, Optional
