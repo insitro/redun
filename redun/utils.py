@@ -415,8 +415,8 @@ class PreviewClass(ABC):
         self.__dict__.update(kwargs)
         return self
 
-    def __repr__(self):
-        attr = []
+    def __repr__(self) -> str:
+        attr: List[str] = []
         if hasattr(self, "_preview_args"):
             # Object was instantiated with constructor or with __new__.
             attr.extend(map(repr, self._preview_args))
@@ -428,6 +428,8 @@ class PreviewClass(ABC):
             if key != "_preview_args"
         )
         return f"{self._name}({', '.join(attr)})"
+
+    __str__ = __repr__
 
     def __getitem__(self, index: int) -> Any:
         """
@@ -469,6 +471,7 @@ class PreviewingUnpickler(Unpickler):
                 _name = name
 
             PreviewSubclass.__name__ = name
+            PreviewSubclass.__qualname__ = name
             PreviewSubclass.__module__ = module
 
             self._classes[class_name] = PreviewSubclass

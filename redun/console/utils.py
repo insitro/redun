@@ -9,6 +9,15 @@ from redun.utils import format_timestamp, trim_string
 NULL = object()
 
 
+def rich_escape(text: str) -> str:
+    """
+    Escape a string for rich.
+
+    Unfortunately, `rich.markup.escape()` doesn't catch all issues.
+    """
+    return text.replace("[", r"\[")
+
+
 def format_link(link_pattern: str, tags: Dict[str, Any]) -> Optional[str]:
     """
     Format a link pattern using a tag dictionary.
@@ -73,7 +82,7 @@ def format_tags(tags: List[Tag], max_length: int = 100, color="#9999cc") -> str:
     def format_tag_key_value(key: str, value: Any) -> str:
         key = trim_string(key, max_length=max_length)
         value_str = trim_string(format_tag_value(value), max_length=max_length)
-        return f"[{color}]{key}={value_str}[/]"
+        return f"[{color}]{rich_escape(key)}={rich_escape(value_str)}[/]"
 
     tags = sorted(tags, key=lambda tag: tag.key)
 
@@ -109,7 +118,7 @@ def format_job(job: Job) -> str:
     Format a redun Job into a string representation.
     """
     args = format_arguments(job.call_node.arguments) if job.call_hash else ""
-    return f"[bold]{job.task.fullname}[/][#999999]({args})[/]"
+    return f"[bold]{rich_escape(job.task.fullname)}[/][#999999]({rich_escape(args)})[/]"
 
 
 def format_traceback(job: Job) -> str:
@@ -186,6 +195,6 @@ def format_record(record: Any) -> str:
     elif isinstance(record, Task):
         return f"Task {record.hash[:8]} {record.fullname}"
     elif isinstance(record, Value):
-        return f"Value {record.value_hash[:8]} {trim_string(repr(record.preview))}"
+        return f"Value {record.value_hash[:8]} {rich_escape(trim_string(repr(record.preview)))}"
     else:
-        return repr(record)
+        return rich_escape(repr(record))

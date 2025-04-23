@@ -12,7 +12,9 @@ try:
     from azure.ai.ml.identity import AzureMLOnBehalfOfCredential
     from azure.identity import DefaultAzureCredential
 except (ImportError, ModuleNotFoundError):
-    pass
+    # These stubs allow effective patching in tests.
+    AzureMLOnBehalfOfCredential = None
+    DefaultAzureCredential = None
 
 
 def is_azure_managed_node() -> bool:
