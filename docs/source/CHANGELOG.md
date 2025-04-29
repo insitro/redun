@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.27.0
+April 29, 2025
+
+* `#398` - Fix escape issue for rich text in console
+* `#115` - Remove console debug logger
+* `#396` - Make RedunBackendDb thread safe
+* `#113` - fix context file read from s3
+
 ## 0.26.0
 February 28, 2025
 
