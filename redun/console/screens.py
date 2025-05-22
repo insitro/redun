@@ -32,6 +32,7 @@ from redun.console.utils import (
     format_record,
     format_tags,
     format_traceback,
+    rich_escape,
     style_status,
 )
 from redun.console.widgets import (
@@ -160,7 +161,7 @@ class FilterScreen(Screen):
         yield Container(
             Label("Filter:"),
             self.input,
-            Static(self.help, classes="filter-help"),
+            Static(rich_escape(self.help), classes="filter-help"),
             classes="filter",
         )
 
@@ -1128,7 +1129,7 @@ class JobScreen(RedunScreen):
                 if isinstance(error_value, ErrorValue) and error_value.traceback:
                     for line in error_value.traceback.format():
                         lines.append(line.rstrip("\n"))
-                traceback = [Static("\n".join(lines))]
+                traceback = [Static(rich_escape("\n".join(lines)))]
             else:
                 result = ValueSpan(
                     self.job.call_node.value,
