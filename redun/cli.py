@@ -1463,13 +1463,11 @@ class RedunClient:
         """
         Initialize redun project directory.
         """
-        if not args.config:
-            if extra_args:
-                basedir = extra_args[0]
-            else:
-                basedir = "."
+        if extra_args:
+            basedir = extra_args[0]
             args.config = os.path.join(basedir, REDUN_CONFIG_DIR)
-
+        else:
+            args.config = get_config_dir(args.config)
         self.get_scheduler(args, migrate=True)
         self.display("Initialized redun repository: {}".format(args.config))
 
