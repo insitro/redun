@@ -1092,9 +1092,15 @@ def hash_args_eval(
     """
     Compute eval_hash and args_hash for a task call, filtering out config args before hashing.
     """
-    # Filter out config args from args and kwargs.
+    from redun.scheduler import JobInfo
+
     sig = task.signature
+
+    # Filter out config args and JobInfo from argument hashing.
     config_args: List = task.get_task_option("config_args", [])
+
+    def keep_arg(param_name: str, value: Any) -> bool:
+        return param_name not in config_args and not isinstance(value, JobInfo)
 
     # Determine the variadic parameter if it exists.
     var_param_name: typing.Optional[str] = None
@@ -1107,7 +1113,7 @@ def hash_args_eval(
     args2 = [
         arg_value
         for arg_name, arg_value in zip(sig.parameters, args)
-        if arg_name not in config_args
+        if keep_arg(arg_name, arg_value)
     ]
 
     # Additional arguments are assumed to be variadic arguments.
@@ -1119,7 +1125,7 @@ def hash_args_eval(
     kwargs2 = {
         arg_name: arg_value
         for arg_name, arg_value in kwargs.items()
-        if arg_name not in config_args
+        if keep_arg(arg_name, arg_value)
     }
 
     return hash_eval(type_registry, task.hash, args2, kwargs2)

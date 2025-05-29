@@ -22,6 +22,7 @@ from redun.scheduler import (
     DryRunResult,
     Frame,
     Job,
+    JobInfo,
     SchedulerError,
     Task,
     Traceback,
@@ -2270,3 +2271,28 @@ def test_thread_cache(scheduler: Scheduler, session: Session) -> None:
     # The workflow should still work as before.
     assert scheduler.run(main(10, "shallow")) == [20, None]
     assert len(set(promise_ids)) == 2
+
+
+def test_job_info(scheduler: Scheduler, session: Session) -> None:
+    """
+    Ensure JobInfo can be accessed in tasks.
+    """
+    calls = []
+
+    @task
+    def add(a, b, job_info=JobInfo()):
+        calls.append(job_info)
+        return a + b
+
+    @task
+    def main(job_info=JobInfo()) -> str:
+        calls.append(job_info)
+        return add(1, 2)
+
+    assert scheduler.run(main()) == 3
+    exec = session.query(Execution).one()
+
+    assert calls[0].execution_id == exec.id
+    assert calls[0].job_id == exec.job.id
+    assert calls[1].execution_id == exec.id
+    assert calls[1].job_id == exec.job.child_jobs[0].id

@@ -561,6 +561,33 @@ class JobEnv(Job):
         return self._env_context
 
 
+class JobInfo:
+    """
+    Runtime information for a Job.
+    """
+
+    def __init__(
+        self, execution_id: str = "", job_id: str = "", eval_hash: str = "", args_hash: str = ""
+    ):
+        self.execution_id = execution_id
+        self.job_id = job_id
+        self.eval_hash = eval_hash
+        self.args_hash = args_hash
+
+    @classmethod
+    def from_job(self, job: Job) -> "JobInfo":
+        assert job.execution and job.eval_hash and job.args_hash
+        return JobInfo(
+            execution_id=job.execution.id,
+            job_id=job.id,
+            eval_hash=job.eval_hash,
+            args_hash=job.args_hash,
+        )
+
+    def __repr__(self) -> str:
+        return f"JobInfo(execution_id={self.execution_id}, job_id={self.job_id}, eval_hash={self.eval_hash}, args_hash={self.args_hash})"
+
+
 def get_backend_from_config(
     backend_config: Optional[SectionProxy] = None,
 ) -> RedunBackend:
@@ -1615,6 +1642,21 @@ class Scheduler:
         context = job.get_context()
         if context:
             job.context_hash = self.type_registry.get_hash(context)
+
+        # Replace a placeholder JobInfo with a populated one.
+        def include_job_info(arg_pair):
+            args, kwargs = arg_pair
+            args = [
+                JobInfo.from_job(job) if isinstance(value, JobInfo) else value for value in args
+            ]
+            kwargs = {
+                key: JobInfo.from_job(job) if isinstance(value, JobInfo) else value
+                for key, value in kwargs.items()
+            }
+            return args, kwargs
+
+        job.eval_args = include_job_info(job.eval_args)
+        args, kwargs = job.args = include_job_info(job.args)
 
         # Check whether a job of the same eval_hash is already running.
         if self._check_pending_job(job) is not None:
