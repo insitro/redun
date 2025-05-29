@@ -3144,18 +3144,31 @@ class RedunBackendDb(RedunBackend):
     def _get_credentialed_uri(base_uri: str, conf: Section) -> str:
         parts = urlparse(base_uri)
 
-        if "@" in parts.netloc:
+        if parts.password:
             raise RedunDatabaseError(
-                "rejected db_uri containing credentials. use environment variables instead"
+                f"Do not include passwords in DB URIs. Use environment variables instead (e.g {DEFAULT_DB_USERNAME_ENV} and {DEFAULT_DB_PASSWORD_ENV})"
             )
 
-        credentials = RedunBackendDb._get_login_credentials(conf)
+        credentials = RedunBackendDb._get_login_credentials(conf, parts.username)
         if credentials:
-            parts = parts._replace(netloc=f"{credentials}@{parts.netloc}")
+            if "@" in parts.netloc:
+                _, netloc = parts.netloc.rsplit("@", 1)
+            else:
+                netloc = parts.netloc
+            parts = parts._replace(netloc=f"{credentials}@{netloc}")
         return urlunparse(parts)
 
     @staticmethod
-    def _get_login_credentials(conf: Section) -> Optional[str]:
-        user = os.getenv(conf.get("db_username_env", DEFAULT_DB_USERNAME_ENV))
+    def _get_login_credentials(conf: Section, username: Optional[str] = None) -> Optional[str]:
+        # Replace username by env var if defined.
+        username = os.getenv(conf.get("db_username_env", DEFAULT_DB_USERNAME_ENV), username)
+
         password = quote_plus(os.getenv(conf.get("db_password_env", DEFAULT_DB_PASSWORD_ENV), ""))
-        return user and password and f"{user}:{password}"
+
+        if username:
+            if password:
+                return f"{username}:{password}"
+            else:
+                return username
+        else:
+            return None

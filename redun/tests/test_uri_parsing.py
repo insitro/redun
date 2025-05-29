@@ -1,3 +1,4 @@
+import os
 import json
 from unittest.mock import patch
 
@@ -55,6 +56,28 @@ def test_no_credentials(mock_env_no_credentials) -> None:
 def test_uri_with_credentials() -> None:
     with pytest.raises(RedunDatabaseError):
         RDB._get_uri("postgresql://user:secret@localhost:5432/redun", {})
+
+
+def test_uri_with_username() -> None:
+    # Only specifying username should be allowed.
+    assert (
+        RDB._get_uri("postgresql://user@localhost:5432/redun", {})
+        == "postgresql://user@localhost:5432/redun"
+    )
+
+    # Env var should override username.
+    with patch.dict(os.environ, {"REDUN_DB_USERNAME": "alice"}, clear=True):
+        assert (
+            RDB._get_uri("postgresql://user@localhost:5432/redun", {})
+            == "postgresql://alice@localhost:5432/redun"
+        )
+
+    # Username env var alone should be allowed.
+    with patch.dict(os.environ, {"REDUN_DB_USERNAME": "alice"}, clear=True):
+        assert (
+            RDB._get_uri("postgresql://localhost:5432/redun", {})
+            == "postgresql://alice@localhost:5432/redun"
+        )
 
 
 @patch("redun.executors.aws_utils.get_aws_client")
