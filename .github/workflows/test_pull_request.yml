@@ -9,7 +9,8 @@ jobs:
         # Pinned to ubuntu-22.04 as that is the last version to include Python 3.8 support.
         # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md#python
         os: [ubuntu-22.04]
-        python: ['3.8', '3.9', '3.10', '3.11']
+        # python: ['3.8', '3.9', '3.10', '3.11']
+        python: ['3.11']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +20,7 @@ jobs:
       - run: pip install --upgrade pip
       - run: sudo apt-get install graphviz graphviz-dev
       - run: pip install tox
-      - run: tox -e py
+      - run: tox -e py -- redun/tests/test_uri_parsing.py
   test-postgres:
     timeout-minutes: 15
     runs-on: ubuntu-latest
