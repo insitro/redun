@@ -58,6 +58,7 @@ def test_uri_with_credentials() -> None:
         RDB._get_uri("postgresql://user:secret@localhost:5432/redun", {})
 
 
+@patch.dict(os.environ, {"REDUN_DB_USERNAME": "", "REDUN_DB_PASSWORD": ""}, clear=True)
 def test_uri_with_username() -> None:
     # Only specifying username should be allowed.
     assert (
