@@ -1123,13 +1123,13 @@ class JobScreen(RedunScreen):
             if self.job.status == "FAILED":
                 error_value = self.job.call_node.value.value_parsed
                 error = error_value.error if isinstance(error_value, ErrorValue) else "Unknown"
-                result = Static(f"[bold]Raised:[/] {error}")
+                result = Static(f"[bold]Raised:[/] {rich_escape(str(error))}")
 
                 lines = ["", "[bold]Traceback:[/]"]
                 if isinstance(error_value, ErrorValue) and error_value.traceback:
                     for line in error_value.traceback.format():
-                        lines.append(line.rstrip("\n"))
-                traceback = [Static(rich_escape("\n".join(lines)))]
+                        lines.append(rich_escape(line.rstrip("\n")))
+                traceback = [Static("\n".join(lines))]
             else:
                 result = ValueSpan(
                     self.job.call_node.value,
