@@ -380,6 +380,37 @@ def main(x: File, y: List[File]):
 
 
 @use_tempdir
+def test_init() -> None:
+    """
+    Ensure `redun init` creates a new redun config dir.
+    """
+    # Default config dir.
+    client = RedunClient()
+    client.execute(["redun", "init"])
+    assert File(".redun/redun.ini").exists()
+    assert File(".redun/redun.db").exists()
+
+    # Config dir specified by flag.
+    client = RedunClient()
+    client.execute(["redun", "--config", "config1", "init"])
+    assert File("config1/redun.ini").exists()
+    assert File("config1/redun.db").exists()
+
+    # Config dir specified by positional argument.
+    client = RedunClient()
+    client.execute(["redun", "init", "dir1"])
+    assert File("dir1/.redun/redun.ini").exists()
+    assert File("dir1/.redun/redun.db").exists()
+
+    # Config dir specified by env var.
+    with patch.dict(os.environ, {"REDUN_CONFIG": "config2"}, clear=True):
+        client = RedunClient()
+        client.execute(["redun", "init"])
+        assert File("config2/redun.ini").exists()
+        assert File("config2/redun.db").exists()
+
+
+@use_tempdir
 @patch.dict(os.environ, {AWS_ARRAY_VAR: "1"}, clear=True)
 def test_oneshot_existing_output() -> None:
     """
