@@ -97,6 +97,20 @@ class Expression(Value, Generic[Result]):
             return (self[i] for i in range(self._length))
         raise TypeError("Expressions of unknown length cannot be iterated.")
 
+    def __await__(self):
+        """
+        Awaiting on an Expression forces an eager evaluation.
+        """
+        from redun.executors.local import get_current_job
+
+        scheduler, parent_job = get_current_job()
+        if not parent_job:
+            raise RuntimeError(
+                "Can only await on an Expression in a task running in a local thread-mode Executor."
+            )
+        future = scheduler.evaluate_async(self, parent_job)
+        return future.__await__()
+
 
 class ApplyExpression(Expression[Result]):
     """

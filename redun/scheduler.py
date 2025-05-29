@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import importlib
 import inspect
@@ -7,6 +8,7 @@ import logging
 import os
 import pprint
 import queue
+import re
 import shlex
 import sys
 import threading
@@ -668,7 +670,7 @@ class Frame(FrameSummary, Value):  # type:ignore[misc]
             while True:
                 self.lineno += 1
                 line = linecache.getline(self.filename, self.lineno).strip()
-                if line.startswith("def "):
+                if re.match("^(async )? *def ", line):
                     break
             self._line = None
 
@@ -1447,6 +1449,30 @@ class Scheduler:
         self._pending_expr[parent_job][expr.get_hash()] = (promise, expr)
         return promise
 
+    def evaluate_async(self, expr: Any, parent_job: Optional[Job]) -> asyncio.Future:
+        """
+        Evaluate an awaited Expression in the Scheduler.
+        """
+        loop = asyncio.get_event_loop()
+        future = loop.create_future()
+
+        # Pass the loop and future into the Scheduler main thread.
+        self.events_queue.put(
+            lambda: self._evaluate_async_main_thread(expr, parent_job, loop, future)
+        )
+
+        # Caller can await on this future.
+        return future
+
+    def _evaluate_async_main_thread(
+        self, expr: Any, parent_job: Optional[Job], loop: Any, future: asyncio.Future
+    ) -> None:
+        # Evaluate the expression and forward the result or error to the future in a thread-safe way.
+        self.evaluate(expr, parent_job=parent_job).then(
+            lambda result: loop.call_soon_threadsafe(future.set_result, result),
+            lambda error: loop.call_soon_threadsafe(future.set_exception, error),
+        )
+
     def track_promise(self, promise: Promise) -> str:
         """
         Track a Promise. Returns a new promise_id.
@@ -1655,6 +1681,12 @@ class Scheduler:
         if not executor:
             return self.reject_job(
                 job, SchedulerError('Unknown executor "{}"'.format(executor_name))
+            )
+
+        # Check whether executor supports job type.
+        if job.task.is_async() and not executor.supports_async():
+            return self.reject_job(
+                job, SchedulerError(f'Executor "{executor_name}" does not support async tasks')
             )
 
         self.log(
@@ -2036,6 +2068,15 @@ class Scheduler:
             "Should have gotten a set for option `allowed_cache_results`, got"
             f" {allowed_cache_results} instead."
         )
+
+        if job.task.is_async() and cache_scope == CacheScope.BACKEND:
+            if allowed_cache_results is None:
+                allowed_cache_results = set(CacheResult)
+
+            # Async tasks cannot use single reduction.
+            allowed_cache_results -= {CacheResult.SINGLE}
+            # Only ultimate reduction caching is supported.
+            check_valid = CacheCheckValid.SHALLOW
 
         # Check CSE and cache.
         assert job.task

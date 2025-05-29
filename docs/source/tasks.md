@@ -722,3 +722,98 @@ facilitating AWS role switches.
 
 See the example `examples/federated_task` for more information.
 
+
+### Eager evaluation
+
+Most of the time, a lazy expression (e.g. result of a task call) can be used in nearly the same way
+as a concrete value. For example, you can use them as arguments to other task calls and most operators are
+overloaded to chain follow up lazy expressions. However, lazy expressions cannot be used in Python statements
+that require eager evaluation, such as if-statements or for-loops. For example, the if-statement in the following
+code would fail:
+
+```py
+@task
+def add(a, b):
+    return a + b
+
+@task
+def is_odd(x):
+    return x % 2 != 0
+
+@task
+def main():
+    result = add(1, 2)
+    odd_answer = is_odd(result)
+
+    # FAIL: odd_answer is still an Expression and we can't coerce an Expression to bool eagerly.
+    if odd_answer:
+        return "odd"
+    else:
+        return "even"
+```
+
+In many cases, you can refactor this code to pass `odd_answer` to another task to force evaluation:
+
+```py
+@task
+def main():
+    result = add(1, 2)
+    odd_answer = is_odd(result)
+    return main_post_process(odd_answer)
+
+@task
+def main_post_process(odd_answer: bool)
+    # OK: odd_answer is now a concrete bool and we can use it in an if-statement.
+    if odd_answer:
+        return "odd"
+    else:
+        return "even"
+```
+
+While this refactoring works, it often leads to very "cut up" tasks that become more challenging to maintain.
+In such cases, redun offers a feature for eager evaluation using the `await` keyword. It looks like this:
+
+```py
+@task
+async def main():
+    result = add(1, 2)
+    odd_answer = await is_odd(result)
+
+    # By using await, `odd_answer` is now a normal bool that is usable in an if-statement.
+    if odd_answer:
+        return "odd"
+    else:
+        return "even"
+```
+
+What is happening here? Like normal async code, the execution of `main` will pause while `is_odd()` runs to
+completion, and then returns concrete bool. Now that we have a concrete bool, we can use it in an if-statement.
+Note, unlike normal Python, we can await on any redun lazy expression, even
+expressions produced from wrapped functions that aren't marked `async`, such as `is_odd()` in this example.
+
+While eager evaluation is powerful, it does come with some limitations. First, like normal Python, tasks that use
+`await` must mark their function as `async`. Second, tasks that use `await` must run in the same process
+as the main redun Scheduler. That is, they must run in the LocalExecutor with thread mode (the "default" executor).
+This is required because eager evaluation must communicate directly with the Scheduler and that is often
+not possible in other executors, such as the AWSBatchExecutor.
+
+Like all other redun tasks, async tasks with eager evaluation benefit from powerful features such caching and reactivity with respect to data and code changes. One caveat is that this feature is newer in its development and currently
+requires explicit configuration of caching. Specifically, users must configure async tasks in one of these two ways:
+
+```py
+# No caching
+@task(cache=False)
+def my_task(a, b):
+    # ...
+```
+
+or
+
+```py
+# Use caching
+@task(cache=True, check_valid="shallow")
+def my_task(a, b):
+    # ...
+```
+
+Due to current implementation limitations, only "shallow" [validity checking](implementation/graph_reduction_caching.md#opt-in-ultimate-reduction-caching) is available when caching is enable.

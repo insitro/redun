@@ -210,6 +210,12 @@ class Task(Value, Generic[Func]):
 
         self._validate()
 
+    def is_async(self) -> bool:
+        """
+        Returns True if the wrapped function is async.
+        """
+        return inspect.iscoroutinefunction(self.func)
+
     def recompute_hash(self):
         self.hash = self._calc_hash()
 
@@ -315,6 +321,20 @@ class Task(Value, Generic[Func]):
 
             if "check_valid" in options_dict:
                 options_dict["check_valid"] = CacheCheckValid(options_dict["check_valid"])
+
+        # Validate async tasks.
+        if self.is_async():
+            options_dict = self.get_task_options()
+            if "cache_scope" not in options_dict or (
+                options_dict["cache_scope"] == CacheScope.BACKEND
+                and options_dict["check_valid"] != CacheCheckValid.SHALLOW
+            ):
+                raise ValueError(
+                    f"Due to current limitations, async tasks like '{self.fullname}' must explicitly set their cache option. "
+                    'If caching is turned on, the option `check_valid="shallow"` must be enabled as well. '
+                    "Therefore, please set either: "
+                    ' `@task(cache=True, check_valid="shallow")` or `@task(cache=False)`.'
+                )
 
     @property
     def fullname(self) -> str:
@@ -1030,6 +1050,10 @@ class TaskRegistry:
         self.task_hashes: set[str] = set()
 
     def add(self, task: Task) -> None:
+        old_task = self._tasks.pop(task.fullname, None)
+        if old_task:
+            self.task_hashes.remove(old_task.hash)
+
         self._tasks[task.fullname] = task
         self.task_hashes.add(task.hash)
 
