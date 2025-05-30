@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.28.0
+May 30, 2025
+
+* `#125` - Pin ubuntu for doc building
+* `#123` - Environment variable fixes (redun init and db creds)
+* `#400` - Added JobInfo for access to Job runtime information
+* `#397` - Eager evaluation via async tasks
+* `#124` - Fix rich escaping for displaying errors in redun console
+* `#119` - Add more rich_escape calls in redun console
+
 ## 0.27.0
 April 29, 2025
 
