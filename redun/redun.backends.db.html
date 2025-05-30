@@ -976,7 +976,7 @@ like this:</p>
 <p>Query class for efficiently querying across all models in a CallGraph.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.ExecTag">
-<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7f730b44b850;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7f7c611e2140;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1766,12 +1766,12 @@ correspond with the names of the arguments.  For example, a datatype
 which accepts a dictionary of lookup values may publish this as a sorted
 series of tuples.   Given a previously un-cacheable type as:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;a custom type that accepts a dictionary as a parameter.</span>
 
 <span class="sd">    this is the non-cacheable version, as &quot;self.lookup&quot; is not</span>
 <span class="sd">    hashable.</span>
 
-<span class="sd">    &#39;&#39;&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span> <span class="o">=</span> <span class="n">lookup</span>
@@ -1779,8 +1779,7 @@ series of tuples.   Given a previously un-cacheable type as:</p>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_col_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;VARCHAR(255)&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
-        <span class="c1"># ...  works with &quot;self.lookup&quot; ...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span> <span class="o">...</span>  <span class="c1"># works with &quot;self.lookup&quot; ...</span>
 </pre></div>
 </div>
 <p>Where “lookup” is a dictionary.  The type will not be able to generate
@@ -1816,7 +1815,7 @@ statement cache, since Python dictionaries aren’t hashable:</p>
 <p>The type may be made cacheable by assigning a sorted tuple of tuples
 to the “.lookup” attribute:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;a custom type that accepts a dictionary as a parameter.</span>
 
 <span class="sd">    The dictionary is stored both as itself in a private variable,</span>
 <span class="sd">    and published in a public variable as a sorted tuple of tuples,</span>
@@ -1824,7 +1823,7 @@ to the “.lookup” attribute:</p>
 <span class="sd">    two equivalent dictionaries.  Note it assumes the keys and</span>
 <span class="sd">    values of the dictionary are themselves hashable.</span>
 
-<span class="sd">    &#39;&#39;&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">cache_ok</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -1833,15 +1832,12 @@ to the “.lookup” attribute:</p>
 
         <span class="c1"># assume keys/values of &quot;lookup&quot; are hashable; otherwise</span>
         <span class="c1"># they would also need to be converted in some way here</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">lookup</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">lookup</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">lookup</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">lookup</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_col_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;VARCHAR(255)&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
-        <span class="c1"># ...  works with &quot;self._lookup&quot; ...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span> <span class="o">...</span>  <span class="c1"># works with &quot;self._lookup&quot; ...</span>
 </pre></div>
 </div>
 <p>Where above, the cache key for <code class="docutils literal notranslate"><span class="pre">LookupType({&quot;a&quot;:</span> <span class="pre">10,</span> <span class="pre">&quot;b&quot;:</span> <span class="pre">20})</span></code> will be:</p>
@@ -2198,12 +2194,12 @@ correspond with the names of the arguments.  For example, a datatype
 which accepts a dictionary of lookup values may publish this as a sorted
 series of tuples.   Given a previously un-cacheable type as:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;a custom type that accepts a dictionary as a parameter.</span>
 
 <span class="sd">    this is the non-cacheable version, as &quot;self.lookup&quot; is not</span>
 <span class="sd">    hashable.</span>
 
-<span class="sd">    &#39;&#39;&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span> <span class="o">=</span> <span class="n">lookup</span>
@@ -2211,8 +2207,7 @@ series of tuples.   Given a previously un-cacheable type as:</p>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_col_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;VARCHAR(255)&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
-        <span class="c1"># ...  works with &quot;self.lookup&quot; ...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span> <span class="o">...</span>  <span class="c1"># works with &quot;self.lookup&quot; ...</span>
 </pre></div>
 </div>
 <p>Where “lookup” is a dictionary.  The type will not be able to generate
@@ -2248,7 +2243,7 @@ statement cache, since Python dictionaries aren’t hashable:</p>
 <p>The type may be made cacheable by assigning a sorted tuple of tuples
 to the “.lookup” attribute:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">LookupType</span><span class="p">(</span><span class="n">UserDefinedType</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&#39;&#39;&#39;a custom type that accepts a dictionary as a parameter.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;a custom type that accepts a dictionary as a parameter.</span>
 
 <span class="sd">    The dictionary is stored both as itself in a private variable,</span>
 <span class="sd">    and published in a public variable as a sorted tuple of tuples,</span>
@@ -2256,7 +2251,7 @@ to the “.lookup” attribute:</p>
 <span class="sd">    two equivalent dictionaries.  Note it assumes the keys and</span>
 <span class="sd">    values of the dictionary are themselves hashable.</span>
 
-<span class="sd">    &#39;&#39;&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">cache_ok</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -2265,15 +2260,12 @@ to the “.lookup” attribute:</p>
 
         <span class="c1"># assume keys/values of &quot;lookup&quot; are hashable; otherwise</span>
         <span class="c1"># they would also need to be converted in some way here</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">lookup</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">lookup</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">lookup</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">lookup</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_col_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;VARCHAR(255)&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
-        <span class="c1"># ...  works with &quot;self._lookup&quot; ...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bind_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span> <span class="o">...</span>  <span class="c1"># works with &quot;self._lookup&quot; ...</span>
 </pre></div>
 </div>
 <p>Where above, the cache key for <code class="docutils literal notranslate"><span class="pre">LookupType({&quot;a&quot;:</span> <span class="pre">10,</span> <span class="pre">&quot;b&quot;:</span> <span class="pre">20})</span></code> will be:</p>
@@ -2790,7 +2782,7 @@ This also implies <cite>new=True</cite>.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.db.RedunBackendDb.record_updated_time">
-<span class="sig-name descname"><span class="pre">record_updated_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.db.RedunBackendDb.record_updated_time" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">record_updated_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">execution_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.backends.db.RedunBackendDb.record_updated_time" title="Link to this definition">¶</a></dt>
 <dd><p>Updates updated_time (heartbeat) timestamp for the current Execution.</p>
 </dd></dl>
 
@@ -2841,6 +2833,12 @@ This also implies <cite>new=True</cite>.</p></li>
 <dt class="sig sig-object py" id="redun.backends.db.RedunBackendDb.update_tags">
 <span class="sig-name descname"><span class="pre">update_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.backends.html#redun.backends.base.TagEntity" title="redun.backends.base.TagEntity"><span class="pre">TagEntity</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.db.RedunBackendDb.update_tags" title="Link to this definition">¶</a></dt>
 <dd><p>Update tags.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.backends.db.RedunBackendDb.with_session">
+<span class="sig-name descname"><span class="pre">with_session</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Session</span></span></span><a class="headerlink" href="#redun.backends.db.RedunBackendDb.with_session" title="Link to this definition">¶</a></dt>
+<dd><p>Context manager for acquiring an exclusive SQLAlchemy Session.</p>
 </dd></dl>
 
 </dd></dl>
@@ -3300,6 +3298,12 @@ This also implies <cite>new=True</cite>.</p></li>
 <dd><p>Parses a db version string such as “2.0” or “3” into a DbVersionInfo.</p>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.backends.db.use_acquire">
+<span class="sig-prename descclassname"><span class="pre">redun.backends.db.</span></span><span class="sig-name descname"><span class="pre">use_acquire</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.backends.db.use_acquire" title="Link to this definition">¶</a></dt>
+<dd><p>Decorator for running a RedunBackendDb method with the db lock acquired.</p>
+</dd></dl>
+
 </section>
 </section>
 
@@ -3735,6 +3739,7 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.rollback_handle"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.rollback_handle()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.set_eval_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.set_eval_cache()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.update_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.update_tags()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.with_session"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.with_session()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#redun.backends.db.RedunDatabaseError"><code class="docutils literal notranslate"><span class="pre">RedunDatabaseError</span></code></a></li>
@@ -3837,6 +3842,7 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.get_tag_entity_child_edges"><code class="docutils literal notranslate"><span class="pre">get_tag_entity_child_edges()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.get_value_child_edges"><code class="docutils literal notranslate"><span class="pre">get_value_child_edges()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.parse_db_version"><code class="docutils literal notranslate"><span class="pre">parse_db_version()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.use_acquire"><code class="docutils literal notranslate"><span class="pre">use_acquire()</span></code></a></li>
 </ul>
 </li>
 </ul>

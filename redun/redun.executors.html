@@ -935,6 +935,12 @@ below.</p>
 <cite>reject_job</cite>.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.executors.base.Executor.supports_async">
+<span class="sig-name descname"><span class="pre">supports_async</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.executors.base.Executor.supports_async" title="Link to this definition">¶</a></dt>
+<dd><p>Returns True if Executor supports async tasks.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py exception">
@@ -1247,6 +1253,12 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 <cite>reject_job</cite>.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="redun.executors.local.LocalExecutor.supports_async">
+<span class="sig-name descname"><span class="pre">supports_async</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#redun.executors.local.LocalExecutor.supports_async" title="Link to this definition">¶</a></dt>
+<dd><p>Returns True if Executor supports async tasks.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -1259,6 +1271,18 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 <dt class="sig sig-object py" id="redun.executors.local.exec_task">
 <span class="sig-prename descclassname"><span class="pre">redun.executors.local.</span></span><span class="sig-name descname"><span class="pre">exec_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_fullname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#redun.executors.local.exec_task" title="Link to this definition">¶</a></dt>
 <dd><p>Execute a task in the new process.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.executors.local.get_current_job">
+<span class="sig-prename descclassname"><span class="pre">redun.executors.local.</span></span><span class="sig-name descname"><span class="pre">get_current_job</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="redun.html#redun.scheduler.Scheduler" title="redun.scheduler.Scheduler"><span class="pre">Scheduler</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="redun.html#redun.scheduler.Job" title="redun.scheduler.Job"><span class="pre">Job</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#redun.executors.local.get_current_job" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the current scheduler and job for this context.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.executors.local.set_current_job">
+<span class="sig-prename descclassname"><span class="pre">redun.executors.local.</span></span><span class="sig-name descname"><span class="pre">set_current_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scheduler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.scheduler.Scheduler" title="redun.scheduler.Scheduler"><span class="pre">Scheduler</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.scheduler.Job" title="redun.scheduler.Job"><span class="pre">Job</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.executors.local.set_current_job" title="Link to this definition">¶</a></dt>
+<dd><p>Set the current scheduler and job for this context.</p>
 </dd></dl>
 
 </section>
@@ -1487,6 +1511,7 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 <li><a class="reference internal" href="#redun.executors.base.Executor.stop"><code class="docutils literal notranslate"><span class="pre">Executor.stop()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.base.Executor.submit"><code class="docutils literal notranslate"><span class="pre">Executor.submit()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.base.Executor.submit_script"><code class="docutils literal notranslate"><span class="pre">Executor.submit_script()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.base.Executor.supports_async"><code class="docutils literal notranslate"><span class="pre">Executor.supports_async()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#redun.executors.base.ExecutorError"><code class="docutils literal notranslate"><span class="pre">ExecutorError</span></code></a></li>
@@ -1546,10 +1571,13 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 <li><a class="reference internal" href="#redun.executors.local.LocalExecutor.stop"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.stop()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.local.LocalExecutor.submit"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.submit()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.local.LocalExecutor.submit_script"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.submit_script()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.local.LocalExecutor.supports_async"><code class="docutils literal notranslate"><span class="pre">LocalExecutor.supports_async()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#redun.executors.local.exec_script_task"><code class="docutils literal notranslate"><span class="pre">exec_script_task()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.local.exec_task"><code class="docutils literal notranslate"><span class="pre">exec_task()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.local.get_current_job"><code class="docutils literal notranslate"><span class="pre">get_current_job()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.local.set_current_job"><code class="docutils literal notranslate"><span class="pre">set_current_job()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-redun.executors.scratch">redun.executors.scratch module</a><ul>

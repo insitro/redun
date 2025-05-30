@@ -927,6 +927,89 @@ which is useful in implementing a UI. Second, it can help arrange for permission
 facilitating AWS role switches.</p>
 <p>See the example <code class="docutils literal notranslate"><span class="pre">examples/federated_task</span></code> for more information.</p>
 </section>
+<section id="eager-evaluation">
+<h3>Eager evaluation<a class="headerlink" href="#eager-evaluation" title="Link to this heading">¶</a></h3>
+<p>Most of the time, a lazy expression (e.g. result of a task call) can be used in nearly the same way
+as a concrete value. For example, you can use them as arguments to other task calls and most operators are
+overloaded to chain follow up lazy expressions. However, lazy expressions cannot be used in Python statements
+that require eager evaluation, such as if-statements or for-loops. For example, the if-statement in the following
+code would fail:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_odd</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">odd_answer</span> <span class="o">=</span> <span class="n">is_odd</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+    <span class="c1"># FAIL: odd_answer is still an Expression and we can&#39;t coerce an Expression to bool eagerly.</span>
+    <span class="k">if</span> <span class="n">odd_answer</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;odd&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;even&quot;</span>
+</pre></div>
+</div>
+<p>In many cases, you can refactor this code to pass <code class="docutils literal notranslate"><span class="pre">odd_answer</span></code> to another task to force evaluation:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">odd_answer</span> <span class="o">=</span> <span class="n">is_odd</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">main_post_process</span><span class="p">(</span><span class="n">odd_answer</span><span class="p">)</span>
+
+<span class="nd">@task</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main_post_process</span><span class="p">(</span><span class="n">odd_answer</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span>
+    <span class="c1"># OK: odd_answer is now a concrete bool and we can use it in an if-statement.</span>
+    <span class="k">if</span> <span class="n">odd_answer</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;odd&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;even&quot;</span>
+</pre></div>
+</div>
+<p>While this refactoring works, it often leads to very “cut up” tasks that become more challenging to maintain.
+In such cases, redun offers a feature for eager evaluation using the <code class="docutils literal notranslate"><span class="pre">await</span></code> keyword. It looks like this:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">odd_answer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">is_odd</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+    <span class="c1"># By using await, `odd_answer` is now a normal bool that is usable in an if-statement.</span>
+    <span class="k">if</span> <span class="n">odd_answer</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;odd&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;even&quot;</span>
+</pre></div>
+</div>
+<p>What is happening here? Like normal async code, the execution of <code class="docutils literal notranslate"><span class="pre">main</span></code> will pause while <code class="docutils literal notranslate"><span class="pre">is_odd()</span></code> runs to
+completion, and then returns concrete bool. Now that we have a concrete bool, we can use it in an if-statement.
+Note, unlike normal Python, we can await on any redun lazy expression, even
+expressions produced from wrapped functions that aren’t marked <code class="docutils literal notranslate"><span class="pre">async</span></code>, such as <code class="docutils literal notranslate"><span class="pre">is_odd()</span></code> in this example.</p>
+<p>While eager evaluation is powerful, it does come with some limitations. First, like normal Python, tasks that use
+<code class="docutils literal notranslate"><span class="pre">await</span></code> must mark their function as <code class="docutils literal notranslate"><span class="pre">async</span></code>. Second, tasks that use <code class="docutils literal notranslate"><span class="pre">await</span></code> must run in the same process
+as the main redun Scheduler. That is, they must run in the LocalExecutor with thread mode (the “default” executor).
+This is required because eager evaluation must communicate directly with the Scheduler and that is often
+not possible in other executors, such as the AWSBatchExecutor.</p>
+<p>Like all other redun tasks, async tasks with eager evaluation benefit from powerful features such caching and reactivity with respect to data and code changes. One caveat is that this feature is newer in its development and currently
+requires explicit configuration of caching. Specifically, users must configure async tasks in one of these two ways:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="c1"># No caching</span>
+<span class="nd">@task</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_task</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use caching</span>
+<span class="nd">@task</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check_valid</span><span class="o">=</span><span class="s2">&quot;shallow&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_task</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+</pre></div>
+</div>
+<p>Due to current implementation limitations, only “shallow” <a class="reference internal" href="implementation/graph_reduction_caching.html#opt-in-ultimate-reduction-caching"><span class="std std-ref">validity checking</span></a> is available when caching is enable.</p>
+</section>
 </section>
 </section>
 
@@ -1019,6 +1102,7 @@ facilitating AWS role switches.</p>
 <li><a class="reference internal" href="#task-wrapping">Task wrapping</a></li>
 <li><a class="reference internal" href="#subrun">Subrun</a></li>
 <li><a class="reference internal" href="#federated-task">Federated task</a></li>
+<li><a class="reference internal" href="#eager-evaluation">Eager evaluation</a></li>
 </ul>
 </li>
 </ul>

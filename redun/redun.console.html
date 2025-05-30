@@ -569,7 +569,9 @@ yield Footer()</p>
 <li><p><strong>repaint</strong> – Perform a repaint on change.</p></li>
 <li><p><strong>init</strong> – Call watchers on initialize (post mount).</p></li>
 <li><p><strong>always_update</strong> – Call watchers even when the new value equals the old value.</p></li>
+<li><p><strong>recompose</strong> – Compose the widget again when the attribute changes.</p></li>
 <li><p><strong>bindings</strong> – Refresh bindings when the reactive changes.</p></li>
+<li><p><strong>toggle_class</strong> – An optional TCSS classname(s) to toggle based on the truthiness of the value.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1413,7 +1415,9 @@ yield Footer()</p>
 <li><p><strong>repaint</strong> – Perform a repaint on change.</p></li>
 <li><p><strong>init</strong> – Call watchers on initialize (post mount).</p></li>
 <li><p><strong>always_update</strong> – Call watchers even when the new value equals the old value.</p></li>
+<li><p><strong>recompose</strong> – Compose the widget again when the attribute changes.</p></li>
 <li><p><strong>bindings</strong> – Refresh bindings when the reactive changes.</p></li>
+<li><p><strong>toggle_class</strong> – An optional TCSS classname(s) to toggle based on the truthiness of the value.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1436,7 +1440,9 @@ yield Footer()</p>
 <li><p><strong>repaint</strong> – Perform a repaint on change.</p></li>
 <li><p><strong>init</strong> – Call watchers on initialize (post mount).</p></li>
 <li><p><strong>always_update</strong> – Call watchers even when the new value equals the old value.</p></li>
+<li><p><strong>recompose</strong> – Compose the widget again when the attribute changes.</p></li>
 <li><p><strong>bindings</strong> – Refresh bindings when the reactive changes.</p></li>
+<li><p><strong>toggle_class</strong> – An optional TCSS classname(s) to toggle based on the truthiness of the value.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1953,9 +1959,10 @@ display that as:</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="redun.console.utils.log_write">
-<span class="sig-prename descclassname"><span class="pre">redun.console.utils.</span></span><span class="sig-name descname"><span class="pre">log_write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.console.utils.log_write" title="Link to this definition">¶</a></dt>
-<dd><p>Debugging function to use when developing with Textual.</p>
+<dt class="sig sig-object py" id="redun.console.utils.rich_escape">
+<span class="sig-prename descclassname"><span class="pre">redun.console.utils.</span></span><span class="sig-name descname"><span class="pre">rich_escape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.console.utils.rich_escape" title="Link to this definition">¶</a></dt>
+<dd><p>Escape a string for rich.</p>
+<p>Unfortunately, <cite>rich.markup.escape()</cite> doesn’t catch all issues.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1979,18 +1986,27 @@ display that as:</p>
 <div class="line">Key(s) | Description |</div>
 <div class="line">:- | :- |</div>
 <div class="line">left | Move the cursor left. |</div>
+<div class="line">shift+left | Move cursor left and select. |</div>
 <div class="line">ctrl+left | Move the cursor one word to the left. |</div>
 <div class="line">right | Move the cursor right or accept the completion suggestion. |</div>
+<div class="line">ctrl+shift+left | Move cursor left a word and select. |</div>
+<div class="line">shift+right | Move cursor right and select. |</div>
 <div class="line">ctrl+right | Move the cursor one word to the right. |</div>
 <div class="line">backspace | Delete the character to the left of the cursor. |</div>
+<div class="line">ctrl+shift+right | Move cursor right a word and select. |</div>
 <div class="line">home,ctrl+a | Go to the beginning of the input. |</div>
 <div class="line">end,ctrl+e | Go to the end of the input. |</div>
+<div class="line">shift+home | Select up to the input start. |</div>
+<div class="line">shift+end | Select up to the input end. |</div>
 <div class="line">delete,ctrl+d | Delete the character to the right of the cursor. |</div>
 <div class="line">enter | Submit the current value of the input. |</div>
 <div class="line">ctrl+w | Delete the word to the left of the cursor. |</div>
 <div class="line">ctrl+u | Delete everything to the left of the cursor. |</div>
 <div class="line">ctrl+f | Delete the word to the right of the cursor. |</div>
 <div class="line">ctrl+k | Delete everything to the right of the cursor. |</div>
+<div class="line">ctrl+x | Cut selected text. |</div>
+<div class="line">ctrl+c | Copy selected text. |</div>
+<div class="line">ctrl+v | Paste text from the clipboard. |</div>
 </div>
 </dd></dl>
 
@@ -2122,7 +2138,9 @@ display that as:</p>
 <li><p><strong>repaint</strong> – Perform a repaint on change.</p></li>
 <li><p><strong>init</strong> – Call watchers on initialize (post mount).</p></li>
 <li><p><strong>always_update</strong> – Call watchers even when the new value equals the old value.</p></li>
+<li><p><strong>recompose</strong> – Compose the widget again when the attribute changes.</p></li>
 <li><p><strong>bindings</strong> – Refresh bindings when the reactive changes.</p></li>
+<li><p><strong>toggle_class</strong> – An optional TCSS classname(s) to toggle based on the truthiness of the value.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2216,7 +2234,9 @@ display that as:</p>
 <li><p><strong>repaint</strong> – Perform a repaint on change.</p></li>
 <li><p><strong>init</strong> – Call watchers on initialize (post mount).</p></li>
 <li><p><strong>always_update</strong> – Call watchers even when the new value equals the old value.</p></li>
+<li><p><strong>recompose</strong> – Compose the widget again when the attribute changes.</p></li>
 <li><p><strong>bindings</strong> – Refresh bindings when the reactive changes.</p></li>
+<li><p><strong>toggle_class</strong> – An optional TCSS classname(s) to toggle based on the truthiness of the value.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2297,7 +2317,9 @@ display that as:</p>
 <li><p><strong>repaint</strong> – Perform a repaint on change.</p></li>
 <li><p><strong>init</strong> – Call watchers on initialize (post mount).</p></li>
 <li><p><strong>always_update</strong> – Call watchers even when the new value equals the old value.</p></li>
+<li><p><strong>recompose</strong> – Compose the widget again when the attribute changes.</p></li>
 <li><p><strong>bindings</strong> – Refresh bindings when the reactive changes.</p></li>
+<li><p><strong>toggle_class</strong> – An optional TCSS classname(s) to toggle based on the truthiness of the value.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2306,15 +2328,16 @@ display that as:</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.console.widgets.PageLabel.render">
 <span class="sig-name descname"><span class="pre">render</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ConsoleRenderable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">RichCast</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></span><a class="headerlink" href="#redun.console.widgets.PageLabel.render" title="Link to this definition">¶</a></dt>
-<dd><p>Get text or Rich renderable for this widget.</p>
-<p>Implement this for custom widgets.</p>
+<dd><p>Get [content](/guide/content) for the widget.</p>
+<p>Implement this method in a subclass for custom widgets.</p>
+<p>This method should return [markup](/guide/content#markup), a [Content][textual.content.Content] object, or a [Rich](<a class="reference external" href="https://github.com/Textualize/rich">https://github.com/Textualize/rich</a>) renderable.</p>
 <p class="rubric">Example</p>
 <p><a href="#id129"><span class="problematic" id="id130">``</span></a><a href="#id131"><span class="problematic" id="id132">`</span></a>python
-from textual.app import RenderableType
+from textual.app import RenderResult
 from textual.widget import Widget</p>
 <dl class="simple">
 <dt>class CustomWidget(Widget):</dt><dd><dl class="simple">
-<dt>def render(self) -&gt; RenderableType:</dt><dd><p>return “Welcome to [bold red]Textual[/]!”</p>
+<dt>def render(self) -&gt; RenderResult:</dt><dd><p>return “Welcome to [bold red]Textual[/]!”</p>
 </dd>
 </dl>
 </dd>
@@ -2322,7 +2345,7 @@ from textual.widget import Widget</p>
 <p><a href="#id133"><span class="problematic" id="id134">``</span></a><a href="#id135"><span class="problematic" id="id136">`</span></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Any renderable.</p>
+<dd class="field-odd"><p>A string or object to render as the widget’s content.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2377,7 +2400,9 @@ yield Footer()</p>
 <li><p><strong>repaint</strong> – Perform a repaint on change.</p></li>
 <li><p><strong>init</strong> – Call watchers on initialize (post mount).</p></li>
 <li><p><strong>always_update</strong> – Call watchers even when the new value equals the old value.</p></li>
+<li><p><strong>recompose</strong> – Compose the widget again when the attribute changes.</p></li>
 <li><p><strong>bindings</strong> – Refresh bindings when the reactive changes.</p></li>
+<li><p><strong>toggle_class</strong> – An optional TCSS classname(s) to toggle based on the truthiness of the value.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2559,7 +2584,9 @@ yield Footer()</p>
 <li><p><strong>repaint</strong> – Perform a repaint on change.</p></li>
 <li><p><strong>init</strong> – Call watchers on initialize (post mount).</p></li>
 <li><p><strong>always_update</strong> – Call watchers even when the new value equals the old value.</p></li>
+<li><p><strong>recompose</strong> – Compose the widget again when the attribute changes.</p></li>
 <li><p><strong>bindings</strong> – Refresh bindings when the reactive changes.</p></li>
+<li><p><strong>toggle_class</strong> – An optional TCSS classname(s) to toggle based on the truthiness of the value.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2926,7 +2953,7 @@ yield Footer()</p>
 <li><a class="reference internal" href="#redun.console.utils.format_tags"><code class="docutils literal notranslate"><span class="pre">format_tags()</span></code></a></li>
 <li><a class="reference internal" href="#redun.console.utils.format_traceback"><code class="docutils literal notranslate"><span class="pre">format_traceback()</span></code></a></li>
 <li><a class="reference internal" href="#redun.console.utils.get_links"><code class="docutils literal notranslate"><span class="pre">get_links()</span></code></a></li>
-<li><a class="reference internal" href="#redun.console.utils.log_write"><code class="docutils literal notranslate"><span class="pre">log_write()</span></code></a></li>
+<li><a class="reference internal" href="#redun.console.utils.rich_escape"><code class="docutils literal notranslate"><span class="pre">rich_escape()</span></code></a></li>
 <li><a class="reference internal" href="#redun.console.utils.style_status"><code class="docutils literal notranslate"><span class="pre">style_status()</span></code></a></li>
 </ul>
 </li>
