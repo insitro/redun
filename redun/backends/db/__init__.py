@@ -5,9 +5,12 @@ import typing
 import uuid
 import warnings
 from collections import defaultdict
+from contextlib import contextmanager
 from copy import copy as shallowcopy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from functools import wraps
 from itertools import chain
+from threading import RLock, get_ident
 from typing import (
     Any,
     Dict,
@@ -37,9 +40,11 @@ from sqlalchemy import (
     String,
     and_,
     create_engine,
+    event,
     inspect,
     or_,
     select,
+    update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
@@ -79,14 +84,17 @@ from redun.utils import (
     MultiMap,
     iter_nested_value,
     json_dumps,
+    format_timestamp,
     pickle_loads,
     pickle_preview,
     str2bool,
     trim_string,
     with_pickle_preview,
+    utcnow,
 )
 from redun.value import MIME_TYPE_PICKLE, InvalidValueError
 from redun.value import TypeError as RedunTypeError
+from redun.version import version as redun_version
 
 # Use MappedColumn class from SQLAlchemy 2.0, if possible, to enable better
 # type checks in redun itself and downstream code.
@@ -173,8 +181,10 @@ REDUN_DB_VERSIONS = [
     DBVersionInfo("cc4f663817b6", 3, 1, "Add Tag schemas."),
     DBVersionInfo("eb7b95e4e8bf", 3, 2, "Remove length restriction on value type names."),
     DBVersionInfo("f68b3aaee9cc", 3, 3, "Add job and value indexes."),
+    DBVersionInfo("3b0a6e67cc58", 3, 4, "Add UTC timezone to timestamps."),
+    DBVersionInfo("0bee3d6dba76", 3, 5, "Add updated_time."),
 ]
-REDUN_DB_MIN_VERSION = DBVersionInfo("", 3, 1, "")  # Min db version needed by redun library.
+REDUN_DB_MIN_VERSION = DBVersionInfo("", 3, 5, "")  # Min db version needed by redun library.
 REDUN_DB_MAX_VERSION = DBVersionInfo("", 3, 99, "")  # Max db version needed by redun library.
 
 
@@ -264,6 +274,33 @@ class JSON(TypeDecorator):
             return json.loads(value)
 
 
+class DateTimeUTC(TypeDecorator):
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_bind_param(self, value: Any, dialect):
+        if value is None:
+            # Handle nullable case.
+            return None
+        elif value.tzinfo is None:
+            # Hard fail on attempts to use naive timestamps.
+            raise ValueError(f"timezone naive datetimes are not allowed: {value}")
+        else:
+            # Use timestamp as is.
+            return value
+
+    def process_result_value(self, value: Any, dialect):
+        if value is None:
+            # Handle nullable case.
+            return None
+        elif value.tzinfo is None:
+            # Sqlite will return UTC timestamps as naive, so convert here.
+            return value.replace(tzinfo=timezone.utc)
+        else:
+            # Use timestamp as is.
+            return value
+
+
 class RedunVersion(Base):
     """
     Version of redun database.
@@ -273,7 +310,7 @@ class RedunVersion(Base):
 
     id = Column(String, default=lambda: str(uuid.uuid4()), primary_key=True)
     version = Column(Integer, comment="Current database version.")
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTimeUTC, default=utcnow)
 
 
 class RedunMigration(Base):
@@ -639,7 +676,7 @@ class CallNode(Base):
     # eval_hash = Column(String(HASH_LEN), ForeignKey('evaluation.eval_hash'), index=True, nullable=True)  # noqa: E501
 
     value_hash = Column(String(HASH_LEN), ForeignKey("value.value_hash"), index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTimeUTC, default=utcnow)
 
     call_hash_idx = Index(
         "ix_call_node_call_hash_vpo",
@@ -855,6 +892,7 @@ class Execution(Base):
 
     id = Column(String, primary_key=True)
     args = Column(String)
+    updated_time = Column(DateTimeUTC, nullable=True)
     job_id = Column(
         String, ForeignKey("job.id", deferrable=True, initially="deferred"), index=True
     )
@@ -956,8 +994,9 @@ class Job(Base):
     __tablename__ = "job"
 
     id = Column(String, primary_key=True)
-    start_time = Column(DateTime, index=True)
-    end_time = Column(DateTime, nullable=True, index=True)
+    start_time = Column(DateTimeUTC, index=True)
+    end_time = Column(DateTimeUTC, nullable=True, index=True)
+
     task_hash = Column(String(HASH_LEN), ForeignKey("task.hash"), index=True)
     cached = Column(Boolean, default=False)
     call_hash = Column(
@@ -1002,7 +1041,7 @@ class Job(Base):
     def __repr__(self) -> str:
         return "Job(id='{id}', start_time='{start_time}', task_name={task_name})".format(
             id=self.id[:8],
-            start_time=self.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+            start_time=format_timestamp(self.start_time),
             task_name=repr(self.task.fullname if self.task else "None"),
         )
 
@@ -1392,6 +1431,19 @@ class RedunSession(Session):
         self.backend: "RedunBackendDb" = backend
 
 
+def use_acquire(method):
+    """
+    Decorator for running a RedunBackendDb method with the db lock acquired.
+    """
+
+    @wraps(method)
+    def wrapped(self: "RedunBackendDb", *args, **kwargs):
+        with self._acquire():
+            return method(self, *args, **kwargs)
+
+    return wrapped
+
+
 class RedunBackendDb(RedunBackend):
     """
     A database-based Backend for managing the CallGraph (provenance) and cache for a Scheduler.
@@ -1439,11 +1491,14 @@ class RedunBackendDb(RedunBackend):
             )
             self.value_store = ValueStore(value_store_path)
 
-        # Execution state.
-        self.current_execution: Optional[Execution] = None
+        # Executions pending recording.
+        self._executions: Dict[str, Execution] = {}
 
         # User can use redun.ini set a smaller max size.
         self._max_value_size: int = int(config.get("max_value_size", str(DEFAULT_MAX_VALUE_SIZE)))
+
+        # Lock for ensuring single-thread access to the database.
+        self._db_lock = RLock()
 
         self._database_loaded = False
         self._db_echo = bool(os.environ.get("REDUN_DB_ECHO"))
@@ -1457,13 +1512,14 @@ class RedunBackendDb(RedunBackend):
             # share the database engine (which is thread safe) but get a new database session
             # (which is not)
             cloned_backend = shallowcopy(self)
-            cloned_backend.session = session or self.Session(backend=self)
+            cloned_backend.session = session or self.Session()
             return cloned_backend
         else:
             raise RedunDatabaseError(
                 "RedunBackendDb can be cloned only after the database has been loaded"
             )
 
+    @use_acquire
     def create_engine(self) -> Engine:
         """
         Initializes a database connection.
@@ -1471,9 +1527,38 @@ class RedunBackendDb(RedunBackend):
         self.engine = create_engine(
             self.db_uri, connect_args=self.connect_args, echo=self._db_echo, future=True
         )
-        self.Session = sessionmaker(bind=self.engine, class_=RedunSession)
-        self.session = self.Session(backend=self)
+        self.Session = sessionmaker(bind=self.engine, class_=RedunSession, backend=self)
+        self.session = self.Session()
+
+        # If we are connecting to postgresql, setup connection settings.
+        if self.engine.dialect.name == "postgresql":
+
+            @event.listens_for(self.engine, "connect")
+            def connect(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute(f"SET redun.version = '{redun_version}'")
+                cursor.close()
+
         return self.engine
+
+    @contextmanager
+    def _acquire(self) -> Any:
+        """
+        Context manager for acquiring a lock to the database.
+
+        This should be used to protect any code reading or writing to the database.
+        """
+        with self._db_lock:
+            yield
+
+    @contextmanager
+    def with_session(self) -> Session:
+        """
+        Context manager for acquiring an exclusive SQLAlchemy Session.
+        """
+        with self._db_lock:
+            assert self.session
+            yield self.session
 
     @staticmethod
     def get_db_version_required() -> Tuple[DBVersionInfo, DBVersionInfo]:
@@ -1489,6 +1574,7 @@ class RedunBackendDb(RedunBackend):
         """
         return REDUN_DB_VERSIONS
 
+    @use_acquire
     def get_db_version(self) -> DBVersionInfo:
         """
         Returns the current DB version (major, minor).
@@ -1530,6 +1616,7 @@ class RedunBackendDb(RedunBackend):
             "DB version newer than client.",
         )
 
+    @use_acquire
     def migrate(
         self,
         desired_version: Optional[DBVersionInfo] = None,
@@ -1599,6 +1686,7 @@ class RedunBackendDb(RedunBackend):
         min_version, max_version = self.get_db_version_required()
         return min_version <= self.get_db_version() <= max_version
 
+    @use_acquire
     def load(self, migrate: Optional[bool] = None) -> None:
         """
         Load backend database.
@@ -1666,32 +1754,32 @@ class RedunBackendDb(RedunBackend):
         str
             The call_hash of the new CallNode.
         """
-        assert self.session
-
         call_hash = hash_call_node(task_hash, args_hash, result_hash, child_call_hashes)
 
-        if not self.session.query(CallNode).filter_by(call_hash=call_hash).first():
-            self.session.add(
-                CallNode(
-                    call_hash=call_hash,
-                    task_name=task_name,
-                    task_hash=task_hash,
-                    args_hash=args_hash,
-                    value_hash=result_hash,
+        with self.with_session() as session:
+            if not session.query(CallNode).filter_by(call_hash=call_hash).first():
+                session.add(
+                    CallNode(
+                        call_hash=call_hash,
+                        task_name=task_name,
+                        task_hash=task_hash,
+                        args_hash=args_hash,
+                        value_hash=result_hash,
+                    )
                 )
-            )
 
-            for i, child_call_hash in enumerate(child_call_hashes):
-                self.session.add(
-                    CallEdge(parent_id=call_hash, child_id=child_call_hash, call_order=i)
-                )
-            self.session.commit()
+                for i, child_call_hash in enumerate(child_call_hashes):
+                    session.add(
+                        CallEdge(parent_id=call_hash, child_id=child_call_hash, call_order=i)
+                    )
+                session.commit()
 
-            self._record_args(call_hash, expr_args, eval_args)
+                self._record_args(call_hash, expr_args, eval_args)
 
-            self._record_call_subtree_tasks(task_hash, call_hash, child_call_hashes)
+                self._record_call_subtree_tasks(task_hash, call_hash, child_call_hashes)
         return call_hash
 
+    @use_acquire
     def _record_call_subtree_tasks(
         self, task_hash: str, call_hash: str, child_call_hashes: List[str]
     ):
@@ -1759,7 +1847,6 @@ class RedunBackendDb(RedunBackend):
         eval_args : Tuple[Tuple, dict]
             The fully evaluated arguments of the task arguments.
         """
-        assert self.session
 
         # Get default arguments (present in eval_args but not expr_args).
         eval_pos_args, eval_kwargs = eval_args
@@ -1781,30 +1868,31 @@ class RedunBackendDb(RedunBackend):
             default_args,
         )
 
-        for i, key, expr_arg, eval_arg in all_args:
-            # Record an Argument for the call.
-            value_hash = self.record_value(eval_arg)
-            arg_hash = hash_struct(["Argument", call_hash, str(i), str(key), value_hash])
-            self.session.add(
-                Argument(
-                    arg_hash=arg_hash,
-                    call_hash=call_hash,
-                    value_hash=value_hash,
-                    arg_position=i,
-                    arg_key=key,
-                )
-            )
-
-            # Record upstream CallNodes for an argument.
-            for result_call_hash in set(self._find_arg_upstreams(expr_arg)):
-                self.session.add(
-                    ArgumentResult(
+        with self.with_session() as session:
+            for i, key, expr_arg, eval_arg in all_args:
+                # Record an Argument for the call.
+                value_hash = self.record_value(eval_arg)
+                arg_hash = hash_struct(["Argument", call_hash, str(i), str(key), value_hash])
+                session.add(
+                    Argument(
                         arg_hash=arg_hash,
-                        result_call_hash=result_call_hash,
+                        call_hash=call_hash,
+                        value_hash=value_hash,
+                        arg_position=i,
+                        arg_key=key,
                     )
                 )
 
-        self.session.commit()
+                # Record upstream CallNodes for an argument.
+                for result_call_hash in set(self._find_arg_upstreams(expr_arg)):
+                    session.add(
+                        ArgumentResult(
+                            arg_hash=arg_hash,
+                            result_call_hash=result_call_hash,
+                        )
+                    )
+
+            session.commit()
 
     def record_call_node_context(
         self, call_hash: str, context_hash: Optional[str], context: dict
@@ -1834,8 +1922,6 @@ class RedunBackendDb(RedunBackend):
         str
             value_hash of recorded value.
         """
-        assert self.session
-
         value_interface = self.type_registry.get_value(value)
 
         if data is None:
@@ -1859,43 +1945,45 @@ class RedunBackendDb(RedunBackend):
             # See `_get_value_data`
             data = b""
 
-        value_row = self.session.get(Value, value_hash)
-        if value_row:
-            # Value already recorded.
-            return value_hash
-
-        type_name = self.type_registry.get_type_name(type(value))
-        self.session.add(
-            Value(
-                value_hash=value_hash,
-                type=type_name,
-                format=value_format,
-                value=data,
-            )
-        )
-        try:
-            self.session.commit()
-        except sa.exc.IntegrityError:
-            # Most likely value recorded in the meantime by another process.
-            self.session.rollback()
-            # run a double check
-            # we can't catch for UniqueViolation or other as it is abstracted away by sqlalchemy
-            value_row = self.session.get(Value, value_hash)
+        with self.with_session() as session:
+            value_row = session.get(Value, value_hash)
             if value_row:
+                # Value already recorded.
                 return value_hash
-            else:
-                # something else went wrong
-                raise
 
-        self._record_special_redun_values([value], [value_hash])
+            type_name = self.type_registry.get_type_name(type(value))
+            session.add(
+                Value(
+                    value_hash=value_hash,
+                    type=type_name,
+                    format=value_format,
+                    value=data,
+                )
+            )
+            try:
+                session.commit()
+            except sa.exc.IntegrityError:
+                # Most likely value recorded in the meantime by another process.
+                session.rollback()
+                # run a double check
+                # we can't catch for UniqueViolation or other as it is abstracted away by sqlalchemy
+                value_row = session.get(Value, value_hash)
+                if value_row:
+                    return value_hash
+                else:
+                    # something else went wrong
+                    raise
 
-        # Record subvalues.
-        subvalues = list(value_interface.iter_subvalues())
-        if subvalues:
-            self._record_subvalues(subvalues, value_hash)
+            self._record_special_redun_values([value], [value_hash])
+
+            # Record subvalues.
+            subvalues = list(value_interface.iter_subvalues())
+            if subvalues:
+                self._record_subvalues(subvalues, value_hash)
 
         return value_hash
 
+    @use_acquire
     def _record_special_redun_values(self, values: List[Any], value_hashes: List[str]):
         """
         Record special Values such as Files and Tasks
@@ -1949,69 +2037,69 @@ class RedunBackendDb(RedunBackend):
         """
         Record subvalues for a parent Value (parent_value_hash).
         """
-        assert self.session
-
         # Serialize and hash all subvalues.
         data = [self.type_registry.serialize(value) for value in subvalues]
         value_hashes = [
             self.type_registry.get_hash(value, data=datum) for value, datum in zip(subvalues, data)
         ]
-        existing_value_hashes = {
-            row[0]
-            for row in filter_in(
-                self.session.query(Value.value_hash),
-                Value.value_hash,
-                value_hashes,
-            )
-        }
 
-        # Insert new Values into db.
-        new_inserts = False
-        for value, value_hash, datum in zip(subvalues, value_hashes, data):
-            if value_hash in existing_value_hashes:
-                continue
-            existing_value_hashes.add(value_hash)
-
-            type_name = self.type_registry.get_type_name(type(value))
-            value_format = self.type_registry.get_serialization_format(value)
-            new_inserts = True
-            self.session.add(
-                Value(
-                    value_hash=value_hash,
-                    type=type_name,
-                    format=value_format,
-                    value=datum,
+        with self.with_session() as session:
+            existing_value_hashes = {
+                row[0]
+                for row in filter_in(
+                    session.query(Value.value_hash),
+                    Value.value_hash,
+                    value_hashes,
                 )
-            )
+            }
 
-        # Insert new Subvalue (child-parent) links into db.
-        existing_parent_links = {
-            row[0]
-            for row in filter_in(
-                self.session.query(Subvalue.value_hash).filter(
-                    Subvalue.parent_value_hash == parent_value_hash
-                ),
-                Subvalue.value_hash,
-                value_hashes,
-            )
-        }
-        for value, value_hash, datum in zip(subvalues, value_hashes, data):
-            if value_hash in existing_parent_links:
-                continue
-            existing_parent_links.add(value_hash)
+            # Insert new Values into db.
+            new_inserts = False
+            for value, value_hash, datum in zip(subvalues, value_hashes, data):
+                if value_hash in existing_value_hashes:
+                    continue
+                existing_value_hashes.add(value_hash)
 
-            new_inserts = True
-            self.session.add(
-                Subvalue(
-                    value_hash=value_hash,
-                    parent_value_hash=parent_value_hash,
+                type_name = self.type_registry.get_type_name(type(value))
+                value_format = self.type_registry.get_serialization_format(value)
+                new_inserts = True
+                session.add(
+                    Value(
+                        value_hash=value_hash,
+                        type=type_name,
+                        format=value_format,
+                        value=datum,
+                    )
                 )
-            )
 
-        if new_inserts:
-            self.session.commit()
+            # Insert new Subvalue (child-parent) links into db.
+            existing_parent_links = {
+                row[0]
+                for row in filter_in(
+                    session.query(Subvalue.value_hash).filter(
+                        Subvalue.parent_value_hash == parent_value_hash
+                    ),
+                    Subvalue.value_hash,
+                    value_hashes,
+                )
+            }
+            for value, value_hash, datum in zip(subvalues, value_hashes, data):
+                if value_hash in existing_parent_links:
+                    continue
+                existing_parent_links.add(value_hash)
 
-        self._record_special_redun_values(subvalues, value_hashes)
+                new_inserts = True
+                session.add(
+                    Subvalue(
+                        value_hash=value_hash,
+                        parent_value_hash=parent_value_hash,
+                    )
+                )
+
+            if new_inserts:
+                session.commit()
+
+            self._record_special_redun_values(subvalues, value_hashes)
 
     def _deserialize_value(self, type_name: str, data: bytes) -> Tuple[Any, bool]:
         """
@@ -2073,12 +2161,13 @@ class RedunBackendDb(RedunBackend):
             Returns the result `value` and `is_cached=True` if the value is in the
             ValueStore, otherwise returns (None, False).
         """
-        assert self.session
-        value_row = self.session.query(Value).filter_by(value_hash=value_hash).one_or_none()
+        with self.with_session() as session:
+            value_row = session.query(Value).filter_by(value_hash=value_hash).one_or_none()
         if not value_row:
             return None, False
         return self._get_value(value_row)
 
+    @use_acquire
     def check_cache(
         self,
         task_hash: str,
@@ -2142,7 +2231,7 @@ class RedunBackendDb(RedunBackend):
                 task_hash, args_hash, scheduler_task_hashes, context_hash
             )
             if call_node2:
-                call_hash = call_node2.call_hash
+                call_hash = cast(str, call_node2.call_hash)
                 result, is_cached = self.get_call_cache(call_hash)
                 cache_type = CacheResult.ULTIMATE
 
@@ -2175,13 +2264,13 @@ class RedunBackendDb(RedunBackend):
             `result` is the cached result, or None if no result was found.
             `is_cached` is True if cache hit, otherwise is False.
         """
-        assert self.session
-        value_row = (
-            self.session.query(Value)
-            .join(Evaluation, Value.value_hash == Evaluation.value_hash)
-            .filter(Evaluation.eval_hash == eval_hash)
-            .one_or_none()
-        )
+        with self.with_session() as session:
+            value_row = (
+                session.query(Value)
+                .join(Evaluation, Value.value_hash == Evaluation.value_hash)
+                .filter(Evaluation.eval_hash == eval_hash)
+                .one_or_none()
+            )
         if not value_row:
             return None, False
         return self._get_value(value_row)
@@ -2210,35 +2299,36 @@ class RedunBackendDb(RedunBackend):
         value_hash : str
             Hash of value to record in cache.
         """
-        assert self.session
         # Ensure value is recorded.
         if not value_hash:
             value_hash = self.record_value(value)
 
         # Update or create Evaluation entry.
-        eval_row = self.session.query(Evaluation).filter_by(eval_hash=eval_hash).one_or_none()
-        if eval_row:
-            if eval_row.value_hash != value_hash:
-                eval_row.value_hash = value_hash
-                self.session.commit()
-        else:
-            try:
-                self.session.add(
-                    Evaluation(
-                        eval_hash=eval_hash,
-                        task_hash=task_hash,
-                        args_hash=args_hash,
-                        value_hash=value_hash,
+        with self.with_session() as session:
+            eval_row = session.query(Evaluation).filter_by(eval_hash=eval_hash).one_or_none()
+            if eval_row:
+                if eval_row.value_hash != value_hash:
+                    eval_row.value_hash = value_hash
+                    session.commit()
+            else:
+                try:
+                    session.add(
+                        Evaluation(
+                            eval_hash=eval_hash,
+                            task_hash=task_hash,
+                            args_hash=args_hash,
+                            value_hash=value_hash,
+                        )
                     )
-                )
-                self.session.commit()
-            except sa.exc.IntegrityError:
-                # If eval_hash has recently been added, do update instead.
-                self.session.rollback()
-                eval_row = self.session.get(Evaluation, eval_hash)
-                eval_row.value_hash = value_hash
-                self.session.commit()
+                    session.commit()
+                except sa.exc.IntegrityError:
+                    # If eval_hash has recently been added, do update instead.
+                    session.rollback()
+                    eval_row = session.get(Evaluation, eval_hash)
+                    eval_row.value_hash = value_hash
+                    session.commit()
 
+    @use_acquire
     def _get_call_node(
         self,
         task_hash: str,
@@ -2298,17 +2388,18 @@ class RedunBackendDb(RedunBackend):
         Any
             Recorded final result of a CallNode.
         """
-        assert self.session
-        value_row = (
-            self.session.query(Value)
-            .join(CallNode, Value.value_hash == CallNode.value_hash)
-            .filter(CallNode.call_hash == call_hash)
-            .one_or_none()
-        )
+        with self.with_session() as session:
+            value_row = (
+                session.query(Value)
+                .join(CallNode, Value.value_hash == CallNode.value_hash)
+                .filter(CallNode.call_hash == call_hash)
+                .one_or_none()
+            )
         if not value_row:
             return None, False
         return self._get_value(value_row)
 
+    @use_acquire
     def explain_cache_miss(self, task: "BaseTask", args_hash: str) -> Optional[Dict[str, Any]]:
         """
         Determine the reason for a cache miss.
@@ -2359,6 +2450,7 @@ class RedunBackendDb(RedunBackend):
                 "reason": "new_call",
             }
 
+    @use_acquire
     def advance_handle(self, parent_handles: List[BaseHandle], child_handle: BaseHandle) -> None:
         """
         Record parent-child relationships between Handles.
@@ -2430,6 +2522,7 @@ class RedunBackendDb(RedunBackend):
 
         self.session.commit()
 
+    @use_acquire
     def rollback_handle(self, handle: BaseHandle) -> None:
         """
         Rollback all descendant handles.
@@ -2474,6 +2567,7 @@ class RedunBackendDb(RedunBackend):
         # https://docs.sqlalchemy.org/en/13/orm/query.html#sqlalchemy.orm.query.Query.update.params.synchronize_session
         self.session.expire_all()
 
+    @use_acquire
     def is_valid_handle(self, handle: BaseHandle) -> bool:
         """
         A handle is valid if it is current or ancestral to the current handle.
@@ -2503,11 +2597,29 @@ class RedunBackendDb(RedunBackend):
         str
             UUID of new Execution.
         """
-        self.current_execution = Execution(
+        self._executions[exec_id] = Execution(
             id=exec_id,
             args=json.dumps(args),
         )
 
+    def record_updated_time(self, execution_id: str) -> None:
+        """
+        Updates updated_time (heartbeat) timestamp for the current Execution.
+        """
+        assert self.session
+        now = utcnow()
+
+        if execution_id in self._executions:
+            # Execution hasn't been writen yet, so update pending object.
+            self._executions[execution_id].updated_time = now  # type: ignore
+        else:
+            with self.with_session() as session:
+                session.execute(
+                    update(Execution).where(Execution.id == execution_id).values(updated_time=now)
+                )
+                session.commit()
+
+    @use_acquire
     def record_job_start(self, job: "BaseJob", now: Optional[datetime] = None) -> Job:
         """
         Records the start of a new Job.
@@ -2523,13 +2635,13 @@ class RedunBackendDb(RedunBackend):
 
         if not job.parent_job:
             # Record top-level job for the execution.
-            assert self.current_execution
-            assert self.current_execution.job_id is None
-            self.current_execution.job_id = job.id
-            self.session.add(self.current_execution)
+            current_execution = self._executions.pop(job.execution.id)
+            assert current_execution.job_id is None
+            current_execution.job_id = job.id
+            self.session.add(current_execution)
 
         if not now:
-            now = datetime.now()
+            now = utcnow()
 
         db_job = Job(
             id=job.id,
@@ -2543,6 +2655,7 @@ class RedunBackendDb(RedunBackend):
 
         return db_job
 
+    @use_acquire
     def record_job_end(
         self,
         job: "BaseJob",
@@ -2557,11 +2670,8 @@ class RedunBackendDb(RedunBackend):
         """
         assert self.session
 
-        # Currently, we denote failed Jobs by not recording the end_time.
-        if status == "FAILED":
-            now = None
-        elif not now:
-            now = datetime.now()
+        if not now:
+            now = utcnow()
         db_job = self.session.query(Job).filter_by(id=job.id).first()
         if not db_job:
             db_job = self.record_job_start(job, now=now)
@@ -2575,16 +2685,17 @@ class RedunBackendDb(RedunBackend):
         """
         Returns details for a Job.
         """
-        assert self.session
-        job = self.session.query(Job).filter_by(id=job_id).one_or_none()
-        if not job:
-            return None
-        return {
-            "job_id": job.id,
-            "parent_id": job.parent_id,
-            "execution_id": job.execution_id,
-        }
+        with self.with_session() as session:
+            job = session.query(Job).filter_by(id=job_id).one_or_none()
+            if not job:
+                return None
+            return {
+                "job_id": job.id,
+                "parent_id": job.parent_id,
+                "execution_id": job.execution_id,
+            }
 
+    @use_acquire
     def record_tags(
         self,
         entity_type: TagEntity,
@@ -2725,6 +2836,7 @@ class RedunBackendDb(RedunBackend):
 
         return [(tag.tag_hash, entity_id, tag.key, tag.value) for tag in tag_rows]
 
+    @use_acquire
     def delete_tags(
         self, entity_id: str, tags: Iterable[KeyValue], keys: Iterable[str] = ()
     ) -> List[Tuple[str, str, str, Any]]:
@@ -2754,6 +2866,7 @@ class RedunBackendDb(RedunBackend):
             parents=parents,
         )
 
+    @use_acquire
     def update_tags(
         self,
         entity_type: TagEntity,
@@ -2776,6 +2889,7 @@ class RedunBackendDb(RedunBackend):
         ]
         return self.record_tags(entity_type, entity_id, new_tags, parents=parents)
 
+    @use_acquire
     def get_tags(self, entity_ids: List[str]) -> Dict[str, TagMap]:
         """
         Get the tags of an entity (Execution, Job, CallNode, Task, Value).
@@ -2814,7 +2928,6 @@ class RedunBackendDb(RedunBackend):
         sorted : bool
             If True, return records in the same order as the ids (Default: True).
         """
-        assert self.session
         assert self._record_serializer
 
         ids = list(ids)
@@ -2830,9 +2943,10 @@ class RedunBackendDb(RedunBackend):
                     yield record
             return
         for model, pk_field in self._model_pks:
-            queries = query_filter_in(self.session.query(model), pk_field, ids)
-            for query in queries:
-                yield from self._record_serializer.serialize_query(query)
+            with self.with_session() as session:
+                queries = query_filter_in(session.query(model), pk_field, ids)
+                for query in queries:
+                    yield from self._record_serializer.serialize_query(query)
 
     def get_child_record_ids(
         self, model_ids: Iterable[Tuple[Base, str]]
@@ -2842,8 +2956,6 @@ class RedunBackendDb(RedunBackend):
 
         Used for walking record graph for syncing.
         """
-        assert self.session
-
         if not model_ids:
             return
 
@@ -2864,11 +2976,14 @@ class RedunBackendDb(RedunBackend):
         }
         for model, edge_method in model2edge_method.items():
             if model in model2ids:
-                yield from edge_method(self.session, model2ids[model])
+                with self.with_session() as session:
+                    yield from edge_method(session, model2ids[model])
 
         if all_ids:
-            yield from get_tag_entity_child_edges(self.session, all_ids)
+            with self.with_session() as session:
+                yield from get_tag_entity_child_edges(session, all_ids)
 
+    @use_acquire
     def has_records(self, record_ids: Iterable[str]) -> List[str]:
         """
         Returns record_ids that exist in the database.
@@ -2887,7 +3002,6 @@ class RedunBackendDb(RedunBackend):
         """
         Writes records to the database and returns number of new records written.
         """
-        assert self.session
         assert self._record_serializer
 
         records = list(records)
@@ -2900,16 +3014,18 @@ class RedunBackendDb(RedunBackend):
                 new_records.append(record)
                 existing_ids.add(record_id)
 
-        self.session.add_all(
-            chain.from_iterable(map(self._record_serializer.deserialize, new_records))
-        )
+        with self.with_session() as session:
+            session.add_all(
+                chain.from_iterable(map(self._record_serializer.deserialize, new_records))
+            )
 
-        # Post-process record writes.
-        self._postprocess_new_records()
-        self.session.commit()
+            # Post-process record writes.
+            self._postprocess_new_records()
+            session.commit()
 
         return len(new_records)
 
+    @use_acquire
     def _postprocess_new_records(self) -> None:
         """
         Perform postprocessing after inserting new records into backend.
@@ -2933,6 +3049,7 @@ class RedunBackendDb(RedunBackend):
             .update({Tag.is_current: False}, synchronize_session=False)
         )
 
+    @use_acquire
     def _get_record_types(self, record_ids: Iterable[str]) -> Iterator[Tuple[Base, str]]:
         """
         Determines the record type for each id.
@@ -2943,6 +3060,7 @@ class RedunBackendDb(RedunBackend):
             for (record_id,) in filter_in(self.session.query(pk_field), pk_field, record_ids):
                 yield model, record_id
 
+    @use_acquire
     def iter_record_ids(self, root_ids: Iterable[str]) -> Iterator[str]:
         """
         Iterate the record ids of descendants of root_ids.
@@ -3026,18 +3144,31 @@ class RedunBackendDb(RedunBackend):
     def _get_credentialed_uri(base_uri: str, conf: Section) -> str:
         parts = urlparse(base_uri)
 
-        if "@" in parts.netloc:
+        if parts.password:
             raise RedunDatabaseError(
-                "rejected db_uri containing credentials. use environment variables instead"
+                f"Do not include passwords in DB URIs. Use environment variables instead (e.g {DEFAULT_DB_USERNAME_ENV} and {DEFAULT_DB_PASSWORD_ENV})"
             )
 
-        credentials = RedunBackendDb._get_login_credentials(conf)
+        credentials = RedunBackendDb._get_login_credentials(conf, parts.username)
         if credentials:
-            parts = parts._replace(netloc=f"{credentials}@{parts.netloc}")
+            if "@" in parts.netloc:
+                _, netloc = parts.netloc.rsplit("@", 1)
+            else:
+                netloc = parts.netloc
+            parts = parts._replace(netloc=f"{credentials}@{netloc}")
         return urlunparse(parts)
 
     @staticmethod
-    def _get_login_credentials(conf: Section) -> Optional[str]:
-        user = os.getenv(conf.get("db_username_env", DEFAULT_DB_USERNAME_ENV))
+    def _get_login_credentials(conf: Section, username: Optional[str] = None) -> Optional[str]:
+        # Replace username by env var if defined.
+        username = os.getenv(conf.get("db_username_env", DEFAULT_DB_USERNAME_ENV), username)
+
         password = quote_plus(os.getenv(conf.get("db_password_env", DEFAULT_DB_PASSWORD_ENV), ""))
-        return user and password and f"{user}:{password}"
+
+        if username:
+            if password:
+                return f"{username}:{password}"
+            else:
+                return username
+        else:
+            return None

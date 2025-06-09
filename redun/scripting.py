@@ -254,16 +254,26 @@ def script(
     temp_path: Optional[str]
     if tempdir:
         temp_path = mkdtemp(suffix=".tempdir")
-        command_parts.append('cd "{}"'.format(temp_path))
+        command_parts.append(shlex.join(["cd", temp_path]))
     else:
         temp_path = None
+
+    # Preprocess outputs.
+    def preprocess_output(value):
+        if isinstance(value, File) and value.path != "-":
+            # Self-stage output Files.
+            return value.stage(value.path)
+        else:
+            return value
+
+    outputs = map_nested_value(preprocess_output, outputs)
 
     # Stage inputs.
     command_parts.extend(input.render_stage(as_mount) for input in iter_nested_value(inputs))
 
     # User command.
     if isinstance(command, list):
-        command = " ".join(map(shlex.quote, command))
+        command = shlex.join(command)
     command_parts.append(get_wrapped_command(prepare_command(command)))
 
     # Unstage outputs.

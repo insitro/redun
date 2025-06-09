@@ -33,7 +33,7 @@ def get_job_array_index(env: dict = cast(dict, os.environ)) -> Optional[int]:
 
 class JobDescription:
     def __init__(self, job: Job):
-        self.task_name = job.task.name
+        self.task_name = job.task.fullname
         self.options = job.get_options()
         self.key = self.task_name + " " + str(sorted(self.options.items()))
 

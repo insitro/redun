@@ -1,5 +1,4 @@
 import argparse
-import datetime
 import enum
 import getpass
 import importlib
@@ -76,6 +75,7 @@ from redun.backends.db.query import (
 )
 from redun.backends.db.serializers import RecordSerializer
 from redun.config import Config, create_config_section
+from redun.executors import aws_utils
 from redun.executors.aws_batch import (
     BATCH_LOG_GROUP,
     AWSBatchExecutor,
@@ -128,6 +128,8 @@ from redun.task import Task as BaseTask
 from redun.utils import (
     add_import_path,
     format_table,
+    format_timedelta,
+    format_timestamp,
     merge_dicts,
     pickle_dump,
     trim_string,
@@ -164,21 +166,6 @@ class ArgFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescripti
     """
 
     pass
-
-
-def format_timedelta(duration: datetime.timedelta) -> str:
-    """
-    Format timedelta as a string.
-    """
-    hours, remainder_seconds = divmod(duration.seconds, 3600)
-    minutes, seconds = divmod(remainder_seconds, 60)
-    centiseconds = int(duration.microseconds / 10000)
-    return "{}:{:02}:{:02}.{:02}".format(
-        hours,
-        minutes,
-        seconds,
-        centiseconds,
-    )
 
 
 def format_id(id: str, detail: bool = False, prefix=8) -> str:
@@ -643,6 +630,10 @@ def setup_scheduler(
 
     if migrate_if_local and is_config_local_db(config):
         migrate = True
+
+    boto_config = config.get("scheduler", {}).get("boto_config")
+    if boto_config:
+        aws_utils.set_boto_config(json.loads(boto_config))
 
     scheduler.load(migrate=migrate)
     return scheduler
@@ -1472,13 +1463,11 @@ class RedunClient:
         """
         Initialize redun project directory.
         """
-        if not args.config:
-            if extra_args:
-                basedir = extra_args[0]
-            else:
-                basedir = "."
+        if extra_args:
+            basedir = extra_args[0]
             args.config = os.path.join(basedir, REDUN_CONFIG_DIR)
-
+        else:
+            args.config = get_config_dir(args.config)
         self.get_scheduler(args, migrate=True)
         self.display("Initialized redun repository: {}".format(args.config))
 
@@ -1490,7 +1479,7 @@ class RedunClient:
         """
         new_context = {}
         if context_file:
-            with open(context_file, "r") as fp:
+            with BaseFile(context_file).open() as fp:
                 new_context = json.load(fp)
 
         if context_updates:
@@ -1909,7 +1898,7 @@ class RedunClient:
             "Exec {id} [{status}] {start_time}:  {args} {tags}".format(
                 id=format_id(execution.id, detail),
                 status=status.center(self.STATUS_WIDTH),
-                start_time=execution.job.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                start_time=format_timestamp(execution.job.start_time),
                 args=" ".join(json.loads(execution.args)[1:]),
                 tags=format_tags(execution.tags),
             ),
@@ -2013,7 +2002,7 @@ class RedunClient:
             "Job {id} [{status}] {start_time}:  {task_name}({args}) {tags}".format(
                 id=format_id(job.id, detail),
                 status=job.status_display.center(self.STATUS_WIDTH),
-                start_time=job.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                start_time=format_timestamp(job.start_time),
                 task_name=job.task.fullname,
                 args=args,
                 tags=format_tags(job.tags),

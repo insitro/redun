@@ -32,6 +32,7 @@ from redun.console.utils import (
     format_record,
     format_tags,
     format_traceback,
+    rich_escape,
     style_status,
 )
 from redun.console.widgets import (
@@ -48,7 +49,7 @@ from redun.console.widgets import (
 )
 from redun.scheduler import ErrorValue
 from redun.task import split_task_fullname
-from redun.utils import trim_string
+from redun.utils import format_timestamp, trim_string
 
 NULL = object()
 DEFAULT_PAGE_SIZE = 100
@@ -160,7 +161,7 @@ class FilterScreen(Screen):
         yield Container(
             Label("Filter:"),
             self.input,
-            Static(self.help, classes="filter-help"),
+            Static(rich_escape(self.help), classes="filter-help"),
             classes="filter",
         )
 
@@ -861,7 +862,10 @@ class TaskVersionsScreen(RedunScreen):
         self.table.add_columns(f"Task ({len(self.tasks)})", "Version", "Jobs", "Most recent job")
         for task, jobs, start_time in self.results:
             self.table.add_row(
-                task.fullname, task.hash, jobs, start_time.strftime("%Y-%m-%d %H:%M:%S")
+                task.fullname,
+                task.hash,
+                jobs,
+                format_timestamp(start_time),
             )
 
     def compose(self) -> ComposeResult:
@@ -1096,7 +1100,7 @@ class JobScreen(RedunScreen):
             )
             return
 
-        start_time = self.job.start_time.strftime("%Y-%m-%d %H:%M:%S")
+        start_time = format_timestamp(self.job.start_time)
         duration = format_timedelta(self.job.duration) if self.job.duration else "Unknown"
 
         if self.job.call_node:
@@ -1118,13 +1122,13 @@ class JobScreen(RedunScreen):
 
             if self.job.status == "FAILED":
                 error_value = self.job.call_node.value.value_parsed
-                error = error_value if isinstance(error_value, ErrorValue) else "Unknown"
-                result = Static(f"[bold]Raised:[/] {error}")
+                error = error_value.error if isinstance(error_value, ErrorValue) else "Unknown"
+                result = Static(f"[bold]Raised:[/] {rich_escape(str(error))}")
 
                 lines = ["", "[bold]Traceback:[/]"]
                 if isinstance(error_value, ErrorValue) and error_value.traceback:
                     for line in error_value.traceback.format():
-                        lines.append(line.rstrip("\n"))
+                        lines.append(rich_escape(line.rstrip("\n")))
                 traceback = [Static("\n".join(lines))]
             else:
                 result = ValueSpan(
@@ -1492,7 +1496,10 @@ class ExecutionScreen(RedunScreen):
         self.job_list.focus()
 
         exec_status = self.execution.status_display
-        start_time = self.execution.job.start_time.strftime("%Y-%m-%d %H:%M:%S")
+        start_time = format_timestamp(self.execution.job.start_time)
+        updated_time = (
+            format_timestamp(self.execution.updated_time) if self.execution.updated_time else ""
+        )
         args = " ".join(json.loads(self.execution.args)[1:])
 
         yield Container(
@@ -1502,6 +1509,7 @@ class ExecutionScreen(RedunScreen):
                 f"{start_time}: {args}",
                 id="execution-title",
             ),
+            Static(f"[bold]Updated time: [/]{updated_time}"),
             Static("[bold]Tags:[/] " + format_tags(self.execution.tags)),
             TagLinks(self.app.link_patterns, self.execution.tags),
             Static(),
@@ -1620,7 +1628,7 @@ class ExecutionsNamespaceScreen(RedunScreen):
 
         self.table.clear()
         for namespace, count, start_time in self.results:
-            self.table.add_row(namespace, count, start_time.strftime("%Y-%m-%d %H:%M:%S"))
+            self.table.add_row(namespace, count, format_timestamp(start_time))
 
     def compose(self) -> ComposeResult:
         self.table.focus()

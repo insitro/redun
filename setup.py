@@ -18,9 +18,7 @@ requirements = [
     "botocore>=1.22.8,!=1.28.0",
     "fancycompleter>=0.9.1",
     "s3fs>=2021.11.1",
-    # Using 2.1 instead of 3.0 in case future 2.x versions drop support
-    # for some legacy APIs still supported in 2.0
-    "sqlalchemy>=1.4.0,<2.1",
+    "sqlalchemy>=2,<3",
     "python-dateutil>=2.8",
     # cython3 and pyyaml conflicts
     # https://github.com/yaml/pyyaml/issues/724#issuecomment-1638591821
@@ -43,7 +41,7 @@ extras = {
     ],
     "azure": [
         "adlfs>=2024.2.0",
-        "azure-ai-ml>=1.12.0",
+        "azure-ai-ml>=1.23.1",
     ],
 }
 

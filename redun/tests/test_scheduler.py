@@ -22,17 +22,20 @@ from redun.scheduler import (
     DryRunResult,
     Frame,
     Job,
+    JobInfo,
     SchedulerError,
     Task,
     Traceback,
     catch,
     catch_all,
     cond,
+    fork_thread,
+    join_thread,
     scheduler_task,
 )
 from redun.scheduler_config import postprocess_config
 from redun.task import CacheScope, PartialTask, SchedulerTask, hash_args_eval
-from redun.tests.utils import assert_match_lines, use_tempdir
+from redun.tests.utils import assert_match_lines, use_tempdir, wait_until
 from redun.utils import map_nested_value
 from redun.value import Value, get_type_registry
 
@@ -2116,3 +2119,180 @@ def test_federated_task() -> None:
         "required keys, missing `{'executor'}`",
     ):
         scheduler.run(federated)
+
+
+def test_thread(scheduler: Scheduler, session: Session) -> None:
+    """
+    fork_thread() should allow a child task to run longer than its parent.
+    """
+    wait = [True]
+
+    @task
+    def double(x):
+        # Force `double` to run longer than its parent.
+        wait_until(lambda: not wait[0])
+        return 2 * x
+
+    @task
+    def make_thread(x):
+        return fork_thread(double(x))
+
+    @task
+    def take_thread(thread):
+        wait[0] = False
+        return join_thread(thread)
+
+    @task
+    def main():
+        thread = make_thread(10)
+        return take_thread(thread)
+
+    assert scheduler.run(main()) == 20
+
+    # Assert that double ends after it's parent make_thread.
+    name2job = {job.task.name: job for job in session.query(JobDb).all()}
+    assert name2job["double"].end_time > name2job["make_thread"].end_time
+
+
+def test_thread_join_multiple(scheduler: Scheduler) -> None:
+    """
+    We should be able to join a thread multiple times and make use of caching.
+    """
+    wait = [True]
+    calls = []
+
+    @task
+    def double(x):
+        # Force `double` to run longer than its parent.
+        wait_until(lambda: not wait[0])
+        calls.append("double")
+        return 2 * x
+
+    @task
+    def make_thread(x):
+        return fork_thread(double(x))
+
+    @task
+    def take_thread(thread):
+        wait[0] = False
+        # We should be able to join a thread multiple times.
+        return [join_thread(thread), join_thread(thread) * 2]
+
+    @task
+    def main(x):
+        thread = make_thread(x)
+        return take_thread(thread)
+
+    assert scheduler.run(main(10)) == [20, 40]
+    assert calls == ["double"]
+
+    # Normal caching should still occur.
+    assert scheduler.run(main(10)) == [20, 40]
+    assert calls == ["double"]
+
+    assert scheduler.run(main(5)) == [10, 20]
+    assert calls == ["double", "double"]
+
+
+def test_thread_catch(scheduler: Scheduler) -> None:
+    """
+    Errors in a Thread should propogate through `join_thread`.
+    """
+    wait = [True]
+
+    @task
+    def boom(x):
+        # Force `double` to run longer than its parent.
+        wait_until(lambda: not wait[0])
+        raise ValueError("Boom")
+
+    @task
+    def recover(error):
+        return "recovered"
+
+    @task
+    def make_thread(x):
+        return fork_thread(boom(x))
+
+    @task
+    def take_thread(thread):
+        wait[0] = False
+        return catch(join_thread(thread), ValueError, recover)
+
+    @task
+    def main(x):
+        thread = make_thread(x)
+        return take_thread(thread)
+
+    assert scheduler.run(main(10)) == "recovered"
+
+
+def test_thread_cache(scheduler: Scheduler, session: Session) -> None:
+    """
+    Threads that are deserialized from the cache should still work.
+    """
+    wait = [True]
+    calls = []
+    promise_ids = []
+
+    @task
+    def double(x):
+        # Force `double` to run longer than its parent.
+        wait_until(lambda: not wait[0])
+        calls.append("double")
+        return 2 * x
+
+    @task
+    def make_thread(x):
+        return fork_thread(double(x))
+
+    @task
+    def take_thread(thread):
+        wait[0] = False
+        return join_thread(thread)
+
+    @task(cache=False)
+    def check_thread(thread):
+        promise_ids.append(thread._promise_id)
+        return None
+
+    @task
+    def main(x, check_valid="full"):
+        thread = make_thread.options(check_valid=check_valid)(x)
+        return [take_thread(thread), check_thread(thread)]
+
+    # Typically, a new Thread (and promise id) is created by fork_thread each execution.
+    assert scheduler.run(main(10)) == [20, None]
+    assert scheduler.run(main(10)) == [20, None]
+    assert calls == ["double"]
+    assert len(set(promise_ids)) == 2
+
+    # Force a Thread to be instantiated from the cache (along with an old promise id).
+    # The workflow should still work as before.
+    assert scheduler.run(main(10, "shallow")) == [20, None]
+    assert len(set(promise_ids)) == 2
+
+
+def test_job_info(scheduler: Scheduler, session: Session) -> None:
+    """
+    Ensure JobInfo can be accessed in tasks.
+    """
+    calls = []
+
+    @task
+    def add(a, b, job_info=JobInfo()):
+        calls.append(job_info)
+        return a + b
+
+    @task
+    def main(job_info=JobInfo()) -> str:
+        calls.append(job_info)
+        return add(1, 2)
+
+    assert scheduler.run(main()) == 3
+    exec = session.query(Execution).one()
+
+    assert calls[0].execution_id == exec.id
+    assert calls[0].job_id == exec.job.id
+    assert calls[1].execution_id == exec.id
+    assert calls[1].job_id == exec.job.child_jobs[0].id

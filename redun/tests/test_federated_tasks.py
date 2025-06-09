@@ -120,17 +120,10 @@ def test_lambda_federated_task(tmpdir) -> None:
         "federated_configs",
         "federated_demo_config",
     )
-
-    config = Config()
-    config.read_path(os.path.join(config_dir, "redun.ini"))
-    config = postprocess_config(config, config_dir=os.getcwd())
-
-    scheduler = Scheduler(config)
-    scheduler.load()
-
     result_path = os.path.join(tmpdir, "out.txt")
 
     # Run the invocation, which packages the inputs for us. Use the scratch redun defaults to.
+    scheduler = Scheduler()
     execution_id, invocation_data = scheduler.run(
         lambda_federated_task(
             config_name=config_dir,

@@ -97,6 +97,20 @@ class Expression(Value, Generic[Result]):
             return (self[i] for i in range(self._length))
         raise TypeError("Expressions of unknown length cannot be iterated.")
 
+    def __await__(self):
+        """
+        Awaiting on an Expression forces an eager evaluation.
+        """
+        from redun.executors.local import get_current_job
+
+        scheduler, parent_job = get_current_job()
+        if not parent_job:
+            raise RuntimeError(
+                "Can only await on an Expression in a task running in a local thread-mode Executor."
+            )
+        future = scheduler.evaluate_async(self, parent_job)
+        return future.__await__()
+
 
 class ApplyExpression(Expression[Result]):
     """
@@ -194,6 +208,8 @@ class SimpleExpression(ApplyExpression[Result]):
         if self.func_name in _operator_name2symbol and len(self.args) == 2:
             # Binary operator.
             left, right = self.args
+            if self.func_name in _reverse_operators:
+                left, right = right, left
             return f"({repr(left)} {_operator_name2symbol[self.func_name]} {repr(right)})"
 
         elif self.func_name == "getitem" and len(self.args) == 2:
@@ -307,6 +323,8 @@ def quote(expr: Result) -> QuotedExpression[Result]:
 
 
 _lazy_operation_registry: Dict[str, Callable] = {}
+_operator_name2symbol = {}
+_reverse_operators = set()
 
 
 def get_lazy_operation(name: str) -> Optional[Callable]:
@@ -319,6 +337,8 @@ def get_lazy_operation(name: str) -> Optional[Callable]:
 def lazy_operation(
     method: Optional[str] = None,
     name: Optional[str] = None,
+    symbol: Optional[str] = None,
+    reverse: bool = False,
 ) -> Callable[[Callable], Callable]:
     """
     Function decorator to declare lazy operations on Expression object.
@@ -337,44 +357,47 @@ def lazy_operation(
 
         setattr(Expression, _method, wrapper)
         _lazy_operation_registry[_name] = func
+        if symbol:
+            _operator_name2symbol[_name] = symbol
+        if reverse:
+            _reverse_operators.add(_name)
 
         return func
 
     return deco
 
 
-# register standard operators as lazy operations on Expressions
-lazy_operators: Dict[Callable, Dict[str, str]] = {
-    operator.eq: {"method": "__eq__"},
-    operator.ne: {"method": "__ne__"},
-    operator.lt: {"method": "__lt__"},
-    operator.le: {"method": "__le__"},
-    operator.gt: {"method": "__gt__"},
-    operator.ge: {"method": "__ge__"},
-    operator.add: {"method": "__add__"},
-    operator.sub: {"method": "__sub__"},
-    operator.mul: {"method": "__mul__"},
-    operator.truediv: {"method": "__truediv__", "name": "div"},
-    operator.and_: {"method": "__and__", "name": "and"},
-    operator.or_: {"method": "__or__", "name": "or"},
-}
-
-[lazy_operation(**kwargs)(func) for func, kwargs in lazy_operators.items()]
-
-_operator_name2symbol = {
-    "eq": "==",
-    "ne": "!=",
-    "lt": "<",
-    "le": "<=",
-    "gt": ">",
-    "ge": ">=",
-    "add": "+",
-    "sub": "-",
-    "mul": "*",
-    "div": "/",
-    "and": "&",
-    "or": "|",
-}
+# Register standard operators as lazy operations on Expressions.
+lazy_operation(method="__eq__", symbol="==")(operator.eq)
+lazy_operation(method="__ne__", symbol="!=")(operator.ne)
+lazy_operation(method="__lt__", symbol="<")(operator.lt)
+lazy_operation(method="__le__", symbol="<=")(operator.le)
+lazy_operation(method="__gt__", symbol=">")(operator.gt)
+lazy_operation(method="__ge__", symbol=">=")(operator.ge)
+lazy_operation(method="__add__", symbol="+")(operator.add)
+lazy_operation(method="__radd__", name="radd", symbol="+", reverse=True)(
+    lambda self, other: other + self
+)
+lazy_operation(method="__sub__", symbol="-")(operator.sub)
+lazy_operation(method="__rsub__", name="rsub", symbol="-", reverse=True)(
+    lambda self, other: other - self
+)
+lazy_operation(method="__mul__", symbol="*")(operator.mul)
+lazy_operation(method="__rmul__", name="rmul", symbol="*", reverse=True)(
+    lambda self, other: other * self
+)
+lazy_operation(method="__truediv__", name="div", symbol="/")(operator.truediv)
+lazy_operation(method="__rtruediv__", name="rdiv", symbol="/", reverse=True)(
+    lambda self, other: other / self
+)
+lazy_operation(method="__and__", name="and", symbol="&")(lambda self, other: self and other)
+lazy_operation(method="__rand__", name="rand", symbol="&", reverse=True)(
+    lambda self, other: other and self
+)
+lazy_operation(method="__or__", name="or", symbol="|")(lambda self, other: self or other)
+lazy_operation(method="__ror__", name="ror", symbol="|", reverse=True)(
+    lambda self, other: other or self
+)
 
 
 def _lazy_call(self, args=(), kwargs={}):

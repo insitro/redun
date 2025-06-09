@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import importlib
 import inspect
@@ -7,6 +8,7 @@ import logging
 import os
 import pprint
 import queue
+import re
 import shlex
 import sys
 import threading
@@ -559,6 +561,33 @@ class JobEnv(Job):
         return self._env_context
 
 
+class JobInfo:
+    """
+    Runtime information for a Job.
+    """
+
+    def __init__(
+        self, execution_id: str = "", job_id: str = "", eval_hash: str = "", args_hash: str = ""
+    ):
+        self.execution_id = execution_id
+        self.job_id = job_id
+        self.eval_hash = eval_hash
+        self.args_hash = args_hash
+
+    @classmethod
+    def from_job(self, job: Job) -> "JobInfo":
+        assert job.execution and job.eval_hash and job.args_hash
+        return JobInfo(
+            execution_id=job.execution.id,
+            job_id=job.id,
+            eval_hash=job.eval_hash,
+            args_hash=job.args_hash,
+        )
+
+    def __repr__(self) -> str:
+        return f"JobInfo(execution_id={self.execution_id}, job_id={self.job_id}, eval_hash={self.eval_hash}, args_hash={self.args_hash})"
+
+
 def get_backend_from_config(
     backend_config: Optional[SectionProxy] = None,
 ) -> RedunBackend:
@@ -668,7 +697,7 @@ class Frame(FrameSummary, Value):  # type:ignore[misc]
             while True:
                 self.lineno += 1
                 line = linecache.getline(self.filename, self.lineno).strip()
-                if line.startswith("def "):
+                if re.match("^(async )? *def ", line):
                     break
             self._line = None
 
@@ -928,6 +957,7 @@ class Scheduler:
         self.events_queue: queue.Queue = queue.Queue()
         self.workflow_promise: Optional[Promise] = None
         self._current_execution: Optional[Execution] = None
+        self._tracked_promises: Dict[str, Promise] = {}
 
         # Tracking for expression cycles. We store pending expressions by their parent_job
         # because the parent_job's lifetime corresponds to the expression's lifetime.
@@ -1225,7 +1255,9 @@ class Scheduler:
         Main scheduler event loop for evaluating the current expression. Loop over events,
         blocking until the provided `workflow_promise` is resolved.
         """
+        assert self._current_execution
         self.workflow_promise = workflow_promise
+        self.backend.record_updated_time(self._current_execution.id)
 
         while self.workflow_promise.is_pending:
             if self._dryrun and self.events_queue.empty():
@@ -1239,6 +1271,7 @@ class Scheduler:
                 self.log("Shutting down... Ctrl+C again to force shutdown.")
                 sys.exit(1)
             except queue.Empty:
+                self.backend.record_updated_time(self._current_execution.id)
                 if not is_debugger_active():
                     # Print job statuses periodically.
                     # For convenience, do not print statuses if the debugger is
@@ -1443,6 +1476,44 @@ class Scheduler:
         self._pending_expr[parent_job][expr.get_hash()] = (promise, expr)
         return promise
 
+    def evaluate_async(self, expr: Any, parent_job: Optional[Job]) -> asyncio.Future:
+        """
+        Evaluate an awaited Expression in the Scheduler.
+        """
+        loop = asyncio.get_event_loop()
+        future = loop.create_future()
+
+        # Pass the loop and future into the Scheduler main thread.
+        self.events_queue.put(
+            lambda: self._evaluate_async_main_thread(expr, parent_job, loop, future)
+        )
+
+        # Caller can await on this future.
+        return future
+
+    def _evaluate_async_main_thread(
+        self, expr: Any, parent_job: Optional[Job], loop: Any, future: asyncio.Future
+    ) -> None:
+        # Evaluate the expression and forward the result or error to the future in a thread-safe way.
+        self.evaluate(expr, parent_job=parent_job).then(
+            lambda result: loop.call_soon_threadsafe(future.set_result, result),
+            lambda error: loop.call_soon_threadsafe(future.set_exception, error),
+        )
+
+    def track_promise(self, promise: Promise) -> str:
+        """
+        Track a Promise. Returns a new promise_id.
+        """
+        promise_id = str(uuid.uuid4())
+        self._tracked_promises[promise_id] = promise
+        return promise_id
+
+    def pop_promise(self, promise_id: str) -> Optional[Promise]:
+        """
+        Returns a tracked Promise by promise_id.
+        """
+        return self._tracked_promises.pop(promise_id, None)
+
     def _is_job_within_limits(self, job_limits: dict) -> bool:
         """
         Helper to determine if a job can be executed under allowed/used limits.
@@ -1572,6 +1643,21 @@ class Scheduler:
         if context:
             job.context_hash = self.type_registry.get_hash(context)
 
+        # Replace a placeholder JobInfo with a populated one.
+        def include_job_info(arg_pair):
+            args, kwargs = arg_pair
+            args = [
+                JobInfo.from_job(job) if isinstance(value, JobInfo) else value for value in args
+            ]
+            kwargs = {
+                key: JobInfo.from_job(job) if isinstance(value, JobInfo) else value
+                for key, value in kwargs.items()
+            }
+            return args, kwargs
+
+        job.eval_args = include_job_info(job.eval_args)
+        args, kwargs = job.args = include_job_info(job.args)
+
         # Check whether a job of the same eval_hash is already running.
         if self._check_pending_job(job) is not None:
             # If we're trying to execute a job that is being re-triggered because we hit
@@ -1637,6 +1723,12 @@ class Scheduler:
         if not executor:
             return self.reject_job(
                 job, SchedulerError('Unknown executor "{}"'.format(executor_name))
+            )
+
+        # Check whether executor supports job type.
+        if job.task.is_async() and not executor.supports_async():
+            return self.reject_job(
+                job, SchedulerError(f'Executor "{executor_name}" does not support async tasks')
             )
 
         self.log(
@@ -2019,6 +2111,15 @@ class Scheduler:
             f" {allowed_cache_results} instead."
         )
 
+        if job.task.is_async() and cache_scope == CacheScope.BACKEND:
+            if allowed_cache_results is None:
+                allowed_cache_results = set(CacheResult)
+
+            # Async tasks cannot use single reduction.
+            allowed_cache_results -= {CacheResult.SINGLE}
+            # Only ultimate reduction caching is supported.
+            check_valid = CacheCheckValid.SHALLOW
+
         # Check CSE and cache.
         assert job.task
         assert job.args_hash
@@ -2328,7 +2429,7 @@ def catch(
 
         def main():
             try:
-                return denom(0)
+                return divider(0)
             except ZeroDivisionError as error:
                 return 0.0
 
@@ -2916,3 +3017,111 @@ def subrun(
             return Promise()
 
     return scheduler.evaluate(subrun_root_task_expr, parent_job=parent_job).then(then)
+
+
+class Thread(Value):
+    """
+    redun Threads track long running computations which are
+    managed by fork_thread() and join_tread().
+    """
+
+    type_name = "redun.Thread"
+
+    def __init__(self, promise_id: str, expr_hash: str, expr: Any):
+        self._promise_id = promise_id
+        self._hash = hash_struct(["Thread", expr_hash])
+        self._expr = expr
+
+    def get_hash(self, data: Optional[bytes] = None) -> str:
+        return self._hash
+
+    def __getstate__(self) -> dict:
+        return {
+            "promise_id": self._promise_id,
+            "hash": self._hash,
+            "expr": self._expr,
+        }
+
+    def __setstate__(self, state: dict) -> None:
+        self._promise_id = state["promise_id"]
+        self._hash = state["hash"]
+        self._expr = state["expr"]
+
+    def __repr__(self) -> str:
+        return f"Thread({self._expr})"
+
+
+@scheduler_task(namespace="redun")
+def fork_thread(
+    scheduler: Scheduler, parent_job: Job, sexpr: SchedulerExpression, expr: Any
+) -> Promise:
+    """
+    Compute `expr` in a long running background redun "thread". Use `join_thread(thread)` to
+    retrieve the result.
+
+    Typically, every redun job waits until all its child jobs finishing running before concluding.
+    However, there may be times when it is desirable to start a child job and allow it continue
+    running as if in a "forked thread".
+
+    A user may also "fire-and-forget" a task by just calling `fork_thread(expr)` and never calling
+    `join_thread(thread)`.
+
+    fork/join terms inspired by:
+    - https://en.wikipedia.org/wiki/Fork%E2%80%93join_model
+    - https://www.scheme.com/csug8/threads.html
+
+    .. code-block:: python
+
+        @task
+        def double(x):
+            time.sleep(5)  # Make this job run longer than usual.
+            return 2 * x
+
+        @task
+        def make_thread(x):
+            # Compute the expression `double(x)` in a background redun "thread".
+            thread = fork_thread(double(x))
+            # Here, we conclude `make_thread` but `double` is still running.
+            return thread
+
+        @task
+        def take_thread(thread):
+            # Here, we join up with the thread to get its result. `take_thread` will only
+            # conclude once `double` concludes.
+            result = join_thread(thread)
+            return result
+
+        @task
+        def main():
+            thread = make_thread(10)
+            result = take_thread(thread)
+            return result
+
+    """
+    # Immediately return a new Thread.
+    # Actual expression evaluation contiunes in background and will resolve a promise
+    # within the Thread.
+    promise = scheduler.evaluate(expr, parent_job=parent_job)
+    promise_id = scheduler.track_promise(promise)
+    expr_hash = scheduler.type_registry.get_hash(expr)
+    thread = Thread(promise_id, expr_hash, expr)
+    return Promise(lambda resolve, reject: resolve(thread))
+
+
+@scheduler_task(namespace="redun")
+def join_thread(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    thread: Thread,
+) -> Promise:
+    """
+    Retrieve the result from a redun Thread. See `fork_thread()` for more details.
+    """
+    promise = scheduler.pop_promise(thread._promise_id)
+    if promise:
+        # Now we wait on the promise.
+        return promise
+    else:
+        # We no longer have the original promise running. Let's just evaluate the expr ourselves.
+        return scheduler.evaluate(thread._expr, parent_job=parent_job)

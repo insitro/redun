@@ -1,23 +1,21 @@
-import logging
 import re
 from itertools import chain
 from typing import Any, Dict, List, Optional
 
 from redun.backends.db import Argument, Execution, Job, Tag, Task, Value
 from redun.tags import format_tag_value
-from redun.utils import trim_string
+from redun.utils import format_timestamp, trim_string
 
 NULL = object()
-logger = logging.getLogger("redun.console")
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.FileHandler("/tmp/redun.log"))
 
 
-def log_write(*args: Any) -> None:
+def rich_escape(text: str) -> str:
     """
-    Debugging function to use when developing with Textual.
+    Escape a string for rich.
+
+    Unfortunately, `rich.markup.escape()` doesn't catch all issues.
     """
-    logger.info(" ".join(map(str, args)))
+    return text.replace("[", r"\[")
 
 
 def format_link(link_pattern: str, tags: Dict[str, Any]) -> Optional[str]:
@@ -84,7 +82,7 @@ def format_tags(tags: List[Tag], max_length: int = 100, color="#9999cc") -> str:
     def format_tag_key_value(key: str, value: Any) -> str:
         key = trim_string(key, max_length=max_length)
         value_str = trim_string(format_tag_value(value), max_length=max_length)
-        return f"[{color}]{key}={value_str}[/]"
+        return f"[{color}]{rich_escape(key)}={rich_escape(value_str)}[/]"
 
     tags = sorted(tags, key=lambda tag: tag.key)
 
@@ -120,7 +118,7 @@ def format_job(job: Job) -> str:
     Format a redun Job into a string representation.
     """
     args = format_arguments(job.call_node.arguments) if job.call_hash else ""
-    return f"[bold]{job.task.fullname}[/][#999999]({args})[/]"
+    return f"[bold]{rich_escape(job.task.fullname)}[/][#999999]({rich_escape(args)})[/]"
 
 
 def format_traceback(job: Job) -> str:
@@ -186,17 +184,17 @@ def format_record(record: Any) -> str:
     if isinstance(record, Execution):
         return (
             f"Exec {record.id[:8]} {style_status(record.status)} "
-            f"{record.job.start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            f"{format_timestamp(record.job.start_time)}"
             f"[[bold]{record.job.task.namespace or 'no namespace'}[/bold]] "
         )
     elif isinstance(record, Job):
         return (
             f"Job {record.id[:8]} {style_status(record.status)} "
-            f"{record.start_time.strftime('%Y-%m-%d %H:%M:%S')} "
+            f"{format_timestamp(record.start_time)} "
         ) + format_job(record)
     elif isinstance(record, Task):
         return f"Task {record.hash[:8]} {record.fullname}"
     elif isinstance(record, Value):
-        return f"Value {record.value_hash[:8]} {trim_string(repr(record.preview))}"
+        return f"Value {record.value_hash[:8]} {rich_escape(trim_string(repr(record.preview)))}"
     else:
-        return repr(record)
+        return rich_escape(repr(record))

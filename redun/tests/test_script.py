@@ -256,6 +256,10 @@ def test_script_file(scheduler: Scheduler) -> None:
     assert result["hello"].read() == "hello\n"
     assert result["bye"].read() == "good bye\n"
 
+    # Files should not immediately become invalidated.
+    assert result["hello"].is_valid()
+    assert result["bye"].is_valid()
+
 
 def test_command_eof() -> None:
     command = """

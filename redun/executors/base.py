@@ -26,6 +26,12 @@ class Executor:
     def set_scheduler(self, scheduler: "Scheduler") -> None:
         self._scheduler = scheduler
 
+    def supports_async(self) -> bool:
+        """
+        Returns True if Executor supports async tasks.
+        """
+        return False
+
     def log(self, *messages: Any, **kwargs) -> None:
         """
         Display log message through Scheduler.

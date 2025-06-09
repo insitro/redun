@@ -16,8 +16,8 @@ from textual.widget import Widget
 from textual.widgets import DataTable, Footer, Input, Static
 
 from redun.backends.db import CallNode, Execution, Job, Tag, Task, Value
-from redun.cli import format_timedelta
-from redun.console.utils import format_job, get_links, style_status
+from redun.cli import format_timedelta, format_timestamp
+from redun.console.utils import format_job, get_links, rich_escape, style_status
 from redun.scheduler import Job as SchedulerJob
 
 NULL = object()
@@ -118,10 +118,10 @@ class ExecutionList(DataTable):
             self.add_row(
                 f"Exec {execution.id[:8]}",
                 style_status(execution.status_display),
-                execution.job.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                format_timestamp(execution.job.start_time),
                 format_timedelta(execution.job.duration) if execution.job.duration else "",
                 f"[[bold]{execution.job.task.namespace or 'no namespace'}[/bold]] "
-                + " ".join(json.loads(execution.args)[1:]),
+                + rich_escape(" ".join(json.loads(execution.args)[1:])),
             )
 
     def key_enter(self, event: events.Key) -> None:
@@ -164,7 +164,7 @@ class JobList(DataTable):
             self.add_row(
                 f"{' ' * min(job.depth, 10)}Job {job.id[:8]}",
                 style_status(job.status_display),
-                job.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                format_timestamp(job.start_time),
                 format_timedelta(job.duration) if job.duration else "",
                 format_job(job),
             )
@@ -271,11 +271,17 @@ class ValueSpan(Static):
     def render(self) -> Any:
         if self.value_short != self.value_long:
             if self.expanded:
-                return self.format.format(value=self.value_long) + " [@click=expand](less)[/]"
+                return (
+                    self.format.format(value=rich_escape(self.value_long))
+                    + " [@click=expand](less)[/]"
+                )
             else:
-                return self.format.format(value=self.value_short) + "[@click=expand]...[/]"
+                return (
+                    self.format.format(value=rich_escape(self.value_short))
+                    + "[@click=expand]...[/]"
+                )
         else:
-            return self.format.format(value=self.value_long)
+            return self.format.format(value=rich_escape(self.value_long))
 
 
 class Interpreter(InteractiveInterpreter):
@@ -372,4 +378,4 @@ class TagLinks(Container):
         if self.links:
             yield Static("[bold]Links:[/]")
             for link in self.links:
-                yield Static(f"  [#9999cc]{link}[/]")
+                yield Static(f"  [#9999cc]{rich_escape(link)}[/]")

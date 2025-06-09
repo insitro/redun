@@ -849,6 +849,14 @@ class S3FileSystem(FileSystem):
             client = _local.s3_raw = session.client("s3")
         return client
 
+    @staticmethod
+    def get_bucket_and_key(path: str) -> Tuple[str, str]:
+        """
+        Returns the bucket and key from an S3 path, useful for boto calls.
+        """
+        _, _, bucket, key = path.split("/", 3)
+        return bucket, key
+
     def exists(self, path: str) -> bool:
         """
         Returns True if path exists in filesystem.
@@ -856,7 +864,7 @@ class S3FileSystem(FileSystem):
         try:
             # We call head_object ourselves so that we can avoid getting stale
             # results from the s3fs cache.
-            _, _, bucket, key = path.split("/", 3)
+            bucket, key = self.get_bucket_and_key(path)
             _ = self.s3_raw.head_object(Bucket=bucket, Key=key, **self.s3.req_kw)
             return True
         except ClientError:
@@ -893,7 +901,7 @@ class S3FileSystem(FileSystem):
         try:
             # We call head_object ourselves so that we can avoid getting stale
             # results from the s3fs cache.
-            _, _, bucket, key = path.split("/", 3)
+            bucket, key = self.get_bucket_and_key(path)
             response = self.s3_raw.head_object(Bucket=bucket, Key=key, **self.s3.req_kw)
             etag = response["ETag"]
         except ClientError:
@@ -901,9 +909,28 @@ class S3FileSystem(FileSystem):
         return hash_struct(["File", "s3", path, etag])
 
     def copy(self, src_path: str, dest_path: str) -> None:
-        if get_proto(src_path) == get_proto(dest_path) == "s3":
+        src_proto = get_proto(src_path)
+        dest_proto = get_proto(dest_path)
+        if src_proto == dest_proto == "s3":
             # Perform copy entirely within S3.
             self.s3.copy(src_path, dest_path)
+        elif src_proto == "s3" and dest_proto == "local":
+            # Perform download from S3 to local.
+            # This is much faster than s3fs implementation for large files.
+            bucket, key = self.get_bucket_and_key(src_path)
+            # create local directories if needed
+            dirname = os.path.dirname(dest_path)
+            if dirname:
+                os.makedirs(dirname, exist_ok=True)
+            self.s3_raw.download_file(bucket, key, dest_path)
+        elif src_proto == "local" and dest_proto == "s3":
+            # Perform upload from local to S3.
+            bucket, key = self.get_bucket_and_key(dest_path)
+            self.s3_raw.upload_file(src_path, bucket, key)
+            # when writing via s3fs, this gets called so that it's aware the
+            # directory content has changed and doesn't return invalid results
+            # in listdir, glob etc.
+            self.s3.invalidate_cache(os.path.dirname(dest_path))
         else:
             # Perform generic copy.
             super().copy(src_path, dest_path)
@@ -964,7 +991,7 @@ class S3FileSystem(FileSystem):
         try:
             # We call head_object ourselves so that we can avoid getting stale
             # results from the s3fs cache.
-            _, _, bucket, key = path.split("/", 3)
+            bucket, key = self.get_bucket_and_key(path)
             response = self.s3_raw.head_object(Bucket=bucket, Key=key, **self.s3.req_kw)
             return response["ContentLength"]
         except ClientError as error:
@@ -1280,7 +1307,11 @@ class File(Value):
         if skip_if_exists and dest_file.exists():
             return dest_file
 
-        self.filesystem.copy(self.path, dest_file.path)
+        if self.filesystem.name == "local" and dest_file.filesystem.name != "local":
+            # use dest filesystem to use special cases for upload/download
+            dest_file.filesystem.copy(self.path, dest_file.path)
+        else:
+            self.filesystem.copy(self.path, dest_file.path)
         dest_file.update_hash()
         return dest_file
 

@@ -288,6 +288,13 @@ class RedunBackend(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def record_updated_time(self, execution_id: str) -> None:
+        """
+        Updates updated_time (heartbeat) timestamp for the current Execution.
+        """
+        pass
+
+    @abc.abstractmethod
     def record_job_start(self, job: "Job", now: Optional[datetime] = None) -> Any:
         """
         Records the start of a new Job.

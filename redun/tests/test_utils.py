@@ -1,6 +1,7 @@
 import os
 import pickle
 import sys
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict, namedtuple
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ from redun.utils import (
     PreviewUnpicklable,
     add_import_path,
     clear_import_paths,
+    format_timestamp,
     get_import_paths,
     iter_nested_value,
     map_nested_value,
@@ -52,6 +54,15 @@ class CustomData1(Data[float]):
 
 
 CustomData2 = Data[int]
+
+
+def test_format_timestamp() -> None:
+    """
+    Ensure format_timestamp converts to local time before formatting.
+    """
+    timestamp = datetime(2024, 8, 27, 13, 1, 2, tzinfo=timezone.utc)
+    assert format_timestamp(timestamp, timezone(timedelta(hours=2))) == "2024-08-27 15:01:02"
+    assert format_timestamp(timestamp, timezone(timedelta(hours=-2))) == "2024-08-27 11:01:02"
 
 
 def test_iter_nested_value() -> None:

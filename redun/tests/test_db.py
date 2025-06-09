@@ -1,4 +1,5 @@
 from collections import Counter
+from datetime import timedelta, timezone
 from typing import Callable, Dict, List, Set, cast
 from unittest import mock
 from unittest.mock import patch
@@ -35,7 +36,7 @@ from redun.config import Config, create_config_section
 from redun.file import Dir, File
 from redun.functools import seq
 from redun.tests.utils import use_tempdir
-from redun.utils import PreviewClass
+from redun.utils import PreviewClass, utcnow
 
 
 def test_cache_db() -> None:
@@ -430,6 +431,28 @@ def test_parent_job_simple(scheduler: Scheduler, session: Session) -> None:
     assert last_exec.job.child_jobs[0].task.name == "task1"
 
 
+def test_job_time_utc(scheduler: Scheduler, session: Session) -> None:
+    """
+    Parent job start_time and end_time should be timezone aware and UTC.
+    """
+
+    @task()
+    def task1():
+        return 10
+
+    now = utcnow()
+    assert scheduler.run(task1()) == 10
+
+    job = session.query(Job).one()
+    assert job.start_time.tzinfo == timezone.utc
+    assert job.end_time.tzinfo == timezone.utc
+    assert job.call_node.timestamp.tzinfo == timezone.utc
+
+    # Check that we have not somehow misconverted timezones and caused a difference
+    # on the order of several hours.
+    assert abs(now - job.start_time) < timedelta(seconds=5)
+
+
 def test_parent_job_simple_arg(scheduler: Scheduler, session: Session) -> None:
     """
     Parent job should be set for subtasks even through SimpleExpression as arguments.
@@ -669,6 +692,29 @@ def test_execution_job(scheduler: Scheduler, session: Session) -> None:
     assert {job.task.name for job in last_exec.jobs} == {"task1", "main"}
 
 
+def test_updated_time(scheduler: Scheduler, session: Session) -> None:
+    """
+    We should be able to query an Execution's updated_time,
+    which should be somewhere between the start and end times.
+    """
+
+    @task()
+    def task1(x):
+        return x * 2
+
+    @task()
+    def main(x):
+        return task1(x + 1)
+
+    start_time = utcnow()
+    assert scheduler.run(main(20)) == 42
+    end_time = utcnow()
+
+    last_exec = session.query(Execution).one()
+    assert last_exec.updated_time is not None
+    assert start_time < last_exec.updated_time < end_time
+
+
 def test_job_status(scheduler: Scheduler, session: Session) -> None:
     """
     We should be able to classify a Job's status.
@@ -695,6 +741,23 @@ def test_job_status(scheduler: Scheduler, session: Session) -> None:
 
     assert Counter(job.status for job in exec1.jobs) == Counter({"FAILED": 2, "DONE": 1})
     assert Counter(job.status for job in exec2.jobs) == Counter({"FAILED": 2, "CACHED": 1})
+
+
+def test_failed_job_end_time(scheduler: Scheduler, session: Session) -> None:
+    """
+    A failed job should have an end_time.
+    """
+
+    @task()
+    def main(x):
+        assert x != 0
+        return x + 1
+
+    with pytest.raises(AssertionError):
+        scheduler.run(main(0))
+
+    [exec1] = session.query(Execution).all()
+    assert exec1.job.status == "FAILED" and exec1.job.end_time is not None
 
 
 def test_catch_downstream(scheduler: Scheduler) -> None:
@@ -1038,8 +1101,6 @@ def test_db_backend_clone() -> None:
     backend.load()
     clone = backend.clone()
     assert clone.engine is backend.engine
-    assert clone.current_execution is backend.current_execution
-
     assert clone.session is not backend.session
 
 

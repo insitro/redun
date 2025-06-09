@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.27.0
+April 29, 2025
+
+* `#398` - Fix escape issue for rich text in console
+* `#115` - Remove console debug logger
+* `#396` - Make RedunBackendDb thread safe
+* `#113` - fix context file read from s3
+
+## 0.26.0
+February 28, 2025
+
+* `#393` - add reverse operators
+* `#392` - fix using File in script outputs
+* `#325` - Add fork_thread and join_thread
+* `#391` - DE-10267 Handle null update timestamps in execution screen
+* `#390` - [CDE-560] Add enable_metrics config option for glue executor
+* `#388` - Allow configuration of boto retrying
+
+## 0.25.0
+October 24, 2024
+
+* `#386` - Use AWS Glue version 4, expose Glue version in config
+* `#385` - CHS-869 Add heartbeat to the execution object
+
+## 0.24.0
+September 25, 2024
+
+* `#382` - "Cloud native" download and upload
+* `#383` - Improve wraps_task signature and source
+* `#380` - [CHS-820] Set end_time for failed jobs
+* `#102` - fix links between doc pages
+* `#379` - found a few more timestamps that needed to do timezone conversion before display
+
+## 0.23.0
+August 29, 2024
+
+* `#374` - Migration for job timestamps to be UTC timezone
+
 ## 0.22.0
 August 28, 2024
 

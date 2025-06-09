@@ -11,16 +11,14 @@ Usage:
 import logging
 
 from redun import ShardedS3Dataset, glue, task
-from redun.contrib.spark_helpers import enable_rdkit
 
 
 @glue.udf
 def get_inchi(smiles: str) -> str:
-    enable_rdkit()
     from rdkit import Chem
 
     try:
-        result = Chem.inchi.MolToInchi(Chem.MolFromSmiles(smiles))
+        result = Chem.MolToInchi(Chem.MolFromSmiles(smiles))
     except Exception as e:
         logging.getLogger().error(f"PROBLEM: {e}")
         result = "ERROR"
@@ -29,12 +27,10 @@ def get_inchi(smiles: str) -> str:
 
 
 @task(
-    executor="glue",
-    workers=5,
-    worker_type="G.1X",
+    executor="glue", workers=10, worker_type="G.1X", additional_libs=["rdkit>=2021and<2023.09.3"]
 )
 def calculate_inchi(
-    input_dir: ShardedS3Dataset, output_dir: str, smiles_col: str = "smiles_0_1_2_3"
+    input_dir: ShardedS3Dataset, output_dir: str, smiles_col: str = "smiles"
 ) -> ShardedS3Dataset:
     """
     Adds the "inchi" column to a DataFrame as calculated from a column containing
@@ -60,7 +56,7 @@ def calculate_inchi(
 
     # Load dataset
     logger.info("Loading data")
-    dataset = input_dir.load_spark()
+    dataset = input_dir.load_spark().repartition(10)
 
     # Generate INCHI column
     logger.info("Running UDF")

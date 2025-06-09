@@ -1,8 +1,11 @@
+import asyncio
 import sys
+import threading
 import typing
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from contextvars import ContextVar
 from multiprocessing import get_context, get_start_method, set_start_method
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Optional, Set, Tuple
 
 from redun.config import create_config_section
 from redun.executors.base import Executor, load_task_module, register_executor
@@ -16,6 +19,25 @@ if typing.TYPE_CHECKING:
 # Modes of local execution.
 THREAD_MODE = "thread"
 PROCESS_MODE = "process"
+
+# Global storage for current Job.
+redun_scheduler_var: "ContextVar[Scheduler]" = ContextVar("redun_scheduler")
+redun_job_var: "ContextVar[Job]" = ContextVar("redun_job")
+
+
+def set_current_job(scheduler: "Scheduler", job: "Job") -> None:
+    """
+    Set the current scheduler and job for this context.
+    """
+    redun_scheduler_var.set(scheduler)
+    redun_job_var.set(job)
+
+
+def get_current_job() -> "Optional[Tuple[Scheduler, Job]]":
+    """
+    Returns the current scheduler and job for this context.
+    """
+    return (redun_scheduler_var.get(), redun_job_var.get())
 
 
 def exec_task(mode: str, module_name: str, task_fullname: str, args: Tuple, kwargs: dict) -> Any:
@@ -85,6 +107,16 @@ class LocalExecutor(Executor):
         # Pools.
         self._thread_executor: Optional[ThreadPoolExecutor] = None
         self._process_executor: Optional[ProcessPoolExecutor] = None
+        self._async_thread: Optional[threading.Thread] = None
+        self._async_loop: Optional[Any] = None
+        self._async_ready = threading.Condition()
+        self._async_tasks: Set[Any] = set()
+
+    def supports_async(self) -> bool:
+        """
+        Returns True if Executor supports async tasks.
+        """
+        return True
 
     def _start(self, mode: str) -> None:
         """
@@ -93,7 +125,7 @@ class LocalExecutor(Executor):
         if mode == THREAD_MODE and not self._thread_executor:
             self._thread_executor = ThreadPoolExecutor(max_workers=self.max_workers)
 
-        if mode == PROCESS_MODE and not self._process_executor:
+        elif mode == PROCESS_MODE and not self._process_executor:
             if sys.version_info < (3, 7):
                 # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ProcessPoolExecutor
                 # Changed in version 3.7: The mp_context argument was added to allow users
@@ -107,6 +139,19 @@ class LocalExecutor(Executor):
                     max_workers=self.max_workers,
                     mp_context=get_context(self.start_method),
                 )
+
+    def _start_async_thread(self) -> None:
+        """
+        Ensure the async thread is started.
+        """
+        if not self._async_thread:
+            self._async_thread = threading.Thread(target=self._async_worker, daemon=False)
+            self._async_thread.start()
+
+        # Wait for the async loop inside the worker thread to fully start before returning.
+        with self._async_ready:
+            while not self._async_loop:
+                self._async_ready.wait()
 
     def stop(self) -> None:
         """
@@ -123,12 +168,63 @@ class LocalExecutor(Executor):
                 self._process_executor.shutdown()
             self._process_executor = None
 
+        if (
+            self._async_thread
+            and self._async_thread.is_alive()
+            and threading.get_ident() != self._async_thread.ident
+        ):
+            assert self._async_loop
+            self._async_loop.call_soon_threadsafe(self._async_loop.stop)
+            self._async_thread.join()
+            self._async_loop = None
+            self._async_thread = None
+
+    def _async_worker(self) -> None:
+        """
+        Worker thread for running an async loop.
+        """
+        with self._async_ready:
+            self._async_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._async_loop)
+            self._async_ready.notify()
+
+        self._async_loop.run_forever()
+
     def _submit(self, exec_func: Callable, job: "Job") -> None:
+        """
+        Common entry point for submitting a Job to the Executor.
+        """
+        if job.task.is_async():
+            # Async tasks must be run on the async thread.
+            self._start_async_thread()
+
+            async def run() -> None:
+                assert job.args and self._scheduler
+                try:
+                    args, kwargs = job.args
+                    set_current_job(self._scheduler, job)
+                    result = await job.task.func(*args, **kwargs)
+                    self._scheduler.done_job(job, result)
+                except Exception as error:
+                    self._scheduler.reject_job(job, error)
+
+            def create_task(coro):
+                # Keep reference to task while it runs.
+                # See https://textual.textualize.io/blog/2023/02/11/the-heisenbug-lurking-in-your-async-code/
+                task = asyncio.create_task(coro)
+                self._async_tasks.add(task)
+                task.add_done_callback(self._async_tasks.discard)
+                return task
+
+            assert self._async_loop
+            self._async_loop.call_soon_threadsafe(create_task, run())
+            return
+
         mode = job.get_option("mode", self.mode)
         if mode not in (THREAD_MODE, PROCESS_MODE):
             raise ValueError(f"Unknown mode: {mode}")
 
-        # Ensure pool are started.
+        # Ensure pool is started.
         self._start(mode)
 
         # Determine pool executor.
@@ -141,8 +237,6 @@ class LocalExecutor(Executor):
         )
         if not executor:
             raise ValueError('Unknown LocalExecutor.mode "{}"'.format(mode))
-
-        # Run job in a new thread or process.
 
         def on_done(future):
             try:

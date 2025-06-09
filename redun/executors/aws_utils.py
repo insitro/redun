@@ -1,6 +1,6 @@
 import os
 import threading
-from typing import Dict, Iterator, List, NamedTuple, Optional, Tuple
+from typing import Dict, Iterator, List, NamedTuple, Optional, Tuple, Any
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -13,6 +13,17 @@ DEFAULT_AWS_REGION = "us-west-2"
 
 # Cache for AWS Clients.
 _boto_clients: Dict[Tuple[int, str, str], boto3.Session] = {}
+_boto_config: Dict[str, Any] = {}
+
+
+def set_boto_config(config: Dict[str, Any]) -> None:
+    """
+    Set the boto3 config. Resets the cache of clients as a side effect, in case any were made that
+    did not use this config.
+    """
+    global _boto_config, _boto_clients
+    _boto_config = config
+    _boto_clients = {}
 
 
 class JobStatus(NamedTuple):
@@ -38,7 +49,13 @@ def get_aws_client(service: str, aws_region: str = DEFAULT_AWS_REGION) -> boto3.
         # sharing the same global session.
         # See: https://github.com/boto/boto3/issues/801#issuecomment-440942144
         session = boto3.session.Session()
-        client = _boto_clients[cache_key] = session.client(service, region_name=aws_region)
+        config = None
+        if _boto_config:
+            config = boto3.session.Config(**_boto_config)
+
+        client = _boto_clients[cache_key] = session.client(
+            service, region_name=aws_region, config=config
+        )
 
     return client
 

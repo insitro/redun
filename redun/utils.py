@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable as IterableABC
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone, tzinfo
 from functools import lru_cache, wraps
 from pickle import Unpickler
 from pickle import dump as allowed_dump_func
@@ -25,6 +26,7 @@ from typing import (
     Iterator,
     List,
     NoReturn,
+    Optional,
     Tuple,
     Type,
     TypeVar,
@@ -335,6 +337,37 @@ def get_func_source(func: Callable) -> str:
     return source
 
 
+def utcnow() -> datetime:
+    """
+    Returns the current timestamp in UTC timezone.
+    """
+    return datetime.now(timezone.utc)
+
+
+def format_timestamp(timestamp: datetime, tz: Optional[tzinfo] = None) -> str:
+    """
+    Returns a timestamp as a local time string.
+
+    If tz is given, use it as the local timezone, otherwise use system local timezone.
+    """
+    return timestamp.astimezone(tz).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def format_timedelta(duration: timedelta) -> str:
+    """
+    Format timedelta as a string.
+    """
+    hours, remainder_seconds = divmod(duration.seconds, 3600)
+    minutes, seconds = divmod(remainder_seconds, 60)
+    centiseconds = int(duration.microseconds / 10000)
+    return "{}:{:02}:{:02}.{:02}".format(
+        hours,
+        minutes,
+        seconds,
+        centiseconds,
+    )
+
+
 def format_table(table: List[List], justs: str, min_width: int = 0) -> Iterator[str]:
     """
     Format table with justified columns.
@@ -382,8 +415,8 @@ class PreviewClass(ABC):
         self.__dict__.update(kwargs)
         return self
 
-    def __repr__(self):
-        attr = []
+    def __repr__(self) -> str:
+        attr: List[str] = []
         if hasattr(self, "_preview_args"):
             # Object was instantiated with constructor or with __new__.
             attr.extend(map(repr, self._preview_args))
@@ -395,6 +428,8 @@ class PreviewClass(ABC):
             if key != "_preview_args"
         )
         return f"{self._name}({', '.join(attr)})"
+
+    __str__ = __repr__
 
     def __getitem__(self, index: int) -> Any:
         """
@@ -436,6 +471,7 @@ class PreviewingUnpickler(Unpickler):
                 _name = name
 
             PreviewSubclass.__name__ = name
+            PreviewSubclass.__qualname__ = name
             PreviewSubclass.__module__ = module
 
             self._classes[class_name] = PreviewSubclass
