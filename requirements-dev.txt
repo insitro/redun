@@ -17,6 +17,7 @@ google-cloud-compute==1.11.0
 urllib3<2
 adlfs==2024.2.0
 azure-ai-ml==1.23.1
+modal==1.0.3
 
 # Pin boto for testing. We can unpinned if moto is updated.
 aiobotocore==2.12.3
