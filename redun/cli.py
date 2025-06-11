@@ -1251,6 +1251,9 @@ class RedunClient:
             help="Indicates task is part of an array job",
         )
         oneshot_parser.add_argument(
+            "--array-rank-env", help="Environment variable with array job rank."
+        )
+        oneshot_parser.add_argument(
             "-p",
             "--import-path",
             action="append",
@@ -2604,7 +2607,7 @@ class RedunClient:
         """
         array_job_index: int = -1
         if args.array_job:
-            index = get_job_array_index()
+            index = get_job_array_index(env_var=args.array_rank_env)
             if index is None:
                 raise RedunClientError("Array job environment variable not set")
             else:

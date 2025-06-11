@@ -17,11 +17,15 @@ K8S_ARRAY_VAR = "JOB_COMPLETION_INDEX"
 GCP_ARRAY_VAR = "BATCH_TASK_INDEX"
 
 
-def get_job_array_index(env: dict = cast(dict, os.environ)) -> Optional[int]:
+def get_job_array_index(
+    env: dict = cast(dict, os.environ), env_var: Optional[str] = None
+) -> Optional[int]:
     """
     Finds any Job Array Index environment variables and returns the index.
     """
-    if AWS_ARRAY_VAR in env:
+    if env_var:
+        return int(env[env_var])
+    elif AWS_ARRAY_VAR in env:
         return int(env[AWS_ARRAY_VAR])
     elif K8S_ARRAY_VAR in env:
         return int(env[K8S_ARRAY_VAR])

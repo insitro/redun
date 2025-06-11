@@ -17,15 +17,14 @@ from redun.executors.code_packaging import package_code, parse_code_package_conf
 from redun.executors.command import get_oneshot_command, get_script_task_command
 from redun.executors.docker import DockerExecutor, get_docker_executor_config
 from redun.executors.scratch import (
-    SCRATCH_ERROR,
     SCRATCH_HASHES,
-    SCRATCH_INPUT,
     SCRATCH_OUTPUT,
     get_array_scratch_file,
     get_job_scratch_dir,
     get_job_scratch_file,
     parse_job_error,
     parse_job_result,
+    write_array_job_scratch_files,
 )
 from redun.file import File
 from redun.job_array import JobArrayer
@@ -33,7 +32,6 @@ from redun.scheduler import Job as RedunJob
 from redun.scheduler import Scheduler
 from redun.scripting import DEFAULT_SHELL, get_task_command
 from redun.task import CacheScope
-from redun.utils import pickle_dump
 
 REDUN_ARRAY_JOB_PREFIX = "redun-array-"
 REDUN_JOB_PREFIX = "redun-"
@@ -326,13 +324,16 @@ class GCPBatchExecutor(Executor):
         """
         Submits an array job, returning job name uuid
         """
-        array_size = len(jobs)
-        all_args = []
-        all_kwargs = []
-        for job in jobs:
-            assert job.args
-            all_args.append(job.args[0])
-            all_kwargs.append(job.args[1])
+        # Generate a unique name for job with no '-' to simplify job name parsing.
+        array_uuid = uuid.uuid4().hex
+
+        # Write all scratch files for array job.
+        write_array_job_scratch_files(
+            jobs,
+            self.gcs_scratch_prefix,
+            array_uuid,
+            include_eval_hash=True,
+        )
 
         # All jobs identical so just grab the first one
         job = jobs[0]
@@ -340,39 +341,7 @@ class GCPBatchExecutor(Executor):
         if job.task.script:
             raise NotImplementedError("Array jobs not supported for scripts")
 
-        # Generate a unique name for job with no '-' to simplify job name parsing.
-        array_uuid = str(uuid.uuid4())
-
         task_options = self._get_job_options(job, array_uuid=array_uuid)
-
-        # Setup input, output and error path files. Input file is a pickled list
-        # of args, and kwargs, for each child job.
-        input_file = get_array_scratch_file(self.gcs_scratch_prefix, array_uuid, SCRATCH_INPUT)
-        with File(input_file).open("wb") as out:
-            pickle_dump([all_args, all_kwargs], out)
-
-        # Output file is a plaintext list of output paths, for each child job.
-        output_file = get_array_scratch_file(self.gcs_scratch_prefix, array_uuid, SCRATCH_OUTPUT)
-        output_paths = [
-            get_job_scratch_file(self.gcs_scratch_prefix, job, SCRATCH_OUTPUT) for job in jobs
-        ]
-        with File(output_file).open("w") as ofile:
-            json.dump(output_paths, ofile)
-
-        # Error file is a plaintext list of error paths, one for each child job.
-        error_file = get_array_scratch_file(self.gcs_scratch_prefix, array_uuid, SCRATCH_ERROR)
-        error_paths = [
-            get_job_scratch_file(self.gcs_scratch_prefix, job, SCRATCH_ERROR) for job in jobs
-        ]
-        with File(error_file).open("w") as efile:
-            json.dump(error_paths, efile)
-
-        # Eval hash file is plaintext hashes of child jobs for matching for job
-        # reuniting.
-        eval_file = get_array_scratch_file(self.gcs_scratch_prefix, array_uuid, SCRATCH_HASHES)
-        with File(eval_file).open("w") as eval_f:
-            eval_f.write("\n".join([job.eval_hash for job in jobs]))  # type: ignore
-
         image = task_options.pop("image", self.image)
         project = task_options.pop("project", self.project)
         region = task_options.pop("region", self.region)
@@ -387,6 +356,7 @@ class GCPBatchExecutor(Executor):
             array_uuid=array_uuid,
         )
 
+        array_size = len(jobs)
         gcp_job = gcp_utils.batch_submit(
             client=self.gcp_batch_client,
             job_name=f"{REDUN_ARRAY_JOB_PREFIX}{array_uuid}",

@@ -2,13 +2,16 @@
 Utilities for working with executor scratch directories.
 """
 
+import json
 import os
 import pickle
-from typing import Any, Callable, Optional, Tuple, cast
+from dataclasses import dataclass
+from typing import Any, Callable, List, Optional, Tuple, cast
 
 from redun.file import File
 from redun.scheduler import Job, Traceback
 from redun.scripting import ScriptError
+from redun.utils import pickle_dump
 
 # Scratch filenames.
 SCRATCH_INPUT = "input"
@@ -69,6 +72,64 @@ def get_execution_scratch_file(scratch_prefix: str, execution_id: str, filename:
     Returns an scratch path for a sending data to and from a remote execution.
     """
     return os.path.join(scratch_prefix, "execution", execution_id, filename)
+
+
+@dataclass
+class ArrayJobScratchFiles:
+    input_file: str
+    output_file: str
+    error_file: str
+    eval_file: Optional[str] = None
+
+
+def write_array_job_scratch_files(
+    jobs: List[Job],
+    scratch_prefix: str,
+    array_id: str,
+    include_eval_hash: bool = True,
+) -> ArrayJobScratchFiles:
+    """
+    Write the scratch files for an Array-style Job.
+    """
+    all_args = []
+    all_kwargs = []
+    for job in jobs:
+        assert job.args
+        all_args.append(job.args[0])
+        all_kwargs.append(job.args[1])
+
+    # Setup input, output and error path files.
+    # Input file is a pickled list of args, and kwargs, for each child job.
+    input_file = get_array_scratch_file(scratch_prefix, array_id, SCRATCH_INPUT)
+    with File(input_file).open("wb") as out:
+        pickle_dump([all_args, all_kwargs], out)
+
+    # Output file is a plaintext list of output paths, for each child job.
+    output_file = get_array_scratch_file(scratch_prefix, array_id, SCRATCH_OUTPUT)
+    output_paths = [get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT) for job in jobs]
+    with File(output_file).open("w") as ofile:
+        json.dump(output_paths, ofile)
+
+    # Error file is a plaintext list of error paths, one for each child job.
+    error_file = get_array_scratch_file(scratch_prefix, array_id, SCRATCH_ERROR)
+    error_paths = [get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR) for job in jobs]
+    with File(error_file).open("w") as efile:
+        json.dump(error_paths, efile)
+
+    # Eval hash file is plaintext hashes of child jobs for matching for job reuniting.
+    if include_eval_hash:
+        eval_file = get_array_scratch_file(scratch_prefix, array_id, SCRATCH_HASHES)
+        with File(eval_file).open("w") as eval_f:
+            eval_f.write("\n".join([cast(str, job.eval_hash) for job in jobs]))
+    else:
+        eval_file = None
+
+    return ArrayJobScratchFiles(
+        input_file=input_file,
+        output_file=output_file,
+        error_file=error_file,
+        eval_file=eval_file,
+    )
 
 
 def parse_job_result(
