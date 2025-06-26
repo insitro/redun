@@ -1,3 +1,4 @@
+import dataclasses
 import os
 import pickle
 import sys
@@ -51,6 +52,18 @@ class Data(Generic[T]):
 @dataclass
 class CustomData1(Data[float]):
     x: float
+
+
+@dataclass
+class TestNonInitConfig:
+    first: int
+    second: Optional[str] = dataclasses.field(default=None, init=False)
+
+
+@dataclass
+class TestInitConfig:
+    first: int
+    second: Optional[str] = dataclasses.field(default=None, init=True)
 
 
 CustomData2 = Data[int]
@@ -134,6 +147,30 @@ def test_map_nested_value() -> None:
             z=CustomData2(x="42a", y={}, z="Nonea"),  # type: ignore[arg-type]
         ),
     ]
+
+
+def test_nested_value_dataclass() -> None:
+    """
+    Ensure dataclass-specific features work with map_nested_value.
+    """
+
+    def dup(x):
+        if x is None:
+            return None
+        return x + x
+
+    value = TestNonInitConfig(first=1)
+    result = map_nested_value(dup, value)
+    assert result == TestNonInitConfig(first=2)
+    assert set(iter_nested_value(value)) == {1, None}
+
+    value = TestNonInitConfig(first=1)
+    value.second = "hello"
+    result = map_nested_value(dup, value)
+    expected = TestNonInitConfig(first=2)
+    expected.second = "hellohello"
+    assert result == expected
+    assert set(iter_nested_value(value)) == {1, "hello"}
 
 
 @pytest.mark.parametrize(

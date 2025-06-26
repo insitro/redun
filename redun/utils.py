@@ -172,7 +172,7 @@ def iter_nested_value_children(value: Any) -> Iterable[Tuple[bool, Any]]:
 
     elif dataclasses.is_dataclass(value_type):
         for field in dataclasses.fields(value):
-            yield False, value.__dict__[field.name]
+            yield False, getattr(value, field.name)
 
     else:
         # Visit leaf values.
@@ -219,10 +219,18 @@ def map_nested_value(func: Callable, value: Any) -> Any:
     elif dataclasses.is_dataclass(value_type):
         mapped_value = value_type(
             **{
-                field.name: map_nested_value(func, value.__dict__[field.name])
+                field.name: map_nested_value(func, getattr(value, field.name))
                 for field in dataclasses.fields(value)
+                if field.init
             }
         )
+        # Set non-init fields.
+        for field in dataclasses.fields(value):
+            if not field.init:
+                setattr(
+                    mapped_value, field.name, map_nested_value(func, getattr(value, field.name))
+                )
+
         # Copy over any non-field items from the origin value __dict__  (such as __orig_class__,
         # which exists for subscripted generic objects) that haven't made it to the mapped value.
         mapped_value.__dict__ = {
