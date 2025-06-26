@@ -71,8 +71,9 @@ def k8s_submit(
     requests = {
         "memory": f"{memory}G",
         "cpu": vcpus,
-        "nvidia.com/gpu": gpus,
     }
+    if gpus > 0:
+        requests["nvidia.com/gpu"] = gpus
     limits = requests
     resources = k8s_utils.create_resources(requests, limits)
 
