@@ -1,34 +1,29 @@
 import os
+import platform
 
 from setuptools import find_packages, setup
 
 REQUIRE_POSTGRES = os.getenv("REQUIRE_POSTGRES") == "1"
-PSYCOPG2_VERSION = "psycopg2>=2.8"
+PSYCOPG2_VERSION = "psycopg2-binary>=2.8"
 
 requirements = [
-    # By using the extra deps boto3 and awscli, we help the solver find
-    # a solution faster, since aiobotocore currently requires pinned dependencies of
-    # boto3 and awscli.
-    "aiobotocore[boto3,awscli]>=2.0.1",
-    "aiohttp>=3.7.4,<4",
-    "alembic>=1.4",
-    "boto3>=1.16.63",
-    # Avoid version botocore-1.28.0
-    # https://github.com/iterative/dvc/issues/8513#issuecomment-1298761683
-    "botocore>=1.22.8,!=1.28.0",
-    "fancycompleter>=0.9.1",
-    "s3fs>=2021.11.1",
-    "sqlalchemy>=2,<3",
-    "python-dateutil>=2.8",
-    # cython3 and pyyaml conflicts
-    # https://github.com/yaml/pyyaml/issues/724#issuecomment-1638591821
-    "pyyaml!=6.0.0,!=5.4.0,!=5.4.1",
-    "requests>=2.27.1",
-    "rich>=13.3.5",
-    "textual>=0.63.0",
-    # If updating this list, check executors/aws_glue.py stays up to date with
-    # packages needed to run in the glue environment.
+    "awscli>=1.29.17",
+    "pyyaml>=6.0.1",
+    "aiobotocore>=2.5.4,<2.18",
+    "aiohttp>=3.8.5",
+    "alembic>=1.10.2",
+    "boto3>=1.28.17",
+    "botocore>=1.31.17",
+    "gcsfs>=2023.6.0",
+    "s3fs>=2023.6.0",
+    # Using 2.1 instead of 3.0 in case future 2.x versions drop support
+    # for some legacy APIs still supported in 2.0
+    "sqlalchemy>=1.4.0,<2.1",
+    "python-dateutil>=2.8.2",
+    "cloudpickle>=2.2.1",
 ]
+
+python_36_backports = ["dataclasses>=0.8", "types-dataclasses>=0.6.6"]
 
 extras = {
     "glue": ["pandas", "pyarrow", "pyspark"],
@@ -102,7 +97,7 @@ redun's key features are:
     """,
     scripts=["bin/redun"],
     include_package_data=True,
-    python_requires=">= 3.8",
+    python_requires=">=3.8",
     install_requires=requirements,
     extras_require=extras,
 )
