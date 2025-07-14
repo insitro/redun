@@ -823,7 +823,6 @@ class S3FileSystem(FileSystem):
         if pid != os.getpid():
             _local.pid = os.getpid()
             client = None
-            fsspec.asyn.reset_lock()
 
         else:
             client = getattr(_local, "s3", None)
@@ -1051,9 +1050,6 @@ class AzureBlobFileSystem(FsspecFileSystem):
         account_name = self.get_account_name_from_path(path)
         pid = os.getpid()
         if pid != getattr(self._local, "pid", None):
-            # First call or in a forked process, either way need to
-            # clear out filesystems and restart the fsspec loop
-            fsspec.asyn.reset_lock()
             # Note: fsspec/adlfs creates separate file systems for each storage account
             # likewise, underlying Azure SDK clients also are account-specific
             # an alternative to this file_systems map here would be to have multiple

@@ -17,7 +17,7 @@ requirements = [
     # https://github.com/iterative/dvc/issues/8513#issuecomment-1298761683
     "botocore>=1.22.8,!=1.28.0",
     "fancycompleter>=0.9.1",
-    "s3fs>=2021.11.1",
+    "s3fs>=2025.5.1",
     "sqlalchemy>=2,<3",
     "python-dateutil>=2.8",
     # cython3 and pyyaml conflicts
@@ -40,7 +40,7 @@ extras = {
         "google-cloud-compute>=1.11.0",
     ],
     "azure": [
-        "adlfs>=2024.2.0",
+        "adlfs>=2024.12.0",
         "azure-ai-ml>=1.23.1",
     ],
 }

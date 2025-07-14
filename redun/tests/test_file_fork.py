@@ -4,10 +4,12 @@ Tests to confirm that redun.file backends support forking subprocesses, not just
 
 import multiprocessing as mp
 import os
+import subprocess
+import time
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from io import BytesIO
-from typing import List, Literal
+from typing import List, Literal, Union, Tuple
 from unittest.mock import MagicMock, Mock, patch
 
 import adlfs
@@ -17,7 +19,7 @@ import pytest
 from tqdm import trange
 
 import redun
-from redun import File
+from redun import File, task
 from redun.tests.utils import mock_s3
 
 NOT_SET = "NOT SET"
@@ -164,3 +166,33 @@ def run_dataloaders(
         results = list(pool.map(fcn, range(num_processes)))
 
     return results
+
+
+@task
+def read_thread(x: int, file: File) -> Tuple[int, Union[str, bytes]]:
+    time.sleep(2)
+    res = (x, file.read("rb"))
+    time.sleep(2)
+    return res
+
+
+@task
+def threaded_task(path: str):
+    file = File(path)
+    return {
+        "thread": [read_thread(i, file) for i in range(100)],
+    }
+
+
+@pytest.mark.parametrize("path", [S3_PATH, AZ_PATH])
+def test_redun_threading(path: str):
+    if path is NOT_SET:
+        pytest.skip(
+            "Please set environment variables REDUN_TEST_FILE_FORK_S3_PATH "
+            "and REDUN_TEST_FILE_FORK_AZ_PATH to run this test."
+        )
+
+    reset_redun_file()
+    subprocess.run(
+        ["redun", "run", "--no-cache", __file__, "threaded_task", "--path", path], check=True
+    )
