@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.29.0
+July 14, 2025
+
+* `#405` - Fix file async loop
+* `#403` - [COMP-3026] Fix k8s executor when zero gpu are requested
+* `#404` - Fix nested value dataclass
+* `#401` - consolidate array scratch file writing
+
 ## 0.28.0
 May 30, 2025
 
