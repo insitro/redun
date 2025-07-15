@@ -1289,6 +1289,32 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 <section id="module-redun.executors.scratch">
 <span id="redun-executors-scratch-module"></span><h2>redun.executors.scratch module<a class="headerlink" href="#module-redun.executors.scratch" title="Link to this heading">¶</a></h2>
 <p>Utilities for working with executor scratch directories.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="redun.executors.scratch.ArrayJobScratchFiles">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.executors.scratch.</span></span><span class="sig-name descname"><span class="pre">ArrayJobScratchFiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#redun.executors.scratch.ArrayJobScratchFiles" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.executors.scratch.ArrayJobScratchFiles.error_file">
+<span class="sig-name descname"><span class="pre">error_file</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#redun.executors.scratch.ArrayJobScratchFiles.error_file" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.executors.scratch.ArrayJobScratchFiles.eval_file">
+<span class="sig-name descname"><span class="pre">eval_file</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#redun.executors.scratch.ArrayJobScratchFiles.eval_file" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.executors.scratch.ArrayJobScratchFiles.input_file">
+<span class="sig-name descname"><span class="pre">input_file</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#redun.executors.scratch.ArrayJobScratchFiles.input_file" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.executors.scratch.ArrayJobScratchFiles.output_file">
+<span class="sig-name descname"><span class="pre">output_file</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#redun.executors.scratch.ArrayJobScratchFiles.output_file" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <dl class="py exception">
 <dt class="sig sig-object py" id="redun.executors.scratch.ExceptionNotFoundError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">redun.executors.scratch.</span></span><span class="sig-name descname"><span class="pre">ExceptionNotFoundError</span></span><a class="headerlink" href="#redun.executors.scratch.ExceptionNotFoundError" title="Link to this definition">¶</a></dt>
@@ -1344,6 +1370,12 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 <span class="sig-prename descclassname"><span class="pre">redun.executors.scratch.</span></span><span class="sig-name descname"><span class="pre">parse_job_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scratch_prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.scheduler.Job" title="redun.scheduler.Job"><span class="pre">Job</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_valid_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.executors.scratch.parse_job_result" title="Link to this definition">¶</a></dt>
 <dd><p>Returns job output from scratch directory.</p>
 <p>Returns a tuple of (result, exists).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.executors.scratch.write_array_job_scratch_files">
+<span class="sig-prename descclassname"><span class="pre">redun.executors.scratch.</span></span><span class="sig-name descname"><span class="pre">write_array_job_scratch_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jobs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="redun.html#redun.scheduler.Job" title="redun.scheduler.Job"><span class="pre">Job</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scratch_prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_eval_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#redun.executors.scratch.ArrayJobScratchFiles" title="redun.executors.scratch.ArrayJobScratchFiles"><span class="pre">ArrayJobScratchFiles</span></a></span></span><a class="headerlink" href="#redun.executors.scratch.write_array_job_scratch_files" title="Link to this definition">¶</a></dt>
+<dd><p>Write the scratch files for an Array-style Job.</p>
 </dd></dl>
 
 </section>
@@ -1581,6 +1613,13 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 </ul>
 </li>
 <li><a class="reference internal" href="#module-redun.executors.scratch">redun.executors.scratch module</a><ul>
+<li><a class="reference internal" href="#redun.executors.scratch.ArrayJobScratchFiles"><code class="docutils literal notranslate"><span class="pre">ArrayJobScratchFiles</span></code></a><ul>
+<li><a class="reference internal" href="#redun.executors.scratch.ArrayJobScratchFiles.error_file"><code class="docutils literal notranslate"><span class="pre">ArrayJobScratchFiles.error_file</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.ArrayJobScratchFiles.eval_file"><code class="docutils literal notranslate"><span class="pre">ArrayJobScratchFiles.eval_file</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.ArrayJobScratchFiles.input_file"><code class="docutils literal notranslate"><span class="pre">ArrayJobScratchFiles.input_file</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.ArrayJobScratchFiles.output_file"><code class="docutils literal notranslate"><span class="pre">ArrayJobScratchFiles.output_file</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#redun.executors.scratch.ExceptionNotFoundError"><code class="docutils literal notranslate"><span class="pre">ExceptionNotFoundError</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.scratch.ScratchError"><code class="docutils literal notranslate"><span class="pre">ScratchError</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.scratch.get_array_scratch_file"><code class="docutils literal notranslate"><span class="pre">get_array_scratch_file()</span></code></a></li>
@@ -1590,6 +1629,7 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 <li><a class="reference internal" href="#redun.executors.scratch.get_job_scratch_file"><code class="docutils literal notranslate"><span class="pre">get_job_scratch_file()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.scratch.parse_job_error"><code class="docutils literal notranslate"><span class="pre">parse_job_error()</span></code></a></li>
 <li><a class="reference internal" href="#redun.executors.scratch.parse_job_result"><code class="docutils literal notranslate"><span class="pre">parse_job_result()</span></code></a></li>
+<li><a class="reference internal" href="#redun.executors.scratch.write_array_job_scratch_files"><code class="docutils literal notranslate"><span class="pre">write_array_job_scratch_files()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-redun.executors">Module contents</a></li>
