@@ -43,6 +43,7 @@ extras = {
         "adlfs>=2024.12.0",
         "azure-ai-ml>=1.23.1",
     ],
+    "modal": "modal>=1.0",
 }
 
 if REQUIRE_POSTGRES:
