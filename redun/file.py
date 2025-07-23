@@ -411,8 +411,8 @@ class LocalFileSystem(FileSystem):
         Automatically create the directory for path.
         """
         dirname = os.path.dirname(path)
-        if dirname and not os.path.exists(dirname):
-            os.makedirs(dirname)
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
         return dirname
 
     def _open(self, path: str, mode: str, **kwargs: Any) -> IO:
