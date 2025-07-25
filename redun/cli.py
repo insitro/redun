@@ -8,6 +8,7 @@ import os
 import pdb
 import pickle
 import re
+import shlex
 import subprocess
 import sys
 import textwrap
@@ -88,7 +89,8 @@ from redun.executors.aws_utils import (
     get_simple_aws_user,
     iter_log_stream,
 )
-from redun.executors.code_packaging import extract_tar
+from redun.executors.base import get_executor_from_config
+from redun.executors.code_packaging import extract_tar, package_code, parse_code_package_config
 from redun.executors.launch import launch_script
 from redun.expression import TaskExpression
 from redun.file import File as BaseFile
@@ -1100,6 +1102,9 @@ class RedunClient:
         )
         launch_parser.add_argument("--executor", help="Executor to run Scheduler within.")
         launch_parser.add_argument(
+            "--code-package", action="store_true", help="Perform code packaging."
+        )
+        launch_parser.add_argument(
             "-o",
             "--option",
             action="append",
@@ -1665,19 +1670,35 @@ class RedunClient:
         task_options = dict(map(parse_tag_key_value, args.option)) if args.option else {}
         task_options["executor"] = executor_name
 
-        if args.wait:
-            # Prepare command to execute within Executor.
-            remote_run_command = " ".join(quote(arg) for arg in extra_args)
+        # Prepare command to execute within Executor.
+        script_command = shlex.join(extra_args)
 
-            logger.info(f"Run within Executor {executor_name}: {remote_run_command}")
+        # Perform code packaging if enabled for launch.
+        if args.code_package:
+            # Inherit executor's code_packaging config.
+            try:
+                executor_config = config["executors"][executor_name]
+            except KeyError:
+                raise RedunClientError(f"Unknown executor {executor_name}")
+            code_package = parse_code_package_config(executor_config)
+            if code_package is False:
+                raise RedunClientError(f"Executor {executor_name} has disabled code packaging")
+
+            # Prepend code_package extraction to script_command.
+            executor = get_executor_from_config(config.get("executors", {}), executor_name)
+            code_file = package_code(executor.scratch_root(), cast(dict, code_package))
+            script_command = (
+                f"redun fs cp {quote(code_file.path)} - | tar xzf - ; {script_command}"
+            )
+
+        if args.wait:
+            logger.info(f"Run within Executor {executor_name}: {script_command}")
 
             # Setup Scheduler.
             scheduler = self.get_scheduler(args, migrate_if_local=True)
 
             # Setup job for inner run command.
-            run_expr = cast(
-                TaskExpression, script_task.options(**task_options)(remote_run_command)
-            )
+            run_expr = cast(TaskExpression, script_task.options(**task_options)(script_command))
 
             # Run scheduler and wait for completion.
             result = scheduler.run(run_expr)
@@ -1688,7 +1709,7 @@ class RedunClient:
             launch_script(
                 config,
                 executor_name=executor_name,
-                script_command=extra_args,
+                script_command=script_command,
                 task_options=task_options,
             )
 

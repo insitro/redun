@@ -1,6 +1,5 @@
-import typing
-from shlex import quote
-from typing import Optional, cast
+import shlex
+from typing import List, Optional, Union, cast
 
 from redun.config import Config
 from redun.executors.base import Executor, get_executor_from_config
@@ -14,7 +13,7 @@ from redun.value import get_type_registry
 
 def launch_script(
     config: Config,
-    script_command: typing.List[str],
+    script_command: Union[List[str], str],
     executor: Optional[Executor] = None,
     executor_name: Optional[str] = None,
     task_options: Optional[dict] = None,
@@ -34,7 +33,7 @@ def launch_script(
     ----------
     config : Config
         Config object containing executor information.
-    script_command : List[str]
+    script_command : Union[List[str], str]
         The script command to run on the executor.
     executor : Optional[Executor]
         Optional Executor on which to run the script.  Must be set if executor_name is not set.
@@ -59,7 +58,11 @@ def launch_script(
     executor.set_scheduler(scheduler)
 
     # Prepare command to execute within Executor.
-    remote_run_command = " ".join(quote(arg) for arg in script_command)
+    # Prepare command to execute within Executor.
+    if isinstance(script_command, list):
+        remote_run_command = shlex.join(script_command)
+    else:
+        remote_run_command = script_command
 
     task_options = task_options or {}
     task_options["executor"] = executor_name

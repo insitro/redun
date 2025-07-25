@@ -2,6 +2,8 @@ import io
 import json
 import os
 import pickle
+import re
+import subprocess
 import sys
 import time
 from socket import socket
@@ -2272,6 +2274,88 @@ def main() -> int:
     value = client.get_session(args=args).query(Value).filter(Value.type != "redun.Task").one()
     assert value.value_parsed
     assert value.value_parsed != this_pid
+
+
+@use_tempdir
+@patch("redun.cli.launch_script")
+def test_launch_code_package(launch_script_mock) -> None:
+    """
+    Launch subcommand should perform code packaging when enabled.
+    """
+    # Add redun.ini file to tempdir.
+    # Use a local scratch path for easy testing. Ideally it's s3.
+    File(".redun/redun.ini").write("""\
+[executors.batch]
+type = aws_batch
+image = ubuntu
+queue = my-queue
+s3_scratch = ./scratch
+""")
+
+    # Add example files for code packaging.
+    File("myscript.py").write("print('hello')")
+    File("myscript2.py").write("print('hello2')")
+
+    client = RedunClient()
+    client.execute(
+        [
+            "redun",
+            "launch",
+            "--executor",
+            "batch",
+            "--code-package",
+            "ls",
+        ]
+    )
+
+    # Code package should exist in scratch path.
+    proc = subprocess.run("tar tvf ./scratch/code/*.tar.gz", shell=True, capture_output=True)
+    assert b"myscript.py" in proc.stdout
+    assert b"myscript2.py" in proc.stdout
+
+    # Code package extraction should be prepended to script_command.
+    assert re.match(
+        r"redun fs cp \./scratch/code/.*\.tar\.gz - | tar xzf -",
+        launch_script_mock.call_args[1]["script_command"],
+    )
+
+
+@use_tempdir
+@patch("redun.cli.launch_script")
+def test_launch_no_code_package(launch_script_mock) -> None:
+    """
+    Launch subcommand should not perform code packaging by default.
+    """
+    # Add redun.ini file to tempdir.
+    # Use a local scratch path for easy testing. Ideally it's s3.
+    File(".redun/redun.ini").write("""\
+[executors.batch]
+type = aws_batch
+image = ubuntu
+queue = my-queue
+s3_scratch = ./scratch
+""")
+
+    # Add example files for code packaging.
+    File("myscript.py").write("print('hello')")
+    File("myscript2.py").write("print('hello2')")
+
+    client = RedunClient()
+    client.execute(
+        [
+            "redun",
+            "launch",
+            "--executor",
+            "batch",
+            "ls",
+        ]
+    )
+
+    # Code package extraction should be prepended to script_command.
+    assert not re.match(
+        r"redun fs cp \./scratch/code/.*\.tar\.gz - | tar xzf -",
+        launch_script_mock.call_args[1]["script_command"],
+    )
 
 
 @pytest.fixture(scope="module")
