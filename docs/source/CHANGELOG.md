@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.30.0
+July 25, 2025
+
+* `#407` - Add code packaging to redun launch 
+* `#408` - use os.makedirs(..., exist_ok=True) to avoid a race condition
+
 ## 0.29.0
 July 14, 2025
 
