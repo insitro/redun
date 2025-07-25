@@ -5,7 +5,7 @@ sphinx<6 # awscli requires docutils <0.17, and sphinx 6 requires >=0.18
 pandas
 pdbpp
 pre-commit
-pyarrow
+pyarrow==17.0.0 # Pinned to workaround cmake/pip error
 pyspark==3.4.3
 pytest==8.3.4
 tox
