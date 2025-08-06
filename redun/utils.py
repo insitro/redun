@@ -233,10 +233,9 @@ def map_nested_value(func: Callable, value: Any) -> Any:
 
         # Copy over any non-field items from the origin value __dict__  (such as __orig_class__,
         # which exists for subscripted generic objects) that haven't made it to the mapped value.
-        mapped_value.__dict__ = {
-            **value.__dict__,
-            **mapped_value.__dict__,
-        }
+        for key in set(value.__dict__.keys()) - set(mapped_value.__dict__.keys()):
+            # This syntax is frozen dataclass compatible.
+            mapped_value.__dict__[key] = value.__dict__[key]
         return mapped_value
 
     else:

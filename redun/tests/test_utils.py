@@ -54,6 +54,21 @@ class CustomData1(Data[float]):
     x: float
 
 
+@dataclass(frozen=True)
+class FrozenData(Generic[T]):
+    x: T
+    y: Dict[str, Any]
+    z: Optional["Data"]  # noqa: F821
+
+    def echo(self, string: str) -> str:
+        return string
+
+
+@dataclass(frozen=True)
+class CustomData1Frozen(FrozenData[str]):
+    pass
+
+
 @dataclass
 class TestNonInitConfig:
     first: int
@@ -109,7 +124,7 @@ def test_iter_nested_value() -> None:
 def test_map_nested_value() -> None:
     """
     map_nested_value should map functions on supported container types:
-    list, dict, set, tuple, nested tuple.
+    list, dict, set, tuple, nested tuple, dataclasses.
 
     map_nested_value should not map functions to other types currently
     """
@@ -123,6 +138,9 @@ def test_map_nested_value() -> None:
     test_defaultdict["a"]
     test_namedtuple = my_namedtuple(a=1)
     test_dataclass = CustomData1(x=1.0, y={"foo": "bar"}, z=CustomData2(x=42, y={}, z=None))
+    test_frozen_dataclass = CustomData1Frozen(
+        x="test", y={"foo": "bar"}, z=CustomData2(x=42, y={}, z=None)
+    )
 
     value = [
         [1, [2]],
@@ -132,6 +150,7 @@ def test_map_nested_value() -> None:
         test_namedtuple,
         test_defaultdict,
         test_dataclass,
+        test_frozen_dataclass,
     ]
 
     assert map_nested_value(func, value) == [
@@ -143,6 +162,11 @@ def test_map_nested_value() -> None:
         "defaultdict(<class 'int'>, {'a': 0})a",
         CustomData1(
             x="1.0a",  # type: ignore[arg-type]
+            y={"fooa": "bara"},
+            z=CustomData2(x="42a", y={}, z="Nonea"),  # type: ignore[arg-type]
+        ),
+        CustomData1Frozen(
+            x="testa",
             y={"fooa": "bara"},
             z=CustomData2(x="42a", y={}, z="Nonea"),  # type: ignore[arg-type]
         ),
