@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.31.0
+August 19, 2025
+
+* `#412` - Fix multiple redefinition of wrapped tasks
+* `#411` - [DE-10368] Frozen dataclass compatibility
+
 ## 0.30.0
 July 25, 2025
 
