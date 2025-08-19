@@ -634,6 +634,29 @@ def test_wraps_task() -> None:
         assert task_name == task_.fullname
 
 
+def test_redefine_task_wrapping() -> None:
+    def nested_task_definition() -> None:
+        def wrapper() -> Callable[[Func], Task[Func]]:
+            @wraps_task()
+            def _wrapper(inner_task: Task) -> Callable[[Task[Func]], Func]:
+                def do_wrapper(*task_args, **task_kwargs) -> Any:
+                    return inner_task.func(*task_args, **task_kwargs) + 1
+
+                return do_wrapper
+
+            return _wrapper
+
+        # 1. Test that the task will get implicitly created
+        @wrapper()
+        def test_task(x: int):
+            return 1 + x
+
+    # Calling this function will define, then redefine, a wrapped task. Make sure this doesn't
+    # confuse the task registry.
+    nested_task_definition()
+    nested_task_definition()
+
+
 def test_wraps_task_inner_task(scheduler: Scheduler) -> None:
     """
     wraps_task should maintain a reference to the inner task.

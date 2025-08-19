@@ -3,6 +3,7 @@ import inspect
 import re
 import sys
 import typing
+from collections import defaultdict
 from typing import (
     Any,
     Callable,
@@ -16,6 +17,7 @@ from typing import (
     Union,
     cast,
     overload,
+    DefaultDict,
 )
 
 from redun.expression import SchedulerExpression, TaskExpression
@@ -1047,15 +1049,47 @@ class TaskRegistry:
 
     def __init__(self) -> None:
         self._tasks: Dict[str, Task] = {}
-        self.task_hashes: set[str] = set()
+
+        # Task hashes are not unique, because simple function, such as an identity, could
+        # get registered multiple times. This is especially likely when we have renamed tasks
+        # defined at local scope, such as in a function, done repeatedly. So, we actually have
+        # to count the number of active uses of each hash, because there may be more than one
+        # task name with the same hash.
+        #
+        # All entries have positive non-zero counts.
+        self._task_hash_counts: DefaultDict[str, int] = defaultdict(int)
+
+    @property
+    def task_hashes(self):
+        # All the hashes still in use.
+        assert all(count >= 1 for count in self._task_hash_counts.values()), (
+            "Task hash counts should never be negative. "
+            "This indicates a bug in the TaskRegistry."
+        )
+        return {task_hash for task_hash, count in self._task_hash_counts.items() if count > 0}
+
+    def _decrement_hash_count(self, task: Task) -> None:
+        """
+        Decrement the count of the task hash in the registry. This is used when a task is removed
+        from the registry. Remove hashes whose count falls to zero.
+        """
+        if task.hash in self._task_hash_counts:
+            count = self._task_hash_counts[task.hash]
+            assert count > 0
+            if count == 1:
+                # If this is the last task with this hash, remove it from the counts.
+                self._task_hash_counts.pop(task.hash)
+            else:
+                # Otherwise, just decrement the count.
+                self._task_hash_counts[task.hash] = count - 1
 
     def add(self, task: Task) -> None:
         old_task = self._tasks.pop(task.fullname, None)
         if old_task:
-            self.task_hashes.remove(old_task.hash)
+            self._decrement_hash_count(old_task)
 
         self._tasks[task.fullname] = task
-        self.task_hashes.add(task.hash)
+        self._task_hash_counts[task.hash] += 1
 
     def get(self, task_name: Optional[str] = None, hash: Optional[str] = None) -> Optional[Task]:
         if task_name:
@@ -1071,7 +1105,7 @@ class TaskRegistry:
     def rename(self, old_name: str, new_namespace: str, new_name: str) -> Task:
         assert old_name in self._tasks
         task = self._tasks.pop(old_name)
-        self.task_hashes.remove(task.hash)
+        self._decrement_hash_count(task)
 
         task.namespace = new_namespace
         task.name = new_name
