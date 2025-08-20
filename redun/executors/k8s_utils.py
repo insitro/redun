@@ -217,8 +217,14 @@ def create_job_object(
         containers=[container],
     )
 
+    labels = labels or {}
+    annotations = annotations or {}
+
     # Create and configurate a pod template spec section
-    template = client.V1PodTemplateSpec(metadata=client.V1ObjectMeta(), spec=pod_spec)
+    template = client.V1PodTemplateSpec(
+        metadata=client.V1ObjectMeta(annotations=annotations, labels=labels),
+        spec=pod_spec,
+    )
 
     # Create the spec of job deployment
     spec = client.V1JobSpec(
@@ -228,9 +234,6 @@ def create_job_object(
     )
     if timeout:
         spec.active_deadline_seconds = timeout
-
-    if labels is None:
-        labels = {}
 
     # Instantiate the job object
     return client.V1Job(

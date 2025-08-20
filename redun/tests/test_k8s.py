@@ -352,10 +352,11 @@ def test_executor(
         "vcpus": 1,
         "memory": 4,
         "k8s_labels": {
-            "redun_execution_id": "",
-            "redun_job_id": job.id,
-            "redun_project": "",
-            "redun_task_name": "task1",
+            "redun.insitro.com/execution_id": "",
+            "redun.insitro.com/job_id": job.id,
+            "redun.insitro.com/job_hash": job.eval_hash,
+            "redun.insitro.com/project": "",
+            "redun.insitro.com/task_name": "task1",
         },
     }
 
@@ -387,10 +388,11 @@ def test_executor(
         "vcpus": 1,
         "memory": 8,
         "k8s_labels": {
-            "redun_execution_id": "",
-            "redun_job_id": job2.id,
-            "redun_project": "",
-            "redun_task_name": "task1",
+            "redun.insitro.com/execution_id": "",
+            "redun.insitro.com/job_id": job2.id,
+            "redun.insitro.com/job_hash": job2.eval_hash,
+            "redun.insitro.com/project": "",
+            "redun.insitro.com/task_name": "task1",
         },
     }
 

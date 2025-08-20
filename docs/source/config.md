@@ -657,7 +657,7 @@ An optional JSON object that specifies k8s labels to apply to each job.
 
 ##### `default_k8s_labels`
 
-A bool (default: True) that specifies whether to add default k8s labels to jobs, such as `redun_job_id`, `redun_task_name`, etc.
+A bool (default: True) that specifies whether to add default k8s labels to jobs, such as `redun.insitro.com/job_id`, `redun.insitro.com/task_name`, etc.
 
 ##### `code_package`
 

@@ -838,10 +838,11 @@ class K8SExecutor(Executor):
                 else ""
             )
             default_labels = {
-                "redun_job_id": job.id,
-                "redun_task_name": job.task.fullname,
-                "redun_execution_id": execution.id if execution else "",
-                "redun_project": project,
+                "redun.insitro.com/job_id": job.id,
+                "redun.insitro.com/job_hash": job.eval_hash,
+                "redun.insitro.com/task_name": job.task.fullname,
+                "redun.insitro.com/execution_id": execution.id if execution else "",
+                "redun.insitro.com/project": project,
             }
         else:
             default_labels = {}
