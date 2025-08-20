@@ -36,7 +36,7 @@ class K8SClient:
             except ConfigException:
                 logger.warn(
                     "config.load_kube_config() failed. "
-                    "Resorting to config.load_incluster_config()."
+                    "Resorting to config.load_incluster_config().",
                 )
                 config.load_incluster_config()
             self._is_loaded = True
@@ -142,7 +142,8 @@ def create_k8s_secret(
 
 
 def create_resources(
-    requests: Optional[dict] = None, limits: Optional[dict] = None
+    requests: Optional[dict] = None,
+    limits: Optional[dict] = None,
 ) -> client.V1ResourceRequirements:
     """
     Creates resource limits for k8s pods.
@@ -200,7 +201,7 @@ def create_job_object(
                     },
                 }
                 for key in aws_env_keys
-            ]
+            ],
         )
 
     container = client.V1Container(name=name, image=image, args=command, env=env)
@@ -244,7 +245,7 @@ def create_namespace(k8s_client: K8SClient, namespace: str) -> None:
     """Create a k8s namespace"""
     try:
         k8s_client.core.create_namespace(
-            client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace))
+            client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace)),
         )
     except client.exceptions.ApiException as error:
         if error.status == 409 and error.reason == "Conflict":
@@ -255,7 +256,10 @@ def create_namespace(k8s_client: K8SClient, namespace: str) -> None:
 
 
 def annotate_service_account(
-    k8s_client: K8SClient, namespace: str, sa_name: str, annotations_to_append: dict
+    k8s_client: K8SClient,
+    namespace: str,
+    sa_name: str,
+    annotations_to_append: dict,
 ) -> None:
     """Annotate a service account with additional annotations
 
@@ -273,7 +277,7 @@ def annotate_service_account(
         k8s_client.core.replace_namespaced_service_account(sa_name, namespace, sa)
         logger.info(
             f"ServiceAccount: {sa_name} in namespace: {namespace} annotated with "
-            f"{existing_annotations}"
+            f"{existing_annotations}",
         )
     except client.exceptions.ApiException as error:
         logger.error("Unexpected exception annotating SA: ", error.body)
@@ -299,9 +303,8 @@ def create_job(k8s_client: K8SClient, job: client.V1Job, namespace: str) -> clie
         if error.status == 409 and error.reason == "Conflict":
             # Job already exsists, return it.
             return k8s_client.batch.read_namespaced_job(job.metadata.name, namespace=namespace)
-        else:
-            logger.error("Error submitting k8s job:", error.body)
-            raise
+        logger.error("Error submitting k8s job:", error.body)
+        raise
 
 
 def delete_job(k8s_client: K8SClient, name: str, namespace: str) -> Any:

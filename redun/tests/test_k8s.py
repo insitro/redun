@@ -44,7 +44,9 @@ def mock_k8s(func: Callable) -> Callable:
     @wraps(func)
     def wrapped(*args, **kwargs):
         with patch.object(K8SClient, "core"), patch.object(K8SClient, "batch"), patch.object(
-            K8SClient, "version", return_value=(1, 23)
+            K8SClient,
+            "version",
+            return_value=(1, 23),
         ):
             return func(*args, **kwargs)
 
@@ -82,8 +84,8 @@ def mock_executor(scheduler: Scheduler, code_package: bool = False) -> K8SExecut
                 "job_monitor_interval": 0.05,
                 "job_stale_time": 0.01,
                 "code_package": code_package,
-            }
-        }
+            },
+        },
     )
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
 
@@ -111,8 +113,8 @@ def test_executor_config(scheduler: Scheduler) -> None:
                 "image": "image",
                 "scratch": "scratch_prefix",
                 "code_includes": "*.txt",
-            }
-        }
+            },
+        },
     )
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
 
@@ -161,7 +163,7 @@ def test_submit_task(k8s_submit_mock, custom_module, expected_load_module, a_tas
 @task(load_module={custom_module})
 def task1(x):
     return x + 10
-    """
+    """,
     )
 
     job = Job(a_task, a_task())
@@ -240,7 +242,7 @@ from redun import task
 @task()
 def task1(x):
     return x + 10
-    """
+    """,
     )
 
     module = import_script("path/to/workflow.py")
@@ -324,7 +326,8 @@ def test_executor(
     executor.start()
 
     k8s_submit_mock.return_value = create_job_object(
-        name=DEFAULT_JOB_PREFIX + "-eval_hash", uid=k8s_job_id
+        name=DEFAULT_JOB_PREFIX + "-eval_hash",
+        uid=k8s_job_id,
     )
     # Submit redun job that will succeed.
     expr = task1(10)
@@ -358,7 +361,8 @@ def test_executor(
 
     # Setup new mock return values.
     k8s_submit_mock.return_value = create_job_object(
-        name=DEFAULT_JOB_PREFIX + "-eval_hash2", uid=k8s_job2_id
+        name=DEFAULT_JOB_PREFIX + "-eval_hash2",
+        uid=k8s_job2_id,
     )
 
     # Submit redun job that will fail.
@@ -669,7 +673,7 @@ def test_jobs_are_arrayed(
         {
             f"second-array-job:{i}": j
             for i, j in enumerate(test_jobs[executor.arrayer.max_array_size :])
-        }
+        },
     )
     assert executor.pending_k8s_jobs == pending_correct
 
@@ -707,8 +711,8 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
                 "scratch": "scratch_prefix",
                 "code_includes": "*.txt",
                 "min_array_size": 0,
-            }
-        }
+            },
+        },
     )
     scheduler = mock_scheduler()
 
@@ -818,7 +822,7 @@ from redun import task
 @task()
 def other_task(x, y):
    return x - y
-        """
+        """,
     )
     create_tar("code.tar.gz", ["workflow.py"])
     file.remove()
@@ -869,7 +873,7 @@ def other_task(x, y):
                 "--error",
                 error_path,
                 "other_task",
-            ]
+            ],
         )
 
         # Check output files are there
@@ -878,7 +882,7 @@ def other_task(x, y):
                 executor.scratch_prefix,
                 test_jobs[i],
                 SCRATCH_OUTPUT,
-            )
+            ),
         )
 
-        assert pickle.loads(cast(bytes, output_file.read("rb"))) == i - 2 * i
+        assert pickle.loads(cast("bytes", output_file.read("rb"))) == i - 2 * i

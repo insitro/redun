@@ -268,13 +268,16 @@ def k8s_list_jobs(k8s_client: k8s_utils.K8SClient) -> Iterator[V1Job]:
     """
     yield from k8s_paginate(
         lambda _continue: k8s_client.batch.list_job_for_all_namespaces(
-            watch=False, _continue=_continue
-        )
+            watch=False,
+            _continue=_continue,
+        ),
     )
 
 
 def k8s_describe_jobs(
-    k8s_client: k8s_utils.K8SClient, job_names: List[str], namespace: str
+    k8s_client: k8s_utils.K8SClient,
+    job_names: List[str],
+    namespace: str,
 ) -> List[kubernetes.client.V1Job]:
     """
     Returns K8S Job descriptions.
@@ -303,7 +306,10 @@ def get_pod_logs(
         kwargs["tail_lines"] = max_lines
 
     log_response = k8s_client.core.read_namespaced_pod_log(
-        pod.metadata.name, namespace=pod.metadata.namespace, timestamps=True, **kwargs
+        pod.metadata.name,
+        namespace=pod.metadata.namespace,
+        timestamps=True,
+        **kwargs,
     )
     lines = log_response.split("\n")
 
@@ -316,7 +322,9 @@ def get_pod_logs(
 
 
 def parse_pod_logs(
-    k8s_client: k8s_utils.K8SClient, pod: kubernetes.client.V1Pod, max_lines: int = 1000
+    k8s_client: k8s_utils.K8SClient,
+    pod: kubernetes.client.V1Pod,
+    max_lines: int = 1000,
 ) -> Iterator[str]:
     """
     Iterates through most recent logs of an K8S Job.
@@ -336,22 +344,18 @@ def get_k8s_job_pods(core_api: CoreV1Api, job_name: str) -> Iterator[V1Pod]:
             watch=False,
             label_selector=f"job-name={job_name}",
             _continue=_continue,
-        )
+        ),
     )
 
 
 class K8SError(Exception):
     """K8S-specific exception raised when a k8s job fails."""
 
-    pass
-
 
 class K8STimeoutExceeded(Exception):
     """
     Custom exception to raise when K8S jobs are killed due to timeout.
     """
-
-    pass
 
 
 @register_executor("k8s")
@@ -419,7 +423,8 @@ class K8SExecutor(Executor):
         # We use an OrderedDict in order to retain submission order.
         self.pending_k8s_jobs: Dict[str, Union[Job, Dict[int, Job]]] = OrderedDict()
         self.preexisting_k8s_jobs: Dict[
-            str, Union[str, Tuple[str, str, int, str]]
+            str,
+            Union[str, Tuple[str, str, int, str]],
         ] = {}  # Job hash -> Job ID
 
         self.interval = config.getfloat("job_monitor_interval", 5.0)
@@ -433,7 +438,7 @@ class K8SExecutor(Executor):
             # (https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/)
             logger.warn(
                 "kubernetes server version is too old for indexed k8s jobs, "
-                "defaulting to individual redun jobs"
+                "defaulting to individual redun jobs",
             )
             min_array_size = 0
             max_array_size = 0
@@ -488,7 +493,7 @@ class K8SExecutor(Executor):
                     child_pod.metadata.name,
                     child_pod.metadata.uid,
                     int(
-                        child_pod.metadata.annotations["batch.kubernetes.io/job-completion-index"]
+                        child_pod.metadata.annotations["batch.kubernetes.io/job-completion-index"],
                     ),
                 )
                 for child_pod in child_pods
@@ -505,7 +510,7 @@ class K8SExecutor(Executor):
                     self.scratch_prefix,
                     parent_hash,
                     SCRATCH_HASHES,
-                )
+                ),
             )
             if not eval_file.exists():
                 # Eval file does not exist, so we cannot reunite with this array
@@ -513,7 +518,7 @@ class K8SExecutor(Executor):
                 continue
 
             # Get eval_hash for all jobs that were part of the array
-            eval_hashes = cast(str, eval_file.read("r")).splitlines()
+            eval_hashes = cast("str", eval_file.read("r")).splitlines()
 
             # Now match up indices to eval hashes to populate pending jobs by
             # name.
@@ -634,11 +639,10 @@ class K8SExecutor(Executor):
         if state.waiting and state.waiting.reason in ERROR_STATES:
             return FAILED, f"{state.waiting.reason}: {state.waiting.message}"
 
-        elif state.terminated:
+        if state.terminated:
             if state.terminated.exit_code == 0:
                 return SUCCEEDED, None
-            else:
-                return FAILED, f"{state.terminated.reason}: {state.terminated.message}"
+            return FAILED, f"{state.terminated.reason}: {state.terminated.message}"
 
         return None, None
 
@@ -649,7 +653,7 @@ class K8SExecutor(Executor):
         if job.status.succeeded is not None and job.status.succeeded > 0:
             return SUCCEEDED, None
 
-        elif job.status.failed is not None and job.status.failed > 0:
+        if job.status.failed is not None and job.status.failed > 0:
             try:
                 status_reason = job.status.conditions[0].message
             except (KeyError, IndexError, TypeError):
@@ -657,17 +661,15 @@ class K8SExecutor(Executor):
 
             return FAILED, f"Error: {status_reason}"
 
-        elif job.status.conditions is not None:
+        if job.status.conditions is not None:
             # Handle a special case where a job times out, but isn't counted
             # as a 'failure' in job.status.failed.  In this case we want to
             # reject the job early and skip reading logs from the pod
             # because the pod was already cleaned up.
             if job.status.conditions[0].type == "Failed":
                 return FAILED, "Failed: Timeout exceeded."
-            else:
-                return None, None
-        else:
             return None, None
+        return None, None
 
     def _process_redun_job(
         self,
@@ -699,7 +701,7 @@ class K8SExecutor(Executor):
                             self.scratch_prefix,
                             job,
                             SCRATCH_OUTPUT,
-                        )
+                        ),
                     ),
                     job_tags=k8s_labels,
                 )
@@ -759,7 +761,7 @@ class K8SExecutor(Executor):
                     return
 
             # Determine redun Job and job_labels.
-            redun_job: Job = cast(Job, self.pending_k8s_jobs.pop(job.metadata.name))
+            redun_job: Job = cast("Job", self.pending_k8s_jobs.pop(job.metadata.name))
 
             k8s_labels = [("k8s_job", job.metadata.uid)]
             self._process_redun_job(redun_job, pod, job_status, status_reason, k8s_labels)
@@ -770,12 +772,12 @@ class K8SExecutor(Executor):
             except kubernetes.client.exceptions.ApiException as e:
                 self.log(
                     f"Failed to delete k8s job {job.metadata.name}: {e}",
-                    level=logging.WARN,
+                    level=logging.WARNING,
                 )
         else:
             # Check status of array k8s job.
             k8s_pods = get_k8s_job_pods(self._k8s_client.core, job.metadata.name)
-            redun_jobs = cast(Dict[int, Job], self.pending_k8s_jobs[job.metadata.name])
+            redun_jobs = cast("Dict[int, Job]", self.pending_k8s_jobs[job.metadata.name])
 
             for pod in k8s_pods:
                 job_status, status_reason = self._process_pod_status(pod)
@@ -800,12 +802,14 @@ class K8SExecutor(Executor):
                 if len(redun_jobs) == 0:
                     try:
                         k8s_utils.delete_job(
-                            self._k8s_client, job.metadata.name, job.metadata.namespace
+                            self._k8s_client,
+                            job.metadata.name,
+                            job.metadata.namespace,
                         )
                     except kubernetes.client.exceptions.ApiException as e:
                         self.log(
                             f"Failed to delete k8s job {job.metadata.name}: {e}",
-                            level=logging.WARN,
+                            level=logging.WARNING,
                         )
                     del self.pending_k8s_jobs[job.metadata.name]
 
@@ -896,20 +900,17 @@ class K8SExecutor(Executor):
                 # job.
                 job_name = task_options["job_name_prefix"] + "-" + job.eval_hash
                 existing_jobs = k8s_describe_jobs(
-                    self._k8s_client, [job_name], namespace=self.namespace
+                    self._k8s_client,
+                    [job_name],
+                    namespace=self.namespace,
                 )
                 existing_job = existing_jobs[0]  # should be index
                 # Reunite with inflight k8s job, if present.
                 if existing_job:
                     k8s_job_id = existing_job.metadata.uid
                     self.log(
-                        "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
-                        "  scratch_path = {job_dir}".format(
-                            redun_job=job.id,
-                            job_type=job_type,
-                            k8s_job_id=k8s_job_id,
-                            job_dir=job_dir,
-                        )
+                        f"reunite redun job {job.id} with {job_type} {k8s_job_id}:\n"
+                        f"  scratch_path = {job_dir}",
                     )
                     assert k8s_job_id
                     self.pending_k8s_jobs[job_name] = job
@@ -918,28 +919,25 @@ class K8SExecutor(Executor):
 
             elif isinstance(k8s_job_id, tuple):
                 # Array job case
-                _, _, child_job_index, parent_hash = cast(Tuple[str, str, int, str], k8s_job_id)
+                _, _, child_job_index, parent_hash = cast("Tuple[str, str, int, str]", k8s_job_id)
                 job_name = f"{task_options['job_name_prefix']}-{parent_hash}-array"
                 existing_jobs = k8s_describe_jobs(
-                    self._k8s_client, [job_name], namespace=self.namespace
+                    self._k8s_client,
+                    [job_name],
+                    namespace=self.namespace,
                 )
                 # Reunite with inflight k8s job, if present.
                 if existing_jobs:
                     existing_job = existing_jobs[0]
                     k8s_job_id = existing_job.metadata.uid
                     self.log(
-                        "reunite redun job {redun_job} with {job_type} {k8s_job_id}:\n"
-                        "  scratch_path = {job_dir}".format(
-                            redun_job=job.id,
-                            job_type=job_type,
-                            k8s_job_id=k8s_job_id,
-                            job_dir=job_dir,
-                        )
+                        f"reunite redun job {job.id} with {job_type} {k8s_job_id}:\n"
+                        f"  scratch_path = {job_dir}",
                     )
                     assert k8s_job_id
                     if job_name not in self.pending_k8s_jobs:
-                        self.pending_k8s_jobs[job_name] = cast(Dict[int, Job], {})
-                    cast(Dict[int, Job], self.pending_k8s_jobs[job_name])[child_job_index] = job
+                        self.pending_k8s_jobs[job_name] = cast("Dict[int, Job]", {})
+                    cast("Dict[int, Job]", self.pending_k8s_jobs[job_name])[child_job_index] = job
                 else:
                     k8s_job_id = None
             else:
@@ -998,7 +996,7 @@ class K8SExecutor(Executor):
         array_job_name = k8s_resp.metadata.name
         self.pending_k8s_jobs[array_job_name] = {}
         for i in range(array_size):
-            cast(Dict[int, Job], self.pending_k8s_jobs[array_job_name])[i] = jobs[i]
+            cast("Dict[int, Job]", self.pending_k8s_jobs[array_job_name])[i] = jobs[i]
         array_job_id = k8s_resp.metadata.uid
 
         self.log(
@@ -1013,7 +1011,7 @@ class K8SExecutor(Executor):
                 k8s_job_id=array_job_id,
                 job_dir=get_array_scratch_file(self.scratch_prefix, array_uuid, ""),
                 job_name=array_job_name,
-            )
+            ),
         )
         return array_uuid
 
@@ -1061,16 +1059,10 @@ class K8SExecutor(Executor):
         k8s_job_id = k8s_resp.metadata.uid
         job_name = k8s_resp.metadata.name
         self.log(
-            "submit redun job {redun_job} as {job_type} {k8s_job_id}:\n"
-            "  job_id       = {k8s_job_id}\n"
-            "  job_name     = {job_name}\n"
-            "  scratch_path = {job_dir}".format(
-                redun_job=job.id,
-                job_type=job_type,
-                k8s_job_id=k8s_job_id,
-                job_dir=job_dir,
-                job_name=job_name,
-            )
+            f"submit redun job {job.id} as {job_type} {k8s_job_id}:\n"
+            f"  job_id       = {k8s_job_id}\n"
+            f"  job_name     = {job_name}\n"
+            f"  scratch_path = {job_dir}",
         )
         self.pending_k8s_jobs[job_name] = job
 
