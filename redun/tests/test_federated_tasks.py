@@ -131,6 +131,7 @@ def test_lambda_federated_task(tmpdir) -> None:
             lambda_function_name="fake-lambda-function",
             scratch_prefix="/tmp/redun",
             dryrun=True,
+            cache=False,
             x=8,
             y=9,
             result_path=result_path,
@@ -143,6 +144,7 @@ def test_lambda_federated_task(tmpdir) -> None:
     assert invocation_data["entrypoint"] == "sample_task"
     assert invocation_data["input_path"].endswith("input")
     assert invocation_data["execution_id"] == execution_id
+    assert invocation_data["cache"] is False
 
     invocation_data["federated_config_path"] = invocation_data.pop("config_name")
 
@@ -184,6 +186,7 @@ def test_rest_federated_task(tmpdir) -> None:
             url="fake",
             scratch_prefix="/tmp/redun",
             dryrun=True,
+            cache=False,
             x=2,
             y=9,
             result_path=result_path,
@@ -196,6 +199,7 @@ def test_rest_federated_task(tmpdir) -> None:
     assert rest_data["entrypoint"] == "sample_task"
     assert rest_data["input_path"].endswith("input")
     assert rest_data["execution_id"] == execution_id
+    assert rest_data["cache"] is False
 
     rest_data["federated_config_path"] = rest_data.pop("config_name")
 

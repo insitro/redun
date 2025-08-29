@@ -85,6 +85,7 @@ def lambda_federated_task(
     scratch_prefix: str,
     dryrun: bool,
     *task_args,
+    cache: bool = True,
     **task_kwargs,
 ) -> Promise[Tuple[str, Dict]]:
     """Submit a task to an AWS Lambda Function, by packaging the inputs and sending as the payload
@@ -113,6 +114,8 @@ def lambda_federated_task(
         is a user input.
     dryrun : bool
         If false, actually invoke the lambda. If true, skip it.
+    cache : bool
+        If false, disables caching for the execution of the submitted task.
 
     Other args are intended for the task itself.
 
@@ -136,6 +139,7 @@ def lambda_federated_task(
         "entrypoint": entrypoint,
         "input_path": input_path,
         "execution_id": execution.id,
+        "cache": cache,
     }
 
     if not dryrun:
@@ -166,6 +170,7 @@ def rest_federated_task(
     scratch_prefix: str,
     dryrun: bool,
     *task_args,
+    cache: bool = True,
     **task_kwargs,
 ) -> Promise[Tuple[str, Dict]]:
     """Submit a task to a server over REST, by packaging the inputs and POSTing a data blob
@@ -194,6 +199,8 @@ def rest_federated_task(
         is a user input.
     dryrun : bool
         If false, actually perform the POST. If true, skip it.
+    cache : bool
+        If false, disables caching for the execution of the submitted task.
 
     Other args are intended for the task itself.
 
@@ -217,6 +224,7 @@ def rest_federated_task(
         "entrypoint": entrypoint,
         "input_path": input_path,
         "execution_id": execution.id,
+        "cache": cache,
     }
 
     if not dryrun:
@@ -235,6 +243,7 @@ def launch_federated_task(
     task_kwargs: Optional[Dict] = None,
     input_path: Optional[str] = None,
     execution_id: Optional[str] = None,
+    cache: bool = True,
 ) -> str:
     """
     Launch the described federated task. Among other purposes, this is designed to make it easy
@@ -263,6 +272,8 @@ def launch_federated_task(
         unpickle the objects inside.
     execution_id : Optional[str]
         If provided, use this execution id. Otherwise, one will be generated for you.
+    cache : bool
+        If false, disable caching when executing this task.
 
     Returns
     -------
@@ -305,6 +316,9 @@ def launch_federated_task(
         entrypoint_config["load_module"],
         task_name,
     ]
+
+    if not cache:
+        script_command.append("--no-cache")
 
     launch_script(
         config,
