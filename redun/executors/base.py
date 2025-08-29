@@ -1,6 +1,6 @@
 import importlib
 import typing
-from typing import Any, Callable, Dict, Iterator, Optional, Type, cast
+from typing import Any, Callable, Dict, Iterator, Optional, Type, cast, Union
 
 if typing.TYPE_CHECKING:
     from redun.scheduler import Job, Scheduler
@@ -74,8 +74,29 @@ class Executor:
         raise NotImplementedError()
 
 
+class _ExecutorProvider:
+    """Pointer to an executor that we don't want to import until it's actually used."""
+
+    _executor_class: Union[Type[Executor], str]
+
+    def __init__(self, executor_class: Union[Type[Executor], str]):
+        self._executor_class = executor_class
+
+    @property
+    def executor_class(self) -> Type[Executor]:
+        if isinstance(self._executor_class, str):
+            module_name, class_name = self._executor_class.rsplit(".", 1)
+            module = importlib.import_module(module_name)
+            executor_class = getattr(module, class_name)
+            self._executor_class = executor_class
+        return cast(Type[Executor], self._executor_class)
+
+    def __call__(self, *args, **kwargs) -> Executor:
+        return self.executor_class(*args, **kwargs)
+
+
 # Singleton executor registry.
-_executor_classes: Dict[str, Type[Executor]] = {}
+_executor_providers: Dict[str, _ExecutorProvider] = {}
 
 
 def get_executor_class(executor_name: str, required: bool = True) -> Optional[Type[Executor]]:
@@ -90,27 +111,44 @@ def get_executor_class(executor_name: str, required: bool = True) -> Optional[Ty
         If True, raises error if executor is not registered.
         If False, None is returned for unknown executor name.
     """
-    executor_class = _executor_classes.get(executor_name)
-    if required and not executor_class:
-        raise ExecutorError("Unknown executor {}".format(executor_name))
-    return executor_class
+    executor_provider = _executor_providers.get(executor_name)
+    if not executor_provider:
+        if required:
+            raise ExecutorError("Unknown executor {}".format(executor_name))
+        return None
+
+    return executor_provider.executor_class
 
 
-def _register_executor(executor_name: str, executor_class: Type[Executor]) -> None:
+def _register_executor(
+    executor_name: str, executor_class: Union[Type[Executor], str]
+) -> _ExecutorProvider:
     """
     Register an Executor class to be used by the scheduler.
     """
-    _executor_classes[executor_name] = executor_class
+    provider = _ExecutorProvider(executor_class)
+    _executor_providers[executor_name] = provider
+    return provider
 
 
-def register_executor(executor_name: str) -> Callable:
+def register_executor(executor_name: str, executor_class_name: Optional[str] = None) -> Callable:
     """
-    Register an Executor class to be used by the scheduler.
+    Register an Executor, either by decorating a class or passing a fully-specified class name.
+    The executor will be available to the scheduler under the provided name.
 
     Note that registered classes are responsible for ensuring their modules get loaded, so this
     decorator is actually run. For example, this can be done by adding them to the redun
     module `__init__.py`.
+
+    Usage:
+    >>> @register_executor("my_executor")
+    ... class MyExecutor(Executor):
+    ...     ...
+    or
+    >>> register_executor("my_executor", "my_module.MyExecutor")
     """
+    if executor_class_name:
+        return _register_executor(executor_name, executor_class_name)
 
     def deco(executor_class: Type[Executor]):
         _register_executor(executor_name, executor_class)

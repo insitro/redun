@@ -29,21 +29,21 @@ import s3fs
 from botocore.exceptions import ClientError
 from fsspec.utils import infer_storage_options
 
-from redun import azure_utils, glue
+from redun import glue
 from redun.hashing import hash_stream, hash_struct
 from redun.logging import logger
 from redun.value import Value
-
-# Try importing azure-specific packages.
-try:
-    import adlfs
-except (ImportError, ModuleNotFoundError):
-    pass
 
 # Don't require pyspark to be installed locally except for type checking.
 if TYPE_CHECKING:
     import pandas
     import pyspark
+
+    # Try importing azure-specific packages.
+    try:
+        import adlfs
+    except (ImportError, ModuleNotFoundError):
+        pass
 
 T = TypeVar("T")
 
@@ -1015,12 +1015,15 @@ class AzureBlobFileSystem(FsspecFileSystem):
     def az_credential(self):
         if self._cr is not None:
             return self._cr
+        from redun.azure_utils import get_az_credential
 
-        self._cr = azure_utils.get_az_credential()
+        self._cr = get_az_credential()
         return self._cr
 
     def _create_fs_for_account(self, account_name: str) -> "adlfs.AzureBlobFileSystem":
         # for simplicity, support only direct blob access, not data lake
+        import adlfs
+
         fs = adlfs.AzureBlobFileSystem(
             anon=False, account_name=account_name, credential=self.az_credential
         )
