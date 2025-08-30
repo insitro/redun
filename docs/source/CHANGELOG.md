@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.32.0
+August 29, 2025
+
+* `#418` - Add  flag to disable cache in federated task proxy 
+* `#417` - Defer imports for faster startup 
+* `#415` - [COMP-3155] Improve K8S Executor Pod Labels and Annotations 
+* `#416` - [COMP-3159] Apply ruff formating to k8s files 
+
 ## 0.31.0
 August 19, 2025
 
