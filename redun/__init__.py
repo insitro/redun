@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar
 
 from redun.file import Dir, File, ShardedS3Dataset
 from redun.handle import Handle
@@ -48,6 +48,36 @@ else:
     LocalExecutor = register_executor("local", "redun.executors.local.LocalExecutor")
 
 
+# Cached Schedulers.
+_config2scheduler: Dict[Optional[str], Scheduler] = {}
+
+
+def run(
+    expr: Any,
+    config_dir: Optional[str] = None,
+    **run_config: Any,
+) -> Any:
+    """
+    Evaluate an expression using the default redun Scheduler as define by redun.ini.
+
+    Parameters
+    ----------
+    expr: Any
+        An expression to evaluate with the redun Scheduler.
+    config_dir: Optional[str]
+        A redun configuration directory to use to define the Scheduler. Defaults to `.redun`.
+    run_config:
+        Additional run options such as `cache=False`. See :method:`Scheduler.run()` for full details.
+    """
+    from redun.cli import setup_scheduler
+
+    # Try to use a cached Scheduler for this config_dir.
+    scheduler = _config2scheduler.get(config_dir)
+    if not scheduler:
+        scheduler = _config2scheduler[config_dir] = setup_scheduler(config_dir=config_dir)
+    return scheduler.run(expr, **run_config)
+
+
 __version__ = version
 __all__ = [
     "Dir",
@@ -65,6 +95,7 @@ __all__ = [
     "get_task_registry",
     "merge_handles",
     "namespace",
+    "run",
     "script",
     "set_current_scheduler",
     "task",

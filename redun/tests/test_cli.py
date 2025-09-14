@@ -2704,3 +2704,23 @@ def main() -> str:
     )
     lines = waited_display.split("\n")
     assert lines[-2] == "b\"'hi'\\n\""
+
+
+@use_tempdir
+def test_run():
+    """
+    Ensure redun Scheduler can be run by using redun.run()
+    """
+
+    @task
+    def add(a, b):
+        return a + b
+
+    assert redun.run(add(1, 2)) == 3
+
+    # redun db should have been created.
+    assert os.path.exists(".redun/redun.db")
+
+    # Ensure config_dir is respected.
+    redun.run(add(2, 4), config_dir=".redun2")
+    assert os.path.exists(".redun2/redun.db")
