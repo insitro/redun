@@ -31,7 +31,7 @@ from redun.task import CacheScope, Task
 from redun.utils import pickle_dump
 
 ARGS = ["code", "script", "task", "input", "output", "error"]
-VALID_GLUE_WORKERS = ["Standard", "G.1X", "G.2X"]
+DEFAULT_GLUE_VERSION = "5.0"
 ONESHOT_FILE = "glue_oneshot.py.txt"
 
 # AWS Glue job statuses
@@ -55,14 +55,14 @@ GLUE_JOB_STATUSES = aws_utils.JobStatus(
 )
 
 # These packages are needed for the redun lib to work on glue.
-# Versions should remain up to date with setup.py
-DEFAULT_ADDITIONAL_PYTHON_MODULES = [
-    "alembic>=1.4",
-    "mako",
-    "promise",
-    "s3fs>=2021.11.1",
-    "sqlalchemy>=1.4.0or<2.1",  # Don't use commas as AWS won't parse them.
-]
+# Versions should remain up to date with what is appropriate for the glue version env
+# and also compatible with redun.
+# NOTE: Don't use commas in versions as AWS won't parse them. Use "or" instead.
+DEFAULT_ADDITIONAL_PYTHON_MODULES = {
+    "3.0": ["alembic>=1.4", "mako", "promise", "s3fs>=2021.11.1", "sqlalchemy>=1.4.0or<2.1"],
+    "4.0": ["alembic>=1.4", "mako", "promise", "s3fs>=2024.6.1", "sqlalchemy>=2or<3"],
+    "5.0": ["alembic>=1.4", "mako", "promise", "s3fs>=2025.5.1", "sqlalchemy>=2or<3"],
+}
 
 
 def get_spark_history_dir(s3_scratch_prefix: str) -> str:
@@ -122,11 +122,12 @@ def get_or_create_glue_job_definition(
     script_location: str,
     role: str,
     glue_version: str,
+    worker_type: str,
     temp_dir: str,
     extra_py_files: str,
     spark_history_dir: str,
     enable_metrics: bool = False,
-    additional_python_modules: List[str] = DEFAULT_ADDITIONAL_PYTHON_MODULES,
+    additional_python_modules: List[str] = [],
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> str:
     """
@@ -142,6 +143,10 @@ def get_or_create_glue_job_definition(
 
     glue_version : str
         Glue version to use for the job.
+
+    worker_type : str
+        Type of worker type for the job (e.g. 'G.1X', 'G.2X', etc.). See:
+        https://docs.aws.amazon.com/en_us/glue/latest/dg/worker-types.html
 
     temp_dir : str
         S3 path of scratch directory associated with job data and code.
@@ -187,7 +192,11 @@ def get_or_create_glue_job_definition(
             "--TempDir": temp_dir,
             "--enable-s3-parquet-optimized-committer": "true",
             "--extra-py-files": extra_py_files,
-            "--additional-python-modules": ",".join(additional_python_modules),
+            "--additional-python-modules": ",".join(
+                additional_python_modules
+                if additional_python_modules
+                else DEFAULT_ADDITIONAL_PYTHON_MODULES[glue_version]
+            ),
             "--job-bookmark-option": "job-bookmark-disable",
             "--job-language": "python",
             "--enable-spark-ui": "true",
@@ -198,7 +207,7 @@ def get_or_create_glue_job_definition(
         },
         MaxRetries=0,
         NumberOfWorkers=2,  # Jobs will override this, so set to minimum value.
-        WorkerType="Standard",
+        WorkerType=worker_type,
         GlueVersion=glue_version,
         Timeout=2880,
     )
@@ -244,7 +253,8 @@ class AWSGlueExecutor(Executor):
 
         # Optional config
         self.aws_region = config.get("aws_region", aws_utils.get_default_region())
-        self.glue_version = config.get("glue_version", "4.0")
+        self.glue_version = config.get("glue_version", DEFAULT_GLUE_VERSION)
+        self.worker_type = config.get("worker_type", "G.1X")
         self.role = config.get("role") or get_default_glue_service_role(aws_region=self.aws_region)
         self.code_package = parse_code_package_config(config)
         self.code_file: Optional[File] = None
@@ -325,6 +335,7 @@ class AWSGlueExecutor(Executor):
             extra_py_files=self.redun_zip_location,
             aws_region=self.aws_region,
             glue_version=self.glue_version,
+            worker_type=self.worker_type,
             enable_metrics=self.enable_metrics,
         )
 
@@ -657,7 +668,10 @@ def submit_glue_job(
     # Comma separated string of Python modules to be installed with pip before job start.
     if job_options.get("additional_libs"):
         glue_args["--additional-python-modules"] = ",".join(
-            DEFAULT_ADDITIONAL_PYTHON_MODULES + job_options["additional_libs"]
+            DEFAULT_ADDITIONAL_PYTHON_MODULES[
+                job_options.get("glue_version", DEFAULT_GLUE_VERSION)
+            ]
+            + job_options["additional_libs"]
         )
 
     # Extra python and data files are specified as comma separated strings.
@@ -680,8 +694,12 @@ def submit_glue_job(
         )
 
     # Validate job options
-    if job_options["worker_type"] not in VALID_GLUE_WORKERS:
-        raise ValueError(f"Invalid worker type {job_options['worker_type']}")
+    glue_version = job_options.get("glue_version", DEFAULT_GLUE_VERSION)
+    if glue_version not in DEFAULT_ADDITIONAL_PYTHON_MODULES:
+        raise ValueError(
+            f"Redun does not support this glue_version '{glue_version}';"
+            f" use one of: {list(DEFAULT_ADDITIONAL_PYTHON_MODULES)}"
+        )
 
     # Submit glue job
     # Any submission exceptions need to be handled by calling function.
