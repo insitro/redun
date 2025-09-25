@@ -279,6 +279,11 @@ class Job:
         # Job-level task option overrides.
         self.options: Dict[str, Any] = options or {}
 
+        # Options that have been exported and will be inherited by child Jobs.
+        self.export_options: Set[str] = task._export_options | expr._export_options
+        if parent_job:
+            self.export_options |= parent_job.export_options
+
         # Job-level context variables.
         self._context: Optional[dict] = None
         self.context_hash: Optional[str] = None
@@ -356,30 +361,6 @@ class Job:
         else:
             raise ValueError("Unknown status")
 
-    def get_raw_option(self, key: str, default: Any = None, as_type: Optional[Type] = None) -> Any:
-        """
-        Returns an evaluated task option associated with a :class:`Job`.
-
-        Precedence is given to task options defined at call-time
-        (e.g. `task.options(option=foo)(arg1, arg2)`) over task definition-time
-        (e.g. `@task(option=foo)`).
-        """
-        assert "task_expr_options" in self.expr.__dict__
-        task = cast(Task, self.task)
-
-        def get_raw():
-            if key in self.task_options:
-                return self.task_options[key]
-            elif key in self.expr.task_expr_options:
-                return self.expr.task_expr_options[key]
-            elif task.has_task_option(key):
-                return task.get_task_option(key)
-            else:
-                return default
-
-        result = get_raw()
-        return as_type(result) if as_type else result
-
     def get_raw_options(self) -> dict:
         """
         Returns the unevaluated task options for this job.
@@ -389,12 +370,13 @@ class Job:
         (e.g. `@task(option=foo)`).
         """
         assert self.task
-        task_options = {
+        parent_job_options = self.parent_job.get_export_options() if self.parent_job else {}
+        return {
             **self.task.get_task_options(),
-            **self.expr.task_expr_options,
+            **parent_job_options,
+            **self.expr._options,
             **self.options,
         }
-        return task_options
 
     def get_option(self, key: str, default: Any = None, as_type: Optional[Type] = None) -> Any:
         """
@@ -425,6 +407,14 @@ class Job:
             self.eval_options = options
 
         return self.eval_options
+
+    def get_export_options(self) -> dict:
+        """
+        Returns the Job's exported task options, which are inherited by child Jobs.
+        """
+        return {
+            key: value for key, value in self.get_options().items() if key in self.export_options
+        }
 
     def get_context(self) -> dict:
         """
@@ -465,7 +455,7 @@ class Job:
 
     def add_parent(self, parent_job: "Job") -> None:
         """
-        Maintains the Job tree but connecting the job with a parent job.
+        Maintains the Job tree by connecting the job with a parent job.
         """
         parent_job.child_jobs.append(self)
 
@@ -567,12 +557,18 @@ class JobInfo:
     """
 
     def __init__(
-        self, execution_id: str = "", job_id: str = "", eval_hash: str = "", args_hash: str = ""
+        self,
+        execution_id: str = "",
+        job_id: str = "",
+        eval_hash: str = "",
+        args_hash: str = "",
+        options: dict = {},
     ):
         self.execution_id = execution_id
         self.job_id = job_id
         self.eval_hash = eval_hash
         self.args_hash = args_hash
+        self.options = options
 
     @classmethod
     def from_job(self, job: Job) -> "JobInfo":
@@ -582,10 +578,18 @@ class JobInfo:
             job_id=job.id,
             eval_hash=job.eval_hash,
             args_hash=job.args_hash,
+            options=job.get_options(),
         )
 
     def __repr__(self) -> str:
-        return f"JobInfo(execution_id={self.execution_id}, job_id={self.job_id}, eval_hash={self.eval_hash}, args_hash={self.args_hash})"
+        return f"JobInfo(execution_id={self.execution_id}, job_id={self.job_id}, eval_hash={self.eval_hash}, args_hash={self.args_hash}, options={self.options})"
+
+    def __setstate__(self, state: dict) -> None:
+        self.execution_id = state["execution_id"]
+        self.job_id = state["job_id"]
+        self.eval_hash = state["eval_hash"]
+        self.args_hash = state["args_hash"]
+        self.options = state.get("options", {})  # Backwards-compatiblity.
 
 
 def get_backend_from_config(
@@ -2519,7 +2523,7 @@ def catch(
     catch_args = (expr,) + catch_args
     eval_hash, args_hash = hash_args_eval(scheduler.type_registry, catch, catch_args, {})
     # We haven't set an option on the catch task, so we just have to look for one at runtime.
-    cache_scope = CacheScope(sexpr.task_expr_options.get("cache_scope", CacheScope.BACKEND))
+    cache_scope = CacheScope(sexpr._options.get("cache_scope", CacheScope.BACKEND))
     if scheduler._use_cache and cache_scope != CacheScope.NONE:
         assert parent_job.execution
         cached_expr, call_hash, cache_type = scheduler.backend.check_cache(
@@ -2693,6 +2697,23 @@ def apply_tags(
     )
 
 
+@task(namespace="redun", name="with_export_options")
+def _with_export_options(expr: QuotedExpression) -> Any:
+    """
+    Run the given expression `expr` with exported options `options` (see with_export_options).
+
+    This is the internal helper task, user should use `with_export_options()`.
+    """
+    return expr.eval()
+
+
+def with_export_options(expr: QuotedExpression, options: dict) -> Any:
+    """
+    Run the given expression `expr` with exported options `options`.
+    """
+    return _with_export_options.export_options(**options)(expr)
+
+
 @task(
     namespace="redun",
     name="subrun_root_task",
@@ -2707,6 +2728,7 @@ def _subrun_root_task(
     config_dir: Optional[str],
     load_modules: List[str],
     run_config: Dict[str, Any],
+    export_options: Optional[dict] = None,
 ) -> Any:
     """
     Launches a sub-scheduler and runs the provided expression by first "unwrapping" it.
@@ -2800,10 +2822,16 @@ def _subrun_root_task(
         "config": sub_scheduler.config.get_config_dict(),
     }
 
+    # Include exported options if needed.
+    if export_options:
+        expr_eval = with_export_options(expr, export_options)
+    else:
+        expr_eval = expr.eval()
+
     # Extend an existing Execution if the parent_job_id is given. Otherwise, start
     # a new Execution.
     if "parent_job_id" in run_config:
-        result = sub_scheduler.extend_run(expr.eval(), **run_config)
+        result = sub_scheduler.extend_run(expr_eval, **run_config)
 
         # If extending an Execution, supplement result value with additional
         # information such as job id and call_hash.
@@ -2813,7 +2841,7 @@ def _subrun_root_task(
 
     else:
         execution_id = run_config.get("execution_id", None)
-        result = sub_scheduler.run(expr=expr.eval(), execution_id=execution_id, **run_config)
+        result = sub_scheduler.run(expr_eval, execution_id=execution_id, **run_config)
         subrun_result["result"] = result
 
     subrun_result.update(
@@ -2948,10 +2976,10 @@ def subrun(
     # Extract the cache options.
     all_options: Dict[str, Any] = {
         "cache_scope": CacheScope(
-            sexpr.task_expr_options.get("cache_scope", subrun.get_task_option("cache_scope"))
+            sexpr._options.get("cache_scope", subrun.get_task_option("cache_scope"))
         ),
         "check_valid": CacheCheckValid(
-            sexpr.task_expr_options.get("check_valid", subrun.get_task_option("check_valid"))
+            sexpr._options.get("check_valid", subrun.get_task_option("check_valid"))
         ),
         "allowed_cache_results": {CacheResult.CSE, CacheResult.ULTIMATE},
     }
@@ -2963,6 +2991,7 @@ def subrun(
         config_dir=config_dir,
         load_modules=sorted(load_modules_set),
         run_config=run_config,
+        export_options=parent_job.get_export_options(),
     )
 
     def log_banner(msg):

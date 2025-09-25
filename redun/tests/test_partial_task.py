@@ -85,9 +85,11 @@ def test_partial_serialize() -> None:
             "namespace": "my_namespace",
             "script": False,
             "task_options": {},
+            "export_options": set(),
             "version": None,
         },
         "task_options": {},
+        "export_options": set(),
         "version": None,
     }
 
@@ -140,7 +142,7 @@ def test_partial_options(scheduler: Scheduler) -> None:
     # When we call the PartialTask, the task_options should propagate to the Expression.
     inc = cast(PartialTask, inc)
     expr: Expression[int] = inc(2)
-    assert expr.task_expr_options == {"memory": 4}
+    assert expr._options == {"memory": 4}
 
     # Task options should serialize.
     state = inc.__getstate__()
@@ -194,7 +196,7 @@ def test_partial_partial_options(scheduler: Scheduler) -> None:
 
     # Options should propagate to Expression.
     expr: Expression[int] = part(3)
-    assert expr.task_expr_options == {"memory": 4}
+    assert expr._options == {"memory": 4}
 
 
 def test_partial_as_arg():

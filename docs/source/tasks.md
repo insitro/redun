@@ -206,7 +206,7 @@ This computes the n<sup>th</sup> [Fibonacci number](https://en.wikipedia.org/wik
 
 ## Task options
 
-Tasks can be configured in many ways to adjust how they are executed and cached. For example, the [`executor`](#executor) task option defines which [executor](executors.md) system (local, AWS Batch, etc) the task should execute on, and the [`cache`] task option defines whether the cache can be used to fast-forward through the task (see [Scheduler](scheduler.md) for more information on caching).
+Tasks can be configured in many ways to adjust how they are executed and cached. For example, the [`executor`](#executor) task option defines which [executor](executors.md) system (local, AWS Batch, etc) the task should execute on, and the [`cache`](tasks.md#cache) task option defines whether the cache can be used to fast-forward through the task (see [Scheduler](scheduler.md) for more information on caching).
 
 The most common way to configure a task is with the [`@task`](redun.task.task) decorator. For example, this task runs on AWS Batch with 4Gb of memory and without using caching:
 
@@ -224,7 +224,7 @@ def process_dataset(dataset: list, col: str, value: Any) -> list:
 Tasks options can also be overridden at call-time using [`Task.options()`](redun.task.Task). For example, we could dynamically set the memory required for an AWS Batch task based on the dataset size.
 
 ```py
-@task()
+@task
 def main(input: File) -> list:
     dataset = read_input(input)
 
@@ -234,7 +234,55 @@ def main(input: File) -> list:
     return dataset2
 ```
 
-Lastly, several task options, such as [`image`](config.md) or [`memory`](config.md), can be inherited by the [executor configuration](config.md#executors). 
+Lastly, several task options, such as [`image`](config.md) or [`memory`](config.md), can be inherited by the [executor configuration](config.md#executors).
+
+Task options can also be expressions (calls of other tasks), which can allow even more run-time dynamic configuration:
+
+```py
+@task(cache=get_cache_setting_task())
+def my_task():
+    # ...
+```
+
+```py
+@task
+def main(input: File) -> list:
+    dataset = read_input(input)
+
+    # Dynamically change memory depending on recommendation.
+    dataset2 = process_dataset.options(memory=get_memory_recommendation_task(dataset))(dataset, "color", "red")
+    return dataset2
+```
+
+### Task options inheritance
+
+Sometimes it is useful to set an option for an entire subworkflow beneath a task. This can be configured in redun using [`export_options`](redun.task.Task.export_options), which marks an option as "exported" and therefore should be inherited by child Jobs, similar to exported [Environment Variables](https://en.wikipedia.org/wiki/Environment_variable) in unix shells.
+
+For example, let's say we wanted to turn off caching for all jobs beneath a particular task, `subworkflow()`. We could do that as follows:
+
+```py
+result = subworkflow.export_options(cache=False)(arg1, arg2)
+```
+
+This differs from `subworkflow.options(cache=False)(arg1, arg2)` which would only turn off caching for `subworkflow` itself, but not of its descendents.
+
+
+### Task option precedence
+
+As seen above, task options can be specified in a number of places to allow flexibility in how to configure jobs. In general, option precedence follows typical conventions where more "local" definitions take precedence over more "global" ones.
+
+If we think of options as Python dicts, and use the notation `a | b` that options in `b` override options in `a`, we can summarize options precedence as follows:
+
+```py
+# Options used for a redun Job are defined as:
+job_options = executor_options       # Options defined in the Executor's config in `redun.ini`
+            | task_options           # Options defined in the @task() decorator
+            | inherited_job_options  # Exported options from the parent Job.
+            | expression_options     # Options defined at call-time using my_task.options(opt=X)(arg1, arg2)
+            | scheduler_options      # Options defined by the Scheduler or CLI (e.g. `redun run --no-cache`)
+```
+
+For more information on the full semantics see [Task option evaluation and overriding](implementation/evaluation.md#task-option-evaluation-and-overriding).
 
 ### `allowed_cache_results`
 Generally not a user-facing option, this is a `Optional[Set[CacheResult]]` specifying an upper bound on which kind of cache results are may be used (default: `None`, indicating that any are allowed). 

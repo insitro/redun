@@ -154,6 +154,10 @@ def test_task_expression(scheduler: Scheduler) -> None:
     expr = TaskExpression("task1", (10,), {})
     assert expr.get_hash() == "7076d9536c59c05862286df0d767468098a4f0ed"
 
+    # Test hashing export_options.
+    expr2: TaskExpression = TaskExpression("task1", (10,), {}, export_options={"cache"})
+    assert expr2.get_hash() == "d5f79204076f45975f306439a6ff49b7c009d2c6"
+
     # Test caching.
     state = expr.__getstate__()
     assert state == {
@@ -161,6 +165,7 @@ def test_task_expression(scheduler: Scheduler) -> None:
         "args": b"\x80\x03K\n\x85q\x00.",
         "kwargs": b"\x80\x03}q\x00.",
         "task_options": {},
+        "export_options": set(),
     }
 
     expr2 = TaskExpression.__new__(TaskExpression)

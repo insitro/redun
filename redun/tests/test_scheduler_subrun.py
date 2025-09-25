@@ -12,7 +12,7 @@ from redun.cli import get_config_dir, setup_scheduler
 from redun.context import get_context
 from redun.executors.local import LocalExecutor
 from redun.hashing import hash_call_node
-from redun.scheduler import Config, DryRunResult, ErrorValue, Scheduler, subrun
+from redun.scheduler import Config, DryRunResult, ErrorValue, JobInfo, Scheduler, subrun
 from redun.task import CacheScope, task
 from redun.tests.scripts.workflow_subrun_process_executor import main
 from redun.tests.utils import use_tempdir
@@ -663,6 +663,8 @@ def test_process_executor(start_method: str):
 # ==========================================================================================
 # Load module test
 # ==========================================================================================
+
+
 @use_tempdir
 def test_subrun_load_module():
     """Verify that explicit load modules are honored."""
@@ -742,3 +744,34 @@ def test_subrun_context() -> None:
     assert scheduler.run(main(5)) == 10
 
     assert scheduler.run(main.update_context(k=3)(5)) == 15
+
+
+@task
+def child_job(job_info: JobInfo = JobInfo()):
+    # We can detect whether 'my_option` got inherited correctly through the subrun by
+    # checking the JobInfo.
+    return {
+        "my_option": job_info.options.get("my_option"),
+        "my_export_option": job_info.options.get("my_export_option"),
+    }
+
+
+@use_tempdir
+def test_subrun_exported_options():
+    """
+    Exported options should pass through subrun.
+    """
+
+    @task
+    def main():
+        return subrun(child_job.options(my_option=10)(), executor="process")
+
+    # Assert that the foo and bar tasks appear in local scheduler's log
+    scheduler = Scheduler(config=Config(config_dict=CONFIG_DICT))
+    scheduler.load()
+
+    # Call-time options on child_job and exported options from main should propagate through subrun.
+    assert scheduler.run(main.export_options(my_export_option=11)()) == {
+        "my_option": 10,
+        "my_export_option": 11,
+    }

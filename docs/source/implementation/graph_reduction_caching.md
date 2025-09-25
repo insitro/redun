@@ -11,26 +11,14 @@ are central to the architecture.
 
 redun uses graph reduction to execute a workflow. This provides a clear and established framework for deciding how various execution steps should occur and how their results should propagate. In contrast, other workflow engines, such as Airflow, view workflow execution as simply executing tasks in topological sort order along a directed acyclic graph (DAG). While simple, this approach leaves unaddressed questions about which kinds of caching or graph optimizations (e.g. Common Subexpression Elimination, task composition/fusion) are safe to perform.
 
-Consider, for example, workflow caching, where we fast forward through tasks that have been previously executed. Viewing workflow execution as graph reduction, allows us to consider when we would prefer caching *single reductions* versus *ultimate reductions*, and the consequences of those options. It also allows us to think through how [Common Subexpression Elimination](https://en.wikipedia.org/wiki/Common_subexpression_elimination) (CSE) can be used to provide the benefits for pull-style workflow engines within a broad push-style approach.
+Consider, for example, workflow caching, where we fast-forward through tasks that have been previously executed. Viewing workflow execution as graph reduction, allows us to consider when we would prefer caching *single reductions* versus *ultimate reductions*, and the consequences of those options. It also allows us to think through how [Common Subexpression Elimination](https://en.wikipedia.org/wiki/Common_subexpression_elimination) (CSE) can be used to provide the benefits for pull-style workflow engines within a broad push-style approach. It also allows us to determine reasonable behavior for caching and CSE when using [subschedulers](../tasks.md#subrun) and [federated workflows](../tasks.md#federated-task).
 
-Going forward, our decisions on caching and CSE will likely play a role in how we design subschedulers (`subrun`) and federate workflows.
-
-
-## Design details
-
-### Review of redun's reduction and caching process
-
-Here, we review redun's workflow evaluation process, as well as how redun uses several
-caching mechanisms to provide [incremental compute](https://en.wikipedia.org/wiki/Incremental_computing) commonly seen in other workflow engines.
-The different caching mechnisms are used together in order to blend the best behaviors of
-push- and pull-style workflow engines, as well as provide a balance between rigorous reactivity
-(code and data) and user opt-in optimizations.
-
-#### Graph reduction
+## Graph reduction
 
 redun represents a workflow as a large Expression Graph and uses
 [graph reduction](https://en.wikipedia.org/wiki/Graph_reduction) to recursively evaluate the graph
-until workflow completion. For example, consider the following workflow:
+until workflow completion. Let's work through an example to gain intuition for caching and other optimizations.
+Consider the following workflow:
 
 ```py
 @task
@@ -42,7 +30,7 @@ def add4(a: int, b: int, c: int, d: int) -> int:
     return add(add(a, b), add(c, d))
 ```
 
-Now, let's walk through what happens when the redun Scheduler, `scheduler`, is used to evaluate a workflow:
+To evaluate this workflow, we can use redun Scheduler, `scheduler`, like this:
 
 ```py
 result = scheduler.run(add4(1, 2, 3, 4))
@@ -69,7 +57,7 @@ TaskExpression(
 )
 ```
 
-This expression tree will subsitute into a our Expression Graph, replacing the previous `add4` node. After subsitution,
+This expression tree will substitute into a our Expression Graph, replacing the previous `add4` node. After substitution,
 the redun Scheduler will recursively evaluate this expression. Specifically, the following reductions will occur:
 
 ```
@@ -108,98 +96,26 @@ e4 = 10
 We now have a single concrete value and the workflow concludes.
 ```
 
-#### The redun Expression Graph language
-
-Here, we define a full [grammar](https://en.wikipedia.org/wiki/Formal_grammar) describing the redun Expression Graph structure.
-
-```
-e = TaskExpression(task_name, (e, ...), {arg_key: e, ...}, options)
-  | SchedulerExpression(task_name, (e, ...), {arg_key: e, ...}, options)
-  | SimpleExpression(op_name, (e, ...), {e, ...})
-  | nested_value
-  | concrete_value
-
-nested_value = [e, ...]
-             | {e: e, ...}
-             | (e, ...)
-             | {e, ...}
-             | named_tuple_cls(e, ...)
-             | dataclass_cls(e, ...)
-
-options = {key: concrete_value, ...}
-  where key is an option name
-
-named_tuple_cls = User defined NamedTuple
-dataclass_cls = User defined dataclass
-
-task_name = Task name string
-arg_key = task argument name string
-
-op_name = "add"
-        | "mult"
-        | "div"
-        | ... name of any supported Python operator
-
-concrete_value = Any other python value (e.g. 10, "hello", pd.DataFrame(...))
-```
-
-And these are the rules for evaluating an Expression Graph.
-
-```
-eval(TaskExpression(task_name, args, kwargs, options), p) => eval(f(*eval(args, p), **eval(kwargs, p)), j)
-  where f = function associated with task t with name task_name.
-        p = parent job of the TaskExpression or None if this the root Expression.
-        j = job created for evaluating the TaskExpression
-        j.options = t.options | options  # configuration to customize the execution environment of f
-        options = configuration option overrides specific to this TaskExpression
-
-eval(SchedulerExpression(task_name, args, kwargs, options), p) => eval(f(scheduler, p, s, *args, **kwargs))
-  where scheduler = redun scheduler
-        s = SchedulerExpression(task_name, args, kwargs)
-        p = parent job of the SchedulerExpression
-        options = configuration to customize the execution environment of f
-
-eval(SimpleExpression(op_name, args, kwargs), p) = op(*args, **kwargs)
-  where op = an operation associated with operation name `op_name`, such as
-             `add`, `sub`, `__call__`, `__getitem__`, etc.
-        p = parent job of the SimpleExpression
-
-eval(ValueExpression(concrete_value), p) => concrete_value
-   where p = parent job of the ValueExpression
-
-eval([a, b, ...], p) => [eval(a, p), eval(b, p), ...]
-eval({a: b, c: d, ...}, p) => {eval(a, p): eval(b, p), eval(c, p): eval(d, p), ...}
-eval((a, b, ...), p) => (eval(a, p), eval(b, p), ...)
-eval({a, b, ...}, p) => {eval(a, p), eval(b, p), ...}
-eval(named_tuple_cls(a, b, ...), p) => named_tuple_cls(eval(a, p), eval(b, p), ...)
-eval(dataclass_cls(a, b, ...), p) => dataclass_cls(eval(a, p), eval(b, p), ...)
-
-eval(concrete_value, p) => concrete_value
-```
-
-Note:
-- We only create new Job `j` for evaluating TaskExpressions. We do not create new Jobs for evaluating the other expression types. This design choice was made to record provenance at an appropriate level of detail.
-- We propagate the parent jobs through the evaluation in order to facilitate CallGraph recording and to pass down environment like data to child Jobs.
-- `j.options` is a merge of the task options `t.options` and the overrides `options` from the TaskExpression.
-- When evaluating a `SchedulerExpression`, we pass the positional arguments `args` and keywords arguments `kwargs` unevaluated into `f`. This allows `f` to customize how to evaluate the arguments, if at all.
+For a full definition of the expression graph structure and the reduction rules see [Computational model](evaluation.md).
 
 
-#### Speeding up graph reduction with caching
+## Speeding up graph reduction with caching
 
 Let us now consider how caching could help us in speeding up reductions. Calling a task's function could be
 an expensive operation, taking seconds to hours of compute time depending on the task. Therefore, prior
 to calling any task's function, we would like to consult a cache to see if we have ever performed this reduction before,
 and if so, "replay" the substitution. Notice, we could chose to cache either a *single reduction*, such as `e1 -> e2`
-(from the example reduction process above), or the *ultimate reduction*, such as `e1 -> e4`.
+(from the example above), or the *ultimate reduction*, such as `e1 -> e4`.
 
 Given, completely pure and immutable functions and values, it would be completely safe and fastest to always perform 
 an ultimate reduction cache replay. However, in redun's use case, there are a few factors where it is safer to
-replay single reductions most of the time, and only use ultimate reduction caching as an opt-in optimization.
+replay single reductions most of the time, and only use ultimate reduction caching as an opt-in optimization
+(i.e. `check_valid="shallow"`).
 To give some intuition, consider that we must handle using a cache across workflow executions, where the task
 definitions (i.e. code) may have changed in between. We also have external values, such as `File`s, whose contents
 are stored externally (such as a file system, or object store), and we must check whether their value has
-changed since previous use. Overall, an ideal caching approach should produce the same results as if the workflow
-ran with no caching. We use the terms "code reactivity" and "data reactivity" to describe a caching approach that
+changed since previous use. Overall, **an ideal caching approach should produce the same results as if the workflow
+ran with no caching**. We use the terms "code reactivity" and "data reactivity" to describe a caching approach that
 properly considers the possible ways tasks and external values can change between executions.
 
 To account for task definition changes, we could define a hashing scheme for tasks and use the task hash as part
@@ -211,8 +127,8 @@ determine the full closure of tasks that could be called, and include all of the
 In fact, this is the approach of the [unison](https://www.unison-lang.org/) programming language.
 
 However, given the very dynamic nature of Python and the challenges of discovering the right level of reactivity
-to defined across user code, library code, and compiled code, we have chosen to not attempt static analysis. Instead, if
-we only perform single reduction caching, we only need to consider the source code of the top-level task.
+to use across user code, library code, and compiled code, we have chosen to not attempt static analysis. Instead, if
+we only perform single reduction caching, we only need to consider the source code of the immediate task.
 For example, when performing the reduction of `TaskExpression("add", (1, 2, 3, 4))`, the single reduction
 result `TE("add", (TE("add", (1, 2)), TE("add", (3, 4))))` only depends on the code of `add4` and the
 arguments `(1, 2, 3, 4)`. If there are code changes to child tasks, such as `add` we will consider them in the
@@ -252,7 +168,7 @@ In summary, redun's caching process follows the following steps:
   - If no, treat this as a cache miss and perform the reduction by calling the task.
 
 
-#### Review of push and pull workflow engines
+## Review of push and pull workflow engines
 
 Workflow engines can be categorized by whether their execution can be seen as "pushing" values as arguments into tasks
 or "pulling" results from tasks. Here are a few examples:
@@ -317,7 +233,7 @@ data-dependent dynamic execution to simply parameterizing workflow graph structu
 graph construction-time (i.e. before seeing any data).
 
 
-#### Unifying push and pull with Common Subexpression Elimination (CSE)
+## Unifying push and pull with Common Subexpression Elimination (CSE)
 
 Given the individual advantages of push and pull workflow engines, can we develop a workflow engine that has the
 benefits of both? redun achieves this by using [Common Subexpression Elimination (CSE)](https://en.wikipedia.org/wiki/Common_subexpression_elimination).
@@ -357,7 +273,7 @@ workflows, such as in the example [02_compile](https://github.com/insitro/redun/
 We believe this gives users the best of both worlds while providing the familiar semantics of "caching".
 
 
-#### Opt-in ultimate reduction caching
+## Opt-in ultimate reduction caching
 
 As described above, we default to single reduction caching due to its ability to safely check each task hash
 and external value validity. However, there may be situations where the user is willing to ignore
@@ -411,7 +327,7 @@ To summarize, when performing ultimate reduction cache checking, we do the follo
   - If no, treat this as a cache miss and perform the reduction by calling the task.
 
 
-#### Caching implementation
+## Caching implementation
 
 In terms of cache implementation, we have implemented the following database and in-memory data structures.
 
@@ -422,5 +338,5 @@ reduction cache lookup.
 We use the `CallNode` table to implement a mapping from `eval_hash` to `value_hash` which is a reference to the
 ultimate reduction result. We use this to perform ultimate reduction cache lookup.
 
-We an in-memory mapping `Scheduler._pending_jobs` which essentially maps an `eval_hash` to a running Job.
+We use an in-memory mapping `Scheduler._pending_jobs` which essentially maps an `eval_hash` to a running Job.
 We use this to perform CSE detection.

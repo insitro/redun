@@ -12,6 +12,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Set,
     Tuple,
     TypeVar,
     Union,
@@ -185,6 +186,7 @@ class Task(Value, Generic[Func]):
         script: bool = False,
         task_options_base: Optional[dict] = None,
         task_options_override: Optional[dict] = None,
+        export_options: Optional[Set[str]] = None,
         hash_includes: Optional[list] = None,
         source: Optional[str] = None,
     ):
@@ -205,6 +207,10 @@ class Task(Value, Generic[Func]):
         # Overrides to the options, typically provided at run-time, which are serialized and
         # hashed.
         self._task_options_override = task_options_override or {}
+
+        # Options that are exported and should be inherited into child jobs.
+        self._export_options: Set[str] = export_options or set()
+
         self._signature: Optional[inspect.Signature] = None
         # Extra data to hash, but not serialize
         self._hash_includes = hash_includes
@@ -364,6 +370,7 @@ class Task(Value, Generic[Func]):
                 args,
                 kwargs,
                 task_options=self._task_options_override,
+                export_options=self._export_options,
                 length=self.nout,
             ),
         )
@@ -401,6 +408,34 @@ class Task(Value, Generic[Func]):
             source=self.source,
             task_options_base=self._task_options_base,
             task_options_override=new_task_options_update,
+        )
+
+    def export_options(self, **task_options_update: Any) -> "Task[Func]":
+        """
+        Returns a new Task with exported option overrides.
+        """
+        new_task_options_update = {
+            **self._task_options_override,
+            **task_options_update,
+        }
+        export_options = self._export_options | set(task_options_update.keys())
+
+        # Handle option synonyms.
+        if "cache" in export_options:
+            export_options.add("cache_scope")
+
+        # Be sure to clone the actual type, in case it's a derived one.
+        return self.__class__(
+            self.func,
+            name=self.name,
+            namespace=self.namespace,
+            version=self.version,
+            compat=self.compat,
+            script=self.script,
+            source=self.source,
+            task_options_base=self._task_options_base,
+            task_options_override=new_task_options_update,
+            export_options=export_options,
         )
 
     def update_context(self, context: dict = {}, **kwargs: Any) -> "Task[Func]":
@@ -461,6 +496,7 @@ class Task(Value, Generic[Func]):
             "script": self.script,
             # This key name is mismatched to avoid a trivial schema update.
             "task_options": self._task_options_override,
+            "export_options": self._export_options,
         }
 
     def __setstate__(self, state) -> None:
@@ -472,6 +508,7 @@ class Task(Value, Generic[Func]):
         self.script = state.get("script", False)
         # This key name is mismatched to avoid a trivial schema update.
         self._task_options_override = state.get("task_options", {})
+        self._export_options = state.get("export_options", set())
 
         # Set func from TaskRegistry.
         registry = get_task_registry()
@@ -733,6 +770,7 @@ def task(
     script: bool = False,
     hash_includes: Optional[list] = None,
     source: Optional[str] = None,
+    export_options: Optional[dict] = None,
     **task_options_base: Any,
 ) -> Callable[[Func], Task[Func]]: ...
 
@@ -747,6 +785,7 @@ def task(
     script: bool = False,
     hash_includes: Optional[list] = None,
     source: Optional[str] = None,
+    export_options: Optional[dict] = None,
     **task_options_base: Any,
 ) -> Union[Task[Func], Callable[[Func], Task[Func]]]:
     """
@@ -776,6 +815,8 @@ def task(
     source : Optional[str]
         If provided, task.source will be set to this string. It is the caller's responsibility
         to ensure that `source` matches the provided `func` for proper hashing.
+    export_options : Optional[dict]
+        Task options that should be exported to all descendant jobs of this task.
     **task_options_base : Any
         Additional options for configuring a task or specifying behaviors of tasks. Since
         these are provided at task construction time (this is typically at Python module-load
@@ -789,6 +830,13 @@ def task(
     def deco(func: Func) -> Task[Func]:
         nonlocal namespace
 
+        if export_options:
+            # Include export option values.
+            task_options_base.update(export_options)
+            export_option_keys = set(export_options.keys())
+        else:
+            export_option_keys = None
+
         _task: Task[Func] = Task(
             func,
             name=name,
@@ -797,6 +845,7 @@ def task(
             compat=compat,
             script=script,
             task_options_base=task_options_base,
+            export_options=export_option_keys,
             hash_includes=hash_includes,
             source=source,
         )

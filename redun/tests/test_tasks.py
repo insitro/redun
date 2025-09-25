@@ -9,7 +9,7 @@ import redun
 from redun import Task, task
 from redun.expression import Expression
 from redun.namespace import compute_namespace
-from redun.scheduler import Scheduler, set_arg_defaults
+from redun.scheduler import JobInfo, Scheduler, set_arg_defaults
 from redun.task import (
     CacheCheckValid,
     CacheScope,
@@ -201,6 +201,7 @@ def test_cache_task() -> None:
         "compat": [],
         "script": False,
         "task_options": {},
+        "export_options": set(),
     }
 
     # Serialize and deserialize the task.
@@ -367,7 +368,7 @@ def test_task_options() -> None:
     assert task1.get_task_options() == {"executor": "batch"}
 
     # The expression should not need any updated options.
-    assert task1().task_expr_options == {}
+    assert task1()._options == {}
 
     # When we apply an update to the task, it should appear on the new task and expression.
     task2 = task1.options(executor="local")
@@ -382,7 +383,7 @@ def test_task_options() -> None:
 
     assert task2.get_task_options() == {"executor": "local"}
 
-    assert task2().task_expr_options == {"executor": "local"}
+    assert task2()._options == {"executor": "local"}
 
     # Additional updates should accumulate.
     task3 = task2.options(memory=4)
@@ -400,7 +401,7 @@ def test_task_options() -> None:
         "memory": 4,
     }
 
-    assert task3().task_expr_options == {
+    assert task3()._options == {
         "executor": "local",
         "memory": 4,
     }
@@ -785,3 +786,112 @@ def test_cache_options() -> None:
         type_registry.serialize(task4.options(cache_scope=CacheScope.NONE)),
     )
     assert deserialized.get_task_option("cache_scope") == CacheScope.NONE
+
+
+def test_exported_options(scheduler: Scheduler) -> None:
+    """
+    Ensure that options can be exported to child Jobs.
+    """
+    calls = []
+
+    @task
+    def task1(x):
+        calls.append("task1")
+        return x
+
+    @task
+    def task2(x):
+        calls.append("task2")
+        return task1(x)
+
+    assert scheduler.run(task2(10)) == 10
+    assert calls == ["task2", "task1"]
+
+    # Everything caches.
+    assert scheduler.run(task2(10)) == 10
+    assert calls == ["task2", "task1"]
+
+    # Task2 runs again.
+    calls = []
+    assert scheduler.run(task2.options(cache=False)(10)) == 10
+    assert calls == ["task2"]
+
+    # Task2 and task1 run again.
+    calls = []
+    assert scheduler.run(task2.export_options(cache=False)(10)) == 10
+    assert calls == ["task2", "task1"]
+
+
+def test_exported_options_deep(scheduler: Scheduler) -> None:
+    """
+    Ensure that options can be exported to deep child Jobs.
+    """
+
+    @task
+    def task1(job_info: JobInfo = JobInfo()):
+        return job_info.options["my_option"]
+
+    @task
+    def task2():
+        return task1()
+
+    @task
+    def task3():
+        return task2()
+
+    assert scheduler.run(task3.export_options(my_option=10)()) == 10
+
+
+def test_exported_options_def(scheduler: Scheduler) -> None:
+    """
+    Ensure that options can be exported to child Jobs from task definition.
+    """
+
+    @task
+    def task1(job_info: JobInfo = JobInfo()):
+        return job_info.options["my_option"]
+
+    @task(export_options={"my_option": 10})
+    def task2():
+        return task1()
+
+    assert scheduler.run(task2()) == 10
+
+
+def test_exported_options_override(scheduler: Scheduler) -> None:
+    """
+    Ensure that export options override correctly.
+    """
+
+    @task
+    def task1(job_info: JobInfo = JobInfo()):
+        return job_info.options["my_option"]
+
+    @task(export_options={"my_option": 2})
+    def task2():
+        return task1()
+
+    assert scheduler.run(task2(), cache=False) == 2
+
+    # Call-time export overrides task def export.
+    assert scheduler.run(task2.export_options(my_option=1)(), cache=False) == 1
+
+    @task
+    def task3():
+        return task1.export_options(my_option=3)()
+
+    # Inner export overrides outer export.
+    assert scheduler.run(task3.export_options(my_option=1)(), cache=False) == 3
+
+    @task(my_option=1)
+    def task1b(job_info: JobInfo = JobInfo()):
+        return job_info.options["my_option"]
+
+    @task
+    def task2b():
+        return task1b()
+
+    assert scheduler.run(task2b(), cache=False) == 1
+
+    # Exported options override non-exported options.
+    assert scheduler.run(task2b.export_options(my_option=2)(), cache=False) == 2

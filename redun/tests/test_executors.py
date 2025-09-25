@@ -94,6 +94,6 @@ type = local
 
     # Should be able to use executor.
     expr = main.options(executor="custom")()
-    assert expr.task_expr_options == {"executor": "custom"}
+    assert expr._options == {"executor": "custom"}
 
     assert scheduler.run(expr) == 10
