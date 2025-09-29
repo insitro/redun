@@ -1403,10 +1403,12 @@ class Scheduler:
             if not task:
                 promise = Promise(
                     lambda resolve, reject: reject(
-                        f"Task not found in registry: {expr.task_name}.  This can occur if the "
-                        "script that defines a user task wasn't loaded or, in the case of redun "
-                        "tasks, if an executor is loading a different version of redun that "
-                        "fails to define the task."
+                        NotImplementedError(
+                            f"Task not found in registry: {expr.task_name}.  This can occur if the "
+                            "script that defines a user task wasn't loaded or, in the case of redun "
+                            "tasks, if an executor is loading a different version of redun that "
+                            "fails to define the task."
+                        )
                     )
                 )
             else:
