@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.33.0
+October 10, 2025
+
+* `#425` - aws batch executor supports multi-node for script tasks 
+* `#424` - Forgot to wrap error string in error class 
+* `#421` - Improve AWS Glue support 
+* `#422` - Export options 
+* `#420` - Redun run 
+
 ## 0.32.0
 August 29, 2025
 
