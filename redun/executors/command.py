@@ -105,6 +105,7 @@ def get_script_task_command(
     command: str,
     exit_command: str = "",
     as_mount: bool = False,
+    suppress_output: bool = False,  # Useful for commands on cluster worker nodes
 ) -> List[str]:
     """
     Returns a shell script to run a script task.
@@ -116,13 +117,18 @@ def get_script_task_command(
 
     # Serialize arguments to input file.
     File(input_path).write(command)
-
     input_stage = File(input_path).stage(".task_command").render_stage(as_mount)
-    output_unstage = File(output_path).stage(".task_output").render_unstage(as_mount)
-    error_unstage = File(error_path).stage(".task_error").render_unstage(as_mount)
-    status_unstage = get_filesystem(url=status_path).shell_copy(
-        None, status_path, as_mount=as_mount
-    )
+
+    if suppress_output:
+        output_unstage = "echo 'output suppressed'"
+        error_unstage = "echo 'error suppressed'"
+        status_unstage = "echo 'status suppressed'"
+    else:
+        output_unstage = File(output_path).stage(".task_output").render_unstage(as_mount)
+        error_unstage = File(error_path).stage(".task_error").render_unstage(as_mount)
+        status_unstage = get_filesystem(url=status_path).shell_copy(
+            None, status_path, as_mount=as_mount
+        )
 
     return [
         "bash",

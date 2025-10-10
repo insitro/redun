@@ -350,6 +350,7 @@ def create_job_override_command(
         batch_job_args["containerOverrides"] = {"command": command}
     else:
         # Make a shallow copy so we can suppress output on these nodes
+        assert command_worker, "Must provide command_worker for multi-node jobs"
         node_overrides = [
             {"targetNodes": "0", "containerOverrides": {"command": command}},
             {"targetNodes": "1:", "containerOverrides": {"command": command_worker}},
@@ -616,15 +617,26 @@ def submit_command(
     """
     Submit a shell command to AWS Batch.
     """
-    shell_command = get_script_task_command(s3_scratch_prefix, job, command, exit_command="exit 1")
+    job_batch_options = get_batch_job_options(job_options)
+    num_nodes = job_batch_options.get("num_nodes", None)
+
+    command_main = get_script_task_command(
+        s3_scratch_prefix, job, command, suppress_output=False, exit_command="exit 1"
+    )
+    command_worker = (
+        get_script_task_command(
+            s3_scratch_prefix, job, command, suppress_output=True, exit_command="exit 1"
+        )
+        if (num_nodes or 1) > 1
+        else None
+    )
 
     # Submit to AWS Batch.
     assert job.eval_hash
     job_name = get_batch_job_name(job_options.get("job_name_prefix", "batch-job"), job.eval_hash)
 
-    job_batch_options = get_batch_job_options(job_options)
     job_batch_args = create_job_override_command(
-        command=shell_command, num_nodes=job_batch_options.get("num_nodes", None)
+        command=command_main, command_worker=command_worker, num_nodes=num_nodes
     )
 
     # Submit to AWS Batch.

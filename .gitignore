@@ -10,3 +10,4 @@ redun.db
 dist/
 build/
 scratch/
+.dmypy.json
