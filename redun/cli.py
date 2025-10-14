@@ -844,6 +844,7 @@ def get_default_execution_tags(
         except (
             botocore.exceptions.NoCredentialsError,
             botocore.exceptions.ClientError,
+            RuntimeError,
         ):
             pass
 
@@ -1030,6 +1031,7 @@ class RedunClient:
         # Run command.
         run_parser = subparsers.add_parser("run", allow_abbrev=False, help="Run a workflow task.")
         run_parser.add_argument("--no-cache", action="store_true", help="Do not use cache.")
+        run_parser.add_argument("--no-prov", action="store_true", help="Do not record provenance.")
         run_parser.add_argument("--dryrun", action="store_true", help="Perform a dry run.")
         run_parser.add_argument("--pdb", action="store_true", help="Start debugger on exception.")
         run_parser.add_argument(
@@ -1601,8 +1603,12 @@ class RedunClient:
                 kwargs[arg] = value
 
         # Apply task options override.
+        task_options = {}
         if args.option:
-            task_options = dict(map(parse_tag_key_value, args.option))
+            task_options.update(dict(map(parse_tag_key_value, args.option)))
+        if args.no_prov:
+            task_options["prov"] = False
+        if task_options:
             task = task.options(**task_options)
 
         updated_context = self.resolve_context_updates(args.context_file, args.context_updates)

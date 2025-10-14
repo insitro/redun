@@ -56,7 +56,7 @@ from redun.expression import (
 )
 from redun.file import Dir
 from redun.handle import Handle
-from redun.hashing import hash_struct
+from redun.hashing import hash_call_node, hash_struct
 from redun.logging import logger as _logger
 from redun.promise import Promise, wait_promises
 from redun.scheduler_config import REDUN_INI_FILE, postprocess_config
@@ -311,6 +311,11 @@ class Job:
         # of the Job's result, hence is available after either computing or retrieving the result.
         self.call_hash: Optional[str] = None
 
+        # Maintain a set of all tasks used in this Job's subtree. This is used to
+        # correctly perform code reactivity
+        # See: docs/source/implementation/graph_reduction_caching.md
+        self.subtree_tasks: Set[Task] = {task}
+
         # Promise for evaluating self.expr.
         self.result_promise: Promise = Promise()
 
@@ -416,6 +421,12 @@ class Job:
             key: value for key, value in self.get_options().items() if key in self.export_options
         }
 
+    def recording_provenance(self) -> bool:
+        """
+        Returns True if this Job is recording provenance.
+        """
+        return self.get_options().get("prov", True)
+
     def get_context(self) -> dict:
         """
         Returns the context variables for the Job.
@@ -459,6 +470,16 @@ class Job:
         """
         parent_job.child_jobs.append(self)
 
+    def calc_subtree_tasks(self) -> Set[Task]:
+        """
+        Computes all the tasks in this subtree.
+        """
+        for child_job in self.child_jobs:
+            # Only include jobs that finished.
+            if child_job.call_hash:
+                self.subtree_tasks.update(child_job.subtree_tasks)
+        return self.subtree_tasks
+
     def collapse(self, other_job: "Job") -> None:
         """
         Collapse this Job into `other_job`.
@@ -499,7 +520,9 @@ class Job:
         """
         Resolves a Job with a final concrete value, `result`.
         """
-        self.expr.call_hash = self.call_hash
+        if self.recording_provenance():
+            # Only record expression call_hash if this job did provence recording.
+            self.expr.call_hash = self.call_hash
         self.result_promise.do_resolve(result)
         self.clear()
 
@@ -507,7 +530,9 @@ class Job:
         """
         Rejects a Job with an error exception.
         """
-        self.expr.call_hash = self.call_hash
+        if self.recording_provenance():
+            # Only record expression call_hash if this job did provence recording.
+            self.expr.call_hash = self.call_hash
         self.result_promise.do_reject(error)
         self.clear()
 
@@ -1413,9 +1438,13 @@ class Scheduler:
                 )
             else:
                 # Downgrade the cache option, if needed.
-                job_options = {}
+                job_options: Dict[str, Any] = {}
                 if not self._use_cache:
-                    job_options["cache_scope"] = CacheScope.NONE
+                    job_options["cache_scope"] = CacheScope.CSE
+
+                # Force prov=False is parent turn's off provenance.
+                if parent_job and not parent_job.recording_provenance():
+                    job_options["prov"] = False
 
                 # TaskExpressions need to be executed in a new Job.
                 job = Job(
@@ -1430,6 +1459,10 @@ class Scheduler:
                 def options_then(job_options):
                     # Update job options so that default_kwargs below can make use of it if needed.
                     job.eval_options = job_options
+
+                    # Turn off cache use if provenance is not being recorded.
+                    if not job.recording_provenance():
+                        job.eval_options["cache_scope"] = CacheScope.NONE
 
                     # Evaluate default arguments with same parent_job, but with
                     # context from job.
@@ -1671,7 +1704,8 @@ class Scheduler:
             # because then the job will have been dropped.
 
             # There's no work to do, but be sure we consider it started.
-            self.backend.record_job_start(job)
+            if job.recording_provenance():
+                self.backend.record_job_start(job)
 
             return
 
@@ -1696,7 +1730,8 @@ class Scheduler:
             job.call_hash = call_hash
 
             # There's no work to do, but be sure we consider it started.
-            self.backend.record_job_start(job)
+            if job.recording_provenance():
+                self.backend.record_job_start(job)
 
             # Trigger downstream steps, just like an executor would, upon completing it.
             # One of the roles of `done_job` is to trigger evaluation on `result`, in case it is
@@ -1721,7 +1756,8 @@ class Scheduler:
             self._consume_resources(job_limits)
 
         # Record that the job is actually starting.
-        self.backend.record_job_start(job)
+        if job.recording_provenance():
+            self.backend.record_job_start(job)
 
         # Determine executor.
         executor_name = job.get_option("executor") or "default"
@@ -1812,7 +1848,8 @@ class Scheduler:
         if not job.was_cached:
             assert not self._dryrun
             result = self._postprocess_result(job, result, job.eval_hash)
-            self.set_cache(job.eval_hash, job.task.hash, job.args_hash, result)
+            if job.recording_provenance():
+                self.set_cache(job.eval_hash, job.task.hash, job.args_hash, result)
 
         # Eval result (child tasks), then resolve job.
         self.evaluate(result, parent_job=job).then(
@@ -1848,6 +1885,17 @@ class Scheduler:
         # compute the hash and record the call node.
         if job.call_hash:
             assert job.was_cached
+
+            # Need to maintain the subtree_tasks if this was a cache hit.
+            check_valid = job.get_option(
+                "check_valid", CacheCheckValid.FULL, as_type=CacheCheckValid
+            )
+            if check_valid == CacheCheckValid.FULL:
+                job.calc_subtree_tasks()
+            else:
+                # If we did ultimate reduction caching, then we need to query the
+                # backend to determine subtree tasks.
+                job.subtree_tasks = self._get_subtree_tasks(job)
         else:
             # Ignore failed child jobs, which have no call_hash.
             child_call_hashes = [
@@ -1855,32 +1903,61 @@ class Scheduler:
                 for child_job in job.child_jobs
                 if child_job.call_hash
             ]
+            subtree_tasks = job.calc_subtree_tasks()
 
             # Compute final call_hash and record CallNode.
             # This is a no-op if job was cached.
-            result_hash = self.backend.record_value(result)
-            job.call_hash = self.backend.record_call_node(
-                task_name=job.task.fullname,
-                task_hash=job.task.hash,
-                args_hash=job.args_hash,
-                expr_args=(job.expr.args, job.expr.kwargs),
-                eval_args=job.eval_args,
-                result_hash=result_hash,
-                child_call_hashes=child_call_hashes,
-            )
+            if job.recording_provenance():
+                result_hash = self.backend.record_value(result)
+                job.call_hash = self.backend.record_call_node(
+                    task_name=job.task.fullname,
+                    task_hash=job.task.hash,
+                    args_hash=job.args_hash,
+                    expr_args=(job.expr.args, job.expr.kwargs),
+                    eval_args=job.eval_args,
+                    result_hash=result_hash,
+                    child_call_hashes=child_call_hashes,
+                    subtree_tasks=subtree_tasks,
+                )
+                self._record_job_tags(job)
+            else:
+                # Compute call_hash even when not recording provenance.
+                result_hash = self.type_registry.get_hash(result)
+                job.call_hash = hash_call_node(
+                    job.task.hash, job.args_hash, result_hash, child_call_hashes
+                )
 
-        # Record CallNode context, if present.
-        context = job.get_context()
-        if context:
-            assert job.context_hash == self.backend.record_call_node_context(
-                job.call_hash, job.context_hash, context
-            )
+        if job.recording_provenance():
+            # Record CallNode context, if present.
+            context = job.get_context()
+            if context:
+                assert job.call_hash
+                assert job.context_hash == self.backend.record_call_node_context(
+                    job.call_hash, job.context_hash, context
+                )
 
-        self._record_job_tags(job)
+            self._record_job_tags(job)
 
-        self.backend.record_job_end(job)
+            self.backend.record_job_end(job)
         job.resolve(result)
         self._finalize_job(job)
+
+    def _get_subtree_tasks(self, job: Job) -> Set[Task]:
+        """
+        Returns all Tasks used by CallNodes within its subtree.
+        """
+        assert job.call_hash
+        subtree_task_hashes = self.backend.get_subtree_tasks(job.call_hash)
+
+        # This should work if a Job really was a cache hit.
+        tasks = set()
+        for task_hash in subtree_task_hashes:
+            task = self.task_registry.get(hash=task_hash)
+            if task:
+                # Note: We might not be able to find the task if the task exists
+                # only in the docker image of a subrun.
+                tasks.add(task)
+        return tasks
 
     def _finalize_job(self, job: Job) -> None:
         """
@@ -1994,35 +2071,40 @@ class Scheduler:
             child_call_hashes = [
                 child_job.call_hash for child_job in job.child_jobs if child_job.call_hash
             ]
+            subtree_tasks = job.calc_subtree_tasks()
 
             # Compute final call_hash and record CallNode.
-            error_value = ErrorValue(error, error_traceback or Traceback.from_error(error))
-            try:
-                error_hash = self.backend.record_value(error_value)
-            except (TypeError, AttributeError):
-                # Some errors cannot be serialized so record them as generic Exceptions.
-                error2 = Exception(repr(error))
-                error_value = ErrorValue(error2, error_traceback or Traceback.from_error(error2))
-                error_hash = self.backend.record_value(error_value)
-            job.call_hash = self.backend.record_call_node(
-                task_name=job.task.fullname,
-                task_hash=job.task.hash,
-                args_hash=job.args_hash,
-                expr_args=(job.expr.args, job.expr.kwargs),
-                eval_args=job.eval_args,
-                result_hash=error_hash,
-                child_call_hashes=child_call_hashes,
-            )
-
-            # Record CallNode context, if present.
-            context = job.get_context()
-            if context:
-                assert job.context_hash == self.backend.record_call_node_context(
-                    job.call_hash, job.context_hash, context
+            if job.recording_provenance():
+                error_value = ErrorValue(error, error_traceback or Traceback.from_error(error))
+                try:
+                    error_hash = self.backend.record_value(error_value)
+                except (TypeError, AttributeError):
+                    # Some errors cannot be serialized so record them as generic Exceptions.
+                    error2 = Exception(repr(error))
+                    error_value = ErrorValue(
+                        error2, error_traceback or Traceback.from_error(error2)
+                    )
+                    error_hash = self.backend.record_value(error_value)
+                job.call_hash = self.backend.record_call_node(
+                    task_name=job.task.fullname,
+                    task_hash=job.task.hash,
+                    args_hash=job.args_hash,
+                    expr_args=(job.expr.args, job.expr.kwargs),
+                    eval_args=job.eval_args,
+                    result_hash=error_hash,
+                    child_call_hashes=child_call_hashes,
+                    subtree_tasks=subtree_tasks,
                 )
 
-            self._record_job_tags(job)
-            self.backend.record_job_end(job, status="FAILED")
+                # Record CallNode context, if present.
+                context = job.get_context()
+                if context:
+                    assert job.context_hash == self.backend.record_call_node_context(
+                        job.call_hash, job.context_hash, context
+                    )
+
+                self._record_job_tags(job)
+                self.backend.record_job_end(job, status="FAILED")
             job.reject(error)
             self._finalize_job(job)
 
@@ -2730,6 +2812,8 @@ def _subrun_root_task(
     config_dir: Optional[str],
     load_modules: List[str],
     run_config: Dict[str, Any],
+    new_execution: bool = False,
+    job_info: JobInfo = JobInfo(),
     export_options: Optional[dict] = None,
 ) -> Any:
     """
@@ -2830,10 +2914,9 @@ def _subrun_root_task(
     else:
         expr_eval = expr.eval()
 
-    # Extend an existing Execution if the parent_job_id is given. Otherwise, start
-    # a new Execution.
-    if "parent_job_id" in run_config:
-        result = sub_scheduler.extend_run(expr_eval, **run_config)
+    if not new_execution:
+        # Extend an existing Execution. run_config will contain a parent_job_id.
+        result = sub_scheduler.extend_run(expr_eval, parent_job_id=job_info.job_id, **run_config)
 
         # If extending an Execution, supplement result value with additional
         # information such as job id and call_hash.
@@ -2842,6 +2925,7 @@ def _subrun_root_task(
         subrun_result.update(result)
 
     else:
+        # Start a new Execution.
         execution_id = run_config.get("execution_id", None)
         result = sub_scheduler.run(expr_eval, execution_id=execution_id, **run_config)
         subrun_result["result"] = result
@@ -2972,8 +3056,10 @@ def subrun(
         "cache": scheduler._use_cache,
         "context": parent_job.get_context(),
     }
-    if not new_execution:
-        run_config["parent_job_id"] = parent_job.id
+
+    # Force new execution if provenance recording is turned off.
+    if not parent_job.recording_provenance():
+        new_execution = True
 
     # Extract the cache options.
     all_options: Dict[str, Any] = {
@@ -2994,6 +3080,7 @@ def subrun(
         load_modules=sorted(load_modules_set),
         run_config=run_config,
         export_options=parent_job.get_export_options(),
+        new_execution=new_execution,
     )
 
     def log_banner(msg):
@@ -3002,18 +3089,6 @@ def subrun(
         scheduler.log("-" * 79)
 
     def then(subrun_result):
-        if "job_id" in subrun_result:
-            # Create stub-job representing the job in the subscheduler.
-            # The call_hash is needed to compute the right call_hash of parent_job.
-            job = Job(
-                root_task,
-                root_task(quote(None)),
-                id=subrun_result["job_id"],
-                parent_job=parent_job,
-                execution=scheduler._current_execution,
-            )
-            job.call_hash = subrun_result["call_hash"]
-
         # Echo sub-scheduler report.
         scheduler.log()
         log_banner(
