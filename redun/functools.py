@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Any, Callable, Dict, List, Sequence, Tuple, TypeVar, Union
 
-from redun.expression import Expression, QuotedExpression, SchedulerExpression, quote
+from redun.expression import Expression, SchedulerExpression
 from redun.promise import Promise
 from redun.scheduler import Job, Scheduler, scheduler_task
 from redun.task import PartialTask, Task, task
@@ -239,34 +239,3 @@ def zip_(*lists: List[T]) -> List[Tuple[T, ...]]:
     This is a task equivalent of zip().
     """
     return list(zip(*lists))
-
-
-@task(name="no_prov_helper", namespace="redun", prov=False)
-def _no_prov_helper(expr: QuotedExpression[T]) -> T:
-    """
-    This is a helper task for no_prov that evaluates the quoted expression.
-    """
-    return expr.eval()
-
-
-@task(name="no_prov", namespace="redun", check_valid="shallow")
-def _no_prov(expr: QuotedExpression[T]) -> T:
-    """
-    Evaluate the expression `expr` without provenance recording of its subtasks.
-
-    This task will record provenance in order to allow cached fast-forwording
-    of the entire subworkflow.
-    """
-    # check_valid="shallow" enables ultimate reduction caching of expr.
-    return _no_prov_helper(expr)
-
-
-def no_prov(expr: T) -> T:
-    """
-    Evaluate the expression `expr` without provenance recording of its subtasks.
-
-    This task will record provenance in order to allow cached fast-forwording
-    of the entire subworkflow. All subtasks will not record provenance.
-    """
-    # Quote the expression in order to force its evaluation within a prov=False scope.
-    return _no_prov(quote(expr))

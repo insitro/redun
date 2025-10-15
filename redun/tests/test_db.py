@@ -5,7 +5,6 @@ from unittest import mock
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
@@ -35,8 +34,7 @@ from redun.backends.db import (
 )
 from redun.config import Config, create_config_section
 from redun.file import Dir, File
-from redun.functools import no_prov, seq
-from redun.scheduler import JobInfo
+from redun.functools import seq
 from redun.tests.utils import use_tempdir
 from redun.utils import PreviewClass, utcnow
 
@@ -103,77 +101,57 @@ def test_race_condition_record_value() -> None:
 def test_call_graph_db() -> None:
     backend = RedunBackendDb(db_uri="sqlite:///:memory:")
     backend.load()
-
-    # Allow fake foriegn keys in this test.
-    assert backend.session
-    backend.session.execute(text("PRAGMA foreign_keys=OFF"))
-
-    @task
-    def task1():
-        pass
-
-    @task
-    def task2():
-        pass
-
-    @task
-    def task3():
-        pass
-
     task_hashes = {
-        task1.hash,
-        task2.hash,
-        task3.hash,
+        "task_hash1",
+        "task_hash2",
+        "task_hash3",
     }
 
     # Build graph.
     call_hash1 = backend.record_call_node(
-        task_name="task1",
-        task_hash=task1.hash,
+        task_name="mytask1",
+        task_hash="task_hash1",
         args_hash="args_hash1",
         expr_args=((), {}),
         eval_args=((), {}),
         result_hash="result_hash1",
-        subtree_tasks={task1},
         child_call_hashes=[],
     )
     call_hash2 = backend.record_call_node(
-        task_name="task2",
-        task_hash=task2.hash,
+        task_name="mytask2",
+        task_hash="task_hash2",
         args_hash="args_hash2",
         expr_args=((), {}),
         eval_args=((), {}),
         result_hash="result_hash2",
-        subtree_tasks={task2},
         child_call_hashes=[],
     )
     backend.record_call_node(
-        task_name="task3",
-        task_hash=task3.hash,
+        task_name="mytask3",
+        task_hash="task_hash3",
         args_hash="args_hash3",
         expr_args=((), {}),
         eval_args=((), {}),
         result_hash="result_hash3",
-        subtree_tasks={task1, task2, task3},
         child_call_hashes=[call_hash1, call_hash2],
     )
 
     # Get a node.
-    call_node = backend._get_call_node(task3.hash, "args_hash3", task_hashes)
+    call_node = backend._get_call_node("task_hash3", "args_hash3", task_hashes)
     assert call_node
-    assert call_node.task_name == "task3"
+    assert call_node.task_name == "mytask3"
 
     # Ensure we can fetch the children.
-    assert call_node.children[0].task_name == "task1"
-    assert call_node.children[1].task_name == "task2"
+    assert call_node.children[0].task_name == "mytask1"
+    assert call_node.children[1].task_name == "mytask2"
 
     # Get another node.
-    call_node = backend._get_call_node(task1.hash, "args_hash1", task_hashes)
+    call_node = backend._get_call_node("task_hash1", "args_hash1", task_hashes)
     assert call_node
-    assert call_node.task_name == "task1"
+    assert call_node.task_name == "mytask1"
 
     # Ensure we can get the parents.
-    assert call_node.parents[0].task_name == "task3"
+    call_node.parents[0].task_name == "mytask3"
 
 
 def test_handle_db() -> None:
@@ -1232,231 +1210,3 @@ def test_value_no_class(scheduler: Scheduler, backend: RedunBackendDb, session: 
 
     # Restore custom class.
     globals()["Data"] = original_Data
-
-
-def test_no_prov(scheduler: Scheduler, session: Session) -> None:
-    """
-    prov=False should suppress provenance recording.
-    """
-
-    @task()
-    def add(a: int, b: int) -> int:
-        return a + b
-
-    @task()
-    def task1(x: int, job_info=JobInfo()) -> int:
-        return add(add(x, 1), add(2, 3))
-
-    @task()
-    def main(x) -> int:
-        return add(1, task1.options(prov=False)(x))
-
-    assert scheduler.run(main(10)) == 17
-
-    # The tasks under task1 should not be recorded.
-    exec1 = session.query(Execution).one()
-    assert len(exec1.call_node.children) == 1
-    assert session.query(CallNode).count() == 2  # Expect 6 `CallNodes` here with `prov=True`
-    assert len(exec1.jobs) == 2
-
-
-def test_no_prov_cache(scheduler: Scheduler, session: Session) -> None:
-    """
-    no_prov() should enable caching the prov=False subworkflow.
-    """
-    calls = []
-
-    @task
-    def add(a: int, b: int) -> int:
-        calls.append("add")
-        return a + b
-
-    @task
-    def task1(x: int, job_info=JobInfo()) -> int:
-        calls.append("task1")
-        return add(add(x, 1), add(2, 3))
-
-    @task
-    def main(x) -> int:
-        calls.append("main")
-        return add(1, no_prov(task1(x)))
-
-    assert scheduler.run(main(10)) == 17
-
-    # Only main, add, and no_prov Jobs should be recorded.
-    assert session.query(Job).count() == 3
-
-    # Every task is called.
-    assert calls == ["main", "task1", "add", "add", "add", "add"]
-
-    # no_prov should provide short circuit caching of the whole subtree.
-    calls = []
-    assert scheduler.run(main(10)) == 17
-    assert calls == []
-
-
-def test_no_prov_main(scheduler: Scheduler, session: Session) -> None:
-    """
-    prov=False should be useable on main().
-    """
-
-    @task()
-    def add(a: int, b: int) -> int:
-        return a + b
-
-    @task()
-    def task1(x: int, job_info=JobInfo()) -> int:
-        return add(add(x, 1), add(2, 3))
-
-    @task()
-    def main(x) -> int:
-        return add(1, task1(x))
-
-    assert scheduler.run(main.options(prov=False)(10)) == 17
-
-    # No executions should be recorded.
-    assert session.query(Execution).all() == []
-    assert session.query(Job).all() == []
-    assert session.query(CallNode).all() == []
-    assert session.query(Value).all() == []
-
-
-def test_no_prov_dup(scheduler: Scheduler, session: Session) -> None:
-    """
-    Duplicate prov=False function should suppress provenance recording.
-    """
-
-    @task(prov=True)
-    def add(a: int, b: int) -> int:
-        return a + b
-
-    @task(prov=True)
-    def task1(x: int) -> int:
-        return add(add(x, 1), add.options(prov=False)(2, 3))
-
-    @task()
-    def main(x) -> int:
-        return add(1, task1.options(prov=False)(x))
-
-    assert scheduler.run(main(10)) == 17
-
-    # nested prov=False should be supported.
-    # The tasks under task1 should not be recorded.
-    exec1 = session.query(Execution).one()
-    assert len(exec1.call_node.children) == 1
-    assert session.query(CallNode).count() == 2
-
-
-def test_no_prov_code_react(scheduler: Scheduler, session: Session) -> None:
-    """
-    prov=False workflows should still react to code changes.
-    """
-
-    @task()
-    def add(a: int, b: int) -> int:
-        return a + b
-
-    @task(version="1")
-    def task1(x: int) -> int:
-        return add(add(x, 1), add(2, 3))
-
-    @task()
-    def main(x) -> int:
-        return add(1, task1.options(prov=False)(x))
-
-    assert scheduler.run(main(10)) == 17
-
-    # The tasks under task1 should not be recorded.
-    assert session.query(CallNode).count() == 2
-
-    assert scheduler.run(main(10)) == 17
-
-    # Due to caching, no new CallNodes should be recorded.
-    assert session.query(CallNode).count() == 2
-
-    # Redefine the task.
-    @task(version="2")  # type: ignore # noqa: F811
-    def task1(x: int) -> int:
-        return add(add(x, 1), add(2, 3))
-
-    assert scheduler.run(main(10)) == 17
-
-    # Due to a code change, we should rerun task1.
-    assert session.query(CallNode).count() == 3
-
-
-def test_code_react(scheduler: Scheduler, session: Session) -> None:
-    """
-    job.subtree_tasks must be set correctly even with check_valid="shallow"
-    """
-
-    @task
-    def task1() -> int:
-        return 10
-
-    @task(check_valid="shallow")
-    def task2() -> int:
-        return task1()
-
-    @task(check_valid="shallow")
-    def main(x) -> int:
-        return task2()
-
-    assert scheduler.run(main(1)) == 10
-    assert scheduler.run(main(2)) == 10
-
-    # Without computing CallNode main(2) subtree_tasks correctly, we would not be able
-    # to react to the follow code change.
-
-    # Redefine the task.
-    @task(version="2")  # type: ignore # noqa: F811
-    def task1() -> int:
-        return 11
-
-    assert scheduler.run(main(2)) == 11
-
-
-def test_no_prov_reactivate(scheduler: Scheduler, session: Session) -> None:
-    """
-    Provenance should not be reactivated once turned off.
-    """
-
-    @task
-    def task2(job_info: JobInfo = JobInfo()):
-        assert not job_info.options["prov"]
-        return 10
-
-    @task(prov=False)
-    def task1():
-        return task2.export_options(prov=True)()
-
-    @task
-    def main():
-        return task1()
-
-    assert scheduler.run(main()) == 10
-    assert session.query(Job).count() == 1
-
-
-def test_no_prov_cse(scheduler: Scheduler, session: Session) -> None:
-    """
-    prov=False turns off CSE detection.
-    """
-
-    calls = []
-
-    @task
-    def add(a, b):
-        calls.append("add")
-        return a + b
-
-    @task
-    def task1(x):
-        return add(1, 2)
-
-    @task(prov=False)
-    def main():
-        return add(1, 2) + task1(2)
-
-    assert scheduler.run(main()) == 6
-    assert calls == ["add", "add"]

@@ -76,9 +76,8 @@ def test_subrun():
     # The CallGraph should have foo and bar "stitched" in.
     exec = scheduler.backend.session.query(Execution).one()
     assert exec.job.task.name == "local_main"
-    assert exec.job.child_jobs[0].task.name == "subrun_root_task"
-    assert exec.job.child_jobs[0].child_jobs[0].task.name == "foo"
-    assert exec.job.child_jobs[0].child_jobs[0].child_jobs[0].task.name == "bar"
+    assert exec.job.child_jobs[1].task.name == "foo"
+    assert exec.job.child_jobs[1].child_jobs[0].task.name == "bar"
 
     # local_main's call_hash should be properly recorded.
     call_node = exec.job.call_node
@@ -122,16 +121,14 @@ def test_subrun_fail():
     # The CallGraph should have foo and bar "stitched" in.
     exec = scheduler.backend.session.query(Execution).one()
     assert exec.job.task.name == "local_main"
-    assert exec.job.child_jobs[0].child_jobs[0].task.name == "foo_fail"
-    assert exec.job.child_jobs[0].child_jobs[0].child_jobs[0].task.name == "bar_fail"
+    assert exec.job.child_jobs[1].task.name == "foo_fail"
+    assert exec.job.child_jobs[1].child_jobs[0].task.name == "bar_fail"
 
     # The error should be recorded along the Job tree.
     assert isinstance(exec.job.call_node.value.value_parsed, ErrorValue)
+    assert isinstance(exec.job.child_jobs[1].call_node.value.value_parsed, ErrorValue)
     assert isinstance(
-        exec.job.child_jobs[0].child_jobs[0].call_node.value.value_parsed, ErrorValue
-    )
-    assert isinstance(
-        exec.job.child_jobs[0].child_jobs[0].child_jobs[0].call_node.value.value_parsed, ErrorValue
+        exec.job.child_jobs[1].child_jobs[0].call_node.value.value_parsed, ErrorValue
     )
 
     # local_main's call_hash should be properly recorded.
@@ -778,38 +775,3 @@ def test_subrun_exported_options():
         "my_option": 10,
         "my_export_option": 11,
     }
-
-
-@task
-def child_job2(job_info: JobInfo = JobInfo()):
-    return job_info.options["prov"]
-
-
-@use_tempdir
-def test_subrun_no_prov():
-    """
-    no-prov should pass through subrun.
-    """
-
-    config2 = dict(CONFIG_DICT)
-    config2["backend"] = {
-        "db_uri": "sqlite:///redun2.db",
-    }
-
-    @task(prov=False)
-    def task1():
-        return subrun(child_job2(), executor="process", config=config2)
-
-    @task
-    def main():
-        return task1()
-
-    # Assert that the foo and bar tasks appear in local scheduler's log
-    scheduler = Scheduler(config=Config(config_dict=CONFIG_DICT))
-    scheduler.load()
-
-    # prov should be false within child_job2.
-    assert scheduler.run(main()) is False
-
-    # Only one job should be recorded.
-    assert scheduler.backend.session.query(Job).count() == 1

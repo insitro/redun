@@ -284,7 +284,6 @@ job_options = executor_options       # Options defined in the Executor's config 
 
 For more information on the full semantics see [Task option evaluation and overriding](implementation/evaluation.md#task-option-evaluation-and-overriding).
 
-
 ### `allowed_cache_results`
 Generally not a user-facing option, this is a `Optional[Set[CacheResult]]` specifying an upper bound on which kind of cache results are may be used (default: `None`, indicating that any are allowed). 
 
@@ -369,11 +368,6 @@ def main() -> str:
 
     return [name, age, results]
 ```
-
-### `prov`
-
-A bool (default: `True`) that specifies whether the job and its sub-jobs should record provenance. This option is automatically [exported](tasks.md#task-options-inheritance) to be inherited by its descendants. Disabling provenance recording also disables [cache checking](tasks.md#cache) for fast-forwarding. Users should typically use [`no_prov()`](https://insitro.github.io/redun/redun/redun.html#redun.functools.no_prov) to cache and fast-forward to the final result of a subworkflow with provenance recording disabled.
-
 
 ### `script`
 

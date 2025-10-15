@@ -44,7 +44,6 @@ from sqlalchemy import (
     inspect,
     or_,
     select,
-    text,
     update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -80,7 +79,7 @@ from redun.hashing import hash_call_node, hash_struct, hash_tag
 from redun.logging import logger as _logger
 from redun.tags import CONTEXT_KEY
 from redun.task import CacheCheckValid, CacheResult, CacheScope
-from redun.task import Task as BaseTask, get_task_registry
+from redun.task import Task as BaseTask
 from redun.utils import (
     MultiMap,
     iter_nested_value,
@@ -821,7 +820,6 @@ class CallSubtreeTask(Base):
     call_node = relationship(
         "CallNode", foreign_keys=[call_hash], back_populates="task_set", uselist=False
     )
-    task = relationship("Task", foreign_keys=[task_hash], uselist=False)
 
 
 class HandleEdge(Base):
@@ -1446,19 +1444,6 @@ def use_acquire(method):
     return wrapped
 
 
-@contextmanager
-def with_defer_constraints(session: Session) -> Iterator:
-    """
-    Defers checking database constraints temporarily.
-    """
-    if session.get_bind().dialect.name == "sqlite":
-        session.execute(text("PRAGMA foreign_keys=OFF"))
-        yield
-        session.execute(text("PRAGMA foreign_keys=ON"))
-    else:
-        yield
-
-
 class RedunBackendDb(RedunBackend):
     """
     A database-based Backend for managing the CallGraph (provenance) and cache for a Scheduler.
@@ -1545,17 +1530,13 @@ class RedunBackendDb(RedunBackend):
         self.Session = sessionmaker(bind=self.engine, class_=RedunSession, backend=self)
         self.session = self.Session()
 
-        @event.listens_for(self.engine, "connect")
-        def connect(dbapi_connection, connection_record):
-            assert self.engine
-            if self.engine.dialect.name == "postgresql":
+        # If we are connecting to postgresql, setup connection settings.
+        if self.engine.dialect.name == "postgresql":
+
+            @event.listens_for(self.engine, "connect")
+            def connect(dbapi_connection, connection_record):
                 cursor = dbapi_connection.cursor()
                 cursor.execute(f"SET redun.version = '{redun_version}'")
-                cursor.close()
-
-            elif self.engine.dialect.name == "sqlite":
-                cursor = dbapi_connection.cursor()
-                cursor.execute("PRAGMA foreign_keys=ON")
                 cursor.close()
 
         return self.engine
@@ -1680,12 +1661,10 @@ class RedunBackendDb(RedunBackend):
         # Perform migration.
         if desired_version > version:
             self.logger.info(f"Upgrading db from version {version} to {desired_version}...")
-            with with_defer_constraints(self.session):
-                upgrade(config, desired_version.migration_id)
+            upgrade(config, desired_version.migration_id)
         elif desired_version < version and not upgrade_only:
             self.logger.info(f"Downgrading db from version {version} to {desired_version}...")
-            with with_defer_constraints(self.session):
-                downgrade(config, desired_version.migration_id)
+            downgrade(config, desired_version.migration_id)
         else:
             # Already at desired version.
             self.logger.debug(f"Already at desired db version {version}.")
@@ -1748,7 +1727,6 @@ class RedunBackendDb(RedunBackend):
         eval_args: Tuple[Tuple, dict],
         result_hash: str,
         child_call_hashes: List[str],
-        subtree_tasks: Iterable[BaseTask],
     ) -> str:
         """
         Record a completed CallNode.
@@ -1770,9 +1748,6 @@ class RedunBackendDb(RedunBackend):
             Hash of the result value of the call.
         child_call_hashes: List[str]
             call_hashes of any child task calls.
-        subtree_tasks : Iterable[BaseTask]
-            When given, this will be used to record the CallSubtreeTasks. Otherwise, those tasks are
-            inferred from the provenance thus far.
 
         Returns
         -------
@@ -1793,45 +1768,42 @@ class RedunBackendDb(RedunBackend):
                     )
                 )
 
-                # Record CallEdges only if child was recorded (might not be if prov=False).
-                recorded_child_hashes = {
-                    call_hash
-                    for (call_hash,) in filter_in(
-                        session.query(CallNode.call_hash),
-                        CallNode.call_hash,
-                        child_call_hashes,
-                    )
-                }
                 for i, child_call_hash in enumerate(child_call_hashes):
-                    if child_call_hash in recorded_child_hashes:
-                        session.add(
-                            CallEdge(parent_id=call_hash, child_id=child_call_hash, call_order=i)
-                        )
+                    session.add(
+                        CallEdge(parent_id=call_hash, child_id=child_call_hash, call_order=i)
+                    )
+                session.commit()
 
                 self._record_args(call_hash, expr_args, eval_args)
 
-                # If child nodes were not recorded, then their tasks might not be recorded either.
-                if recorded_child_hashes < set(child_call_hashes):
-                    for task in subtree_tasks:
-                        self.record_value(task)
-
-                # Record call subtree tasks.
-                for task in subtree_tasks:
-                    session.add(CallSubtreeTask(call_hash=call_hash, task_hash=task.hash))
-                session.commit()
+                self._record_call_subtree_tasks(task_hash, call_hash, child_call_hashes)
         return call_hash
 
-    def get_subtree_tasks(self, call_hash: str) -> Set[str]:
+    @use_acquire
+    def _record_call_subtree_tasks(
+        self, task_hash: str, call_hash: str, child_call_hashes: List[str]
+    ):
         """
-        Returns all task hashes used by CallNodes within its subtree.
+        Record task_set for subtree of call node.
         """
-        with self.with_session() as session:
-            return {
-                task_hash
-                for (task_hash,) in session.query(CallSubtreeTask.task_hash).filter(
-                    CallSubtreeTask.call_hash == call_hash
-                )
-            }
+        assert self.session
+
+        task_hashes = {
+            row[0]
+            for row in filter_in(
+                self.session.query(CallSubtreeTask.task_hash)
+                .join(CallNode, CallSubtreeTask.call_hash == CallNode.call_hash)
+                .distinct(),
+                CallSubtreeTask.call_hash,
+                child_call_hashes,
+            )
+        }
+        task_hashes.add(task_hash)
+
+        for task_hash2 in task_hashes:
+            self.session.add(CallSubtreeTask(call_hash=call_hash, task_hash=task_hash2))
+
+        self.session.commit()
 
     def _find_arg_upstreams(self, expr_arg: AnyExpression) -> Iterator[str]:
         """
@@ -2657,15 +2629,11 @@ class RedunBackendDb(RedunBackend):
         task = job.task
         assert task
         assert job.execution
-        assert self.engine
 
         # Get or create task.
         self.record_value(task)
 
         if not job.parent_job:
-            if self.engine.dialect.name == "sqlite":
-                self.session.execute(text("PRAGMA defer_foreign_keys=ON"))
-
             # Record top-level job for the execution.
             current_execution = self._executions.pop(job.execution.id)
             assert current_execution.job_id is None
@@ -3047,14 +3015,13 @@ class RedunBackendDb(RedunBackend):
                 existing_ids.add(record_id)
 
         with self.with_session() as session:
-            with with_defer_constraints(session):
-                session.add_all(
-                    chain.from_iterable(map(self._record_serializer.deserialize, new_records))
-                )
+            session.add_all(
+                chain.from_iterable(map(self._record_serializer.deserialize, new_records))
+            )
 
-                # Post-process record writes.
-                self._postprocess_new_records()
-                session.commit()
+            # Post-process record writes.
+            self._postprocess_new_records()
+            session.commit()
 
         return len(new_records)
 
