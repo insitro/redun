@@ -2167,7 +2167,6 @@ class RedunBackendDb(RedunBackend):
             return None, False
         return self._get_value(value_row)
 
-    @use_acquire
     def check_cache(
         self,
         task_hash: str,
@@ -2181,7 +2180,38 @@ class RedunBackendDb(RedunBackend):
         allowed_cache_results: Optional[Set[CacheResult]] = None,
     ) -> Tuple[Any, Optional[str], CacheResult]:
         """
-        See parent method.
+        Catch database deserialize errors and re-interpret as cache miss.
+        """
+        try:
+            return self._check_cache(
+                task_hash=task_hash,
+                args_hash=args_hash,
+                eval_hash=eval_hash,
+                execution_id=execution_id,
+                scheduler_task_hashes=scheduler_task_hashes,
+                cache_scope=cache_scope,
+                check_valid=check_valid,
+                context_hash=context_hash,
+                allowed_cache_results=allowed_cache_results,
+            )
+        except ModuleNotFoundError:
+            return None, None, CacheResult.MISS
+
+    @use_acquire
+    def _check_cache(
+        self,
+        task_hash: str,
+        args_hash: str,
+        eval_hash: str,
+        execution_id: str,
+        scheduler_task_hashes: Set[str],
+        cache_scope: CacheScope,
+        check_valid: CacheCheckValid,
+        context_hash: Optional[str] = None,
+        allowed_cache_results: Optional[Set[CacheResult]] = None,
+    ) -> Tuple[Any, Optional[str], CacheResult]:
+        """
+        See parent method of check_cache.
         """
 
         if allowed_cache_results is None:
