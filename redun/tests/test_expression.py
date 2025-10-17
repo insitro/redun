@@ -168,9 +168,16 @@ def test_task_expression(scheduler: Scheduler) -> None:
         "export_options": set(),
     }
 
+    # Ensure book-keeping is present and working.
+    assert expr.call_hash is None
+
     expr2 = TaskExpression.__new__(TaskExpression)
     expr2.__setstate__(state)
     assert expr2.task_name == "task1"
+
+    # Ensure call_hash is reset.
+    assert expr2.call_hash is None
+
     assert scheduler.run(expr2) == 11
 
     # Test valid checking.

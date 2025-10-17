@@ -209,6 +209,9 @@ class TaskExpression(ApplyExpression[Result]):
         self._export_options = state.get("export_options", set())
         self._upstreams = [self.args, self.kwargs]
 
+        # Reset book-keeping when deserializing.
+        self.call_hash = None
+
     def is_valid(self) -> bool:
         from redun.task import get_task_registry
 
