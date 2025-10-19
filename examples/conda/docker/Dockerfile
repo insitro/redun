@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 # Install OS-level libraries.
 RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y \

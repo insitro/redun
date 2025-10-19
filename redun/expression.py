@@ -197,6 +197,7 @@ class TaskExpression(ApplyExpression[Result]):
             "kwargs": registry.serialize(self.kwargs),
             "task_options": self._options,
             "export_options": self._export_options,
+            "length": self._length,
         }
 
     def __setstate__(self, state: dict) -> None:
@@ -208,6 +209,10 @@ class TaskExpression(ApplyExpression[Result]):
         self._options = state.get("task_options", {})
         self._export_options = state.get("export_options", set())
         self._upstreams = [self.args, self.kwargs]
+        self._length = state.get("length", None)
+
+        # This bookkeeping always resets when read from cache (deserializing).
+        self.call_hash = None
 
         # Reset book-keeping when deserializing.
         self.call_hash = None

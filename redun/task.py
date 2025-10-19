@@ -330,6 +330,10 @@ class Task(Value, Generic[Func]):
             if "check_valid" in options_dict:
                 options_dict["check_valid"] = CacheCheckValid(options_dict["check_valid"])
 
+        # Automatically export provenance recording option.
+        if "prov" in self._task_options_base or "prov" in self._task_options_override:
+            self._export_options.add("prov")
+
         # Validate async tasks.
         if self.is_async():
             options_dict = self.get_task_options()

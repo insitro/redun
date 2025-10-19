@@ -8,7 +8,7 @@ import pytest
 import sqlalchemy
 
 from redun.backends.db import Execution, Job
-from redun.cli import get_config_dir, setup_scheduler
+from redun.cli import get_config_dir, setup_config, setup_scheduler
 from redun.context import get_context
 from redun.executors.local import LocalExecutor
 from redun.hashing import hash_call_node
@@ -76,8 +76,9 @@ def test_subrun():
     # The CallGraph should have foo and bar "stitched" in.
     exec = scheduler.backend.session.query(Execution).one()
     assert exec.job.task.name == "local_main"
-    assert exec.job.child_jobs[1].task.name == "foo"
-    assert exec.job.child_jobs[1].child_jobs[0].task.name == "bar"
+    assert exec.job.child_jobs[0].task.name == "subrun_root_task"
+    assert exec.job.child_jobs[0].child_jobs[0].task.name == "foo"
+    assert exec.job.child_jobs[0].child_jobs[0].child_jobs[0].task.name == "bar"
 
     # local_main's call_hash should be properly recorded.
     call_node = exec.job.call_node
@@ -121,14 +122,16 @@ def test_subrun_fail():
     # The CallGraph should have foo and bar "stitched" in.
     exec = scheduler.backend.session.query(Execution).one()
     assert exec.job.task.name == "local_main"
-    assert exec.job.child_jobs[1].task.name == "foo_fail"
-    assert exec.job.child_jobs[1].child_jobs[0].task.name == "bar_fail"
+    assert exec.job.child_jobs[0].child_jobs[0].task.name == "foo_fail"
+    assert exec.job.child_jobs[0].child_jobs[0].child_jobs[0].task.name == "bar_fail"
 
     # The error should be recorded along the Job tree.
     assert isinstance(exec.job.call_node.value.value_parsed, ErrorValue)
-    assert isinstance(exec.job.child_jobs[1].call_node.value.value_parsed, ErrorValue)
     assert isinstance(
-        exec.job.child_jobs[1].child_jobs[0].call_node.value.value_parsed, ErrorValue
+        exec.job.child_jobs[0].child_jobs[0].call_node.value.value_parsed, ErrorValue
+    )
+    assert isinstance(
+        exec.job.child_jobs[0].child_jobs[0].child_jobs[0].call_node.value.value_parsed, ErrorValue
     )
 
     # local_main's call_hash should be properly recorded.
@@ -472,6 +475,33 @@ def test_subrun_nested_list_of_tasks():
     assert [5, [10, 15]] == scheduler.run(local_main(5))
 
 
+@use_tempdir
+def test_subrun_arg_result():
+    """
+    Ensure we can correctly record provenance of a result from a subrun.
+    """
+
+    @task
+    def foo(x):
+        return x
+
+    @task
+    def local_main(x):
+        setup_config(".redun2")
+        x = subrun(
+            foo(1),
+            "default",
+            config_dir=".redun2",
+            new_execution=True,
+        )
+
+        # Passing `x` into another task will cause an ArgumentResult to be recorded.
+        return foo(x + 1)
+
+    scheduler = setup_scheduler()
+    assert scheduler.run(local_main(1)) == 2
+
+
 # ==========================================================================================
 # Caching-related tests
 # ==========================================================================================
@@ -775,3 +805,38 @@ def test_subrun_exported_options():
         "my_option": 10,
         "my_export_option": 11,
     }
+
+
+@task
+def child_job2(job_info: JobInfo = JobInfo()):
+    return job_info.options["prov"]
+
+
+@use_tempdir
+def test_subrun_no_prov():
+    """
+    no-prov should pass through subrun.
+    """
+
+    config2 = dict(CONFIG_DICT)
+    config2["backend"] = {
+        "db_uri": "sqlite:///redun2.db",
+    }
+
+    @task(prov=False)
+    def task1():
+        return subrun(child_job2(), executor="process", config=config2)
+
+    @task
+    def main():
+        return task1()
+
+    # Assert that the foo and bar tasks appear in local scheduler's log
+    scheduler = Scheduler(config=Config(config_dict=CONFIG_DICT))
+    scheduler.load()
+
+    # prov should be false within child_job2.
+    assert scheduler.run(main()) is False
+
+    # Only one job should be recorded.
+    assert scheduler.backend.session.query(Job).count() == 1

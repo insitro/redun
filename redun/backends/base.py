@@ -67,6 +67,7 @@ class RedunBackend(abc.ABC):
         eval_args: Tuple[Tuple, dict],
         result_hash: str,
         child_call_hashes: List[str],
+        subtree_tasks: Iterable["BaseTask"],
     ) -> str:
         """
         Record a completed CallNode.
@@ -88,11 +89,21 @@ class RedunBackend(abc.ABC):
             Hash of the result value of the call.
         child_call_hashes : List[str]
             call_hashes of any child task calls.
+        subtree_tasks : Iterable[BaseTask]
+            When given, this will be used to record the CallSubtreeTasks. Otherwise, those tasks are
+            inferred from the provenance thus far.
 
         Returns
         -------
         str
             The call_hash of the new CallNode.
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_subtree_tasks(self, call_hash: str) -> Set[str]:
+        """
+        Returns all task hashes used by CallNodes within its subtree.
         """
         pass
 

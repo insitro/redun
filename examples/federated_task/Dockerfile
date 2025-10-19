@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 # Install OS-level libraries.
 RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
@@ -13,4 +13,4 @@ WORKDIR /code
 # use `pip install redun`.
 COPY examples/federated_task/remote_repo remote_repo
 COPY . redun
-RUN pip3 install ./redun
+RUN pip3 install --break-system-packages ./redun

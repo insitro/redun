@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 # Install OS packages.
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \

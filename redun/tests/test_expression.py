@@ -166,6 +166,7 @@ def test_task_expression(scheduler: Scheduler) -> None:
         "kwargs": b"\x80\x03}q\x00.",
         "task_options": {},
         "export_options": set(),
+        "length": None,
     }
 
     # Ensure book-keeping is present and working.

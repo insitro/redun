@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 # Install OS-level libraries.
 RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
@@ -9,7 +9,6 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
 WORKDIR /code
 
 COPY requirements.txt .
-RUN pip3 install --upgrade pip
-RUN pip3 install -r requirements.txt
+RUN pip3 install --break-system-packages -r requirements.txt
 COPY .redun/ .redun/
 COPY workflow.py .
