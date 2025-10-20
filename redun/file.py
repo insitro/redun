@@ -313,6 +313,13 @@ class FileSystem(abc.ABC):
         """
         pass
 
+    def iter_file_hashes(self, path: str) -> Iterator[str]:
+        """
+        Yields the file hashes within a directory path.
+        """
+        for file in Dir(path):
+            yield file.hash
+
     def copy(self, src_path: str, dest_path: str) -> None:
         """
         Copy a file from src_path to dest_path.
@@ -895,6 +902,20 @@ class S3FileSystem(FileSystem):
         if self.exists(path):
             self.s3.rm(path, recursive=recursive)
 
+    def iter_file_hashes(self, path: str) -> Iterator[str]:
+        """
+        Yields the file hashes within a directory path.
+        """
+        # list_objects_v2 returns up to 1000 objects at a time.
+        bucket, key = self.get_bucket_and_key(path)
+        paginator = self.s3_raw.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket, Prefix=key)
+        for page in pages:
+            for obj in page.get("Contents", []):
+                yield hash_struct(
+                    ["File", "s3", os.path.join("s3://", bucket, obj["Key"]), obj["ETag"]]
+                )
+
     def get_hash(self, path: str) -> str:
         # Use Etag for quick hashing file.
         try:
@@ -903,7 +924,11 @@ class S3FileSystem(FileSystem):
             bucket, key = self.get_bucket_and_key(path)
             response = self.s3_raw.head_object(Bucket=bucket, Key=key, **self.s3.req_kw)
             etag = response["ETag"]
-        except ClientError:
+
+        except ClientError as error:
+            # raise permissions errors
+            if error.response.get("ResponseMetadata", {}).get("HTTPStatusCode") == 403:
+                raise
             etag = ""
         return hash_struct(["File", "s3", path, etag])
 
@@ -1449,10 +1474,15 @@ class Dir(FileSet):
         self.path = state["path"]
         super().__setstate__({"pattern": os.path.join(self.path, "**"), "hash": state["hash"]})
 
+    @property
+    def hash(self) -> str:
+        if not self._hash:
+            self._hash = self._calc_hash()
+        return self._hash
+
     def _calc_hash(self, files: Optional[List[File]] = None) -> str:
-        if files is None:
-            files = list(self)
-        return hash_struct([self.type_basename] + sorted(file.hash for file in files))
+        file_hashes = self.filesystem.iter_file_hashes(self.path)
+        return hash_struct([self.type_basename] + sorted(file_hashes))
 
     def exists(self) -> bool:
         return self.filesystem.exists(self.path)

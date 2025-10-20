@@ -1,9 +1,12 @@
 import sys
+from unittest.mock import MagicMock, patch
 
 import boto3
 import pytest
+from botocore.exceptions import ClientError
 
 from redun import Dir, File
+from redun.hashing import hash_struct
 from redun.tests.utils import mock_s3
 
 
@@ -17,6 +20,7 @@ def test_file_api():
 
     path = "s3://example-bucket/tmp/"
     dir = Dir(path)
+    empty_dir_hash = dir.hash
 
     assert not dir.exists()
     dir.rmdir()  # Should be safe when nonexistent
@@ -26,6 +30,10 @@ def test_file_api():
     assert dir.exists()
 
     file = dir.file("hello.txt")
+
+    dir_content_hash = dir.hash
+    assert dir_content_hash != empty_dir_hash
+
     file.remove()
     assert not file.exists()
 
@@ -44,12 +52,13 @@ def test_file_api():
 
     with file.open("w") as out:
         out.write("hello2")
-
     assert file.get_hash() != hash
 
     file2 = File("s3://example-bucket/tmp/hello2.txt")
     file.copy_to(file2)
     assert file2.read() == "hello2"
+
+    assert dir.hash == dir_content_hash
 
     dir.rmdir(recursive=False)  # removes tmp/ but not contents
     assert file.exists()  # but tmp/hello.txt still exists
@@ -91,3 +100,83 @@ def test_exists_cache() -> None:
 
     # Directory should now exist.
     assert Dir("s3://example-bucket/dir/").exists()
+
+
+@mock_s3
+def test_dir_hash_consistency():
+    client = boto3.client("s3", region_name="us-east-1")
+    client.create_bucket(Bucket="example-bucket")
+
+    # empty dir hash
+    path = "s3://example-bucket/tmp/"
+    dir = Dir(path)
+    expected_empty_dir_hash = hash_struct(
+        [dir.type_basename] + sorted(file.hash for file in list(dir))
+    )
+    assert dir.hash == expected_empty_dir_hash
+
+    file1 = dir.file("hello1.txt")
+    file2 = dir.file("hello2.txt")
+
+    with file1.open("w") as out:
+        out.write("hello1")
+
+    with file2.open("w") as out:
+        out.write("hello2")
+
+    expected_dir_hash = hash_struct([dir.type_basename] + sorted(file.hash for file in list(dir)))
+    dir._hash = None  # clear hash to force recompute
+    assert dir.hash != expected_empty_dir_hash
+    assert dir.hash == expected_dir_hash
+
+
+@mock_s3
+def test_dir_error_handling():
+    client = boto3.client("s3", region_name="us-east-1")
+    client.create_bucket(Bucket="example-bucket")
+
+    path = "s3://example-bucket/tmp/"
+    dir = Dir(path)
+    dir.mkdir()
+
+    error_response = {
+        "Error": {"Code": "403", "Message": "Forbidden"},
+        "ResponseMetadata": {"HTTPStatusCode": 403},
+    }
+
+    s3_client = dir.filesystem.s3_raw
+    mock_paginator = MagicMock()
+    mock_paginator.paginate.side_effect = ClientError(error_response, "ListObjectsV2")
+
+    dir._hash = None  # clear hash to force recompute
+    with patch.object(s3_client, "get_paginator", return_value=mock_paginator):
+        with pytest.raises(ClientError) as exc_info:
+            dir.hash
+        assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 403
+
+
+@mock_s3
+def test_file_error_handling():
+    client = boto3.client("s3", region_name="us-east-1")
+    client.create_bucket(Bucket="example-bucket")
+
+    path = "s3://example-bucket/tmp/"
+    dir = Dir(path)
+    dir.mkdir()
+    file = dir.file("hello.txt")
+    s3_client = dir.filesystem.s3_raw
+
+    error_response = {
+        "Error": {"Code": "403", "Message": "Forbidden"},
+        "ResponseMetadata": {"HTTPStatusCode": 403},
+    }
+    file._hash = None  # clear hash to force recompute
+    with patch.object(
+        s3_client, "head_object", side_effect=ClientError(error_response, "HeadObject")
+    ):
+        with pytest.raises(ClientError) as exc_info:
+            file.hash
+        assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 403
+
+    nonexistent_file = File("s3://example-bucket/nonexistent.txt")
+    assert nonexistent_file.hash, "Hash should be computed without error for nonexistent files"
