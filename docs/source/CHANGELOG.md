@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.34.0
+October 19, 2025
+
+* `#431` - TaskExpression.call_hash needs to be reset after deserialization
+* `#10` - DE-2376 Add no_prov() to allow suppression of provenance recording for a subworkflow
+
 ## 0.33.0
 October 10, 2025
 
