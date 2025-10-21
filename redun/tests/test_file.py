@@ -586,8 +586,8 @@ def test_sharded_dataset() -> None:
     assert sorted(dataset.filenames) == sorted([file1.path, file2.path])
 
     # Check hashing changes when list of files changes.
-    assert dataset.hash == "3394197d206ea0ef46795131b98f86c52ab9a508"
-    assert dataset2.hash == "f7cd6b0188ff900f0ca00ea0b937a91d70a3e67a"
+    assert dataset.hash == "232932819c99b04e2a35bea36aa07a118d0cf9f9"
+    assert dataset2.hash == "09cdcd8db99e039e6372a0922b6b981435b7def4"
 
     # Check type registry uses the correct hash function.
     assert dataset.hash == get_type_registry().get_hash(dataset)
@@ -1065,6 +1065,65 @@ def test_content_file_classes() -> None:
     ContentFile("dir/a").touch()
     ContentFile("dir/b").touch()
     assert all(isinstance(file, ContentFile) for file in ContentDir("dir"))
+
+
+@use_tempdir
+def test_file_hashes() -> None:
+    """
+    Ensure File and Dir return the correct hashes.
+    """
+    # Store the original os.stat before patching
+    original_stat = os.stat
+
+    def mock_stat(path):
+        real_stat = original_stat(path)
+        # Create new stat_result with modified time fields
+        return os.stat_result(
+            (
+                real_stat.st_mode,
+                real_stat.st_ino,
+                real_stat.st_dev,
+                real_stat.st_nlink,
+                real_stat.st_uid,
+                real_stat.st_gid,
+                real_stat.st_size,
+                0,  # st_atime - set to 0
+                0,  # st_mtime - set to 0
+                0,  # st_ctime - set to 0
+            )
+        )
+
+    with patch("redun.file.os.stat", side_effect=mock_stat):
+        # File should have correct hash (assuming mtime=0).
+        file1 = File("file")
+        file1.write("hello")
+        assert file1.get_hash() == "90a864abe04c80ee690e7ef269ad5418227c0003"
+
+        # IFile should depend only on path not file size.
+        file2 = IFile("ifile")
+        file2.write("hello")
+        assert file2.get_hash() == "88f6498874027742470d5d237a4c3fdd6da76cff"
+        file2.write("hello_hello")
+        assert file2.get_hash() == "88f6498874027742470d5d237a4c3fdd6da76cff"
+
+        File("dir1/file1").write("hello")
+        File("dir1/file2").write("hello1")
+        File("dir2/file1").write("hello")
+        File("dir2/file2").write("hello1")
+
+        # File paths should influence difference Dir hashes.
+        assert Dir("dir1").get_hash() == "c9de016ed88d9c7ea0c1a71c0d934ff6b342543d"
+        assert Dir("dir2").get_hash() == "229a7f205fedc5ac0f1a21383e1f39aa3f56cd2e"
+
+        # Empty Dir's should not hash to the same hash.
+        os.mkdir("dir3")
+        os.mkdir("dir4")
+        assert Dir("dir3").get_hash() != Dir("dir4").get_hash()
+
+        # Nested Dir's with the same File set {'a/b/c/d.txt'} should not have the same hash.
+        File("a/b/c/d.txt").write("hello")
+        assert {f.hash for f in Dir("a")} == {f.hash for f in Dir("a/b")}
+        assert Dir("a").get_hash() != Dir("a/b").get_hash()
 
 
 @patch("adlfs.AzureBlobFileSystem")

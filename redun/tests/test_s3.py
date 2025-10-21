@@ -111,7 +111,7 @@ def test_dir_hash_consistency():
     path = "s3://example-bucket/tmp/"
     dir = Dir(path)
     expected_empty_dir_hash = hash_struct(
-        [dir.type_basename] + sorted(file.hash for file in list(dir))
+        [dir.type_basename, dir.path] + sorted(file.hash for file in list(dir))
     )
     assert dir.hash == expected_empty_dir_hash
 
@@ -124,7 +124,9 @@ def test_dir_hash_consistency():
     with file2.open("w") as out:
         out.write("hello2")
 
-    expected_dir_hash = hash_struct([dir.type_basename] + sorted(file.hash for file in list(dir)))
+    expected_dir_hash = hash_struct(
+        [dir.type_basename, dir.path] + sorted(file.hash for file in list(dir))
+    )
     dir._hash = None  # clear hash to force recompute
     assert dir.hash != expected_empty_dir_hash
     assert dir.hash == expected_dir_hash

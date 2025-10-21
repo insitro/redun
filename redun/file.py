@@ -1410,7 +1410,9 @@ class FileSet(Value):
     def _calc_hash(self, files: Optional[List[File]] = None) -> str:
         if files is None:
             files = list(self)
-        return hash_struct([self.type_basename] + sorted(file.hash for file in files))
+        return hash_struct(
+            [self.type_basename, self.pattern] + sorted(file.hash for file in files)
+        )
 
     def get_hash(self, data: Optional[bytes] = None) -> str:
         return self.hash
@@ -1482,7 +1484,7 @@ class Dir(FileSet):
 
     def _calc_hash(self, files: Optional[List[File]] = None) -> str:
         file_hashes = self.filesystem.iter_file_hashes(self.path)
-        return hash_struct([self.type_basename] + sorted(file_hashes))
+        return hash_struct([self.type_basename, self.path] + sorted(file_hashes))
 
     def exists(self) -> bool:
         return self.filesystem.exists(self.path)
@@ -1921,7 +1923,7 @@ class ShardedS3Dataset(Value):
         writing output from a Spark/Glue job.
         """
         self._filenames = self._gather_files()
-        return hash_struct(["ShardedS3Dataset"] + sorted(self._filenames))
+        return hash_struct(["ShardedS3Dataset", self.path] + sorted(self._filenames))
 
     def is_valid(self) -> bool:
         if not self._hash:
