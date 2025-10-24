@@ -543,6 +543,7 @@ def optional_arg(x: Optional[int] = None) -> int:
         return -1
     return 10 * x
 
+
 def hello(name: str) -> str:
     return f"Hello, {name}!"
 
@@ -696,6 +697,39 @@ def call_hello2(func: Callable) -> str:
     with pytest.raises(ValueError, match="argument --func: invalid function value: 'hello'"):
         # Module ('workflow') must be included for the argument `--func`.
         client.execute(["redun", "run", "workflow.py", "call_hello2", "--func", "hello"])
+
+
+@patch("argparse.ArgumentParser.exit")
+@patch("redun.cli.print")
+@use_tempdir
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10+")
+def test_task_parse_arg_optional(print_mock, arg_exit_mock) -> None:
+    """
+    CLI should be able to parse optional task arguments in py3.10+ style.
+    """
+    File("workflow.py").write(
+        """
+from redun import task
+
+@task()
+def optional_arg(x: int | None = None) -> int:
+    if not x:
+        return -1
+    return 10 * x
+"""
+    )
+
+    def arg_exit(status=0, message=None):
+        raise ValueError(message)
+
+    arg_exit_mock.side_effect = arg_exit
+    client = RedunClient()
+
+    # Confirm optional args are not required by the CLI.
+    assert client.execute(["redun", "run", "workflow.py", "optional_arg"]) == -1
+
+    # Confirm optional args are typed correctly when supplied in the CLI.
+    assert client.execute(["redun", "run", "workflow.py", "optional_arg", "--x", "2"]) == 20
 
 
 @use_tempdir

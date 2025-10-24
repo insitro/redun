@@ -147,6 +147,9 @@ try:
 except ModuleNotFoundError:
     viz_is_enabled = False
 
+if sys.version_info >= (3, 10):
+    from types import UnionType
+
 # Constants.
 REDUN_DESCRIPTION = """\
 redun :: version {version}
@@ -489,15 +492,19 @@ def add_value_arg_parser(
             https://docs.python.org/3/library/typing.html#typing.get_args
         """
         klass = get_anno_origin(anno)
-        if klass is not Union:
-            return False
+        if sys.version_info >= (3, 10):
+            if klass is not Union and klass is not UnionType:
+                return False
+        else:
+            if klass is not Union:
+                return False
 
         try:
-            type_when_present, expected_none_type = anno.__args__
+            type1, type2 = anno.__args__
         except ValueError:
             return False
 
-        return expected_none_type is NoneType
+        return type1 is NoneType or type2 is NoneType
 
     if anno is not None:
         # For lists, we are going to parse each of the list args independently so we need the
