@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.34.0
+October 19, 2025
+
+* `#431` - TaskExpression.call_hash needs to be reset after deserialization
+* `#10` - DE-2376 Add no_prov() to allow suppression of provenance recording for a subworkflow
+
+## 0.33.0
+October 10, 2025
+
+* `#425` - aws batch executor supports multi-node for script tasks 
+* `#424` - Forgot to wrap error string in error class 
+* `#421` - Improve AWS Glue support 
+* `#422` - Export options 
+* `#420` - Redun run 
+
+## 0.32.0
+August 29, 2025
+
+* `#418` - Add  flag to disable cache in federated task proxy 
+* `#417` - Defer imports for faster startup 
+* `#415` - [COMP-3155] Improve K8S Executor Pod Labels and Annotations 
+* `#416` - [COMP-3159] Apply ruff formating to k8s files 
+
+## 0.31.0
+August 19, 2025
+
+* `#412` - Fix multiple redefinition of wrapped tasks
+* `#411` - [DE-10368] Frozen dataclass compatibility
+
+## 0.30.0
+July 25, 2025
+
+* `#407` - Add code packaging to redun launch 
+* `#408` - use os.makedirs(..., exist_ok=True) to avoid a race condition
+
 ## 0.29.0
 July 14, 2025
 

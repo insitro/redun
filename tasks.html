@@ -1,23 +1,24 @@
 <!doctype html>
 <html class="no-js" lang="en" data-content_root="./">
-  <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Executors" href="executors.html" /><link rel="prev" title="Values" href="values.html" />
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Executors" href="executors.html"><link rel="prev" title="Values" href="values.html">
+        <link rel="prefetch" href="_static/redun.svg" as="image">
 
-    <link rel="shortcut icon" href="_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <link rel="shortcut icon" href="_static/redun-no-text.svg"><!-- Generated with Sphinx 8.1.3 and Furo 2025.09.25 -->
         <title>Tasks - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
     
     
 
 
 <style>
   body {
-    --color-code-background: #f8f8f8;
-  --color-code-foreground: black;
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
   
   }
   @media not print {
@@ -144,14 +145,10 @@
   </symbol>
 </svg>
 
-<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
-<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
-<label class="overlay sidebar-overlay" for="__navigation">
-  <div class="visually-hidden">Hide navigation sidebar</div>
-</label>
-<label class="overlay toc-overlay" for="__toc">
-  <div class="visually-hidden">Hide table of contents sidebar</div>
-</label>
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
 
 <a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
@@ -161,8 +158,7 @@
   <header class="mobile-header">
     <div class="header-left">
       <label class="nav-overlay-icon" for="__navigation">
-        <div class="visually-hidden">Toggle site navigation sidebar</div>
-        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
       </label>
     </div>
     <div class="header-center">
@@ -170,8 +166,7 @@
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
-        <button class="theme-toggle">
-          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
           <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
           <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -179,8 +174,7 @@
         </button>
       </div>
       <label class="toc-overlay-icon toc-header-icon" for="__toc">
-        <div class="visually-hidden">Toggle table of contents sidebar</div>
-        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
   </header>
@@ -188,7 +182,6 @@
     <div class="sidebar-container">
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
-  
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="_static/redun.svg" alt="Logo"/>
   </div>
@@ -210,6 +203,7 @@
 <li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduling redun workflows</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="db.html">Backend and database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filesystems.html">Filesystems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tags.html">Tags</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing.html">Type checking</a></li>
@@ -225,14 +219,15 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation/evaluation.html">Computational model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation/hashing.html">Content addressable hashing summary</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="redun/modules.html">API docs</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API docs</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="redun/redun.html">redun package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of redun package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l3 has-children"><a class="reference internal" href="redun/redun.backends.html">redun.backends package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of redun.backends package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="redun/modules.html">API docs</a><input aria-label="Toggle navigation of API docs" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="redun/redun.html">redun package</a><input aria-label="Toggle navigation of redun package" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="redun/redun.backends.html">redun.backends package</a><input aria-label="Toggle navigation of redun.backends package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun/redun.backends.db.html">redun.backends.db package</a></li>
 </ul>
 </li>
@@ -269,8 +264,7 @@
   </a>
 </div>
 <div class="theme-toggle-container theme-toggle-content">
-            <button class="theme-toggle">
-              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -278,8 +272,7 @@
             </button>
           </div>
           <label class="toc-overlay-icon toc-content-icon" for="__toc">
-            <div class="visually-hidden">Toggle table of contents sidebar</div>
-            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
@@ -454,7 +447,7 @@
 </section>
 <section id="task-options">
 <h2>Task options<a class="headerlink" href="#task-options" title="Link to this heading">¶</a></h2>
-<p>Tasks can be configured in many ways to adjust how they are executed and cached. For example, the <a class="reference internal" href="#executor"><code class="docutils literal notranslate"><span class="pre">executor</span></code></a> task option defines which <a class="reference internal" href="executors.html"><span class="std std-doc">executor</span></a> system (local, AWS Batch, etc) the task should execute on, and the [<code class="docutils literal notranslate"><span class="pre">cache</span></code>] task option defines whether the cache can be used to fast-forward through the task (see <a class="reference internal" href="scheduler.html"><span class="std std-doc">Scheduler</span></a> for more information on caching).</p>
+<p>Tasks can be configured in many ways to adjust how they are executed and cached. For example, the <a class="reference internal" href="#executor"><code class="docutils literal notranslate"><span class="pre">executor</span></code></a> task option defines which <a class="reference internal" href="executors.html"><span class="std std-doc">executor</span></a> system (local, AWS Batch, etc) the task should execute on, and the <a class="reference internal" href="#cache"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">cache</span></code></span></a> task option defines whether the cache can be used to fast-forward through the task (see <a class="reference internal" href="scheduler.html"><span class="std std-doc">Scheduler</span></a> for more information on caching).</p>
 <p>The most common way to configure a task is with the <a class="reference internal" href="redun/redun.html#redun.task.task" title="redun.task.task"><span class="xref myst py py-func"><code class="docutils literal notranslate"><span class="pre">&#64;task</span></code></span></a> decorator. For example, this task runs on AWS Batch with 4Gb of memory and without using caching:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">,</span> <span class="n">memory</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">process_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
@@ -467,7 +460,7 @@
 </pre></div>
 </div>
 <p>Tasks options can also be overridden at call-time using <a class="reference internal" href="redun/redun.html#redun.task.Task" title="redun.task.Task"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">Task.options()</span></code></span></a>. For example, we could dynamically set the memory required for an AWS Batch task based on the dataset size.</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">()</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="nb">input</span><span class="p">:</span> <span class="n">File</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">read_input</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
 
@@ -478,6 +471,44 @@
 </pre></div>
 </div>
 <p>Lastly, several task options, such as <a class="reference internal" href="config.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">image</span></code></span></a> or <a class="reference internal" href="config.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">memory</span></code></span></a>, can be inherited by the <a class="reference internal" href="config.html#executors"><span class="std std-ref">executor configuration</span></a>.</p>
+<p>Task options can also be expressions (calls of other tasks), which can allow even more run-time dynamic configuration:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="n">get_cache_setting_task</span><span class="p">())</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_task</span><span class="p">():</span>
+    <span class="c1"># ...</span>
+</pre></div>
+</div>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="nb">input</span><span class="p">:</span> <span class="n">File</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">read_input</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+
+    <span class="c1"># Dynamically change memory depending on recommendation.</span>
+    <span class="n">dataset2</span> <span class="o">=</span> <span class="n">process_dataset</span><span class="o">.</span><span class="n">options</span><span class="p">(</span><span class="n">memory</span><span class="o">=</span><span class="n">get_memory_recommendation_task</span><span class="p">(</span><span class="n">dataset</span><span class="p">))(</span><span class="n">dataset</span><span class="p">,</span> <span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="s2">&quot;red&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dataset2</span>
+</pre></div>
+</div>
+<section id="task-options-inheritance">
+<h3>Task options inheritance<a class="headerlink" href="#task-options-inheritance" title="Link to this heading">¶</a></h3>
+<p>Sometimes it is useful to set an option for an entire subworkflow beneath a task. This can be configured in redun using <a class="reference internal" href="redun/redun.html#redun.task.Task.export_options" title="redun.task.Task.export_options"><span class="xref myst py py-meth"><code class="docutils literal notranslate"><span class="pre">export_options</span></code></span></a>, which marks an option as “exported” and therefore should be inherited by child Jobs, similar to exported <a class="reference external" href="https://en.wikipedia.org/wiki/Environment_variable">Environment Variables</a> in unix shells.</p>
+<p>For example, let’s say we wanted to turn off caching for all jobs beneath a particular task, <code class="docutils literal notranslate"><span class="pre">subworkflow()</span></code>. We could do that as follows:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">subworkflow</span><span class="o">.</span><span class="n">export_options</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">)(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This differs from <code class="docutils literal notranslate"><span class="pre">subworkflow.options(cache=False)(arg1,</span> <span class="pre">arg2)</span></code> which would only turn off caching for <code class="docutils literal notranslate"><span class="pre">subworkflow</span></code> itself, but not of its descendents.</p>
+</section>
+<section id="task-option-precedence">
+<h3>Task option precedence<a class="headerlink" href="#task-option-precedence" title="Link to this heading">¶</a></h3>
+<p>As seen above, task options can be specified in a number of places to allow flexibility in how to configure jobs. In general, option precedence follows typical conventions where more “local” definitions take precedence over more “global” ones.</p>
+<p>If we think of options as Python dicts, and use the notation <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">|</span> <span class="pre">b</span></code> that options in <code class="docutils literal notranslate"><span class="pre">b</span></code> override options in <code class="docutils literal notranslate"><span class="pre">a</span></code>, we can summarize options precedence as follows:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="c1"># Options used for a redun Job are defined as:</span>
+<span class="n">job_options</span> <span class="o">=</span> <span class="n">executor_options</span>       <span class="c1"># Options defined in the Executor&#39;s config in `redun.ini`</span>
+            <span class="o">|</span> <span class="n">task_options</span>           <span class="c1"># Options defined in the @task() decorator</span>
+            <span class="o">|</span> <span class="n">inherited_job_options</span>  <span class="c1"># Exported options from the parent Job.</span>
+            <span class="o">|</span> <span class="n">expression_options</span>     <span class="c1"># Options defined at call-time using my_task.options(opt=X)(arg1, arg2)</span>
+            <span class="o">|</span> <span class="n">scheduler_options</span>      <span class="c1"># Options defined by the Scheduler or CLI (e.g. `redun run --no-cache`)</span>
+</pre></div>
+</div>
+<p>For more information on the full semantics see <a class="reference internal" href="implementation/evaluation.html#task-option-evaluation-and-overriding"><span class="std std-ref">Task option evaluation and overriding</span></a>.</p>
+</section>
 <section id="allowed-cache-results">
 <h3><code class="docutils literal notranslate"><span class="pre">allowed_cache_results</span></code><a class="headerlink" href="#allowed-cache-results" title="Link to this heading">¶</a></h3>
 <p>Generally not a user-facing option, this is a <code class="docutils literal notranslate"><span class="pre">Optional[Set[CacheResult]]</span></code> specifying an upper bound on which kind of cache results are may be used (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>, indicating that any are allowed).</p>
@@ -561,6 +592,10 @@ For example, consider:</p>
     <span class="k">return</span> <span class="p">[</span><span class="n">name</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">results</span><span class="p">]</span>
 </pre></div>
 </div>
+</section>
+<section id="prov">
+<h3><code class="docutils literal notranslate"><span class="pre">prov</span></code><a class="headerlink" href="#prov" title="Link to this heading">¶</a></h3>
+<p>A bool (default: <code class="docutils literal notranslate"><span class="pre">True</span></code>) that specifies whether the job and its sub-jobs should record provenance. This option is automatically <a class="reference internal" href="#task-options-inheritance"><span class="std std-ref">exported</span></a> to be inherited by its descendants. Disabling provenance recording also disables <a class="reference internal" href="#cache"><span class="std std-ref">cache checking</span></a> for fast-forwarding. Users should typically use <a class="reference external" href="https://insitro.github.io/redun/redun/redun.html#redun.functools.no_prov"><code class="docutils literal notranslate"><span class="pre">no_prov()</span></code></a> to cache and fast-forward to the final result of a subworkflow with provenance recording disabled.</p>
 </section>
 <section id="script">
 <h3><code class="docutils literal notranslate"><span class="pre">script</span></code><a class="headerlink" href="#script" title="Link to this heading">¶</a></h3>
@@ -1042,7 +1077,7 @@ requires explicit configuration of caching. Specifically, users must configure a
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2023, insitro
+                Copyright &#169; 2025, insitro
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -1075,6 +1110,8 @@ requires explicit configuration of caching. Specifically, users must configure a
 <li><a class="reference internal" href="#nested-values">Nested values</a></li>
 <li><a class="reference internal" href="#recursion">Recursion</a></li>
 <li><a class="reference internal" href="#task-options">Task options</a><ul>
+<li><a class="reference internal" href="#task-options-inheritance">Task options inheritance</a></li>
+<li><a class="reference internal" href="#task-option-precedence">Task option precedence</a></li>
 <li><a class="reference internal" href="#allowed-cache-results"><code class="docutils literal notranslate"><span class="pre">allowed_cache_results</span></code></a></li>
 <li><a class="reference internal" href="#cache"><code class="docutils literal notranslate"><span class="pre">cache</span></code></a></li>
 <li><a class="reference internal" href="#cache-scope"><code class="docutils literal notranslate"><span class="pre">cache_scope</span></code></a></li>
@@ -1087,6 +1124,7 @@ requires explicit configuration of caching. Specifically, users must configure a
 <li><a class="reference internal" href="#name"><code class="docutils literal notranslate"><span class="pre">name</span></code></a></li>
 <li><a class="reference internal" href="#namespace"><code class="docutils literal notranslate"><span class="pre">namespace</span></code></a></li>
 <li><a class="reference internal" href="#nout"><code class="docutils literal notranslate"><span class="pre">nout</span></code></a></li>
+<li><a class="reference internal" href="#prov"><code class="docutils literal notranslate"><span class="pre">prov</span></code></a></li>
 <li><a class="reference internal" href="#script"><code class="docutils literal notranslate"><span class="pre">script</span></code></a></li>
 <li><a class="reference internal" href="#version"><code class="docutils literal notranslate"><span class="pre">version</span></code></a></li>
 </ul>
@@ -1119,6 +1157,6 @@ requires explicit configuration of caching. Specifically, users must configure a
 </div><script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>

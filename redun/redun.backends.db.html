@@ -1,23 +1,24 @@
 <!doctype html>
 <html class="no-js" lang="en" data-content_root="../">
-  <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="redun.console package" href="redun.console.html" /><link rel="prev" title="redun.backends package" href="redun.backends.html" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="redun.console package" href="redun.console.html"><link rel="prev" title="redun.backends package" href="redun.backends.html">
+        <link rel="prefetch" href="../_static/redun.svg" as="image">
 
-    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <link rel="shortcut icon" href="../_static/redun-no-text.svg"><!-- Generated with Sphinx 8.1.3 and Furo 2025.09.25 -->
         <title>redun.backends.db package - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
     
 
 
 <style>
   body {
-    --color-code-background: #f8f8f8;
-  --color-code-foreground: black;
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
   
   }
   @media not print {
@@ -144,14 +145,10 @@
   </symbol>
 </svg>
 
-<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
-<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
-<label class="overlay sidebar-overlay" for="__navigation">
-  <div class="visually-hidden">Hide navigation sidebar</div>
-</label>
-<label class="overlay toc-overlay" for="__toc">
-  <div class="visually-hidden">Hide table of contents sidebar</div>
-</label>
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
 
 <a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
@@ -161,8 +158,7 @@
   <header class="mobile-header">
     <div class="header-left">
       <label class="nav-overlay-icon" for="__navigation">
-        <div class="visually-hidden">Toggle site navigation sidebar</div>
-        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
       </label>
     </div>
     <div class="header-center">
@@ -170,8 +166,7 @@
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
-        <button class="theme-toggle">
-          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
           <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
           <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -179,8 +174,7 @@
         </button>
       </div>
       <label class="toc-overlay-icon toc-header-icon" for="__toc">
-        <div class="visually-hidden">Toggle table of contents sidebar</div>
-        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
   </header>
@@ -188,7 +182,6 @@
     <div class="sidebar-container">
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
-  
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../_static/redun.svg" alt="Logo"/>
   </div>
@@ -210,6 +203,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../scheduler.html">Scheduling redun workflows</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../db.html">Backend and database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filesystems.html">Filesystems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tags.html">Tags</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../typing.html">Type checking</a></li>
@@ -225,14 +219,15 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../implementation/evaluation.html">Computational model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../implementation/hashing.html">Content addressable hashing summary</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
-<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">API docs</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API docs</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2 current has-children"><a class="reference internal" href="redun.html">redun package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of redun package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l3 current has-children"><a class="reference internal" href="redun.backends.html">redun.backends package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of redun.backends package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">API docs</a><input aria-label="Toggle navigation of API docs" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="redun.html">redun package</a><input aria-label="Toggle navigation of redun package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3 current has-children"><a class="reference internal" href="redun.backends.html">redun.backends package</a><input aria-label="Toggle navigation of redun.backends package" checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l4 current current-page"><a class="current reference internal" href="#">redun.backends.db package</a></li>
 </ul>
 </li>
@@ -269,8 +264,7 @@
   </a>
 </div>
 <div class="theme-toggle-container theme-toggle-content">
-            <button class="theme-toggle">
-              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -278,8 +272,7 @@
             </button>
           </div>
           <label class="toc-overlay-icon toc-content-icon" for="__toc">
-            <div class="visually-hidden">Toggle table of contents sidebar</div>
-            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
@@ -976,7 +969,7 @@ like this:</p>
 <p>Query class for efficiently querying across all models in a CallGraph.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.query.CallGraphQuery.ExecTag">
-<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7f363ebd4fd0;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">ExecTag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;AliasedClass</span> <span class="pre">at</span> <span class="pre">0x7f2b0a731ea0;</span> <span class="pre">Tag&gt;</span></em><a class="headerlink" href="#redun.backends.db.query.CallGraphQuery.ExecTag" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1655,6 +1648,11 @@ like this:</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="redun.backends.db.CallSubtreeTask.call_node">
 <span class="sig-name descname"><span class="pre">call_node</span></span><a class="headerlink" href="#redun.backends.db.CallSubtreeTask.call_node" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="redun.backends.db.CallSubtreeTask.task">
+<span class="sig-name descname"><span class="pre">task</span></span><a class="headerlink" href="#redun.backends.db.CallSubtreeTask.task" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2606,6 +2604,12 @@ databases.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="redun.backends.db.RedunBackendDb.get_subtree_tasks">
+<span class="sig-name descname"><span class="pre">get_subtree_tasks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.db.RedunBackendDb.get_subtree_tasks" title="Link to this definition">¶</a></dt>
+<dd><p>Returns all task hashes used by CallNodes within its subtree.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.db.RedunBackendDb.get_tags">
 <span class="sig-name descname"><span class="pre">get_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="redun.html#redun.utils.MultiMap" title="redun.utils.MultiMap"><span class="pre">MultiMap</span></a><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.backends.db.RedunBackendDb.get_tags" title="Link to this definition">¶</a></dt>
 <dd><p>Get the tags of an entity (Execution, Job, CallNode, Task, Value).</p>
@@ -2691,7 +2695,7 @@ Set this to true to prevent downgrades (such as during automigration).</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="redun.backends.db.RedunBackendDb.record_call_node">
-<span class="sig-name descname"><span class="pre">record_call_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child_call_hashes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.backends.db.RedunBackendDb.record_call_node" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">record_call_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child_call_hashes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtree_tasks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="redun.html#redun.task.Task" title="redun.task.Task"><span class="pre">Task</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.backends.db.RedunBackendDb.record_call_node" title="Link to this definition">¶</a></dt>
 <dd><p>Record a completed CallNode.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2704,6 +2708,8 @@ to record the full upstream dataflow.</p></li>
 <li><p><strong>eval_args</strong> (<em>Tuple</em><em>[</em><em>Tuple</em><em>, </em><em>dict</em><em>]</em>) – The fully evaluated arguments of the task arguments.</p></li>
 <li><p><strong>result_hash</strong> (<em>str</em>) – Hash of the result value of the call.</p></li>
 <li><p><strong>child_call_hashes</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – call_hashes of any child task calls.</p></li>
+<li><p><strong>subtree_tasks</strong> (<em>Iterable</em><em>[</em><em>BaseTask</em><em>]</em>) – When given, this will be used to record the CallSubtreeTasks. Otherwise, those tasks are
+inferred from the provenance thus far.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -3304,6 +3310,12 @@ This also implies <cite>new=True</cite>.</p></li>
 <dd><p>Decorator for running a RedunBackendDb method with the db lock acquired.</p>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="redun.backends.db.with_defer_constraints">
+<span class="sig-prename descclassname"><span class="pre">redun.backends.db.</span></span><span class="sig-name descname"><span class="pre">with_defer_constraints</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span></span></span><a class="headerlink" href="#redun.backends.db.with_defer_constraints" title="Link to this definition">¶</a></dt>
+<dd><p>Defers checking database constraints temporarily.</p>
+</dd></dl>
+
 </section>
 </section>
 
@@ -3336,7 +3348,7 @@ This also implies <cite>new=True</cite>.</p></li>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2023, insitro
+                Copyright &#169; 2025, insitro
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -3599,6 +3611,7 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.CallSubtreeTask"><code class="docutils literal notranslate"><span class="pre">CallSubtreeTask</span></code></a><ul>
 <li><a class="reference internal" href="#redun.backends.db.CallSubtreeTask.call_hash"><code class="docutils literal notranslate"><span class="pre">CallSubtreeTask.call_hash</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.CallSubtreeTask.call_node"><code class="docutils literal notranslate"><span class="pre">CallSubtreeTask.call_node</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.CallSubtreeTask.task"><code class="docutils literal notranslate"><span class="pre">CallSubtreeTask.task</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.CallSubtreeTask.task_hash"><code class="docutils literal notranslate"><span class="pre">CallSubtreeTask.task_hash</span></code></a></li>
 </ul>
 </li>
@@ -3719,6 +3732,7 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_eval_cache"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_eval_cache()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_job"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_job()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_records"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_records()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_subtree_tasks"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_subtree_tasks()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_tags"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_tags()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.get_value"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.get_value()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.RedunBackendDb.has_records"><code class="docutils literal notranslate"><span class="pre">RedunBackendDb.has_records()</span></code></a></li>
@@ -3843,6 +3857,7 @@ This also implies <cite>new=True</cite>.</p></li>
 <li><a class="reference internal" href="#redun.backends.db.get_value_child_edges"><code class="docutils literal notranslate"><span class="pre">get_value_child_edges()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.parse_db_version"><code class="docutils literal notranslate"><span class="pre">parse_db_version()</span></code></a></li>
 <li><a class="reference internal" href="#redun.backends.db.use_acquire"><code class="docutils literal notranslate"><span class="pre">use_acquire()</span></code></a></li>
+<li><a class="reference internal" href="#redun.backends.db.with_defer_constraints"><code class="docutils literal notranslate"><span class="pre">with_defer_constraints()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -3859,6 +3874,6 @@ This also implies <cite>new=True</cite>.</p></li>
 </div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>

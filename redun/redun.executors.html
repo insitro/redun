@@ -1,23 +1,24 @@
 <!doctype html>
 <html class="no-js" lang="en" data-content_root="../">
-  <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="prev" title="redun.console package" href="redun.console.html" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="prev" title="redun.console package" href="redun.console.html">
+        <link rel="prefetch" href="../_static/redun.svg" as="image">
 
-    <link rel="shortcut icon" href="../_static/redun-no-text.svg"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <link rel="shortcut icon" href="../_static/redun-no-text.svg"><!-- Generated with Sphinx 8.1.3 and Furo 2025.09.25 -->
         <title>redun.executors package - redun documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
     
 
 
 <style>
   body {
-    --color-code-background: #f8f8f8;
-  --color-code-foreground: black;
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
   
   }
   @media not print {
@@ -144,14 +145,10 @@
   </symbol>
 </svg>
 
-<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
-<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
-<label class="overlay sidebar-overlay" for="__navigation">
-  <div class="visually-hidden">Hide navigation sidebar</div>
-</label>
-<label class="overlay toc-overlay" for="__toc">
-  <div class="visually-hidden">Hide table of contents sidebar</div>
-</label>
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
 
 <a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
@@ -161,8 +158,7 @@
   <header class="mobile-header">
     <div class="header-left">
       <label class="nav-overlay-icon" for="__navigation">
-        <div class="visually-hidden">Toggle site navigation sidebar</div>
-        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
       </label>
     </div>
     <div class="header-center">
@@ -170,8 +166,7 @@
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
-        <button class="theme-toggle">
-          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
           <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
           <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -179,8 +174,7 @@
         </button>
       </div>
       <label class="toc-overlay-icon toc-header-icon" for="__toc">
-        <div class="visually-hidden">Toggle table of contents sidebar</div>
-        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
   </header>
@@ -188,7 +182,6 @@
     <div class="sidebar-container">
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
-  
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../_static/redun.svg" alt="Logo"/>
   </div>
@@ -210,6 +203,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../scheduler.html">Scheduling redun workflows</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../db.html">Backend and database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filesystems.html">Filesystems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tags.html">Tags</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../spark.html">Spark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../typing.html">Type checking</a></li>
@@ -225,14 +219,15 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../implementation/hashing.html">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../implementation/evaluation.html">Computational model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../implementation/graph_reduction_caching.html">Graph reduction caching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../implementation/hashing.html">Content addressable hashing summary</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
-<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">API docs</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API docs</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2 current has-children"><a class="reference internal" href="redun.html">redun package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of redun package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l3 has-children"><a class="reference internal" href="redun.backends.html">redun.backends package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of redun.backends package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">API docs</a><input aria-label="Toggle navigation of API docs" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="redun.html">redun package</a><input aria-label="Toggle navigation of redun package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="redun.backends.html">redun.backends package</a><input aria-label="Toggle navigation of redun.backends package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="redun.backends.db.html">redun.backends.db package</a></li>
 </ul>
 </li>
@@ -269,8 +264,7 @@
   </a>
 </div>
 <div class="theme-toggle-container theme-toggle-content">
-            <button class="theme-toggle">
-              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -278,8 +272,7 @@
             </button>
           </div>
           <label class="toc-overlay-icon toc-content-icon" for="__toc">
-            <div class="visually-hidden">Toggle table of contents sidebar</div>
-            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
@@ -670,7 +663,7 @@ Use a negative int to disable this optimization.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.executors.aws_glue.get_or_create_glue_job_definition">
-<span class="sig-prename descclassname"><span class="pre">redun.executors.aws_glue.</span></span><span class="sig-name descname"><span class="pre">get_or_create_glue_job_definition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">script_location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">glue_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_py_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark_history_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">additional_python_modules</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">['alembic&gt;=1.4',</span> <span class="pre">'mako',</span> <span class="pre">'promise',</span> <span class="pre">'s3fs&gt;=2021.11.1',</span> <span class="pre">'sqlalchemy&gt;=1.4.0or&lt;2.1']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aws_region</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'us-west-2'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.executors.aws_glue.get_or_create_glue_job_definition" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">redun.executors.aws_glue.</span></span><span class="sig-name descname"><span class="pre">get_or_create_glue_job_definition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">script_location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">glue_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">worker_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_py_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark_history_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">additional_python_modules</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aws_region</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'us-west-2'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#redun.executors.aws_glue.get_or_create_glue_job_definition" title="Link to this definition">¶</a></dt>
 <dd><p>Gets or creates an AWS Glue Job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -678,6 +671,8 @@ Use a negative int to disable this optimization.</p></li>
 <li><p><strong>script_location</strong> (<em>str</em>) – S3 path of script that runs Spark job.</p></li>
 <li><p><strong>role</strong> (<em>str</em>) – ARN of IAM role to associate with Glue job.</p></li>
 <li><p><strong>glue_version</strong> (<em>str</em>) – Glue version to use for the job.</p></li>
+<li><p><strong>worker_type</strong> (<em>str</em>) – Type of worker type for the job (e.g. ‘G.1X’, ‘G.2X’, etc.). See:
+<a class="reference external" href="https://docs.aws.amazon.com/en_us/glue/latest/dg/worker-types.html">https://docs.aws.amazon.com/en_us/glue/latest/dg/worker-types.html</a></p></li>
 <li><p><strong>temp_dir</strong> (<em>str</em>) – S3 path of scratch directory associated with job data and code.</p></li>
 <li><p><strong>extra_py_files</strong> (<em>str</em>) – Comma separated S3 file paths for additional Python code needed for job.</p></li>
 <li><p><strong>spark_history_dir</strong> (<em>str</em>) – S3 path where Spark event logs are stored.</p></li>
@@ -993,11 +988,18 @@ If False, None is returned for unknown executor name.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.executors.base.register_executor">
-<span class="sig-prename descclassname"><span class="pre">redun.executors.base.</span></span><span class="sig-name descname"><span class="pre">register_executor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">executor_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="headerlink" href="#redun.executors.base.register_executor" title="Link to this definition">¶</a></dt>
-<dd><p>Register an Executor class to be used by the scheduler.</p>
+<span class="sig-prename descclassname"><span class="pre">redun.executors.base.</span></span><span class="sig-name descname"><span class="pre">register_executor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">executor_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">executor_class_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="headerlink" href="#redun.executors.base.register_executor" title="Link to this definition">¶</a></dt>
+<dd><p>Register an Executor, either by decorating a class or passing a fully-specified class name.
+The executor will be available to the scheduler under the provided name.</p>
 <p>Note that registered classes are responsible for ensuring their modules get loaded, so this
 decorator is actually run. For example, this can be done by adding them to the redun
 module <cite>__init__.py</cite>.</p>
+<p>Usage:
+&gt;&gt;&gt; &#64;register_executor(“my_executor”)
+… class MyExecutor(Executor):
+…     …
+or
+&gt;&gt;&gt; register_executor(“my_executor”, “my_module.MyExecutor”)</p>
 </dd></dl>
 
 </section>
@@ -1061,7 +1063,7 @@ module <cite>__init__.py</cite>.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.executors.command.get_script_task_command">
-<span class="sig-prename descclassname"><span class="pre">redun.executors.command.</span></span><span class="sig-name descname"><span class="pre">get_script_task_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scratch_prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.scheduler.Job" title="redun.scheduler.Job"><span class="pre">Job</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_mount</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.executors.command.get_script_task_command" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">redun.executors.command.</span></span><span class="sig-name descname"><span class="pre">get_script_task_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scratch_prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.scheduler.Job" title="redun.scheduler.Job"><span class="pre">Job</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_mount</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suppress_output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#redun.executors.command.get_script_task_command" title="Link to this definition">¶</a></dt>
 <dd><p>Returns a shell script to run a script task.</p>
 </dd></dl>
 
@@ -1179,7 +1181,7 @@ module <cite>__init__.py</cite>.</p>
 <span id="redun-executors-launch-module"></span><h2>redun.executors.launch module<a class="headerlink" href="#module-redun.executors.launch" title="Link to this heading">¶</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="redun.executors.launch.launch_script">
-<span class="sig-prename descclassname"><span class="pre">redun.executors.launch.</span></span><span class="sig-name descname"><span class="pre">launch_script</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.config.Config" title="redun.config.Config"><span class="pre">Config</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">script_command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">executor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.executors.base.Executor" title="redun.executors.base.Executor"><span class="pre">Executor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">executor_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execution_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.executors.launch.launch_script" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">redun.executors.launch.</span></span><span class="sig-name descname"><span class="pre">launch_script</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="redun.html#redun.config.Config" title="redun.config.Config"><span class="pre">Config</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">script_command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">executor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#redun.executors.base.Executor" title="redun.executors.base.Executor"><span class="pre">Executor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">executor_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execution_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#redun.executors.launch.launch_script" title="Link to this definition">¶</a></dt>
 <dd><p>Submit the provided script command to the executor, then exit.</p>
 <p>Use a local scheduler with the default config. This means we won’t record the entry point,
 but we have no intention of being around long enough to record the results, so there’s not
@@ -1190,7 +1192,7 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>config</strong> (<a class="reference internal" href="redun.html#redun.config.Config" title="redun.config.Config"><em>Config</em></a>) – Config object containing executor information.</p></li>
-<li><p><strong>script_command</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – The script command to run on the executor.</p></li>
+<li><p><strong>script_command</strong> (<em>Union</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>, </em><em>str</em><em>]</em>) – The script command to run on the executor.</p></li>
 <li><p><strong>executor</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#redun.executors.base.Executor" title="redun.executors.base.Executor"><em>Executor</em></a><em>]</em>) – Optional Executor on which to run the script.  Must be set if executor_name is not set.</p></li>
 <li><p><strong>executor_name</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – Name of the executor in the config.  Must be set if executor is not set.</p></li>
 <li><p><strong>task_options</strong> (<em>Optional</em><em>[</em><em>dict</em><em>]</em>) – Task options to pass to the script task.</p></li>
@@ -1405,7 +1407,7 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2023, insitro
+                Copyright &#169; 2025, insitro
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -1647,6 +1649,6 @@ the executor needs to be “fire and forget” for <cite>submit_script</cite>.</
 </div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>

@@ -3,11 +3,11 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="redun" href="../redun/modules.html"><link rel="prev" title="Graph reduction caching" href="graph_reduction_caching.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Graph reduction caching" href="graph_reduction_caching.html"><link rel="prev" title="Changelog" href="../CHANGELOG.html">
         <link rel="prefetch" href="../_static/redun.svg" as="image">
 
     <link rel="shortcut icon" href="../_static/redun-no-text.svg"><!-- Generated with Sphinx 8.1.3 and Furo 2025.09.25 -->
-        <title>Content addressable hashing summary - redun documentation</title>
+        <title>Computational model - redun documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -173,7 +173,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -219,9 +219,9 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Implementation notes</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Computational model</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Computational model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="graph_reduction_caching.html">Graph reduction caching</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Content addressable hashing summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hashing.html">Content addressable hashing summary</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -258,7 +258,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../_sources/implementation/hashing.md.txt" title="View this page">
+  <a class="muted-link" href="../_sources/implementation/evaluation.md.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -271,38 +271,177 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="content-addressable-hashing-summary">
-<h1>Content addressable hashing summary<a class="headerlink" href="#content-addressable-hashing-summary" title="Link to this heading">¶</a></h1>
-<p>redun uses hashing to create deterministic ids for many records in the redun data model. The design of this hashing scheme has several properties:</p>
+          <section id="computational-model">
+<h1>Computational model<a class="headerlink" href="#computational-model" title="Link to this heading">¶</a></h1>
+<p>Here, we review the computational model of redun and the semantics of workflow execution. These details help to define what is correct behavior when implementing redun.</p>
+<section id="the-redun-expression-graph-language">
+<h2>The redun Expression Graph language<a class="headerlink" href="#the-redun-expression-graph-language" title="Link to this heading">¶</a></h2>
+<p>redun uses expression graphs to represent workflows. We can describe the structure of those graphs using the following <a class="reference external" href="https://en.wikipedia.org/wiki/Formal_grammar">formal grammar</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># An expression, e, can be one of these forms:
+e = TaskExpression(task_name, args=(e, ...), kwargs={arg_key: e, ...}, options)
+  | SchedulerExpression(task_name, args=(e, ...), kwargs={arg_key: e, ...}, options)
+  | SimpleExpression(op_name, (e, ...), {e, ...})
+  | nested_value
+  | concrete_value
+
+# Nested values are container types that redun recurses into to evaluate:
+nested_value = [e, ...]
+             | {e: e, ...}
+             | (e, ...)
+             | {e, ...}
+             | named_tuple_cls(e, ...)
+             | dataclass_cls(e, ...)
+
+options = {key: e, ...}
+  where key is an option name
+
+named_tuple_cls = User defined NamedTuple
+dataclass_cls = User defined dataclass
+
+task_name = Task name string
+arg_key = Task argument name string
+
+op_name = &quot;add&quot;
+        | &quot;mult&quot;
+        | &quot;div&quot;
+        | ... name of any supported Python operator (e.g. `__getitem__`, `__call__`)
+
+concrete_value = Any other python value (e.g. 10, &quot;hello&quot;, pd.DataFrame(...))
+</pre></div>
+</div>
+</section>
+<section id="evaluation-process">
+<h2>Evaluation process<a class="headerlink" href="#evaluation-process" title="Link to this heading">¶</a></h2>
+<p>Workflow execution is carried out by recursively evaluating Expression Graphs using the following <a class="reference external" href="https://en.wikipedia.org/wiki/Graph_reduction">Graph Reduction</a> rules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>eval(expr, parent_job) =
+  Evaluate an expression expr within Job parent_job
+
+exec(func, args, kwargs, options) =
+  Execute the function func with arguments (args and kwargs) and execution configuration options
+
+# Main expression evaluations:
+eval(TaskExpression(task_name, args, kwargs, expr_options), p) =&gt; eval(exec(
+    func=f,
+    args=eval(args, p),
+    kwargs=eval(default_args(t, args, kwargs), options_job) | eval(kwargs, p),
+    options=j.exec_options
+  ), j)
+  where f = function associated with task t with name task_name
+        j = Job(expression=TaskExpression(...), task=t, parent_job=p)
+        options_job = Job(parent_job=p, context=j.context)
+        p = parent job of the TaskExpression or None if this the root Expression
+        expr_options = option overrides specific to this TaskExpression
+        default_args(t, args, kwargs) = default arguments of task t that are not specified
+          by args and kwargs
+        j.exec_options, j.context = see next section
+
+eval(SchedulerExpression(task_name, args, kwargs, options), p) =&gt; eval(f(scheduler, p, s, *args, **kwargs), p)
+  where scheduler = redun scheduler
+        s = SchedulerExpression(task_name, args, kwargs, options)
+        p = parent job of the SchedulerExpression
+        options = configuration to customize the execution environment of f
+
+eval(SimpleExpression(op_name, args, kwargs), p) = op(*args, **kwargs)
+  where op = an operation associated with operation name `op_name`, such as
+             `add`, `sub`, `__call__`, `__getitem__`, etc.
+        p = parent job of the SimpleExpression
+
+eval(ValueExpression(concrete_value), p) =&gt; concrete_value
+   where p = parent job of the ValueExpression
+
+# Evaluation of nested values:
+eval([a, b, ...], p) =&gt; [eval(a, p), eval(b, p), ...]
+eval({a: b, c: d, ...}, p) =&gt; {eval(a, p): eval(b, p), eval(c, p): eval(d, p), ...}
+eval((a, b, ...), p) =&gt; (eval(a, p), eval(b, p), ...)
+eval({a, b, ...}, p) =&gt; {eval(a, p), eval(b, p), ...}
+eval(named_tuple_cls(a, b, ...), p) =&gt; named_tuple_cls(eval(a, p), eval(b, p), ...)
+eval(dataclass_cls(a, b, ...), p) =&gt; dataclass_cls(eval(a, p), eval(b, p), ...)
+
+# Concrete values evaluate to themselves:
+eval(concrete_value, p) =&gt; concrete_value
+</pre></div>
+</div>
+<p>Noteworthy design choices:</p>
+<ul>
+<li><p>We only create new Job <code class="docutils literal notranslate"><span class="pre">j</span></code> for evaluating TaskExpressions. We do not create new Jobs for evaluating the other expression types. This design choice was made to record provenance at an appropriate level of detail.</p></li>
+<li><p>We propagate the parent jobs through the evaluation in order to facilitate CallGraph recording and to pass down environment like data to child Jobs.</p></li>
+<li><p>When evaluating a <code class="docutils literal notranslate"><span class="pre">SchedulerExpression</span></code>, we pass the positional arguments <code class="docutils literal notranslate"><span class="pre">args</span></code> and keywords arguments <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> unevaluated into <code class="docutils literal notranslate"><span class="pre">f</span></code>. This allows <code class="docutils literal notranslate"><span class="pre">f</span></code> to customize how to evaluate the arguments, if at all.</p></li>
+<li><p>Default arguments of a task can be expressions themselves (see <code class="docutils literal notranslate"><span class="pre">eval(default_args(t,</span> <span class="pre">args,</span> <span class="pre">kwargs),</span> <span class="pre">options_job)</span></code>) and they are evaluated prior to passing to the underlying function <code class="docutils literal notranslate"><span class="pre">f</span></code>. This allows chaining extra logic just before task execution</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_task</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">another_task</span><span class="p">()):</span>
+    <span class="c1"># Both x and y will be concrete at this point.</span>
+    <span class="c1"># ...</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<section id="task-option-evaluation-and-overriding">
+<h3>Task option evaluation and overriding<a class="headerlink" href="#task-option-evaluation-and-overriding" title="Link to this heading">¶</a></h3>
+<p><a class="reference internal" href="../tasks.html#task-options"><span class="std std-ref">Task options</span></a> allow customization of Job execution (e.g. memory, cpu, executor, caching, etc). These options can be defined in a number of places. In general, more local options definitions override more globally defined options. Here, we define the specific options overriding semantics:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Final options used when executing a Job:
+job.exec_options = job.executor_options  # Options defined in the Job&#39;s Executor config in `redun.ini`
+                 | job.eval_options      
+
+# Evaluated options for the Job. This is needed since job.options might contain expressions.
+job.eval_options = eval(job.options, job.parent_job)
+
+# Job options prior to considering executor options.
+job.options =
+    job.task.options        # Options defined in the @task() decorator
+  | job.inherited_options   # Exported options from the parent Job.
+  | job.expression.options  # Options defined at call-time using my_task.options(opt=X)(arg1, arg2)
+  | scheduler_options       # Options defined by the Scheduler or CLI (e.g. `redun run --no-cache`)
+
+# Options that inherit from the parent Job, if it exists.
+job.inherited_options = {
+  k: v for k, v in job.parent_job.options.items()
+  if k in job.parent_job.exported_options
+} if job.parent_job exists else {}
+
+# Jobs export options defined by the union of parent job, task, and expression.
+# Here we determine the option names to export.
+job.exported_options = (job.parent_job.exported_options if job.parent_job exists else set())
+                     U job.expression.exported_options
+                     U job.task.exported_options
+
+# Job context inherits from parent Job with overrides from Expression.
+job.context =
+  job.parent_job.context | job.eval_options[&quot;_context_override&quot;]; if job.parent_job exists
+  config_context | scheduler_context                            ; otherwise
+
+config_context = Context defined in the `redun.ini` configuration file.
+scheduler_context = Context defined on the CLI (`--context x=10`) or Scheduler (`Scheduler.run(expr, context={&quot;x&quot;: 10})`)
+</pre></div>
+</div>
+<p>Noteworthy design choices:</p>
+<ul>
+<li><p>Options can be expressions as well and are evaluated prior to their use (see <code class="docutils literal notranslate"><span class="pre">eval(job.options,</span> <span class="pre">job.parent_job)</span></code>). This allows further run-time configuration:</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">memory</span><span class="o">=</span><span class="n">get_memory_task</span><span class="p">())</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_task</span><span class="p">():</span>
+    <span class="c1"># ...</span>
+</pre></div>
+</div>
+</li>
+<li><p><a class="reference internal" href="../context.html"><span class="std std-doc">Context</span></a> is passed from parent to child Jobs and is modified by expression options (<code class="docutils literal notranslate"><span class="pre">update_context()</span></code> specifically performs this modification).</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span><span class="n">memory</span><span class="o">=</span><span class="n">get_context</span><span class="p">(</span><span class="s2">&quot;memory&quot;</span><span class="p">))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_task</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">get_context</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)):</span>
+    <span class="c1"># pass</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">my_task</span><span class="o">.</span><span class="n">update_context</span><span class="p">(</span><span class="n">memory</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">10</span><span class="p">)(</span><span class="mi">9</span><span class="p">)</span>
+</pre></div>
+</div>
 <ul class="simple">
-<li><p>Every hash is unique across all records.</p>
-<ul>
-<li><p>While a cryptographically secure hash function can be assumed to not produce hash collisions, we can still have collisions on pre-image data if we are not careful. For example, a CallNode could have the same hash as a file that contains a pickle of a CallNode, if the hashing schema is not carefully designed.</p></li>
-<li><p>To achieve this property, every pre-image is prefixed with a record type, such as ‘Task’, ‘CallNode’, etc.</p></li>
-<li><p>It is also easy to have pre-image collisions if arguments to a hash are not well escaped (e.g. if tab is used as an argument delimiter, you need to always escape tabs in string arguments). We solve this systematically by defining a consistent way of efficiently serializing structures using bittorrent encoding format (bencode).</p></li>
-</ul>
-</li>
-<li><p>When one parental record refers to a child record, the child record’s hash is included in the parent’s hash.</p>
-<ul>
-<li><p>This forms a <a class="reference external" href="https://en.wikipedia.org/wiki/Merkle_tree">Merkle Tree</a> that gives unique hashes to nodes in the resulting DAG.</p></li>
-</ul>
-</li>
-<li><p>Hashes are represented by hex strings instead of bytes to aid easy debugging and display.</p>
-<ul>
-<li><p>If greater hashing efficiency is desired, hashes could be kept in their binary byte representation.</p></li>
-</ul>
-</li>
-<li><p>Hashes are truncated to 40 hex bytes for easier display.</p>
-<ul>
-<li><p>If the reduced hash space is a concern this truncation could be removed.</p></li>
+<li><p>In order for <code class="docutils literal notranslate"><span class="pre">get_context(&quot;y&quot;)</span></code> in the default argument to pick up the modification to <code class="docutils literal notranslate"><span class="pre">y</span></code> with <code class="docutils literal notranslate"><span class="pre">update_context()</span></code>, we need to evaluate the options using a special parent job <code class="docutils literal notranslate"><span class="pre">options_job</span></code> that uses the context from <code class="docutils literal notranslate"><span class="pre">job</span></code>.</p></li>
 </ul>
 </li>
 </ul>
+</section>
+</section>
 </section>
 
         </article>
@@ -310,23 +449,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../redun/modules.html">
+          <a class="next-page" href="graph_reduction_caching.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">redun</div>
+                <div class="title">Graph reduction caching</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="graph_reduction_caching.html">
+          <a class="prev-page" href="../CHANGELOG.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Graph reduction caching</div>
+                <div class="title">Changelog</div>
                 
               </div>
             </a>
@@ -348,8 +487,31 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Computational model</a><ul>
+<li><a class="reference internal" href="#the-redun-expression-graph-language">The redun Expression Graph language</a></li>
+<li><a class="reference internal" href="#evaluation-process">Evaluation process</a><ul>
+<li><a class="reference internal" href="#task-option-evaluation-and-overriding">Task option evaluation and overriding</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

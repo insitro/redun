@@ -55,6 +55,7 @@ executors
 scheduler
 config
 db
+filesystems
 tags
 spark
 typing
@@ -76,8 +77,9 @@ CHANGELOG
 :caption: Implementation notes
 :hidden:
 
-implementation/hashing
+implementation/evaluation
 implementation/graph_reduction_caching
+implementation/hashing
 ```
 
 ```{toctree}
