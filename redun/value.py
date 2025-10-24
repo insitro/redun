@@ -173,7 +173,10 @@ class TypeRegistry:
             raise InvalidValueError(f"Unknown type: {type_name}")
         value_type = self.get_type(raw_type)
         assert value_type
-        return value_type.deserialize(raw_type, data)
+        try:
+            return value_type.deserialize(raw_type, data)
+        except ModuleNotFoundError as error:
+            raise InvalidValueError(f"Error parsing value: {error}")
 
     def preprocess(self, raw_value: Any, preprocess_args: dict) -> Any:
         """

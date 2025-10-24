@@ -38,7 +38,8 @@ from redun.file import Dir, File
 from redun.functools import no_prov, seq
 from redun.scheduler import JobInfo
 from redun.tests.utils import use_tempdir
-from redun.utils import PreviewClass, utcnow
+from redun.utils import PreviewClass, pickle_dumps, utcnow
+from redun.value import Value as BaseValue
 
 
 def test_cache_db() -> None:
@@ -1460,3 +1461,40 @@ def test_no_prov_cse(scheduler: Scheduler, session: Session) -> None:
 
     assert scheduler.run(main()) == 6
     assert calls == ["add", "add"]
+
+
+class MyClass(BaseValue):
+    def __init__(self, x):
+        self.x = x
+
+    def __getstate__(self) -> dict:
+        return {"x": self.x}
+
+    def serialize(self) -> bytes:
+        data = pickle_dumps(self)
+
+        # Force a serialization that triggers a ModuleNotFoundError.
+        return data.replace(b"redun.tests.test_db", b"redun.no_module.test_db")
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, MyClass) and self.x == other.x
+
+
+def test_cache_module_change(scheduler: Scheduler, session: Session) -> None:
+    """
+    Changing the location of a class of a cached object should invalidate the cache.
+    """
+    calls = []
+
+    @task
+    def main(x):
+        calls.append("main")
+        return MyClass(x)
+
+    assert scheduler.run(main(10)) == MyClass(10)
+    assert calls == ["main"]
+    # We use a custom MyClass.serialize() method to simuate MyClass being defined in a different module.
+
+    # We should gracefully get a cache miss and a success new execution.
+    assert scheduler.run(main(10)) == MyClass(10)
+    assert calls == ["main", "main"]
