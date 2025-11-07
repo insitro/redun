@@ -107,12 +107,29 @@ def test_executor_config(scheduler: Scheduler) -> None:
     Executor should be able to parse its config.
     """
     # Setup executor.
+    node_affinity_json = json.dumps(
+        {
+            "required_during_scheduling_ignored_during_execution": [
+                {
+                    "match_expressions": [
+                        {
+                            "key": "karpenter.k8s.aws/instance-family",
+                            "operator": "In",
+                            "values": ["m5"],
+                        },
+                    ],
+                },
+            ],
+        },
+    )
     config = Config(
         {
             "k8s": {
                 "image": "image",
                 "scratch": "scratch_prefix",
                 "code_includes": "*.txt",
+                "ephemeral_storage": "10G",
+                "node_affinity": node_affinity_json,
             },
         },
     )
@@ -122,6 +139,57 @@ def test_executor_config(scheduler: Scheduler) -> None:
     assert executor.scratch_prefix == "scratch_prefix"
     assert isinstance(executor.code_package, dict)
     assert executor.code_package["includes"] == ["*.txt"]
+    assert executor.default_task_options["ephemeral_storage"] == "10G"
+    assert "node_affinity" in executor.default_task_options
+    assert (
+        executor.default_task_options["node_affinity"][
+            "required_during_scheduling_ignored_during_execution"
+        ][0]["match_expressions"][0]["key"]
+        == "karpenter.k8s.aws/instance-family"
+    )
+
+
+@mock_k8s
+def test_k8s_submit_cpu_limits() -> None:
+    """
+    k8s_submit should include CPU in requests but not in limits.
+
+    This follows best practices from https://home.robusta.dev/blog/stop-using-cpu-limits
+    """
+    k8s_client = redun.executors.k8s_utils.K8SClient()
+
+    # Configure the mock to return the job object that was passed to it
+    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)
+
+    job = redun.executors.k8s.k8s_submit(
+        k8s_client=k8s_client,
+        command=["echo", "test"],
+        image="test-image",
+        namespace="default",
+        job_name="test-job",
+        memory=8,
+        vcpus=2,
+        gpus=1,
+    )
+
+    # Verify CPU is in requests
+    assert "cpu" in job.spec.template.spec.containers[0].resources.requests
+    assert job.spec.template.spec.containers[0].resources.requests["cpu"] == 2
+
+    # Verify CPU is NOT in limits
+    assert "cpu" not in job.spec.template.spec.containers[0].resources.limits
+
+    # Verify memory is in both requests and limits
+    assert "memory" in job.spec.template.spec.containers[0].resources.requests
+    assert job.spec.template.spec.containers[0].resources.requests["memory"] == "8G"
+    assert "memory" in job.spec.template.spec.containers[0].resources.limits
+    assert job.spec.template.spec.containers[0].resources.limits["memory"] == "8G"
+
+    # Verify GPU is in both requests and limits
+    assert "nvidia.com/gpu" in job.spec.template.spec.containers[0].resources.requests
+    assert job.spec.template.spec.containers[0].resources.requests["nvidia.com/gpu"] == 1
+    assert "nvidia.com/gpu" in job.spec.template.spec.containers[0].resources.limits
+    assert job.spec.template.spec.containers[0].resources.limits["nvidia.com/gpu"] == 1
 
 
 @task()
@@ -318,8 +386,8 @@ def test_executor(
     k8s_job2_id = "k8s-job2-id"
 
     # Setup K8S mocks.
-    k8s_describe_jobs_mock.return_value = iter([])
-    get_k8s_job_pods_mock.return_value = iter([])
+    k8s_describe_jobs_mock.return_value = []
+    get_k8s_job_pods_mock.return_value = []
 
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
@@ -396,6 +464,25 @@ def test_executor(
         },
     }
 
+    # Setup new mock return values for ephemeral_storage test.
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash3",
+        uid="k8s-job3-id",
+    )
+
+    # Submit redun job with ephemeral_storage option.
+    expr3 = task1.options(ephemeral_storage="20G")(12)
+    job3 = Job(task1, expr3)
+    job3.eval_hash = "eval_hash3"
+    job3.args = ((12,), {})
+    executor.submit(job3)
+
+    # Let job get stale so job arrayer actually submits it.
+    wait_until(lambda: executor.arrayer.num_pending == 0)
+
+    # Ensure ephemeral_storage option was passed correctly.
+    assert k8s_submit_mock.call_args[1]["ephemeral_storage"] == "20G"
+
     # Simulate k8s completing job.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
     output_file.write(pickle_dumps(task1.func(10)), mode="wb")
@@ -409,7 +496,16 @@ def test_executor(
     fake_k8s_job.status = client.V1JobStatus(succeeded=1)
     fake_k8s_job2 = create_job_object(uid=k8s_job2_id, name=DEFAULT_JOB_PREFIX + "-eval_hash2")
     fake_k8s_job2.status = client.V1JobStatus(failed=1)
-    k8s_describe_jobs_mock.return_value = [fake_k8s_job, fake_k8s_job2]
+    # Return jobs once, then keep returning empty list to avoid processing them multiple times
+    returned_jobs = [False]
+
+    def describe_jobs_side_effect(*args, **kwargs):
+        if not returned_jobs[0]:
+            returned_jobs[0] = True
+            return [fake_k8s_job, fake_k8s_job2]
+        return []
+
+    k8s_describe_jobs_mock.side_effect = describe_jobs_side_effect
 
     pod = client.V1Pod(
         metadata=client.V1ObjectMeta(
@@ -888,3 +984,195 @@ def other_task(x, y):
         )
 
         assert pickle.loads(cast("bytes", output_file.read("rb"))) == i - 2 * i
+
+
+@mock_k8s
+def test_k8s_submit_with_node_affinity() -> None:
+    """
+    k8s_submit should properly configure node affinity for pod scheduling.
+    """
+    k8s_client = redun.executors.k8s_utils.K8SClient()
+
+    # Configure the mock to return the job object that was passed to it
+    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)
+
+    node_affinity = {
+        "required_during_scheduling_ignored_during_execution": [
+            {
+                "match_expressions": [
+                    {
+                        "key": "karpenter.k8s.aws/instance-family",
+                        "operator": "In",
+                        "values": ["i3"],
+                    },
+                ],
+            },
+        ],
+    }
+
+    job = redun.executors.k8s.k8s_submit(
+        k8s_client=k8s_client,
+        command=["echo", "test"],
+        image="test-image",
+        namespace="default",
+        job_name="test-job",
+        node_affinity=node_affinity,
+    )
+
+    # Verify affinity is configured
+    assert job.spec.template.spec.affinity is not None
+    assert job.spec.template.spec.affinity.node_affinity is not None
+
+    # Verify required scheduling is set
+    required = job.spec.template.spec.affinity.node_affinity.required_during_scheduling_ignored_during_execution
+    assert required is not None
+    assert len(required.node_selector_terms) == 1
+
+    # Verify match expressions
+    term = required.node_selector_terms[0]
+    assert len(term.match_expressions) == 1
+    expr = term.match_expressions[0]
+    assert expr.key == "karpenter.k8s.aws/instance-family"
+    assert expr.operator == "In"
+    assert expr.values == ["i3"]
+
+
+@mock_s3
+@mock_k8s
+@patch("redun.executors.k8s.k8s_describe_jobs")
+@patch("redun.executors.k8s.k8s_submit")
+def test_executor_with_node_affinity(k8s_submit_mock: Mock, k8s_describe_jobs_mock: Mock) -> None:
+    """
+    Executor should pass node_affinity from task options to k8s_submit.
+    """
+    # Setup K8S mocks.
+    k8s_describe_jobs_mock.return_value = []
+
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+    executor.start()
+
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash",
+        uid="k8s-job-id",
+    )
+
+    # Submit redun job with node_affinity option
+    node_affinity = {
+        "required_during_scheduling_ignored_during_execution": [
+            {
+                "match_expressions": [
+                    {
+                        "key": "karpenter.k8s.aws/instance-family",
+                        "operator": "In",
+                        "values": ["i3"],
+                    },
+                ],
+            },
+        ],
+    }
+
+    expr = task1.options(node_affinity=node_affinity)(10)
+    job = Job(task1, expr)
+    job.eval_hash = "eval_hash"
+    job.args = ((10,), {})
+    executor.submit(job)
+
+    # Wait until job arrayer actually submits it
+    wait_until(lambda: executor.arrayer.num_pending == 0)
+
+    # Ensure node_affinity was passed correctly
+    assert k8s_submit_mock.call_args
+    assert "node_affinity" in k8s_submit_mock.call_args[1]
+    assert k8s_submit_mock.call_args[1]["node_affinity"] == node_affinity
+
+    executor.stop()
+
+
+@mock_s3
+@mock_k8s
+@patch("redun.executors.k8s.k8s_describe_jobs")
+@patch("redun.executors.k8s.k8s_submit")
+def test_executor_node_affinity_override(
+    k8s_submit_mock: Mock,
+    k8s_describe_jobs_mock: Mock,
+) -> None:
+    """
+    Task-level node_affinity should override executor-level node_affinity.
+    """
+    # Setup K8S mocks.
+    k8s_describe_jobs_mock.return_value = []
+
+    # Setup executor with default node_affinity from config
+    default_node_affinity = {
+        "required_during_scheduling_ignored_during_execution": [
+            {
+                "match_expressions": [
+                    {
+                        "key": "karpenter.k8s.aws/instance-family",
+                        "operator": "In",
+                        "values": ["m5"],
+                    },
+                ],
+            },
+        ],
+    }
+
+    config = Config(
+        {
+            "k8s": {
+                "image": "my-image",
+                "scratch": "s3://example-bucket/redun/",
+                "job_monitor_interval": 0.05,
+                "job_stale_time": 0.01,
+                "node_affinity": json.dumps(default_node_affinity),
+            },
+        },
+    )
+
+    scheduler = mock_scheduler()
+    executor = K8SExecutor("k8s", scheduler, config["k8s"])
+    executor.get_jobs = Mock()  # type: ignore
+    executor.get_jobs.return_value = []
+
+    s3_client = boto3.client("s3", region_name="us-east-1")
+    s3_client.create_bucket(Bucket="example-bucket")
+
+    executor.start()
+
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash",
+        uid="k8s-job-id",
+    )
+
+    # Submit redun job with different node_affinity that should override the default
+    task_node_affinity = {
+        "required_during_scheduling_ignored_during_execution": [
+            {
+                "match_expressions": [
+                    {
+                        "key": "karpenter.k8s.aws/instance-family",
+                        "operator": "In",
+                        "values": ["i3"],
+                    },
+                ],
+            },
+        ],
+    }
+
+    expr = task1.options(node_affinity=task_node_affinity)(10)
+    job = Job(task1, expr)
+    job.eval_hash = "eval_hash"
+    job.args = ((10,), {})
+    executor.submit(job)
+
+    # Wait until job arrayer actually submits it
+    wait_until(lambda: executor.arrayer.num_pending == 0)
+
+    # Ensure task-level node_affinity was used, not executor-level
+    assert k8s_submit_mock.call_args
+    assert "node_affinity" in k8s_submit_mock.call_args[1]
+    assert k8s_submit_mock.call_args[1]["node_affinity"] == task_node_affinity
+    assert k8s_submit_mock.call_args[1]["node_affinity"] != default_node_affinity
+
+    executor.stop()

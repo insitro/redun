@@ -165,6 +165,62 @@ def create_resources(
     return resources
 
 
+def _build_node_affinity(node_affinity: Dict[str, Any]) -> client.V1Affinity:
+    """
+    Builds a V1Affinity object from a node_affinity configuration dict.
+
+    Expected format:
+    {
+        "required_during_scheduling_ignored_during_execution": [
+            {
+                "match_expressions": [
+                    {
+                        "key": "node.kubernetes.io/instance-type",
+                        "operator": "In",
+                        "values": ["i3.xlarge", "i3.2xlarge"]
+                    }
+                ]
+            }
+        ]
+    }
+
+    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Affinity.md
+    """
+    node_selector_terms = []
+
+    # Build required node selector terms
+    if "required_during_scheduling_ignored_during_execution" in node_affinity:
+        for term_config in node_affinity["required_during_scheduling_ignored_during_execution"]:
+            match_expressions = []
+            if "match_expressions" in term_config:
+                for expr in term_config["match_expressions"]:
+                    match_expressions.append(
+                        client.V1NodeSelectorRequirement(
+                            key=expr["key"],
+                            operator=expr["operator"],
+                            values=expr.get("values", []),
+                        )
+                    )
+
+            if match_expressions:
+                node_selector_terms.append(
+                    client.V1NodeSelectorTerm(match_expressions=match_expressions)
+                )
+
+    if not node_selector_terms:
+        raise ValueError(
+            "node_affinity must contain at least one required_during_scheduling_ignored_during_execution term with match_expressions"
+        )
+
+    return client.V1Affinity(
+        node_affinity=client.V1NodeAffinity(
+            required_during_scheduling_ignored_during_execution=client.V1NodeSelector(
+                node_selector_terms=node_selector_terms
+            )
+        )
+    )
+
+
 def create_job_object(
     name: str = DEFAULT_JOB_PREFIX,
     image: str = "bash",
@@ -177,6 +233,7 @@ def create_job_object(
     service_account_name: Optional[str] = "default",
     annotations: Optional[Dict[str, str]] = None,
     secret_name: Optional[str] = None,
+    node_affinity: Optional[Dict[str, Any]] = None,
 ) -> client.V1Job:
     """Creates a job object for redun job.
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
@@ -210,11 +267,18 @@ def create_job_object(
         container.resources = create_resources()
     else:
         container.resources = resources
+
+    # Build node affinity if provided
+    affinity = None
+    if node_affinity:
+        affinity = _build_node_affinity(node_affinity)
+
     pod_spec = client.V1PodSpec(
         service_account_name=service_account_name,
         restart_policy="Never",
         image_pull_secrets=[{"name": "regcred"}],
         containers=[container],
+        affinity=affinity,
     )
 
     labels = labels or {}

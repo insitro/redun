@@ -60,12 +60,14 @@ def k8s_submit(
     memory: int = 4,
     vcpus: int = 1,
     gpus: int = 0,
+    ephemeral_storage: Optional[str] = None,
     timeout: Optional[int] = None,
     k8s_labels: Optional[Dict[str, str]] = None,
     retries: int = 1,
     service_account_name: str = "default",
     annotations: Optional[Dict[str, str]] = None,
     secret_name: Optional[str] = None,
+    node_affinity: Optional[Dict[str, Any]] = None,
 ) -> kubernetes.client.V1Job:
     """Prepares and submits a k8s job to the API server"""
     requests = {
@@ -74,7 +76,11 @@ def k8s_submit(
     }
     if gpus > 0:
         requests["nvidia.com/gpu"] = gpus
-    limits = requests
+    if ephemeral_storage is not None:
+        requests["ephemeral-storage"] = ephemeral_storage
+    limits = requests.copy()
+    # https://home.robusta.dev/blog/stop-using-cpu-limits
+    del limits["cpu"]
     resources = k8s_utils.create_resources(requests, limits)
 
     k8s_job = k8s_utils.create_job_object(
@@ -87,6 +93,7 @@ def k8s_submit(
         service_account_name=service_account_name,
         annotations=annotations,
         secret_name=secret_name,
+        node_affinity=node_affinity,
     )
 
     if array_size > 1:
@@ -149,11 +156,13 @@ def get_k8s_job_options(job_options: dict) -> dict:
         "memory",
         "vcpus",
         "gpus",
+        "ephemeral_storage",
         "k8s_labels",
         "annotations",
         "service_account_name",
         "retries",
         "timeout",
+        "node_affinity",
     ]
     return {key: job_options[key] for key in keys if key in job_options}
 
@@ -412,10 +421,15 @@ class K8SExecutor(Executor):
             "service_account_name": config.get("service_account_name", "default"),
             "job_name_prefix": config.get("job_name_prefix", k8s_utils.DEFAULT_JOB_PREFIX),
         }
+        # Add ephemeral_storage to default options if specified in config.
+        if config.get("ephemeral_storage"):
+            self.default_task_options["ephemeral_storage"] = config.get("ephemeral_storage")
         if config.get("annotations"):
             self.default_task_options["annotations"] = json.loads(config.get("annotations"))
         if config.get("k8s_labels"):
             self.default_task_options["k8s_labels"] = json.loads(config.get("k8s_labels"))
+        if config.get("node_affinity"):
+            self.default_task_options["node_affinity"] = json.loads(config.get("node_affinity"))
         self.use_default_k8s_labels = config.getboolean("default_k8s_labels", True)
 
         self.is_running = False
