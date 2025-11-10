@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.35.0
+November 10, 2025
+
+* `#435` - [COMP-3317] Support ephemeral storage and nvme local storage.
+* `#423` - Extend is_optional to recognize PEP 604-style 'type | None' in additional to 'Optional[type]'
+* `#434` - catch ModuleNotFoundError when deserializing
+* `#428` - Fix definition of Dir hashing
+* `#433` - Alternative implementation of 10365 batch etag grabs v2
+
 ## 0.34.0
 October 19, 2025
 
@@ -9,19 +18,19 @@ October 19, 2025
 ## 0.33.0
 October 10, 2025
 
-* `#425` - aws batch executor supports multi-node for script tasks 
-* `#424` - Forgot to wrap error string in error class 
-* `#421` - Improve AWS Glue support 
-* `#422` - Export options 
-* `#420` - Redun run 
+* `#425` - aws batch executor supports multi-node for script tasks
+* `#424` - Forgot to wrap error string in error class
+* `#421` - Improve AWS Glue support
+* `#422` - Export options
+* `#420` - Redun run
 
 ## 0.32.0
 August 29, 2025
 
-* `#418` - Add  flag to disable cache in federated task proxy 
-* `#417` - Defer imports for faster startup 
-* `#415` - [COMP-3155] Improve K8S Executor Pod Labels and Annotations 
-* `#416` - [COMP-3159] Apply ruff formating to k8s files 
+* `#418` - Add  flag to disable cache in federated task proxy
+* `#417` - Defer imports for faster startup
+* `#415` - [COMP-3155] Improve K8S Executor Pod Labels and Annotations
+* `#416` - [COMP-3159] Apply ruff formating to k8s files
 
 ## 0.31.0
 August 19, 2025
@@ -32,7 +41,7 @@ August 19, 2025
 ## 0.30.0
 July 25, 2025
 
-* `#407` - Add code packaging to redun launch 
+* `#407` - Add code packaging to redun launch
 * `#408` - use os.makedirs(..., exist_ok=True) to avoid a race condition
 
 ## 0.29.0
@@ -114,12 +123,12 @@ June 21, 2024
 ## 0.20.0
 June 04, 2024
 
-* `#358` - Optional feature: use MappedColumn 
+* `#358` - Optional feature: use MappedColumn
 
 ## 0.19.5
 April 16, 2024
 
-* `#356` - fix correct superclass for IDir 
+* `#356` - fix correct superclass for IDir
 
 ## 0.19.4
 April 09, 2024
@@ -229,7 +238,7 @@ May 01, 2023
 ## 0.14.0
 March 13, 2023
 
-This release primarily introduces "federated tasks", a mechanism for working with tasks 
+This release primarily introduces "federated tasks", a mechanism for working with tasks
 where you do not have to import the implementation code.
 
 * `#261` - Provide integration code for redun and a proxy
@@ -240,19 +249,19 @@ where you do not have to import the implementation code.
 ## 0.13.0
 February 27, 2023
 
-* `#272` - DE-7556: Update job definition sanitizing to be recursive 
-* `#182` - Check CSE even for completed jobs 
-* `#269` - Bump SQLAlchemy to 2.0, use future=True flag 
-* `#268` - Follow-up on SQLAlchemy 2.0 compatibility 
-* `#266` - DE-7776 Upgrade sqlalchemy to 1.4 and fix deprecation warnings 
-* `#22` - Add k8s executor 
-* `#253` - Try to clarify and document Value and Handle 
-* `#63` - remove develop mode for installing redun during docs build 
-* `#254` - DE-7282 Simplify job arguments and JobArrayer 
-* `#255` - Clarify role arn and fix for sphinx 6.0 
+* `#272` - DE-7556: Update job definition sanitizing to be recursive
+* `#182` - Check CSE even for completed jobs
+* `#269` - Bump SQLAlchemy to 2.0, use future=True flag
+* `#268` - Follow-up on SQLAlchemy 2.0 compatibility
+* `#266` - DE-7776 Upgrade sqlalchemy to 1.4 and fix deprecation warnings
+* `#22` - Add k8s executor
+* `#253` - Try to clarify and document Value and Handle
+* `#63` - remove develop mode for installing redun during docs build
+* `#254` - DE-7282 Simplify job arguments and JobArrayer
+* `#255` - Clarify role arn and fix for sphinx 6.0
 * `#61` - Pass AWS_DEFAULT_REGION env variable to container
 * `#244` - DE-6763 Add IFile and ContentFile
-* `#60` - Fix import statements with lowercase config 
+* `#60` - Fix import statements with lowercase config
 
 ## 0.12.0
 November 29, 2022
@@ -340,14 +349,14 @@ July 5, 2022
 ## 0.8.13
 June 16, 2022
 
-* `#162` - DE-5345 Fx multi-node doing caching 
-* `#155` - Update linting tools 
-* `#161` - DE-5312 Expand the try-catch to include input parsing 
-* `#157` - [DE-3475] Fix UDF type arg being ignored, add some Spark tests 
-* `#156` - De4653 hash code alt 
-* `#149` - Generalize file staging 
-* `#159` - Fix aws batch shared memory 
-* `#152` - Added docstrings to key Glue job functions 
+* `#162` - DE-5345 Fx multi-node doing caching
+* `#155` - Update linting tools
+* `#161` - DE-5312 Expand the try-catch to include input parsing
+* `#157` - [DE-3475] Fix UDF type arg being ignored, add some Spark tests
+* `#156` - De4653 hash code alt
+* `#149` - Generalize file staging
+* `#159` - Fix aws batch shared memory
+* `#152` - Added docstrings to key Glue job functions
 
 ## 0.8.12
 June 01, 2022
