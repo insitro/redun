@@ -170,8 +170,13 @@ class TypeRegistry:
         try:
             raw_type = self.parse_type_name(type_name)
         except TypeError:
-            raise InvalidValueError(f"Unknown type: {type_name}")
-        value_type = self.get_type(raw_type)
+            # raise InvalidValueError(f"Error parsing value")
+
+            # Unknown type_name. Fallback to default pickle deserialization.
+            raw_type = ProxyValue
+            value_type: Optional[Type[Value]] = ProxyValue
+        else:
+            value_type = self.get_type(raw_type)
         assert value_type
         try:
             return value_type.deserialize(raw_type, data)

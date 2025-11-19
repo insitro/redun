@@ -1594,10 +1594,16 @@ class RedunClient:
                 rerun_job.call_node.arguments, key=lambda arg: arg.arg_position or -1
             )
             for arg in rerun_args:
+                arg_value, has_value = scheduler.backend.get_value(arg.value_hash)
+                if not has_value:
+                    arg_name = arg.arg_key or arg.arg_position
+                    raise RedunClientError(
+                        f"Unable to rerun task. Cannot fetch previous argument '{arg_name}' from database."
+                    )
                 if arg.arg_key:
-                    kwargs[arg.arg_key] = arg.value_parsed
+                    kwargs[arg.arg_key] = arg_value
                 else:
-                    pos_args.append(arg.value_parsed)
+                    pos_args.append(arg_value)
 
         # Parse cli arguments to task arguments, potentially overriding other types of inputs.
         for dest, arg in cli2arg.items():

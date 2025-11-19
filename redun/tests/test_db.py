@@ -40,6 +40,7 @@ from redun.scheduler import JobInfo
 from redun.tests.utils import use_tempdir
 from redun.utils import PreviewClass, pickle_dumps, utcnow
 from redun.value import Value as BaseValue
+from redun.value import ProxyValue
 
 
 def test_cache_db() -> None:
@@ -1470,6 +1471,9 @@ class MyClass(BaseValue):
     def __getstate__(self) -> dict:
         return {"x": self.x}
 
+    def __setstate__(self, state: dict) -> None:
+        self.x = state["x"]
+
     def serialize(self) -> bytes:
         data = pickle_dumps(self)
 
@@ -1498,3 +1502,34 @@ def test_cache_module_change(scheduler: Scheduler, session: Session) -> None:
     # We should gracefully get a cache miss and a success new execution.
     assert scheduler.run(main(10)) == MyClass(10)
     assert calls == ["main", "main"]
+
+
+def test_cache_change_proxy_value(scheduler: Scheduler, session: Session) -> None:
+    """
+    A value cached using a ProxyValue should be fetchable when a ProxyValue is not used.
+    """
+
+    class MyClassType(ProxyValue):
+        type = MyClass
+        type_name = "custom.MyClass"
+
+    @task
+    def main(x):
+        return MyClass(x)
+
+    # Run the workflow.
+    assert scheduler.run(main(10)) == MyClass(10)
+
+    # Ensure that MyClass(10) is in the cache.
+    value_hash = scheduler.type_registry.get_hash(MyClass(10))
+    value, has_value = scheduler.backend.get_value(value_hash)
+    assert value == MyClass(10)
+    assert has_value
+
+    # Deregister the ProxyValue for MyClass.
+    del scheduler.type_registry._type_name2value_type["custom.MyClass"]
+    del scheduler.type_registry._raw2proxy_type[MyClass]
+
+    # We should still be able to fetch the value from the cache using the default pickle deserialization.
+    value, has_value = scheduler.backend.get_value(value_hash)
+    assert has_value
