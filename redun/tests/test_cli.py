@@ -498,6 +498,45 @@ def task1(x: int):
     assert pickle.loads(cast(bytes, output_file.read("rb"))) == 20
 
 
+@use_tempdir
+def test_oneshot_error_serialization() -> None:
+    """
+    Exceptions that can't be serialized should be gracefully serialized as generic Exception.
+    """
+
+    File("workflow.py").write("""
+from redun import task
+
+class Error(Exception):
+    def __init__(self, func):
+        super().__init__()
+        self.func = func
+
+@task
+def main():
+    raise Error(lambda: 10)
+""")
+
+    client = RedunClient()
+
+    try:
+        client.execute(
+            [
+                "redun",
+                "oneshot",
+                "--error",
+                "error.pkl",
+                "workflow.py",
+                "main",
+            ]
+        )
+    except Exception:
+        pass
+
+    error, traceback = pickle.load(open("error.pkl", "rb"))
+    assert isinstance(error, Exception)
+
+
 @patch("argparse.ArgumentParser.exit")
 @patch("redun.cli.print")
 @use_tempdir

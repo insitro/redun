@@ -2755,8 +2755,15 @@ class RedunClient:
             if args.error:
                 # Write error and traceback.
                 error_traceback = Traceback.from_error(error)
-                with BaseFile(args.error).open("wb") as out:
-                    pickle_dump((error, error_traceback), out)
+                try:
+                    with BaseFile(args.error).open("wb") as out:
+                        pickle_dump((error, error_traceback), out)
+                except Exception:
+                    # Some errors cannot be serialized so record them as generic Exceptions.
+                    error2 = Exception(repr(error))
+                    error_traceback2 = Traceback.from_error(error2)
+                    with BaseFile(args.error).open("wb") as out:
+                        pickle_dump((error2, error_traceback2), out)
             raise error
 
     def db_info_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
