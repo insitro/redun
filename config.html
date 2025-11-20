@@ -849,7 +849,7 @@ path or relative to the executor entrypoint.</p>
 </section>
 <section id="secret-name">
 <h5><code class="docutils literal notranslate"><span class="pre">secret_name</span></code><a class="headerlink" href="#secret-name" title="Link to this heading">¶</a></h5>
-<p>An optional string that specifies the name of a k8s secret to use for passing AWS secrets.</p>
+<p>An optional string that specifies the name of a k8s secret to use for passing environment variables to k8s jobs. When set, this secret will contain AWS credentials (if <code class="docutils literal notranslate"><span class="pre">import_aws_secrets</span></code> is enabled) and any additional environment variables specified in <code class="docutils literal notranslate"><span class="pre">secret_env_vars</span></code>.</p>
 </section>
 <section id="import-aws-secrets">
 <h5><code class="docutils literal notranslate"><span class="pre">import_aws_secrets</span></code><a class="headerlink" href="#import-aws-secrets" title="Link to this heading">¶</a></h5>
@@ -864,16 +864,28 @@ path or relative to the executor entrypoint.</p>
 <p>An integer (default: 1) that specifies the default number of virtual CPUs required for each task. This can be overridden on a per task basis using task options.</p>
 </section>
 <section id="id17">
-<h5><code class="docutils literal notranslate"><span class="pre">memory</span></code><a class="headerlink" href="#id17" title="Link to this heading">¶</a></h5>
-<p>A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.</p>
+<h5><code class="docutils literal notranslate"><span class="pre">gpus</span></code><a class="headerlink" href="#id17" title="Link to this heading">¶</a></h5>
+<p>An integer (default: 0) that specifies the default number of GPUs required for each task. This can be overridden on a per task basis using task options.</p>
 </section>
 <section id="id18">
-<h5><code class="docutils literal notranslate"><span class="pre">retries</span></code><a class="headerlink" href="#id18" title="Link to this heading">¶</a></h5>
-<p>An integer (default: 1) that specifies the default number of retries to use for submitting a job to the AWS Batch queue. This can be overridden on a per task basis using task options.</p>
+<h5><code class="docutils literal notranslate"><span class="pre">memory</span></code><a class="headerlink" href="#id18" title="Link to this heading">¶</a></h5>
+<p>A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.</p>
+</section>
+<section id="ephemeral-storage">
+<h5><code class="docutils literal notranslate"><span class="pre">ephemeral_storage</span></code><a class="headerlink" href="#ephemeral-storage" title="Link to this heading">¶</a></h5>
+<p>An optional string that specifies the default amount of ephemeral storage required for each task (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;10Gi&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;100Mi&quot;</span></code>). See <a class="reference external" href="https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/">Kubernetes standard quantity format</a> for accepted suffixes. This can be overridden on a per task basis using task options.</p>
 </section>
 <section id="id19">
-<h5><code class="docutils literal notranslate"><span class="pre">job_name_prefix</span></code><a class="headerlink" href="#id19" title="Link to this heading">¶</a></h5>
-<p>A string (default: <code class="docutils literal notranslate"><span class="pre">batch-job</span></code>) that specifies the prefix to use for AWS Batch job names. This can make it easier for users to distinguish which AWS Batch jobs correspond to their workflow.</p>
+<h5><code class="docutils literal notranslate"><span class="pre">timeout</span></code><a class="headerlink" href="#id19" title="Link to this heading">¶</a></h5>
+<p>An optional integer that specifies the default time duration in seconds after which k8s will terminate the job. If not specified, no timeout is set and the job will run indefinitely (or until it completes or fails). This can be overridden on a per task basis using task options.</p>
+</section>
+<section id="id20">
+<h5><code class="docutils literal notranslate"><span class="pre">retries</span></code><a class="headerlink" href="#id20" title="Link to this heading">¶</a></h5>
+<p>An integer (default: 1) that specifies the default number of retries for failed jobs. This can be overridden on a per task basis using task options.</p>
+</section>
+<section id="id21">
+<h5><code class="docutils literal notranslate"><span class="pre">job_name_prefix</span></code><a class="headerlink" href="#id21" title="Link to this heading">¶</a></h5>
+<p>A string (default: <code class="docutils literal notranslate"><span class="pre">redun-job</span></code>) that specifies the prefix to use for k8s job names. This can make it easier for users to distinguish which k8s jobs correspond to their workflow.</p>
 </section>
 <section id="service-account-name">
 <h5><code class="docutils literal notranslate"><span class="pre">service_account_name</span></code><a class="headerlink" href="#service-account-name" title="Link to this heading">¶</a></h5>
@@ -881,55 +893,97 @@ path or relative to the executor entrypoint.</p>
 </section>
 <section id="annotations">
 <h5><code class="docutils literal notranslate"><span class="pre">annotations</span></code><a class="headerlink" href="#annotations" title="Link to this heading">¶</a></h5>
-<p>An optional JSON object that specifies k8s annotations to apply to each job.</p>
+<p>An optional JSON object that specifies k8s <a class="reference external" href="https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/">annotations</a> to apply to each job.</p>
+<p>The value must be valid JSON. Both single-line and multi-line formats are supported:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">annotations = {&quot;example.com/annotation&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;value&quot;</span><span class="na">}</span>
+</pre></div>
+</div>
+<p>See <a class="reference external" href="https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/#syntax-and-character-set">Kubernetes
+constraints on annotations</a>.</p>
 </section>
 <section id="k8s-labels">
 <h5><code class="docutils literal notranslate"><span class="pre">k8s_labels</span></code><a class="headerlink" href="#k8s-labels" title="Link to this heading">¶</a></h5>
-<p>An optional JSON object that specifies k8s labels to apply to each job.</p>
+<p>An optional JSON object that specifies k8s <a class="reference external" href="https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/">labels</a> to apply to each job. These labels are applied in addition to the default redun labels (unless <code class="docutils literal notranslate"><span class="pre">default_k8s_labels</span></code> is disabled).</p>
+<p>The value must be valid JSON. Both single-line and multi-line formats are supported:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">k8s_labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{</span>
+<span class="w">    </span><span class="na">&quot;team&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;data-science&quot;</span><span class="na">,</span>
+<span class="w">    </span><span class="na">&quot;project&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;genomics&quot;</span>
+<span class="w">  </span><span class="na">}</span>
+</pre></div>
+</div>
+<p>See <a class="reference external" href="https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set">Kubernetes constraints on
+labels</a>.</p>
 </section>
 <section id="default-k8s-labels">
 <h5><code class="docutils literal notranslate"><span class="pre">default_k8s_labels</span></code><a class="headerlink" href="#default-k8s-labels" title="Link to this heading">¶</a></h5>
 <p>A bool (default: True) that specifies whether to add default k8s labels to jobs, such as <code class="docutils literal notranslate"><span class="pre">redun.insitro.com/job_id</span></code>, <code class="docutils literal notranslate"><span class="pre">redun.insitro.com/task_name</span></code>, etc.</p>
 </section>
-<section id="id20">
-<h5><code class="docutils literal notranslate"><span class="pre">code_package</span></code><a class="headerlink" href="#id20" title="Link to this heading">¶</a></h5>
-<p>A bool (default: True) that specifies whether to perform <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code packaging</span></a>.</p>
+<section id="node-affinity">
+<h5><code class="docutils literal notranslate"><span class="pre">node_affinity</span></code><a class="headerlink" href="#node-affinity" title="Link to this heading">¶</a></h5>
+<p>An optional JSON object that specifies k8s <a class="reference external" href="https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity">node affinity</a> rules for pod scheduling. This can be used to ensure jobs run on specific nodes with particular characteristics (e.g., instance types with local NVMe storage). This can be overridden on a per task basis using task options.</p>
+<section id="example-for-requesting-nodes-with-local-nvme-storage-useful-with-ephemeral-storage-requests">
+<h6>Example for requesting nodes with local NVMe storage (useful with <code class="docutils literal notranslate"><span class="pre">ephemeral_storage</span></code> requests)<a class="headerlink" href="#example-for-requesting-nodes-with-local-nvme-storage-useful-with-ephemeral-storage-requests" title="Link to this heading">¶</a></h6>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">node_affinity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{</span>
+<span class="w">    </span><span class="na">&quot;required_during_scheduling_ignored_during_execution&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">[</span>
+<span class="w">        </span><span class="na">{</span>
+<span class="w">            </span><span class="na">&quot;match_expressions&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">[</span>
+<span class="w">                </span><span class="na">{</span>
+<span class="w">                    </span><span class="na">&quot;key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;karpenter.k8s.aws/instance-local-nvme&quot;</span><span class="na">,</span>
+<span class="w">                    </span><span class="na">&quot;operator&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;Exists&quot;</span>
+<span class="w">                    </span><span class="na">}</span>
+<span class="w">                </span><span class="na">]</span>
+<span class="w">            </span><span class="na">}</span>
+<span class="w">        </span><span class="na">]</span>
+<span class="w">    </span><span class="na">}</span>
+</pre></div>
+</div>
 </section>
-<section id="id21">
-<h5><code class="docutils literal notranslate"><span class="pre">code_includes</span></code><a class="headerlink" href="#id21" title="Link to this heading">¶</a></h5>
-<p>A string (default: <code class="docutils literal notranslate"><span class="pre">**/*.py</span></code>) that specifies a pattern for which files should be included in a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
+<section id="example-for-requesting-specific-instance-types">
+<h6>Example for requesting specific instance types<a class="headerlink" href="#example-for-requesting-specific-instance-types" title="Link to this heading">¶</a></h6>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">node_affinity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{</span>
+<span class="w">    </span><span class="na">&quot;required_during_scheduling_ignored_during_execution&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">[</span>
+<span class="w">        </span><span class="na">{</span>
+<span class="w">            </span><span class="na">&quot;match_expressions&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">[</span>
+<span class="w">                </span><span class="na">{</span>
+<span class="w">                    </span><span class="na">&quot;key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;karpenter.k8s.aws/instance-family&quot;</span><span class="na">,</span>
+<span class="w">                    </span><span class="na">&quot;operator&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;In&quot;</span><span class="na">,</span>
+<span class="w">                    </span><span class="na">&quot;values&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">[&quot;g5&quot;]</span>
+<span class="w">                    </span><span class="na">}</span>
+<span class="w">                </span><span class="na">]</span>
+<span class="w">            </span><span class="na">}</span>
+<span class="w">        </span><span class="na">]</span>
+<span class="w">    </span><span class="na">}</span>
+</pre></div>
+</div>
+</section>
 </section>
 <section id="id22">
-<h5><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code><a class="headerlink" href="#id22" title="Link to this heading">¶</a></h5>
-<p>A string (default: None) that specifies a pattern for which files should be excluded from a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
+<h5><code class="docutils literal notranslate"><span class="pre">code_package</span></code><a class="headerlink" href="#id22" title="Link to this heading">¶</a></h5>
+<p>A bool (default: True) that specifies whether to perform <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code packaging</span></a>.</p>
 </section>
 <section id="id23">
-<h5><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code><a class="headerlink" href="#id23" title="Link to this heading">¶</a></h5>
-<p>A float (default: 5.0) that specifies how often, in seconds, the k8s API is queried to monitor running jobs.</p>
+<h5><code class="docutils literal notranslate"><span class="pre">code_includes</span></code><a class="headerlink" href="#id23" title="Link to this heading">¶</a></h5>
+<p>A string (default: <code class="docutils literal notranslate"><span class="pre">**/*.py</span></code>) that specifies a pattern for which files should be included in a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
 </section>
 <section id="id24">
-<h5><code class="docutils literal notranslate"><span class="pre">min_array_size</span></code><a class="headerlink" href="#id24" title="Link to this heading">¶</a></h5>
-<p>Minimum number (default: 5) of equivalent tasks that will be submitted together as an <a class="reference external" href="https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/">array job</a>. “Equivalent” means the same task and execution requirements (CPU, memory, etc), but with possibly different arguments. Set to 0 to disable array job submission.</p>
+<h5><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code><a class="headerlink" href="#id24" title="Link to this heading">¶</a></h5>
+<p>A string (default: None) that specifies a pattern for which files should be excluded from a <a class="reference internal" href="executors.html#code-packaging"><span class="std std-ref">code package</span></a>. Multiple patterns can be specified separated by whitespace. Whitespace can be escaped using <a class="reference external" href="https://docs.python.org/3/library/shlex.html#shlex.split">shell-like syntax</a></p>
 </section>
 <section id="id25">
-<h5><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code><a class="headerlink" href="#id25" title="Link to this heading">¶</a></h5>
-<p>Maximum number (default: 1000) of equivalent tasks that will be submitted together as an array job. Must be greater than or equal to <code class="docutils literal notranslate"><span class="pre">min_array_size</span></code>.</p>
+<h5><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code><a class="headerlink" href="#id25" title="Link to this heading">¶</a></h5>
+<p>A float (default: 5.0) that specifies how often, in seconds, the k8s API is queried to monitor running jobs.</p>
 </section>
 <section id="id26">
-<h5><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code><a class="headerlink" href="#id26" title="Link to this heading">¶</a></h5>
+<h5><code class="docutils literal notranslate"><span class="pre">min_array_size</span></code><a class="headerlink" href="#id26" title="Link to this heading">¶</a></h5>
+<p>Minimum number (default: 5) of equivalent tasks that will be submitted together as an <a class="reference external" href="https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/">array job</a>. “Equivalent” means the same task and execution requirements (CPU, memory, etc), but with possibly different arguments. Set to 0 to disable array job submission.</p>
+</section>
+<section id="id27">
+<h5><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code><a class="headerlink" href="#id27" title="Link to this heading">¶</a></h5>
+<p>Maximum number (default: 1000) of equivalent tasks that will be submitted together as an array job. Must be greater than or equal to <code class="docutils literal notranslate"><span class="pre">min_array_size</span></code>.</p>
+</section>
+<section id="id28">
+<h5><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code><a class="headerlink" href="#id28" title="Link to this heading">¶</a></h5>
 <p>A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wait before submission to be possibly bundled into an array job.</p>
-</section>
-<section id="share-id">
-<h5><code class="docutils literal notranslate"><span class="pre">share_id</span></code><a class="headerlink" href="#share-id" title="Link to this heading">¶</a></h5>
-<p>Queues with Scheduling Policies require all jobs be assigned a Fair Share
-Scheduling <code class="docutils literal notranslate"><span class="pre">shareIdentifier</span></code>. Can be further overridden on a per-task basis using task options.</p>
-</section>
-<section id="scheduling-priority-override">
-<h5><code class="docutils literal notranslate"><span class="pre">scheduling_priority_override</span></code><a class="headerlink" href="#scheduling-priority-override" title="Link to this heading">¶</a></h5>
-<p>Queues with Scheduling Policies require that all job definitions specify a <code class="docutils literal notranslate"><span class="pre">schedulingPriority</span></code>
-Alternatively, if the batch job definition does <em>not</em> configure a <code class="docutils literal notranslate"><span class="pre">schedulingPriority</span></code>, you
-must provide a <code class="docutils literal notranslate"><span class="pre">schedulingPriorityOverride</span></code> by setting this variable.
-Can be further overridden on a per-task basis using task options.</p>
 </section>
 </section>
 </section>
@@ -1121,22 +1175,28 @@ Can be further overridden on a per-task basis using task options.</p>
 <li><a class="reference internal" href="#import-aws-secrets"><code class="docutils literal notranslate"><span class="pre">import_aws_secrets</span></code></a></li>
 <li><a class="reference internal" href="#secret-env-vars"><code class="docutils literal notranslate"><span class="pre">secret_env_vars</span></code></a></li>
 <li><a class="reference internal" href="#id16"><code class="docutils literal notranslate"><span class="pre">vcpus</span></code></a></li>
-<li><a class="reference internal" href="#id17"><code class="docutils literal notranslate"><span class="pre">memory</span></code></a></li>
-<li><a class="reference internal" href="#id18"><code class="docutils literal notranslate"><span class="pre">retries</span></code></a></li>
-<li><a class="reference internal" href="#id19"><code class="docutils literal notranslate"><span class="pre">job_name_prefix</span></code></a></li>
+<li><a class="reference internal" href="#id17"><code class="docutils literal notranslate"><span class="pre">gpus</span></code></a></li>
+<li><a class="reference internal" href="#id18"><code class="docutils literal notranslate"><span class="pre">memory</span></code></a></li>
+<li><a class="reference internal" href="#ephemeral-storage"><code class="docutils literal notranslate"><span class="pre">ephemeral_storage</span></code></a></li>
+<li><a class="reference internal" href="#id19"><code class="docutils literal notranslate"><span class="pre">timeout</span></code></a></li>
+<li><a class="reference internal" href="#id20"><code class="docutils literal notranslate"><span class="pre">retries</span></code></a></li>
+<li><a class="reference internal" href="#id21"><code class="docutils literal notranslate"><span class="pre">job_name_prefix</span></code></a></li>
 <li><a class="reference internal" href="#service-account-name"><code class="docutils literal notranslate"><span class="pre">service_account_name</span></code></a></li>
 <li><a class="reference internal" href="#annotations"><code class="docutils literal notranslate"><span class="pre">annotations</span></code></a></li>
 <li><a class="reference internal" href="#k8s-labels"><code class="docutils literal notranslate"><span class="pre">k8s_labels</span></code></a></li>
 <li><a class="reference internal" href="#default-k8s-labels"><code class="docutils literal notranslate"><span class="pre">default_k8s_labels</span></code></a></li>
-<li><a class="reference internal" href="#id20"><code class="docutils literal notranslate"><span class="pre">code_package</span></code></a></li>
-<li><a class="reference internal" href="#id21"><code class="docutils literal notranslate"><span class="pre">code_includes</span></code></a></li>
-<li><a class="reference internal" href="#id22"><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code></a></li>
-<li><a class="reference internal" href="#id23"><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code></a></li>
-<li><a class="reference internal" href="#id24"><code class="docutils literal notranslate"><span class="pre">min_array_size</span></code></a></li>
-<li><a class="reference internal" href="#id25"><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code></a></li>
-<li><a class="reference internal" href="#id26"><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code></a></li>
-<li><a class="reference internal" href="#share-id"><code class="docutils literal notranslate"><span class="pre">share_id</span></code></a></li>
-<li><a class="reference internal" href="#scheduling-priority-override"><code class="docutils literal notranslate"><span class="pre">scheduling_priority_override</span></code></a></li>
+<li><a class="reference internal" href="#node-affinity"><code class="docutils literal notranslate"><span class="pre">node_affinity</span></code></a><ul>
+<li><a class="reference internal" href="#example-for-requesting-nodes-with-local-nvme-storage-useful-with-ephemeral-storage-requests">Example for requesting nodes with local NVMe storage (useful with <code class="docutils literal notranslate"><span class="pre">ephemeral_storage</span></code> requests)</a></li>
+<li><a class="reference internal" href="#example-for-requesting-specific-instance-types">Example for requesting specific instance types</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id22"><code class="docutils literal notranslate"><span class="pre">code_package</span></code></a></li>
+<li><a class="reference internal" href="#id23"><code class="docutils literal notranslate"><span class="pre">code_includes</span></code></a></li>
+<li><a class="reference internal" href="#id24"><code class="docutils literal notranslate"><span class="pre">code_excludes</span></code></a></li>
+<li><a class="reference internal" href="#id25"><code class="docutils literal notranslate"><span class="pre">job_monitor_interval</span></code></a></li>
+<li><a class="reference internal" href="#id26"><code class="docutils literal notranslate"><span class="pre">min_array_size</span></code></a></li>
+<li><a class="reference internal" href="#id27"><code class="docutils literal notranslate"><span class="pre">max_array_size</span></code></a></li>
+<li><a class="reference internal" href="#id28"><code class="docutils literal notranslate"><span class="pre">job_stale_time</span></code></a></li>
 </ul>
 </li>
 </ul>

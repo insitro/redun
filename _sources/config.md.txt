@@ -617,7 +617,7 @@ A string (default: `default`) that specifies the k8s namespace to use for all re
 
 ##### `secret_name`
 
-An optional string that specifies the name of a k8s secret to use for passing AWS secrets.
+An optional string that specifies the name of a k8s secret to use for passing environment variables to k8s jobs. When set, this secret will contain AWS credentials (if `import_aws_secrets` is enabled) and any additional environment variables specified in `secret_env_vars`.
 
 ##### `import_aws_secrets`
 
@@ -631,17 +631,29 @@ A whitespace separated list of environment variables to import into the k8s jobs
 
 An integer (default: 1) that specifies the default number of virtual CPUs required for each task. This can be overridden on a per task basis using task options.
 
+##### `gpus`
+
+An integer (default: 0) that specifies the default number of GPUs required for each task. This can be overridden on a per task basis using task options.
+
 ##### `memory`
 
 A float (default: 4) that specifies the default amount of memory (in Gb) required for each task. This can be overridden on a per task basis using task options.
 
+##### `ephemeral_storage`
+
+An optional string that specifies the default amount of ephemeral storage required for each task (e.g., `"10Gi"`, `"100Mi"`). See [Kubernetes standard quantity format](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/) for accepted suffixes. This can be overridden on a per task basis using task options.
+
+##### `timeout`
+
+An optional integer that specifies the default time duration in seconds after which k8s will terminate the job. If not specified, no timeout is set and the job will run indefinitely (or until it completes or fails). This can be overridden on a per task basis using task options.
+
 ##### `retries`
 
-An integer (default: 1) that specifies the default number of retries to use for submitting a job to the AWS Batch queue. This can be overridden on a per task basis using task options.
+An integer (default: 1) that specifies the default number of retries for failed jobs. This can be overridden on a per task basis using task options.
 
 ##### `job_name_prefix`
 
-A string (default: `batch-job`) that specifies the prefix to use for AWS Batch job names. This can make it easier for users to distinguish which AWS Batch jobs correspond to their workflow.
+A string (default: `redun-job`) that specifies the prefix to use for k8s job names. This can make it easier for users to distinguish which k8s jobs correspond to their workflow.
 
 ##### `service_account_name`
 
@@ -649,15 +661,75 @@ A string (default: `default`) that specifices the k8s [service account](https://
 
 ##### `annotations`
 
-An optional JSON object that specifies k8s annotations to apply to each job.
+An optional JSON object that specifies k8s [annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/) to apply to each job.
+
+The value must be valid JSON. Both single-line and multi-line formats are supported:
+
+```ini
+annotations = {"example.com/annotation": "value"}
+```
+
+See [Kubernetes
+constraints on annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/#syntax-and-character-set).
 
 ##### `k8s_labels`
 
-An optional JSON object that specifies k8s labels to apply to each job.
+An optional JSON object that specifies k8s [labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) to apply to each job. These labels are applied in addition to the default redun labels (unless `default_k8s_labels` is disabled).
+
+The value must be valid JSON. Both single-line and multi-line formats are supported:
+
+```ini
+k8s_labels = {
+    "team": "data-science",
+    "project": "genomics"
+  }
+```
+
+See [Kubernetes constraints on
+labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
 
 ##### `default_k8s_labels`
 
 A bool (default: True) that specifies whether to add default k8s labels to jobs, such as `redun.insitro.com/job_id`, `redun.insitro.com/task_name`, etc.
+
+##### `node_affinity`
+
+An optional JSON object that specifies k8s [node affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) rules for pod scheduling. This can be used to ensure jobs run on specific nodes with particular characteristics (e.g., instance types with local NVMe storage). This can be overridden on a per task basis using task options.
+
+###### Example for requesting nodes with local NVMe storage (useful with `ephemeral_storage` requests)
+
+```ini
+node_affinity = {
+    "required_during_scheduling_ignored_during_execution": [
+        {
+            "match_expressions": [
+                {
+                    "key": "karpenter.k8s.aws/instance-local-nvme",
+                    "operator": "Exists"
+                    }
+                ]
+            }
+        ]
+    }
+```
+
+###### Example for requesting specific instance types
+
+```ini
+node_affinity = {
+    "required_during_scheduling_ignored_during_execution": [
+        {
+            "match_expressions": [
+                {
+                    "key": "karpenter.k8s.aws/instance-family",
+                    "operator": "In",
+                    "values": ["g5"]
+                    }
+                ]
+            }
+        ]
+    }
+```
 
 ##### `code_package`
 
@@ -686,18 +758,6 @@ Maximum number (default: 1000) of equivalent tasks that will be submitted togeth
 ##### `job_stale_time`
 
 A float (default: 3.0) that specifies the maximum time, in seconds, jobs will wait before submission to be possibly bundled into an array job.
-
-##### `share_id`
-
-Queues with Scheduling Policies require all jobs be assigned a Fair Share
-Scheduling `shareIdentifier`. Can be further overridden on a per-task basis using task options.
-
-##### `scheduling_priority_override`
-
-Queues with Scheduling Policies require that all job definitions specify a `schedulingPriority`
-Alternatively, if the batch job definition does *not* configure a `schedulingPriority`, you
-must provide a `schedulingPriorityOverride` by setting this variable.
-Can be further overridden on a per-task basis using task options.
 
 ## Configuration variables
 
