@@ -50,6 +50,15 @@ The above assumes the following dependencies are installed:
 * `graphviz` (on ubuntu: `apt-get install graphviz graphviz-dev`, via homebrew: `brew install graphviz`)
 * `gcc` (on ubuntu or similar `sudo apt-get install gcc`)
 
+On MacOS, you may need to specific graphviz paths explcitly.
+For example, if you installed graphviz using homebrew:
+```sh
+pip install --config-settings="--global-option=build_ext" \
+            --config-settings="--global-option=-I/opt/homebrew/include/" \
+            --config-settings="--global-option=-L/opt/homebrew/lib/" \
+            pygraphviz
+```
+
 ## Use cases
 
 redun's general approach to defining workflows makes it a good choice for implementing workflows for a wide-variety of use cases:
