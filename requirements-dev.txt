@@ -1,7 +1,6 @@
 freezegun
 moto[batch,glue,s3]==3.1.10
-numpydoc
-sphinx<6 # awscli requires docutils <0.17, and sphinx 6 requires >=0.18
+numpydoc  # Test dependency for docstring validation
 pandas
 pdbpp
 pre-commit
@@ -19,7 +18,13 @@ adlfs==2024.12.0
 azure-ai-ml==1.23.1
 
 # Pin boto for testing. We can unpinned if moto is updated.
+# awscli must be pinned to match botocore version to avoid dependency conflicts.
+# The setup.py installs aiobotocore[boto3,awscli] with loose constraints, which
+# pulls in the latest awscli. Then requirements-dev.txt downgrades botocore,
+# causing awscli to have incompatible botocore dependency (e.g., awscli 1.42.70
+# requires botocore==1.40.70, but we downgrade to 1.34.69).
 aiobotocore==2.12.3
+awscli==1.32.69
 boto3==1.34.69
 botocore==1.34.69
 s3fs==2025.5.1

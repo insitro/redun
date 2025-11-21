@@ -1,6 +1,21 @@
 name: Test pull request
 on: pull_request
 jobs:
+  setup-validation:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: sudo apt-get install graphviz graphviz-dev
+      - name: Run make setup
+        run: make setup
+      - name: Verify no pip dependency conflicts
+        run: |
+          . .venv/bin/activate
+          pip check
   tox:
     timeout-minutes: 15
     strategy:

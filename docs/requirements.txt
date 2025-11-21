@@ -1,7 +1,16 @@
-docutils>=0.18
+# Documentation build dependencies
+# Note: Version constraints are driven by compatibility with pinned awscli==1.32.69
+# in requirements-dev.txt, which requires docutils<0.17.
+
+# docutils must be <0.17 for compatibility with awscli 1.32.69
+# awscli 1.32.69 depends on docutils>=0.10,<0.17
+docutils>=0.10,<0.17
+
+# sphinx must be <6 because sphinx 6+ requires docutils>=0.18
+# which conflicts with awscli's docutils<0.17 requirement
+sphinx>=4.0,<6
 
 furo
 myst-parser
 pygments>=2.12.0
-sphinx>=4.0
 roman
