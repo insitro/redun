@@ -219,6 +219,18 @@ Environment variable (default: `REDUN_DB_USERNAME`) containing the username logi
 
 Environment variable (default: `REDUN_DB_PASSWORD`) containing the password login for `db_uri`.
 
+#### `db_retries`
+
+An integer (default: 3) for the maximum number of retries to do when encountering a database connection error during a database operation.
+
+#### `db_retries_backoff`
+
+A float (default: 1.0) for the backoff delay factor in seconds to use when retrying a database operation. This factor is doubled for every retry upto the maximum delay `db_retries_backoff_max`. See `db_retries` for more.
+
+#### `db_retries_backoff_max`
+
+A float (default: 60.0) for the maximum delay time in seconds to use when retrying a database operation. See `db_retries` for more.
+
 #### `max_value_size`
 
 An integer (default: `1000000000`, 1Gb) specifying the maximum number of bytes to allow for storing a single value in the cache.

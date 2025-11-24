@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 import typing
 import uuid
 import warnings
@@ -13,6 +14,7 @@ from itertools import chain
 from threading import RLock, get_ident
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     Iterator,
@@ -48,6 +50,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import (
     Session,
     backref,
@@ -1433,6 +1436,63 @@ class RedunSession(Session):
         self.backend: "RedunBackendDb" = backend
 
 
+def db_retry(func: Callable) -> Callable:
+    """
+    Decorator to automatically retry database operations on OperationalError.
+
+    This decorator is designed for RedunBackendDb methods that perform database
+    queries/writes and may encounter connection disconnects.
+
+
+    Example
+    -------
+    @db_retry
+    @use_acquire
+    def get_value(self, value_hash: str) -> Tuple[Any, bool]:
+        with self.with_session() as session:
+            value_row = session.query(Value).filter_by(value_hash=value_hash).one_or_none()
+        # ... rest of method
+    """
+
+    @wraps(func)
+    def wrapper(self: "RedunBackendDb", *args, **kwargs):
+        self._db_retries_attempt = 0
+        while True:
+            try:
+                return func(self, *args, **kwargs)
+            except OperationalError as error:
+                # Restore the database connection to a working state.
+                assert self.session
+                self.session.rollback()
+
+                self._db_retries_attempt += 1
+                if self._db_retries_attempt > self._db_retries:
+                    # Final attempt failed, re-raise the exception.
+                    self.logger.error(
+                        f"Database operation {func.__name__} failed "
+                        f"(max attempts reached {self._db_retries + 1}): {error}"
+                    )
+                    raise
+
+                # Calculate delay with exponential backoff.
+                delay = min(
+                    self._db_retries_backoff * (2**self._db_retries_attempt),
+                    self._db_retries_backoff_max,
+                )
+
+                # Log retry attempt
+                self.logger.warning(
+                    f"Database operation {func.__name__} failed (attempt {self._db_retries_attempt}/{self._db_retries + 1}), "
+                    f"retrying in {delay:.1f}s: {error}"
+                )
+                time.sleep(delay)
+
+        # This should never be reached, but just in case.
+        raise AssertionError("Too many database retries")
+
+    return wrapper
+
+
 def use_acquire(method):
     """
     Decorator for running a RedunBackendDb method with the db lock acquired.
@@ -1519,6 +1579,12 @@ class RedunBackendDb(RedunBackend):
 
         self._database_loaded = False
         self._db_echo = bool(os.environ.get("REDUN_DB_ECHO"))
+
+        # DB retry config.
+        self._db_retries: int = int(config.get("db_retries", "3"))
+        self._db_retries_backoff: float = float(config.get("db_retries_backoff", "1.0"))
+        self._db_retries_backoff_max: float = float(config.get("db_retries_backoff_max", "60.0"))
+        self._db_retries_attempt: int = 0
 
     def clone(self, session: Session = None):
         """
@@ -1741,6 +1807,7 @@ class RedunBackendDb(RedunBackend):
         # Setup serializer.
         self._record_serializer = serializers.RecordSerializer(version)
 
+    @db_retry
     def record_call_node(
         self,
         task_name: str,
@@ -1823,6 +1890,7 @@ class RedunBackendDb(RedunBackend):
                 session.commit()
         return call_hash
 
+    @db_retry
     def get_subtree_tasks(self, call_hash: str) -> Set[str]:
         """
         Returns all task hashes used by CallNodes within its subtree.
@@ -1924,6 +1992,7 @@ class RedunBackendDb(RedunBackend):
 
             session.commit()
 
+    @db_retry
     def record_call_node_context(
         self, call_hash: str, context_hash: Optional[str], context: dict
     ) -> str:
@@ -1936,6 +2005,7 @@ class RedunBackendDb(RedunBackend):
         self.record_tags(TagEntity.CallNode, call_hash, [(CONTEXT_KEY, context_hash)])
         return context_hash
 
+    @db_retry
     def record_value(self, value: Any, data: Optional[bytes] = None) -> str:
         """
         Record a Value into the backend.
@@ -2176,6 +2246,7 @@ class RedunBackendDb(RedunBackend):
         else:
             raise AssertionError("ValueStore is not defined.")
 
+    @db_retry
     def get_value(self, value_hash: str) -> Tuple[Any, bool]:
         """
         Returns a Value from the datastore using the value content address (value_hash).
@@ -2197,6 +2268,7 @@ class RedunBackendDb(RedunBackend):
             return None, False
         return self._get_value(value_row)
 
+    @db_retry
     @use_acquire
     def check_cache(
         self,
@@ -2279,6 +2351,7 @@ class RedunBackendDb(RedunBackend):
         else:
             return None, None, CacheResult.MISS
 
+    @db_retry
     def get_eval_cache(self, eval_hash: str) -> Tuple[Any, bool]:
         """
         Checks the Evaluation cache for a cached result.
@@ -2305,6 +2378,7 @@ class RedunBackendDb(RedunBackend):
             return None, False
         return self._get_value(value_row)
 
+    @db_retry
     def set_eval_cache(
         self,
         eval_hash: str,
@@ -2404,6 +2478,7 @@ class RedunBackendDb(RedunBackend):
         else:
             return None
 
+    @db_retry
     def get_call_cache(self, call_hash: str) -> Tuple[Any, bool]:
         """
         Returns the result of a previously recorded CallNode.
@@ -2429,6 +2504,7 @@ class RedunBackendDb(RedunBackend):
             return None, False
         return self._get_value(value_row)
 
+    @db_retry
     @use_acquire
     def explain_cache_miss(self, task: "BaseTask", args_hash: str) -> Optional[Dict[str, Any]]:
         """
@@ -2480,6 +2556,7 @@ class RedunBackendDb(RedunBackend):
                 "reason": "new_call",
             }
 
+    @db_retry
     @use_acquire
     def advance_handle(self, parent_handles: List[BaseHandle], child_handle: BaseHandle) -> None:
         """
@@ -2552,6 +2629,7 @@ class RedunBackendDb(RedunBackend):
 
         self.session.commit()
 
+    @db_retry
     @use_acquire
     def rollback_handle(self, handle: BaseHandle) -> None:
         """
@@ -2597,6 +2675,7 @@ class RedunBackendDb(RedunBackend):
         # https://docs.sqlalchemy.org/en/13/orm/query.html#sqlalchemy.orm.query.Query.update.params.synchronize_session
         self.session.expire_all()
 
+    @db_retry
     @use_acquire
     def is_valid_handle(self, handle: BaseHandle) -> bool:
         """
@@ -2611,6 +2690,7 @@ class RedunBackendDb(RedunBackend):
         # If handle isn't recorded, it is not valid.
         return row and row[0]
 
+    @db_retry
     def record_execution(self, exec_id: str, args: List[str]) -> None:
         """
         Records an Execution to the backend.
@@ -2632,6 +2712,7 @@ class RedunBackendDb(RedunBackend):
             args=json.dumps(args),
         )
 
+    @db_retry
     def record_updated_time(self, execution_id: str) -> None:
         """
         Updates updated_time (heartbeat) timestamp for the current Execution.
@@ -2649,6 +2730,7 @@ class RedunBackendDb(RedunBackend):
                 )
                 session.commit()
 
+    @db_retry
     @use_acquire
     def record_job_start(self, job: "BaseJob", now: Optional[datetime] = None) -> Job:
         """
@@ -2687,6 +2769,7 @@ class RedunBackendDb(RedunBackend):
 
         return db_job
 
+    @db_retry
     @use_acquire
     def record_job_end(
         self,
@@ -2713,6 +2796,7 @@ class RedunBackendDb(RedunBackend):
         self.session.add(db_job)
         self.session.commit()
 
+    @db_retry
     def get_job(self, job_id: str) -> Optional[dict]:
         """
         Returns details for a Job.
@@ -2727,6 +2811,7 @@ class RedunBackendDb(RedunBackend):
                 "execution_id": job.execution_id,
             }
 
+    @db_retry
     @use_acquire
     def record_tags(
         self,
@@ -2868,6 +2953,7 @@ class RedunBackendDb(RedunBackend):
 
         return [(tag.tag_hash, entity_id, tag.key, tag.value) for tag in tag_rows]
 
+    @db_retry
     @use_acquire
     def delete_tags(
         self, entity_id: str, tags: Iterable[KeyValue], keys: Iterable[str] = ()
@@ -2898,6 +2984,7 @@ class RedunBackendDb(RedunBackend):
             parents=parents,
         )
 
+    @db_retry
     @use_acquire
     def update_tags(
         self,
@@ -2921,6 +3008,7 @@ class RedunBackendDb(RedunBackend):
         ]
         return self.record_tags(entity_type, entity_id, new_tags, parents=parents)
 
+    @db_retry
     @use_acquire
     def get_tags(self, entity_ids: List[str]) -> Dict[str, TagMap]:
         """
@@ -2949,6 +3037,7 @@ class RedunBackendDb(RedunBackend):
         (Tag, Tag.tag_hash),
     ]
 
+    @db_retry
     def get_records(self, ids: Iterable[str], sorted: bool = True) -> Iterable[dict]:
         """
         Returns serialized records for the given ids.
@@ -2980,6 +3069,7 @@ class RedunBackendDb(RedunBackend):
                 for query in queries:
                     yield from self._record_serializer.serialize_query(query)
 
+    @db_retry
     def get_child_record_ids(
         self, model_ids: Iterable[Tuple[Base, str]]
     ) -> Iterable[RecordEdgeType]:
@@ -3015,6 +3105,7 @@ class RedunBackendDb(RedunBackend):
             with self.with_session() as session:
                 yield from get_tag_entity_child_edges(session, all_ids)
 
+    @db_retry
     @use_acquire
     def has_records(self, record_ids: Iterable[str]) -> List[str]:
         """
@@ -3030,6 +3121,7 @@ class RedunBackendDb(RedunBackend):
         }
         return [record_id for record_id in record_ids if record_id in existing_ids]
 
+    @db_retry
     def put_records(self, records: Iterable[dict]) -> int:
         """
         Writes records to the database and returns number of new records written.
@@ -3093,6 +3185,7 @@ class RedunBackendDb(RedunBackend):
             for (record_id,) in filter_in(self.session.query(pk_field), pk_field, record_ids):
                 yield model, record_id
 
+    @db_retry
     @use_acquire
     def iter_record_ids(self, root_ids: Iterable[str]) -> Iterator[str]:
         """

@@ -1,4 +1,6 @@
+import inspect
 from collections import Counter
+from contextlib import contextmanager
 from datetime import timedelta, timezone
 from typing import Callable, Dict, List, Set, cast
 from unittest import mock
@@ -6,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
 
@@ -1533,3 +1535,47 @@ def test_cache_change_proxy_value(scheduler: Scheduler, session: Session) -> Non
     # We should still be able to fetch the value from the cache using the default pickle deserialization.
     value, has_value = scheduler.backend.get_value(value_hash)
     assert has_value
+
+
+def test_db_retries(scheduler: Scheduler, session: Session) -> None:
+    """
+    Ensure redun backend uses db retries to overcome OperationalError.
+    """
+
+    @task
+    def add(a, b):
+        return a + b
+
+    backend = cast(RedunBackendDb, scheduler.backend)
+
+    # For testing use very fast backoff delay.
+    backend._db_retries_backoff = 0.01
+
+    original_with_session = backend.with_session
+    tries = 0
+    max_fails = 2
+
+    @contextmanager
+    def mock_with_session():
+        nonlocal tries
+
+        # Only fail the first few times when calling record_call_node.
+        frame = inspect.currentframe()
+        if tries < max_fails and frame.f_back.f_back.f_code.co_name == "record_call_node":
+            tries += 1
+            raise OperationalError("Example error", {}, None)
+        else:
+            # Return the real session.
+            with original_with_session() as session:
+                yield session
+
+    # Patch RedunBackendDb.with_session to return our mock
+    with patch.object(RedunBackendDb, "with_session", side_effect=mock_with_session):
+        assert scheduler.run(add(1, 2)) == 3
+
+    # If OperationalError keeps failing, we should propogate the error.
+    tries = 0
+    max_fails = 10
+    with pytest.raises(OperationalError):
+        with patch.object(RedunBackendDb, "with_session", side_effect=mock_with_session):
+            assert scheduler.run(add(1, 2)) == 3
