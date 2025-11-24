@@ -90,7 +90,10 @@ def test_uri_from_secret(client_mock) -> None:
     port = "5555"
     dbname = "mydb"
 
-    client_mock.return_value.get_secret_value.return_value = {
+    # client_mock is the mock for get_aws_client function
+    # We need to mock what it returns (the actual AWS client)
+    aws_client_mock = client_mock.return_value
+    aws_client_mock.get_secret_value.return_value = {
         "SecretString": json.dumps(
             {
                 "engine": engine,
@@ -104,5 +107,5 @@ def test_uri_from_secret(client_mock) -> None:
     }
 
     db_uri = RDB._get_uri_from_secret("mysecret")
-    assert client_mock.get_secret_value.called_with("mysecret")
+    aws_client_mock.get_secret_value.assert_called_with(SecretId="mysecret")
     assert db_uri == f"postgresql://{username}:{password}@{host}:{port}/{dbname}"
