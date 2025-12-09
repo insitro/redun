@@ -713,31 +713,29 @@ class Frame(FrameSummary, Value):  # type:ignore[misc]
         line: Optional[str] = None,
         job: Optional[Job] = None,
     ) -> None:
-        self.filename = filename
-        self.lineno = lineno
-        self.name = name
-        self._line = line
-        if lookup_line:
-            self.line
+        # Advance line past decorator.
+        line = linecache.getline(filename, lineno).strip()
+        if line and line.strip().startswith("@"):
+            while True:
+                lineno += 1
+                line = linecache.getline(filename, lineno).strip()
+                if re.match("^(async )? *def ", line):
+                    break
+
+        super().__init__(filename, lineno, name, locals=locals, lookup_line=lookup_line, line=line)
+
+        # Use our own locals to display.
         self.locals = {key: trim_string(repr(value)) for key, value in locals.items()}
         assert job
         self.job: Job = job
-
-        # Advance past decorator.
-        if self._line and self._line.strip().startswith("@"):
-            while True:
-                self.lineno += 1
-                line = linecache.getline(self.filename, self.lineno).strip()
-                if re.match("^(async )? *def ", line):
-                    break
-            self._line = None
 
     def __getstate__(self) -> dict:
         return {
             "filename": self.filename,
             "lineno": self.lineno,
             "name": self.name,
-            "_line": self._line,
+            # Python3.13+ uses _lines.
+            "_line": self._line if hasattr(self, "_line") else self._lines,
             "locals": self.locals,
             "job": self.job,
         }
@@ -746,7 +744,9 @@ class Frame(FrameSummary, Value):  # type:ignore[misc]
         self.filename = state["filename"]
         self.lineno = state["lineno"]
         self.name = state["name"]
+        # Use both fields to support Python3.13+
         self._line = state["_line"]
+        self._lines = state["_line"]
         self.locals = state["locals"]
         self.job = state["job"]
 
@@ -764,6 +764,10 @@ class Traceback(Value):
         self.logs: List[str] = logs or []
 
     def __getstate__(self) -> dict:
+        # In Python 3.13+, frame objects contain code which can't be pickled. Suppress code before pickling.
+        for frame in self.frames:
+            if hasattr(frame, "_code"):
+                frame._code = None
         return {
             "error": self.error,
             "frames": self.frames,

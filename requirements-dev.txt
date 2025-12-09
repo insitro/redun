@@ -4,8 +4,8 @@ numpydoc  # Test dependency for docstring validation
 pandas
 pdbpp
 pre-commit
-pyarrow==17.0.0 # Pinned to workaround cmake/pip error
-pyspark==3.4.3
+pyarrow
+pyspark
 pytest==8.3.4
 tox
 vcrpy==4.1.1
