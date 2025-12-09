@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.36.0
+December 09, 2025
+
+* `#447` - Make fixes for Python 3.13
+* `#445` - Add database retries
+* `#444` - Use proper mock assertion
+* `#443` - Clarify pygraphviz install on MacOS
+* `#442` - [COMP-3353] fix setup make target
+* `#440` - gracefully serialize unserializable errors
+* `#438` - Avoid using preview values for --rerun
+
 ## 0.35.0
 November 10, 2025
 
