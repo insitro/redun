@@ -40,7 +40,7 @@ def fail_return_task(a: int) -> int:
 @task()
 def fail_return_task2(a: int) -> int:
     # ERROR: TaskExpression[str] is not allowed for int.
-    return int2str(a)  # type: ignore[return-value]
+    return int2str(a)
 
 
 @task()
@@ -73,18 +73,18 @@ def main() -> None:
     a2: int = a  # PUNT: Ideally, we shouldn't allow assignment of TaskExpression[int] to an int.
 
     # ERROR: str arg used, int expected.
-    int2str("12345")  # type: ignore[arg-type]
+    int2str("12345")
 
     str_expr = int2str(10)  # type is TaskExpression[str]
     # ERROR: TaskExpression[str] used, int expected.
-    int2str(str_expr)  # type: ignore[arg-type]
+    int2str(str_expr)
 
     # ERROR: Return value is TaskExpression[str] and y is int.
-    y: int = int2str(12345)  # type: ignore[assignment]
+    y: int = int2str(12345)
 
     sum_list([1, 2, 3])  # OK: arg is List[int].
     # ERROR: some items in list are not int.
-    sum_list([1, "2", 3])  # type: ignore[list-item]
+    sum_list([1, "2", 3])
 
     b = add(1, 2)  # type is TaskExpression[int]
     sum_list([1, b, 3])  # OK: TaskExpression[int] can be used for int.
@@ -92,7 +92,7 @@ def main() -> None:
 
     c = int2str(10)  # type is TaskExpression[str]
     # ERROR: TaskExpression[str] cannot be used for int.
-    sum_list([1, 2, c])  # type: ignore[list-item]
+    sum_list([1, 2, c])
 
     # Large expressions and run().
     scheduler = Scheduler()
@@ -104,7 +104,7 @@ def main() -> None:
     add.partial()("1", 2)  # PUNT: We can't type check arguments to partial.
 
     # ERROR: Partial return value should type check.
-    e: str = add.partial()(1, 2)  # type: ignore[assignment]
+    e: str = add.partial()(1, 2)
 
     # Use all variables to satisfy lint.
     _ = [a2, y, d, e]

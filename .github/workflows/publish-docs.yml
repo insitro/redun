@@ -3,22 +3,36 @@ on:
   push:
     branches:
       - main
+
 jobs:
   build:
-      timeout-minutes: 10
-      runs-on: ubuntu-22.04
-      steps:
+    timeout-minutes: 10
+    runs-on: ubuntu-22.04
+    steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Get uv version
+        id: uv-version
+        run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ steps.uv-version.outputs.version }}
+          python-version: '3.11'
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked --group docs
 
       - name: Build sphinx docs
         run: |
           cd docs
-          pip install --use-deprecated=legacy-resolver -r requirements.txt  ../
-          make api html
+          uv run make api html
 
       - name: Checkout gh-pages branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: gh-pages
           path: gh-pages

@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 import boto3
 from google.cloud import batch_v1, compute_v1
-from google.protobuf.json_format import MessageToDict  # type: ignore
+from google.protobuf.json_format import MessageToDict
 
 from redun import File, task
 from redun.config import Config
@@ -59,7 +59,7 @@ def mock_executor(scheduler, debug=False, code_package=True) -> GCPBatchExecutor
         # Prevent monitor thread from running.
         executor._thread = Mock()
 
-    executor._start = executor_start  # type: ignore
+    executor._start = executor_start  # type: ignore[invalid-assignment]
 
     return executor
 

@@ -68,7 +68,7 @@ def k8s_submit(
     annotations: Optional[Dict[str, str]] = None,
     secret_name: Optional[str] = None,
     node_affinity: Optional[Dict[str, Any]] = None,
-) -> kubernetes.client.V1Job:
+) -> kubernetes.client.V1Job:  # type: ignore[possibly-missing-attribute]
     """Prepares and submits a k8s job to the API server"""
     requests = {
         "memory": f"{memory}G",
@@ -181,7 +181,7 @@ def submit_task(
     array_size: int = 0,
     code_file: Optional[File] = None,
     secret_name: Optional[str] = None,
-) -> kubernetes.client.V1Job:
+) -> kubernetes.client.V1Job:  # type: ignore[possibly-missing-attribute]
     """
     Submit a redun Task to K8S.
     """
@@ -231,7 +231,7 @@ def submit_command(
     command: str,
     job_options: dict = {},
     secret_name: Optional[str] = None,
-) -> kubernetes.client.V1Job:
+) -> kubernetes.client.V1Job:  # type: ignore[possibly-missing-attribute]
     """
     Submit a shell command to K8S
     """
@@ -287,7 +287,7 @@ def k8s_describe_jobs(
     k8s_client: k8s_utils.K8SClient,
     job_names: List[str],
     namespace: str,
-) -> List[kubernetes.client.V1Job]:
+) -> List[kubernetes.client.V1Job]:  # type: ignore[possibly-missing-attribute]
     """
     Returns K8S Job descriptions.
     """
@@ -304,7 +304,7 @@ def k8s_describe_jobs(
 
 def get_pod_logs(
     k8s_client: k8s_utils.K8SClient,
-    pod: kubernetes.client.V1Pod,
+    pod: kubernetes.client.V1Pod,  # type: ignore[possibly-missing-attribute]
     max_lines: Optional[int] = None,
 ) -> List[str]:
     """
@@ -332,7 +332,7 @@ def get_pod_logs(
 
 def parse_pod_logs(
     k8s_client: k8s_utils.K8SClient,
-    pod: kubernetes.client.V1Pod,
+    pod: kubernetes.client.V1Pod,  # type: ignore[possibly-missing-attribute]
     max_lines: int = 1000,
 ) -> Iterator[str]:
     """
@@ -450,7 +450,7 @@ class K8SExecutor(Executor):
         if major == 1 and minor < 21:
             # Versions prior to 1.21 didn't support indexed jobs
             # (https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/)
-            logger.warn(
+            logger.warning(
                 "kubernetes server version is too old for indexed k8s jobs, "
                 "defaulting to individual redun jobs",
             )
@@ -751,7 +751,7 @@ class K8SExecutor(Executor):
         else:
             raise AssertionError(f"Unexpected job_status: {job_status}")
 
-    def _process_k8s_job_status(self, job: kubernetes.client.V1Job) -> None:
+    def _process_k8s_job_status(self, job: kubernetes.client.V1Job) -> None:  # type: ignore[possibly-missing-attribute]
         """
         Process K8S job statuses.
         """
@@ -783,7 +783,7 @@ class K8SExecutor(Executor):
             # Clean up k8s job immediately.
             try:
                 k8s_utils.delete_job(self._k8s_client, job.metadata.name, self.namespace)
-            except kubernetes.client.exceptions.ApiException as e:
+            except kubernetes.client.exceptions.ApiException as e:  # type: ignore[possibly-missing-attribute]
                 self.log(
                     f"Failed to delete k8s job {job.metadata.name}: {e}",
                     level=logging.WARNING,
@@ -820,7 +820,7 @@ class K8SExecutor(Executor):
                             job.metadata.name,
                             job.metadata.namespace,
                         )
-                    except kubernetes.client.exceptions.ApiException as e:
+                    except kubernetes.client.exceptions.ApiException as e:  # type: ignore[possibly-missing-attribute]
                         self.log(
                             f"Failed to delete k8s job {job.metadata.name}: {e}",
                             level=logging.WARNING,
@@ -934,7 +934,7 @@ class K8SExecutor(Executor):
 
             elif isinstance(k8s_job_id, tuple):
                 # Array job case
-                _, _, child_job_index, parent_hash = cast("Tuple[str, str, int, str]", k8s_job_id)
+                _, _, child_job_index, parent_hash = k8s_job_id
                 job_name = f"{task_options['job_name_prefix']}-{parent_hash}-array"
                 existing_jobs = k8s_describe_jobs(
                     self._k8s_client,

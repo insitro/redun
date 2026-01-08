@@ -84,19 +84,19 @@ def test_race_condition_record_value() -> None:
     """
     backend = RedunBackendDb(db_uri="sqlite:///:memory:")
     backend.load()
-    proper_commit = backend.session.commit  # type: ignore
+    proper_commit = backend.session.commit
 
     def commit_but_raise_anyway(*args, **kwargs):
         proper_commit(*args, **kwargs)
         raise IntegrityError("UniquenessViolated", "UniquenessViolated", "UniquenessViolated")
 
-    backend.session.commit = mock.MagicMock(side_effect=commit_but_raise_anyway)  # type: ignore
+    backend.session.commit = mock.MagicMock(side_effect=commit_but_raise_anyway)  # type: ignore[invalid-assignment]
     # record value should gracefully handle the IntegrityError and return the value_hash
     value_hash1 = backend.record_value("myvalue")
 
     assert backend.get_value(value_hash1) == ("myvalue", True)
 
-    backend.session.commit = mock.MagicMock(  # type: ignore
+    backend.session.commit = mock.MagicMock(  # type: ignore[invalid-assignment]
         side_effect=IntegrityError("OtherIssue", "OtherIssue", "OtherIssue")
     )
 
@@ -283,7 +283,7 @@ def test_db_migrate() -> None:
     version_row = (
         backend.session.query(RedunVersion).order_by(RedunVersion.timestamp.desc()).first()
     )
-    version_row.version = latest_version.major + 1
+    version_row.version = latest_version.major + 1  # type: ignore[invalid-assignment]
     backend.session.add(version_row)
     backend.session.commit()
 
@@ -314,9 +314,10 @@ def test_db_migrate_minor() -> None:
         backend.session.add(RedunMigration(version_num=migration_id))
         backend.session.commit()
 
-    with patch("redun.backends.db.REDUN_DB_VERSIONS", versions_mock), patch(
-        "redun.backends.db.upgrade", side_effect=upgrade
-    ) as upgrade_mock:
+    with (
+        patch("redun.backends.db.REDUN_DB_VERSIONS", versions_mock),
+        patch("redun.backends.db.upgrade", side_effect=upgrade) as upgrade_mock,
+    ):
         backend.migrate(new_version)
 
         # Alembic upgrade should be called.
@@ -987,7 +988,7 @@ def test_simple_expression_upstreams(scheduler: Scheduler, session: Session) -> 
     assert scheduler.run(main(1)) == 11
 
     # Redefine the task.
-    @task()  # type: ignore[no-redef]
+    @task()
     def get_data() -> dict:
         return {"key": -10}
 
@@ -1105,10 +1106,11 @@ db_uri = postgresql://host/db
     latest_version = REDUN_DB_VERSIONS[-1]
 
     scheduler = Scheduler(config=Config({"backend": {"db_uri": "postgresql://host/db"}}))
-    with patch.object(RedunBackendDb, "migrate") as migrate_mock, patch.object(
-        RedunBackendDb, "create_engine"
-    ), patch.object(RedunBackendDb, "is_db_compatible", returns=True), patch.object(
-        RedunBackendDb, "get_db_version", returns=latest_version
+    with (
+        patch.object(RedunBackendDb, "migrate") as migrate_mock,
+        patch.object(RedunBackendDb, "create_engine"),
+        patch.object(RedunBackendDb, "is_db_compatible", returns=True),
+        patch.object(RedunBackendDb, "get_db_version", returns=latest_version),
     ):
         scheduler.load()
 
@@ -1379,7 +1381,7 @@ def test_no_prov_code_react(scheduler: Scheduler, session: Session) -> None:
     assert session.query(CallNode).count() == 2
 
     # Redefine the task.
-    @task(version="2")  # type: ignore # noqa: F811
+    @task(version="2")  # noqa: F811
     def task1(x: int) -> int:
         return add(add(x, 1), add(2, 3))
 
@@ -1413,7 +1415,7 @@ def test_code_react(scheduler: Scheduler, session: Session) -> None:
     # to react to the follow code change.
 
     # Redefine the task.
-    @task(version="2")  # type: ignore # noqa: F811
+    @task(version="2")  # noqa: F811
     def task1() -> int:
         return 11
 

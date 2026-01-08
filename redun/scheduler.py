@@ -125,7 +125,7 @@ def is_debugger_active() -> bool:
 # Patch sys.settrace() in order to detect presence of debugger.
 _original_settrace = sys.settrace
 _is_debugger_active = False
-sys.settrace = settrace_patch
+sys.settrace = settrace_patch  # type: ignore[invalid-assignment]
 
 
 class NoCurrentScheduler(Exception):
@@ -381,7 +381,7 @@ class Job:
         return {
             **self.task.get_task_options(),
             **parent_job_options,
-            **self.expr._options,
+            **self.expr._options,  # type: ignore[possibly-missing-attribute]
             **self.options,
         }
 
@@ -524,7 +524,7 @@ class Job:
         """
         if self.recording_provenance():
             # Only record expression call_hash if this job did provence recording.
-            self.expr.call_hash = self.call_hash
+            self.expr.call_hash = self.call_hash  # type: ignore[invalid-assignment]
         self.result_promise.do_resolve(result)
         self.clear()
 
@@ -534,7 +534,7 @@ class Job:
         """
         if self.recording_provenance():
             # Only record expression call_hash if this job did provence recording.
-            self.expr.call_hash = self.call_hash
+            self.expr.call_hash = self.call_hash  # type: ignore[invalid-assignment]
         self.result_promise.do_reject(error)
         self.clear()
 
@@ -551,7 +551,7 @@ class Job:
         self.expr = None
         self.eval_args = None
         self.args = None
-        self.result_promise = None
+        self.result_promise = None  # type: ignore[invalid-assignment]
         self._context = None
         self.job_tags.clear()
         self.execution_tags.clear()
@@ -627,7 +627,6 @@ def get_backend_from_config(
     """
     if not backend_config:
         backend_config = create_config_section()
-    backend_config = cast(SectionProxy, backend_config)
     if not backend_config.get("db_uri"):
         # By default, use in-memory db and autoload (create schemas).
         backend_config["db_uri"] = "sqlite:///:memory:"
@@ -696,7 +695,7 @@ def format_job_statuses(
     yield ""
 
 
-class Frame(FrameSummary, Value):  # type:ignore[misc]
+class Frame(FrameSummary, Value):
     """
     Frame of a :class:`Traceback` for :class:`Job` failure.
     """
@@ -767,7 +766,7 @@ class Traceback(Value):
         # In Python 3.13+, frame objects contain code which can't be pickled. Suppress code before pickling.
         for frame in self.frames:
             if hasattr(frame, "_code"):
-                frame._code = None
+                frame._code = None  # type: ignore[invalid-assignment]
         return {
             "error": self.error,
             "frames": self.frames,
@@ -903,9 +902,9 @@ def needs_root_task(task_registry: TaskRegistry, expr: Any) -> bool:
     # All arguments must be concrete.
     task = task_registry.get(expr.task_name)
 
-    assert (
-        task
-    ), f"Could not find task `{expr.task_name}`, found options {list(task_registry._tasks.keys())}"
+    assert task, (
+        f"Could not find task `{expr.task_name}`, found options {list(task_registry._tasks.keys())}"
+    )
 
     default_kwargs = get_arg_defaults(task, expr.args, expr.kwargs)
     return any(
@@ -1249,7 +1248,7 @@ class Scheduler:
         # - We also mimic the task and eval_args being set like they are in _exec_job().
         parent_job = Job(
             root_task,
-            root_task(quote(None)),  # type: ignore
+            root_task(quote(None)),
             id=parent_job_id,
             execution=self._current_execution,
             options={"_context_override": context},
@@ -1399,7 +1398,7 @@ class Scheduler:
                 # Copy the evaluation bookkeeping from the completed expression `expr2`
                 # to our detected duplicate expression `expr`.
                 if isinstance(expr2, TaskExpression):
-                    expr.call_hash = expr2.call_hash
+                    expr.call_hash = expr2.call_hash  # type: ignore[unresolved-attribute]
                 elif isinstance(expr2, SimpleExpression):
                     expr._upstreams = expr2._upstreams
                 else:
@@ -1472,7 +1471,7 @@ class Scheduler:
 
                     # Evaluate default arguments with same parent_job, but with
                     # context from job.
-                    options_job = JobEnv(parent_job, job.get_context())
+                    options_job = JobEnv(parent_job, job.get_context())  # type: ignore[invalid-argument-type]
                     return self.evaluate(
                         get_arg_defaults(job.task, expr.args, expr.kwargs),
                         parent_job=options_job,
@@ -1495,7 +1494,7 @@ class Scheduler:
 
         elif isinstance(expr, SimpleExpression):
             # Simple Expressions can be executed synchronously.
-            func = get_lazy_operation(expr.func_name)
+            func = get_lazy_operation(expr.func_name)  # type: ignore[invalid-argument-type]
             if not func:
                 promise = Promise(
                     lambda resolve, reject: reject(
@@ -1919,7 +1918,7 @@ class Scheduler:
                     task_name=job.task.fullname,
                     task_hash=job.task.hash,
                     args_hash=job.args_hash,
-                    expr_args=(job.expr.args, job.expr.kwargs),
+                    expr_args=(job.expr.args, job.expr.kwargs),  # type: ignore[possibly-missing-attribute]
                     eval_args=job.eval_args,
                     result_hash=result_hash,
                     child_call_hashes=child_call_hashes,
@@ -2095,7 +2094,7 @@ class Scheduler:
                     task_name=job.task.fullname,
                     task_hash=job.task.hash,
                     args_hash=job.args_hash,
-                    expr_args=(job.expr.args, job.expr.kwargs),
+                    expr_args=(job.expr.args, job.expr.kwargs),  # type: ignore[possibly-missing-attribute]
                     eval_args=job.eval_args,
                     result_hash=error_hash,
                     child_call_hashes=child_call_hashes,
@@ -2156,9 +2155,9 @@ class Scheduler:
             sig = inspect.signature(frame_job.task.func)
             task_frames.append(
                 Frame(
-                    frame_job.task.func.__code__.co_filename,
-                    frame_job.task.func.__code__.co_firstlineno,
-                    frame_job.task.func.__name__,
+                    frame_job.task.func.__code__.co_filename,  # type: ignore[possibly-missing-attribute]
+                    frame_job.task.func.__code__.co_firstlineno,  # type: ignore[possibly-missing-attribute]
+                    frame_job.task.func.__name__,  # type: ignore[possibly-missing-attribute]
                     job=frame_job,
                     locals={
                         **dict(zip(sig.parameters, args)),

@@ -300,7 +300,7 @@ class ReplScreen(RedunScreen):
         if self.obj is not None:
             locals["obj"] = self.obj
 
-        self.interpreter.locals.update(locals)  # type: ignore
+        self.interpreter.locals.update(locals)
 
         for key in locals:
             self.text_log.write(f"{key} = {trim_string(repr(locals[key]))}")
@@ -451,7 +451,7 @@ class SearchScreen(RedunScreen):
 
     async def load_results(self) -> None:
         if format_args(self.parser, self.args) == []:
-            self.results = []
+            self.results = []  # type: ignore[invalid-assignment]
             return
 
         query = CallGraphQuery(self.app.session)
@@ -469,7 +469,7 @@ class SearchScreen(RedunScreen):
         )
         self.search_query = query
 
-        self.results = list(query.page(self.page - 1, self.page_size))
+        self.results = list(query.page(self.page - 1, self.page_size))  # type: ignore[invalid-assignment]
 
     def compose(self) -> ComposeResult:
         self.results_table.focus()
@@ -1285,7 +1285,7 @@ class ExecutionScreen(RedunScreen):
             self.query_one(RedunFooter).page = self.args.page
             self.watch_args()
 
-    def action_focus(self) -> None:
+    def action_focus(self) -> None:  # type: ignore[invalid-method-override]
         """
         Callback for focusing on currently selected job.
         """
@@ -1409,7 +1409,7 @@ class ExecutionScreen(RedunScreen):
                 key=lambda job_result_type: job2index[job_result_type[0].id],
             )
 
-            self.jobs = []
+            self.jobs = []  # type: ignore[invalid-assignment]
             for job, result_type in job_result_types:
                 job.calc_status(result_type)
                 self.jobs.append(job)
@@ -1451,7 +1451,7 @@ class ExecutionScreen(RedunScreen):
                 # Annotate depth for display.
                 tree_sort_jobs(root[0], children)
 
-        self.job_list.jobs = self.jobs
+        self.job_list.jobs = self.jobs  # type: ignore[invalid-assignment]
 
     def on_job_list_selected(self, message: JobList.Selected) -> None:
         self.app.goto_screen(JobScreen, message.job.id, (message.job.id,))
@@ -1692,7 +1692,7 @@ class ExecutionsScreen(RedunScreen):
         super().watch_args()
 
         # Reload executions.
-        self.execution_list.executions = None
+        self.execution_list.executions = None  # type: ignore[invalid-assignment]
         self.call_after_refresh(self.load_executions)
 
     async def action_refresh(self) -> None:

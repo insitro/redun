@@ -37,6 +37,9 @@ def display_node(node: Optional[DataflowNode], renames: Dict[str, str]) -> Tuple
     elif isinstance(node, CallNodeValue):
         return ("", display_call_node(node.call_node, renames))
 
+    elif isinstance(node, Value):
+        return ("", display_value(node))
+
     elif node is None:
         return ("", "origin")
 
@@ -149,20 +152,20 @@ class UpstreamDataflowScreen(RedunScreen):
         self.value_hash = value_hash
         super().__init__()
 
-        self.value = self.app.session.get(Value, value_hash)
+        self.value = self.app.session.get(Value, value_hash)  # type: ignore[possibly-missing-attribute]
 
     def get_path(self) -> str:
         return f"upstreams/{self.value_hash}"
 
     def action_click_value(self, value_hash: str) -> None:
-        self.app.route([f"values/{value_hash}"])
+        self.app.route([f"values/{value_hash}"])  # type: ignore[possibly-missing-attribute]
 
     def action_click_hash(self, hash: str) -> None:
-        self.app.route([hash])
+        self.app.route([hash])  # type: ignore[possibly-missing-attribute]
 
     def action_repl(self) -> None:
         screen = self.app.get_screen("ReplScreen")
-        screen.update({"value": self.value.value_parsed}, obj_id=self.value_hash)
+        screen.update({"value": self.value.value_parsed}, obj_id=self.value_hash)  # type: ignore[possibly-missing-attribute]
         self.app.push_screen(screen)
 
     def compose(self) -> ComposeResult:
@@ -174,7 +177,7 @@ class UpstreamDataflowScreen(RedunScreen):
             )
             return
 
-        edges = walk_dataflow(self.app.scheduler.backend, self.value)
+        edges = walk_dataflow(self.app.scheduler.backend, self.value)  # type: ignore[possibly-missing-attribute]
         dom = make_dataflow_dom(edges, new_varname="value")
         lines = display_dataflow(dom)
 

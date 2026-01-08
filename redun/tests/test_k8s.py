@@ -43,10 +43,14 @@ def mock_k8s(func: Callable) -> Callable:
 
     @wraps(func)
     def wrapped(*args, **kwargs):
-        with patch.object(K8SClient, "core"), patch.object(K8SClient, "batch"), patch.object(
-            K8SClient,
-            "version",
-            return_value=(1, 23),
+        with (
+            patch.object(K8SClient, "core"),
+            patch.object(K8SClient, "batch"),
+            patch.object(
+                K8SClient,
+                "version",
+                return_value=(1, 23),
+            ),
         ):
             return func(*args, **kwargs)
 
@@ -89,7 +93,7 @@ def mock_executor(scheduler: Scheduler, code_package: bool = False) -> K8SExecut
     )
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
 
-    executor.get_jobs = Mock()  # type: ignore
+    executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")
@@ -558,7 +562,7 @@ def test_executor_handles_unrelated_jobs() -> None:
     hash2 = "987654321"
 
     # Set up mocks to include a headnode job(no hash) and some redun jobs that it "spawned".
-    executor.get_jobs.return_value = [  # type: ignore
+    executor.get_jobs.return_value = [
         create_job_object(uid="headnode", name=f"{prefix}_automation_headnode"),
         create_job_object(uid="preprocess", name=f"{prefix}_preprocess-{hash1}"),
         create_job_object(uid="decode", name=f"{prefix}_decode-{hash2}"),
@@ -638,11 +642,11 @@ def test_inflight_join_only_on_first_submission(k8s_describe_jobs_mock: Mock) ->
     executor.submit(job1)
 
     # # Ensure that inflight jobs were gathered.
-    assert executor.get_jobs.call_count == 1  # type: ignore
+    assert executor.get_jobs.call_count == 1
 
     # # Submit the second job and confirm that job reuniting was not done again.
     executor.submit(job2)
-    assert executor.get_jobs.call_count == 1  # type: ignore
+    assert executor.get_jobs.call_count == 1
 
     executor.stop()
 
@@ -671,7 +675,7 @@ def test_executor_inflight_job(
 
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
-    executor.get_jobs.return_value = [k8s_job]  # type: ignore
+    executor.get_jobs.return_value = [k8s_job]
     executor.start()
 
     # Hand create job.
@@ -746,7 +750,7 @@ def test_jobs_are_arrayed(
     saj.spec.completions = 7
     saj.spec.completion_mode = "Indexed"
 
-    redun.executors.k8s.submit_task.side_effect = [  # type: ignore
+    redun.executors.k8s.submit_task.side_effect = [
         faj,
         saj,
         create_job_object(uid="single-job"),
@@ -815,7 +819,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
     scheduler = mock_scheduler()
 
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
-    executor.get_jobs = Mock()  # type: ignore
+    executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
     # Submit one test job.
@@ -1132,7 +1136,7 @@ def test_executor_node_affinity_override(
 
     scheduler = mock_scheduler()
     executor = K8SExecutor("k8s", scheduler, config["k8s"])
-    executor.get_jobs = Mock()  # type: ignore
+    executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")

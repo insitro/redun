@@ -98,7 +98,9 @@ from redun.utils import (
 )
 from redun.value import MIME_TYPE_PICKLE, InvalidValueError
 from redun.value import TypeError as RedunTypeError
-from redun.version import version as redun_version
+from importlib import metadata
+
+redun_version = metadata.version("redun")
 
 # Use MappedColumn class from SQLAlchemy 2.0, if possible, to enable better
 # type checks in redun itself and downstream code.
@@ -228,7 +230,7 @@ class RedunVersionError(RedunDatabaseError):
     pass
 
 
-class Column(BaseColumn):
+class Column(BaseColumn):  # type: ignore[unsupported-base]
     """
     Use non-null Columns by default.
     """
@@ -592,9 +594,7 @@ class Argument(Base):
         "CallNode",
         secondary=ArgumentResult.__table__,
         primaryjoin=(arg_hash == ArgumentResult.arg_hash),
-        secondaryjoin=(
-            lambda: ArgumentResult.result_call_hash == CallNode.call_hash  # type: ignore
-        ),
+        secondaryjoin=(lambda: ArgumentResult.result_call_hash == CallNode.call_hash),
         back_populates="downstream",
         viewonly=True,
         sync_backref=False,
@@ -776,28 +776,28 @@ class CallNode(Base):
             # New style available in sqlalchemy>=1.4.0
             # https://docs.sqlalchemy.org/en/14/changelog/migration_20.html#joinedload-not-uniqued
             child_nodes = (
-                object_session(self)
+                object_session(self)  # type: ignore[possibly-missing-attribute]
                 .execute(
                     select(CallNode, CallEdge.call_order)
                     .join(CallEdge, CallEdge.child_id == CallNode.call_hash)
                     .filter(CallEdge.parent_id == self.call_hash)
                     .order_by(CallEdge.call_order)
                 )
-                .columns(CallNode)
+                .columns(CallNode)  # type: ignore[invalid-argument-type]
             )
             return [node for (node,) in child_nodes]
 
     @property
     def parents(self) -> List["CallNode"]:
         parent_nodes = (
-            object_session(self)
+            object_session(self)  # type: ignore[possibly-missing-attribute]
             .execute(
                 select(CallNode, CallEdge.call_order)
                 .join(CallEdge, CallEdge.parent_id == CallNode.call_hash)
                 .filter(CallEdge.child_id == self.call_hash)
                 .order_by(CallEdge.call_order)
             )
-            .columns(CallNode)
+            .columns(CallNode)  # type: ignore[invalid-argument-type]
         )
         return [node for (node,) in parent_nodes]
 
@@ -1279,19 +1279,19 @@ class Tag(Base):
     def entity(self) -> Union[Execution, Job, CallNode, Task, Value]:
         session = object_session(self)
         if self.entity_type == TagEntity.Execution:
-            return session.query(Execution).filter_by(id=self.entity_id).one()
+            return session.query(Execution).filter_by(id=self.entity_id).one()  # type: ignore[possibly-missing-attribute]
 
         elif self.entity_type == TagEntity.Job:
-            return session.query(Job).filter_by(id=self.entity_id).one()
+            return session.query(Job).filter_by(id=self.entity_id).one()  # type: ignore[possibly-missing-attribute]
 
         elif self.entity_type == TagEntity.CallNode:
-            return session.query(CallNode).filter_by(call_hash=self.entity_id).one()
+            return session.query(CallNode).filter_by(call_hash=self.entity_id).one()  # type: ignore[possibly-missing-attribute]
 
         elif self.entity_type == TagEntity.Task:
-            return session.query(Task).filter_by(hash=self.entity_id).one()
+            return session.query(Task).filter_by(hash=self.entity_id).one()  # type: ignore[possibly-missing-attribute]
 
         elif self.entity_type == TagEntity.Value:
-            return session.query(Value).filter_by(value_hash=self.entity_id).one()
+            return session.query(Value).filter_by(value_hash=self.entity_id).one()  # type: ignore[possibly-missing-attribute]
 
         else:
             raise AssertionError(f"Invalid entity_type {self.entity_type}")
@@ -1325,7 +1325,7 @@ class Tag(Base):
         """
         Returns parsed value referenced by Tag.
         """
-        value = object_session(self).query(Value).get(self.value)
+        value = object_session(self).query(Value).get(self.value)  # type: ignore[possibly-missing-attribute]
         return value.value_parsed if value is not None else None
 
 
@@ -1469,7 +1469,7 @@ def db_retry(func: Callable) -> Callable:
                 if self._db_retries_attempt > self._db_retries:
                     # Final attempt failed, re-raise the exception.
                     self.logger.error(
-                        f"Database operation {func.__name__} failed "
+                        f"Database operation {func.__name__} failed "  # type: ignore[unresolved-attribute]
                         f"(max attempts reached {self._db_retries + 1}): {error}"
                     )
                     raise
@@ -1482,7 +1482,7 @@ def db_retry(func: Callable) -> Callable:
 
                 # Log retry attempt
                 self.logger.warning(
-                    f"Database operation {func.__name__} failed (attempt {self._db_retries_attempt}/{self._db_retries + 1}), "
+                    f"Database operation {func.__name__} failed (attempt {self._db_retries_attempt}/{self._db_retries + 1}), "  # type: ignore[unresolved-attribute]
                     f"retrying in {delay:.1f}s: {error}"
                 )
                 time.sleep(delay)
@@ -1586,7 +1586,7 @@ class RedunBackendDb(RedunBackend):
         self._db_retries_backoff_max: float = float(config.get("db_retries_backoff_max", "60.0"))
         self._db_retries_attempt: int = 0
 
-    def clone(self, session: Session = None):
+    def clone(self, session: Optional[Session] = None):
         """
         Return a copy of the backend that shares the instantiated database engine
         """
@@ -1639,7 +1639,7 @@ class RedunBackendDb(RedunBackend):
             yield
 
     @contextmanager
-    def with_session(self) -> Session:
+    def with_session(self) -> Iterator[Session]:
         """
         Context manager for acquiring an exclusive SQLAlchemy Session.
         """
@@ -1731,7 +1731,7 @@ class RedunBackendDb(RedunBackend):
 
         config = AConfig(alembic_config_file)
         config.set_main_option("script_location", alembic_script_location)
-        config.session = self.session
+        config.session = self.session  # type: ignore[unresolved-attribute]
 
         # Determine version in db.
         version = self.get_db_version()
@@ -2062,7 +2062,7 @@ class RedunBackendDb(RedunBackend):
             )
             try:
                 session.commit()
-            except sa.exc.IntegrityError:
+            except sa.exc.IntegrityError:  # type: ignore[possibly-missing-attribute]
                 # Most likely value recorded in the meantime by another process.
                 session.rollback()
                 # run a double check
@@ -2425,11 +2425,11 @@ class RedunBackendDb(RedunBackend):
                         )
                     )
                     session.commit()
-                except sa.exc.IntegrityError:
+                except sa.exc.IntegrityError:  # type: ignore[possibly-missing-attribute]
                     # If eval_hash has recently been added, do update instead.
                     session.rollback()
                     eval_row = session.get(Evaluation, eval_hash)
-                    eval_row.value_hash = value_hash
+                    eval_row.value_hash = value_hash  # type: ignore[possibly-missing-attribute]
                     session.commit()
 
     @use_acquire
@@ -2722,7 +2722,7 @@ class RedunBackendDb(RedunBackend):
 
         if execution_id in self._executions:
             # Execution hasn't been writen yet, so update pending object.
-            self._executions[execution_id].updated_time = now  # type: ignore
+            self._executions[execution_id].updated_time = now
         else:
             with self.with_session() as session:
                 session.execute(
@@ -3248,7 +3248,7 @@ class RedunBackendDb(RedunBackend):
         aws_region = os.environ.get("AWS_REGION", DEFAULT_AWS_REGION)
         client = get_aws_client("secretsmanager", aws_region)
 
-        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)  # type: ignore[unresolved-attribute]
         secret = get_secret_value_response["SecretString"]
         secret = json.loads(secret)
 

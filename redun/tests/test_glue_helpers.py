@@ -4,9 +4,17 @@ Uses a pytest fixture to provide a spark context.
 Spark imports are kept within the tests to avoid changing the behavior of NamedTuple.
 """
 
+import sys
+
 import pytest
 
-from redun import glue
+# PySpark 3.4.x doesn't support Python 3.13 (uses removed typing.io module)
+pytestmark = pytest.mark.skipif(
+    sys.version_info >= (3, 13),
+    reason="PySpark 3.4.x is not compatible with Python 3.13",
+)
+
+from redun import glue  # noqa: E402
 
 
 @pytest.fixture()

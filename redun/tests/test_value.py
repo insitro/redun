@@ -38,7 +38,7 @@ class DataType(FileCache):
         return pickle_dumps(self.instance.data)
 
     @classmethod
-    def _deserialize(cls, bytes):
+    def _deserialize(cls, bytes):  # type: ignore[invalid-method-override]
         # User defined deserialization.
         return Data(pickle.loads(bytes))
 

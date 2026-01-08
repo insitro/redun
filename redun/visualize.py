@@ -1,10 +1,10 @@
 import re
-from typing import Any, Dict, List, Tuple
-
-import pygraphviz as pgv
-from pygraphviz import AGraph
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
 from redun.backends.db import CallNode, Execution, Job, RedunBackendDb, Value
+
+if TYPE_CHECKING:
+    from pygraphviz import AGraph  # type: ignore[unresolved-import]
 from redun.backends.db.dataflow import ArgumentValue, CallNodeValue, walk_dataflow
 from redun.backends.db.query import CallGraphQuery
 from redun.scheduler import ErrorValue, Scheduler
@@ -50,10 +50,12 @@ def populate_valid_nodes(scheduler: Scheduler, exec_id: str, props: Dict[str, An
     props["valid_call_nodes"] = valid_call_nodes
 
 
-def init_graph(direction: str) -> AGraph:
+def init_graph(direction: str) -> "AGraph":
     """
     Initializes a graph with the desired attributes.
     """
+    import pygraphviz as pgv  # type: ignore[unresolved-import]
+
     graph = pgv.AGraph(strict=False, directed=True)
     graph.node_attr.update(
         {
@@ -75,7 +77,7 @@ def init_graph(direction: str) -> AGraph:
 
 
 def add_value(
-    value: Value, upstream: Any, graph: AGraph, props: Dict[str, Any]
+    value: Value, upstream: Any, graph: "AGraph", props: Dict[str, Any]
 ) -> List[Tuple[Value, Any]]:
     """
     Adds a Value and its subvalues to the provided graph.
@@ -105,7 +107,7 @@ def add_value(
         return values
 
 
-def add_call_node(call_node: CallNode, graph: AGraph, props: Dict[str, Any]) -> None:
+def add_call_node(call_node: CallNode, graph: "AGraph", props: Dict[str, Any]) -> None:
     """
     Adds a CallNode to the provided graph.
     """
@@ -115,7 +117,7 @@ def add_call_node(call_node: CallNode, graph: AGraph, props: Dict[str, Any]) -> 
     graph.add_node(call_node, fillcolor=CALL_NODE_COLOR, label=label)
 
 
-def add_job(job: Job, graph: AGraph, props: Dict[str, Any], is_root: bool) -> None:
+def add_job(job: Job, graph: "AGraph", props: Dict[str, Any], is_root: bool) -> None:
     """
     Adds a Job and its linked CallNode to the provided graph.
 
@@ -141,7 +143,7 @@ def add_job(job: Job, graph: AGraph, props: Dict[str, Any], is_root: bool) -> No
 
 
 def process_routing_nodes(
-    graph: AGraph,
+    graph: "AGraph",
     routing_arg: Any,
     routing_call_nodes: List[CallNode],
     props: Dict[str, Any],
@@ -182,7 +184,7 @@ def process_routing_nodes(
             graph.add_edge(routing_arg, routing_call_node, color=DEFAULT_COLOR)
 
 
-def viz_value(scheduler: Scheduler, value: Value, graph: AGraph, props: Dict[str, Any]) -> None:
+def viz_value(scheduler: Scheduler, value: Value, graph: "AGraph", props: Dict[str, Any]) -> None:
     """
     Visualizes a Value.
 
@@ -276,7 +278,7 @@ def viz_value(scheduler: Scheduler, value: Value, graph: AGraph, props: Dict[str
         process_routing_nodes(graph, routing_arg, routing_call_nodes, props)
 
 
-def viz_call_node(call_node: CallNode, graph: AGraph, props: Dict[str, Any]) -> None:
+def viz_call_node(call_node: CallNode, graph: "AGraph", props: Dict[str, Any]) -> None:
     """
     Visualizes a CallNode.
 
@@ -321,7 +323,7 @@ def viz_call_node(call_node: CallNode, graph: AGraph, props: Dict[str, Any]) -> 
     graph.add_subgraph(subgraph_nodes, rank="same", name=cluster_name, style="invis")
 
 
-def viz_job(job: Job, graph: AGraph, props: Dict[str, Any], is_root: bool) -> None:
+def viz_job(job: Job, graph: "AGraph", props: Dict[str, Any], is_root: bool) -> None:
     """
     Recursively visualizes a Job and all its children Jobs.
     """
@@ -339,7 +341,7 @@ def viz_job(job: Job, graph: AGraph, props: Dict[str, Any], is_root: bool) -> No
 
 
 def viz_execution(
-    scheduler: Scheduler, execution: Execution, graph: AGraph, props: Dict[str, Any]
+    scheduler: Scheduler, execution: Execution, graph: "AGraph", props: Dict[str, Any]
 ) -> None:
     """
     Visualizes an Execution.

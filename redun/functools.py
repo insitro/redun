@@ -177,8 +177,8 @@ def map_(
     # As an optimization, compose multiple maps into one.
     # e.g. map_(g, map_(f, xs)) == map_(compose(g, f), xs)
     while isinstance(values, SchedulerExpression) and values.task_name == "redun.map_":
-        tasks.append(values.args[0])
-        values = values.args[1]
+        tasks.append(values.args[0])  # type: ignore[not-subscriptable]
+        values = values.args[1]  # type: ignore[not-subscriptable]
 
     if len(tasks) == 1:
         [a_task] = tasks

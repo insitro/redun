@@ -104,7 +104,7 @@ class GCPBatchExecutor(Executor):
             "service_account_email": config.get("service_account_email", fallback=""),
         }
         if config.get("labels"):
-            self.default_task_options["labels"] = json.loads(config.get("labels"))
+            self.default_task_options["labels"] = json.loads(config.get("labels"))  # type: ignore[invalid-argument-type]
 
     def _on_error(self, error: Exception) -> None:
         """
@@ -125,7 +125,9 @@ class GCPBatchExecutor(Executor):
 
     def gather_inflight_jobs(self) -> None:
         batch_jobs = gcp_utils.list_jobs(
-            client=self.gcp_batch_client, project_id=self.project, region=self.region
+            client=self.gcp_batch_client,  # type: ignore[invalid-argument-type]
+            project_id=self.project,
+            region=self.region,
         )
         inflight_job_statuses = [
             JobStatus.State.SCHEDULED,
@@ -167,7 +169,8 @@ class GCPBatchExecutor(Executor):
                 eval_hashes = cast(str, eval_file.read("r")).splitlines()
 
                 batch_tasks = gcp_utils.list_tasks(
-                    client=self.gcp_batch_client, group_name=job.task_groups[0].name
+                    client=self.gcp_batch_client,  # type: ignore[invalid-argument-type]
+                    group_name=job.task_groups[0].name,
                 )
                 for array_index, task in enumerate(batch_tasks):
                     # Skip job if it is not in one of the 'inflight' states
@@ -290,7 +293,8 @@ class GCPBatchExecutor(Executor):
 
             job_dir = get_job_scratch_dir(self.gcs_scratch_prefix, job)
             existing_task = gcp_utils.get_task(
-                client=self.gcp_batch_client, task_name=batch_task_name
+                client=self.gcp_batch_client,  # type: ignore[invalid-argument-type]
+                task_name=batch_task_name,
             )
 
             if existing_task:
@@ -539,7 +543,7 @@ class GCPBatchExecutor(Executor):
                 task_names = list(self.pending_batch_tasks.keys())
                 for name in task_names:
                     try:
-                        task = gcp_utils.get_task(client=gcp_batch_client, task_name=name)
+                        task = gcp_utils.get_task(client=gcp_batch_client, task_name=name)  # type: ignore[invalid-argument-type]
                         self._process_task_status(task)
                     except NotFound:
                         # Batch Job has not instantiated tasks yet so ignore this NotFound error

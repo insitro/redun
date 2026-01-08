@@ -58,7 +58,7 @@ def test_redirect() -> None:
         stderr=subprocess.PIPE,
     )
     assert File("stdout").read() == ""
-    assert "command not found" in File("stderr").read()
+    assert "command not found" in File("stderr").read()  # type: ignore[unsupported-operator]
     assert proc.stdout == b"fail\n"
     assert b"command not found" in proc.stderr
     assert proc.returncode != 0
@@ -218,8 +218,8 @@ def test_script_error(scheduler: Scheduler) -> None:
     with pytest.raises(ScriptError) as error:
         scheduler.run(task1())
 
-    assert "message" in error.value.message
-    assert "bad_prog: command not found" in error.value.message
+    assert "message" in error.value.message  # type: ignore[unsupported-operator]
+    assert "bad_prog: command not found" in error.value.message  # type: ignore[unsupported-operator]
 
 
 def test_script_outputs(scheduler: Scheduler) -> None:

@@ -97,8 +97,11 @@ class Config:
 
     def __setitem__(self, section_name: str, section: "Section") -> "Section":
         # TODO: See how to properly get type checking for this assignment.
-        self._sections[section_name] = section  # type: ignore
+        self._sections[section_name] = section  # type: ignore[invalid-subscript-assignment]
         return section
+
+    def __contains__(self, section_name: str) -> bool:
+        return section_name in self._sections
 
     def keys(self) -> Iterable[str]:
         return self._sections.keys()

@@ -34,7 +34,7 @@ class K8SClient:
             try:
                 config.load_kube_config()
             except ConfigException:
-                logger.warn(
+                logger.warning(
                     "config.load_kube_config() failed. "
                     "Resorting to config.load_incluster_config().",
                 )

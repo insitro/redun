@@ -79,7 +79,7 @@ def test_handle_init() -> None:
 
     # Recreate the handle from serialized data.
     conn2 = DbHandle.__new__(DbHandle, state["name"], *state["args"], **state["kwargs"])
-    conn2.__init__(state["name"], *state["args"], **state["kwargs"])  # type: ignore
+    conn2.__init__(state["name"], *state["args"], **state["kwargs"])
     assert conn2.db_file == "data.db"
     assert isinstance(conn2.conn, DBConn)
 
@@ -318,7 +318,7 @@ def test_handle_tasks(scheduler: Scheduler) -> None:
     assert handles["init_db"].__handle__.hash != handles["update_db"].__handle__.hash
 
     # Change the update_db task.
-    @task(version="v2")  # type: ignore[no-redef]
+    @task(version="v2")
     def update_db(conn: DbHandle):
         task_calls.append("update_db2")
         handles["update_db2"] = conn
@@ -349,7 +349,7 @@ def test_handle_tasks(scheduler: Scheduler) -> None:
     assert handles["update_db"].__handle__.hash == handles["update_db2"].__handle__.hash
 
     # Revert the update_db task.
-    @task(version="v1")  # type: ignore[no-redef]
+    @task(version="v1")
     def update_db(conn: DbHandle):
         task_calls.append("update_db")
         handles["update_db"] = conn
@@ -395,7 +395,7 @@ def test_handle_rollback_forks(scheduler: Scheduler) -> None:
     scheduler.run(workflow())
 
     # Change the workflow.
-    @task()  # type: ignore
+    @task()
     def workflow():
         conn = DbHandle("conn", "data.db")
         handles["workflow"] = conn
@@ -527,7 +527,7 @@ def test_handle_fork_many(scheduler: Scheduler) -> None:
 
     # Redefine workflow to change only order of parallel tasks.
     # We should not need to re-execute any of them.
-    @task()  # type: ignore
+    @task()
     def workflow():
         conn = DbHandle("conn", "data.db")
         conns = [
@@ -578,7 +578,7 @@ def test_handle_implicit_fork(scheduler: Scheduler) -> None:
 
     # Redfine workflow to just have more tasks at the end.
     # Just one more task should be executed.
-    @task()  # type: ignore
+    @task()
     def workflow():
         conn = DbHandle("conn", "data.db")
         conns = [
@@ -595,12 +595,12 @@ def test_handle_implicit_fork(scheduler: Scheduler) -> None:
 
     # Without explicit forks our heuristic (call order) for Handle
     # reconciliation isn't good enough. Let's just confirm that.
-    @task(version="2")  # type: ignore[no-redef]
+    @task(version="2")
     def task2(conn, arg):
         task_calls.append(arg)
         return conn
 
-    @task()  # type: ignore
+    @task()
     def workflow():
         conn = DbHandle("conn", "data.db")
         conns = [
@@ -654,7 +654,7 @@ def test_handle_serial(scheduler: Scheduler) -> None:
 
     # Redfine workflow to just have more tasks at the end.
     # Just one more task should be executed.
-    @task()  # type: ignore
+    @task()
     def workflow():
         conn = DbHandle("conn", "data.db")
         conn = task1(conn, "a")

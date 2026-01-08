@@ -6,7 +6,7 @@ Create Date: 2021-05-19 16:55:43.724884
 
 """
 
-from typing import Iterator
+from typing import List
 
 from alembic import context, op
 from sqlalchemy.orm import Session
@@ -77,7 +77,7 @@ def backfill_values_for_lonely_tasks(session: Session) -> None:
         session.commit()
 
 
-def get_lonely_tasks(session: Session) -> Iterator[db.Task]:
+def get_lonely_tasks(session: Session) -> List[db.Task]:
     """
     Query the database for all Tasks that don't have corresponding Value records
     """

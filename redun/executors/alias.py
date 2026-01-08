@@ -39,9 +39,9 @@ class AliasExecutor(Executor):
 
         super().__init__(name=name, scheduler=scheduler)
 
-        assert (config is not None) ^ (
-            target is not None
-        ), "Exactly one of `target` or `config` should be provided"
+        assert (config is not None) ^ (target is not None), (
+            "Exactly one of `target` or `config` should be provided"
+        )
 
         if config is not None:
             assert "target" in config, "Alias executors must provide the `target` config"

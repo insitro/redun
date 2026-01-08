@@ -11,25 +11,25 @@ def test_alias_executor(scheduler: Scheduler) -> None:
     config = Config({"batch": {"target": "default"}})
     executor = AliasExecutor("batch", scheduler, config["batch"])
     scheduler.executors["default"] = Mock()
-    executor.submit(None)  # type: ignore # fake arguments for the mock
+    executor.submit(None)
 
     # mypy doesn't understand the mock on the line below
-    scheduler.executors["default"].submit.assert_called_with(None)  # type: ignore
+    scheduler.executors["default"].submit.assert_called_with(None)
 
     with pytest.raises(ExecutorError, match="Could not find executor `missing` from options"):
         config = Config({"batch": {"target": "missing"}})
         executor = AliasExecutor("batch", scheduler, config["batch"])
-        executor.submit(None)  # type: ignore # fake arguments for the mock
+        executor.submit(None)
 
     # Now try initializing with the
     scheduler.executors["default"].name = "default"
     executor = AliasExecutor("batch", scheduler, target=scheduler.executors["default"])
 
-    scheduler.executors["default"].reset_mock()  # type: ignore
-    executor.submit(None)  # type: ignore # fake arguments for the mock
+    scheduler.executors["default"].reset_mock()
+    executor.submit(None)
 
     # mypy doesn't understand the mock on the line below
-    scheduler.executors["default"].submit.assert_called_with(None)  # type: ignore
+    scheduler.executors["default"].submit.assert_called_with(None)
 
     with pytest.raises(
         AssertionError, match="Exactly one of `target` or `config` should be provided"

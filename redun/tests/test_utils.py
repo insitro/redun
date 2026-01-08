@@ -161,14 +161,14 @@ def test_map_nested_value() -> None:
         my_namedtuple(a="1a"),
         "defaultdict(<class 'int'>, {'a': 0})a",
         CustomData1(
-            x="1.0a",  # type: ignore[arg-type]
+            x="1.0a",
             y={"fooa": "bara"},
-            z=CustomData2(x="42a", y={}, z="Nonea"),  # type: ignore[arg-type]
+            z=CustomData2(x="42a", y={}, z="Nonea"),
         ),
         CustomData1Frozen(
             x="testa",
             y={"fooa": "bara"},
-            z=CustomData2(x="42a", y={}, z="Nonea"),  # type: ignore[arg-type]
+            z=CustomData2(x="42a", y={}, z="Nonea"),
         ),
     ]
 
@@ -355,7 +355,7 @@ class ConfusedUser:
 
     # Create a class instance and pickle it.
     sys.path.append(".")
-    from the_class import ConfusedUser
+    from the_class import ConfusedUser  # type: ignore[unresolved-import]
 
     x = ConfusedUser("Robin", 9000)
     data = pickle_dumps(x)

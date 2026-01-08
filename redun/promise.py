@@ -154,7 +154,7 @@ class Promise(Generic[T]):
         """
         Return a promise that waits for all subpromises to resolve.
         """
-        promise: Promise[List[T]] = Promise()
+        promise: Promise[List[T]] = Promise()  # type: ignore[invalid-argument-type]
         results: List[Optional[T]] = []
         num_done = 0
 

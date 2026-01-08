@@ -1024,7 +1024,7 @@ def iter_dataflow_sections(
     for kind, _, section2 in sections:
         if kind == DataflowSectionKind.CALL:
             # If there is path merging, then we will emit multiple sections.
-            for subsection in iter_subsections(section2):
+            for subsection in iter_subsections(section2):  # type: ignore[invalid-argument-type]
                 yield (kind, subsection)
         else:
             yield (kind, section2)
@@ -1206,6 +1206,10 @@ def get_dataflow_call_node(node: Optional[DataflowNode]) -> Optional[CallNode]:
     elif isinstance(node, CallNodeValue):
         return node.call_node
 
+    elif isinstance(node, Value):
+        # A standalone Value doesn't have a direct CallNode
+        return None
+
     elif node is None:
         return None
 
@@ -1242,6 +1246,9 @@ def display_node(node: Optional[DataflowNode], renames: Dict[str, str]) -> Tuple
 
     elif isinstance(node, CallNodeValue):
         return ("", display_call_node(node.call_node, renames))
+
+    elif isinstance(node, Value):
+        return ("", display_value(node))
 
     elif node is None:
         return ("", "origin")

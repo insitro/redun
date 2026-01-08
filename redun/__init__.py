@@ -1,3 +1,4 @@
+from importlib import metadata
 from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar
 
 from redun.file import Dir, File, ShardedS3Dataset
@@ -15,10 +16,10 @@ from redun.scheduler import (
 )
 from redun.scripting import script
 from redun.task import PartialTask, Task, get_task_registry, task
-from redun.version import version
-
 from redun.context import get_context
 from redun.executors.base import register_executor
+
+version = metadata.version("redun")
 
 
 if TYPE_CHECKING:

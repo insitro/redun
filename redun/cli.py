@@ -849,8 +849,8 @@ def get_default_execution_tags(
             tags.append(("user_aws_arn", get_aws_user(aws_region)))
             tags.append(("user_aws", get_simple_aws_user(aws_region)))
         except (
-            botocore.exceptions.NoCredentialsError,
-            botocore.exceptions.ClientError,
+            botocore.exceptions.NoCredentialsError,  # type: ignore[possibly-missing-attribute]
+            botocore.exceptions.ClientError,  # type: ignore[possibly-missing-attribute]
             RuntimeError,
         ):
             pass
@@ -2339,7 +2339,7 @@ class RedunClient:
         """
         assert self.scheduler
         assert isinstance(self.scheduler.backend, RedunBackendDb)
-        session = cast(RedunBackendDb, self.scheduler.backend).session
+        session = self.scheduler.backend.session
         assert session
 
         # TODO: Make config option.
@@ -3006,12 +3006,12 @@ class RedunClient:
         src_backend = RedunBackendDb(config=src_config.get("backend"))
 
         dest_backend = self.get_scheduler(args).backend
-        if dest_backend.db_uri == src_backend.db_uri:
+        if dest_backend.db_uri == src_backend.db_uri:  # type: ignore[unresolved-attribute]
             raise RedunClientError(f"Cannot pull repo {args.push_repo} from itself")
         src_backend.load()
 
         root_ids = self.get_record_ids(extra_args) if extra_args else None
-        num_records = self._sync_records(src_backend, dest_backend, root_ids)
+        num_records = self._sync_records(src_backend, dest_backend, root_ids)  # type: ignore[invalid-argument-type]
         self.display(f"Pulled {num_records} new record(s) from repo '{args.pull_repo}'")
 
     def _sync_records(
@@ -3241,3 +3241,20 @@ class RedunClient:
             env={k: str(v) for (k, v) in compose_env.items() if v is not None},
             shell=True,
         )
+
+
+def main() -> None:
+    """
+    Main entry point for the redun CLI.
+    """
+    client = RedunClient()
+    try:
+        client.execute()
+    except RedunClientError as error:
+        print(
+            "{error_type}: {error}".format(
+                error_type=type(error).__name__,
+                error=str(error),
+            )
+        )
+        sys.exit(1)

@@ -33,7 +33,7 @@ def set_current_job(scheduler: "Scheduler", job: "Job") -> None:
     redun_job_var.set(job)
 
 
-def get_current_job() -> "Optional[Tuple[Scheduler, Job]]":
+def get_current_job() -> "Tuple[Scheduler, Job]":
     """
     Returns the current scheduler and job for this context.
     """
@@ -100,9 +100,9 @@ class LocalExecutor(Executor):
         assert self.mode in self.MODES, f"Unknown mode: {self.mode}"
 
         self.start_method = config.get("start_method", self.DEFAULT_START_METHOD)
-        assert (
-            self.start_method in self.START_METHODS
-        ), f"Unknown start_method: {self.start_method}"
+        assert self.start_method in self.START_METHODS, (
+            f"Unknown start_method: {self.start_method}"
+        )
 
         # Pools.
         self._thread_executor: Optional[ThreadPoolExecutor] = None
@@ -240,9 +240,9 @@ class LocalExecutor(Executor):
 
         def on_done(future):
             try:
-                self._scheduler.done_job(job, future.result())
+                self._scheduler.done_job(job, future.result())  # type: ignore[possibly-missing-attribute]
             except Exception as error:
-                self._scheduler.reject_job(job, error)
+                self._scheduler.reject_job(job, error)  # type: ignore[possibly-missing-attribute]
 
         assert job.args
         args, kwargs = job.args

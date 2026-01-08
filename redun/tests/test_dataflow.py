@@ -78,7 +78,7 @@ def test_dataflow_crawl(scheduler: Scheduler, backend: RedunBackendDb) -> None:
 
     # Ensure we can walk to originating call nodes.
     edges = list(walk_dataflow_value(backend, value))
-    assert [call_node.task_name for _, call_node in edges] == ["call_variants"]  # type: ignore
+    assert [call_node.task_name for _, call_node in edges] == ["call_variants"]
 
     # Ensure we can walk to arguments.
     [(_, call_node)] = edges

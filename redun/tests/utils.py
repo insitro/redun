@@ -92,7 +92,8 @@ class PatchedAWSResponse(AWSResponse):
 
     def __init__(self, url, status_code, headers, raw):
         async_raw = PatchedStreamingBody(
-            AsyncMockedRawResponse(raw), headers.get("content-length")
+            AsyncMockedRawResponse(raw),
+            headers.get("content-length"),
         )
         super().__init__(url, status_code, headers, async_raw)
 
@@ -130,7 +131,7 @@ def convert_to_response_dict_patch(http_response, operation_model):
             "operation_name": operation_model.name,
         },
     }
-    if response_dict["status_code"] >= 300:
+    if response_dict["status_code"] >= 300:  # type: ignore[unsupported-operator]
         response_dict["body"] = http_response.raw._sync_read()
     elif operation_model.has_event_stream_output:
         response_dict["body"] = http_response.raw
@@ -159,13 +160,14 @@ def patch_aws(func: Callable) -> Callable:
     @wraps(func)
     def wrapped(*args, **kwargs):
         # Apply patches.
-        with patch("botocore.awsrequest.AWSResponse", PatchedAWSResponse), patch(
-            "moto.core.botocore_stubber.AWSResponse", PatchedAWSResponse
-        ), patch(
-            "botocore.endpoint.convert_to_response_dict", convert_to_response_dict_patch
-        ), patch(
-            "aiobotocore.endpoint.convert_to_response_dict",
-            async_convert_to_response_dict_patch,
+        with (
+            patch("botocore.awsrequest.AWSResponse", PatchedAWSResponse),
+            patch("moto.core.botocore_stubber.AWSResponse", PatchedAWSResponse),
+            patch("botocore.endpoint.convert_to_response_dict", convert_to_response_dict_patch),
+            patch(
+                "aiobotocore.endpoint.convert_to_response_dict",
+                async_convert_to_response_dict_patch,
+            ),
         ):
             return func(*args, **kwargs)
 
@@ -564,8 +566,8 @@ def mock_scheduler():
         ):
             time.sleep(0.1)
 
-    scheduler.done_job = done_job
-    scheduler.reject_job = reject_job
+    scheduler.done_job = done_job  # type: ignore[invalid-assignment]
+    scheduler.reject_job = reject_job  # type: ignore[invalid-assignment]
     scheduler.batch_wait = batch_wait
 
     return scheduler

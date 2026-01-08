@@ -218,7 +218,7 @@ def test_cache_task() -> None:
     assert task1b.is_valid()
 
     # Only change task_options.
-    @task(memory=4)  # type: ignore
+    @task(memory=4)
     def task1():
         return 10
 
@@ -235,7 +235,7 @@ def test_cache_task() -> None:
     assert task1c.get_task_options() == {"memory": 4}
 
     # Change the definition of the task.
-    @task()  # type: ignore
+    @task()
     def task1():
         return 20
 
@@ -332,13 +332,13 @@ def test_hash_uses_source_instead_of_inspect() -> None:
 
     hash3a = task3.get_hash()
 
-    @task  # type: ignore
+    @task
     def task3():
         return 30
 
     hash3b = task3.get_hash()
 
-    @task(source="some source")  # type: ignore
+    @task(source="some source")
     def task3():
         return 30
 
@@ -602,7 +602,7 @@ def test_wraps_task() -> None:
     # 7. Test hash propagation via source
     extra_nested_stored_hash = extra_nested.hash
 
-    @listify_task()  # type: ignore
+    @listify_task()
     @doubled_task(offset=1)
     def extra_nested():
         return -3
@@ -611,7 +611,7 @@ def test_wraps_task() -> None:
     assert extra_nested_stored_hash != extra_nested.hash
 
     # 8. Test hash propagation via extra data
-    @listify_task()  # type: ignore
+    @listify_task()
     @doubled_task(offset=2)
     def extra_nested():
         return -2
@@ -687,7 +687,7 @@ def test_wraps_task_inner_task(scheduler: Scheduler) -> None:
     assert plus_one.inner_task.hash == "16ebc98096f780d2fe24d0d6f56dfce29008f5a3"
     wrapped_task = plus_one.wrapped_task
     assert wrapped_task and wrapped_task.hash == "16ebc98096f780d2fe24d0d6f56dfce29008f5a3"
-    assert plus_one.signature.parameters["x"].annotation == int
+    assert plus_one.signature.parameters["x"].annotation is int
 
     @doubled_task()
     @doubled_task()
@@ -697,7 +697,7 @@ def test_wraps_task_inner_task(scheduler: Scheduler) -> None:
     assert scheduler.run(plus_two(2)) == 16
 
     assert plus_two.inner_task.hash == "5636d44845593eb5845f2ced8d204f1295d26653"
-    assert plus_one.signature.parameters["x"].annotation == int
+    assert plus_two.signature.parameters["x"].annotation is int
 
 
 def test_use_wrapper_signature(scheduler: Scheduler) -> None:
@@ -717,8 +717,8 @@ def test_use_wrapper_signature(scheduler: Scheduler) -> None:
         return x + 1
 
     assert scheduler.run(plus_one(3, 1)) == 9
-    assert plus_one.signature.parameters["x"].annotation == int
-    assert plus_one.signature.parameters["offset"].annotation == int
+    assert plus_one.signature.parameters["x"].annotation is int
+    assert plus_one.signature.parameters["offset"].annotation is int
 
 
 def test_cache_options() -> None:

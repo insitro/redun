@@ -41,9 +41,10 @@ def test_no_namespace() -> None:
 
     scheduler = Scheduler()
 
-    with patch.object(module, "redun_namespace", None), patch.object(
-        scheduler.logger, "warning"
-    ) as warning:
+    with (
+        patch.object(module, "redun_namespace", None),
+        patch.object(scheduler.logger, "warning") as warning,
+    ):
 
         @task()
         def task1():
@@ -85,9 +86,10 @@ def test_no_namespace_ignore() -> None:
     )
     assert scheduler.ignore_warnings == {"namespace"}
 
-    with patch.object(module, "redun_namespace", None), patch.object(
-        scheduler.logger, "warning"
-    ) as warning:
+    with (
+        patch.object(module, "redun_namespace", None),
+        patch.object(scheduler.logger, "warning") as warning,
+    ):
 
         @task()
         def task1():

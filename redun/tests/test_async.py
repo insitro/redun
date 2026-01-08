@@ -217,7 +217,7 @@ def test_code_reactive(scheduler: Scheduler, backend: RedunBackendDb) -> None:
 
     # Update add() function with new logic.
 
-    @task(cache=True, check_valid="shallow")  # type: ignore[no-redef]
+    @task(cache=True, check_valid="shallow")
     async def add(a, b):
         calls.append("add2")
         return a + b + 1

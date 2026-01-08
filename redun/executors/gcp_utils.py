@@ -1,11 +1,12 @@
 from enum import Enum
 from functools import lru_cache
-from typing import Dict, Iterable, List, Tuple, Union, Optional
+from importlib import metadata
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 from google.api_core import gapic_v1
 from google.cloud import batch_v1, compute_v1
 
-from redun.version import version
+version = metadata.version("redun")
 
 
 # List of supported available CPU Platforms
@@ -117,11 +118,11 @@ def batch_submit(
     allocation_policy = batch_v1.AllocationPolicy()
     policy = batch_v1.AllocationPolicy.InstancePolicy()
     policy.machine_type = machine_type
-    policy.min_cpu_platform = min_cpu_platform.value if min_cpu_platform else None
+    policy.min_cpu_platform = min_cpu_platform.value if min_cpu_platform else None  # type: ignore[invalid-assignment]
 
     def create_accelerator(typ, count):
         accelerator = batch_v1.AllocationPolicy.Accelerator()
-        accelerator.type_ = type
+        accelerator.type_ = type  # type: ignore[invalid-assignment]
         accelerator.count = count
         return accelerator
 
@@ -154,7 +155,7 @@ def batch_submit(
     # The job's parent is the region in which the job will run
     create_request.parent = f"projects/{project}/locations/{region}"
 
-    return client.create_job(create_request)
+    return client.create_job(create_request)  # type: ignore[invalid-return-type]
 
 
 def list_jobs(

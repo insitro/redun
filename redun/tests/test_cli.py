@@ -912,7 +912,7 @@ setup_scheduler = workflow::setup_scheduler
     # An additional executor should have been configured.
     assert client.scheduler
     assert "exec3" in client.scheduler.executors
-    assert client.scheduler.extra == 100  # type: ignore
+    assert client.scheduler.extra == 100
 
     # Ensure pass arguments to setip func.
     with pytest.raises(ValueError):
@@ -1417,9 +1417,11 @@ def task1(x: int):
 """
     )
 
-    with patch("redun.cli.get_aws_user", lambda _: "arn:::::alice"), patch(
-        "redun.cli.get_simple_aws_user", lambda _: "alice"
-    ), patch("redun.cli.get_gcp_user", lambda: "alice@gmail.com"):
+    with (
+        patch("redun.cli.get_aws_user", lambda _: "arn:::::alice"),
+        patch("redun.cli.get_simple_aws_user", lambda _: "alice"),
+        patch("redun.cli.get_gcp_user", lambda: "alice@gmail.com"),
+    ):
         client = RedunClient()
         client.execute(["redun", "run", "workflow.py", "task1", "--x", "10"])
 

@@ -57,7 +57,7 @@ def federated_task(
 
     # Since we require a namespace, we can simply dot format this ourselves.
     wrapper_task_expr: TaskExpression = TaskExpression(
-        task_name=f'{entrypoint_config.pop("namespace")}.{entrypoint_config.pop("task_name")}',
+        task_name=f"{entrypoint_config.pop('namespace')}.{entrypoint_config.pop('task_name')}",
         args=task_args,
         kwargs=task_kwargs,
     )
@@ -145,7 +145,7 @@ def lambda_federated_task(
     if not dryrun:
         aws_region = os.environ.get("AWS_REGION", DEFAULT_AWS_REGION)
         lambda_client = get_aws_client("lambda", aws_region)
-        response = lambda_client.invoke(
+        response = lambda_client.invoke(  # type: ignore[unresolved-attribute]
             FunctionName=lambda_function_name,
             Payload=json.dumps(request_data),
         )
@@ -293,9 +293,9 @@ def launch_federated_task(
 
     executor = get_executor_from_config(config.get("executors", {}), executor_name)
     if not input_path:
-        assert (
-            task_args is not None and task_kwargs is not None
-        ), "Must provide actual data - set () and {} if no arguments are desired."
+        assert task_args is not None and task_kwargs is not None, (
+            "Must provide actual data - set () and {} if no arguments are desired."
+        )
         assert isinstance(task_args, tuple), f"Expected a tuple but got: {task_args}"
         assert isinstance(task_kwargs, dict), f"Expected a dict but got: {task_kwargs}"
         input_path = get_execution_scratch_file(
@@ -337,7 +337,7 @@ def _get_federated_config(config: Config, entrypoint: str) -> Dict[str, Any]:
     """
 
     # Load the federated config and find the specified entrypoint within it.
-    assert entrypoint in config, (  # type: ignore
+    assert entrypoint in config, (
         f"Could not find the entrypoint `{entrypoint}` "
         f"in the provided federated tasks. Found `{list(config.keys())}`"
     )

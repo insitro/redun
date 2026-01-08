@@ -33,7 +33,7 @@ class RedunHeader(Static):
     def __init__(self, title: str, **kwargs):
         super().__init__("[bold]redun console[/bold] " + title, **kwargs)
 
-    def update(self, title: str) -> None:
+    def update(self, title: str) -> None:  # type: ignore[invalid-method-override]
         super().update("[bold]redun console[/bold] " + title)
 
 
@@ -83,7 +83,7 @@ class Table(DataTable):
         """
         Callback for pressing enter key.
         """
-        return self.post_message(self.Selected(self))
+        self.post_message(self.Selected(self))
 
 
 class ExecutionList(DataTable):
@@ -102,7 +102,7 @@ class ExecutionList(DataTable):
         super().__init__(**kwargs)
         self.cursor_type = "row"
         self.add_columns("ID", "Status", "Started", "Duration", "Execution")
-        self.executions = executions
+        self.executions = executions  # type: ignore[invalid-assignment]
 
     def watch_executions(self) -> None:
         """
@@ -130,7 +130,7 @@ class ExecutionList(DataTable):
         """
         if isinstance(self.executions, list):
             execution = self.executions[self.cursor_coordinate.row]
-            return self.post_message(self.Selected(execution))
+            self.post_message(self.Selected(execution))
 
 
 class JobList(DataTable):
@@ -150,7 +150,7 @@ class JobList(DataTable):
         self.cursor_type = "row"
 
         self.add_columns("ID", "Status", "Started", "Duration", "Job")
-        self.jobs = jobs
+        self.jobs = jobs  # type: ignore[invalid-assignment]
 
     def watch_jobs(self) -> None:
         # Clear table.
@@ -174,7 +174,7 @@ class JobList(DataTable):
         Callback for pressing enter key on a Job.
         """
         job = self.jobs[self.cursor_coordinate.row]
-        return self.post_message(self.Selected(job))
+        self.post_message(self.Selected(job))
 
 
 class JobStatusTable(Table):
@@ -202,7 +202,7 @@ class JobStatusTable(Table):
         # Fetch jobs and task names from db.
         # Fetch Value.type in order to help compute Job status.
         self.job_tasks = (
-            self.app.session.query(Job, Task.namespace, Task.name, Value.type)
+            self.app.session.query(Job, Task.namespace, Task.name, Value.type)  # type: ignore[possibly-missing-attribute]
             .outerjoin(CallNode, Job.call_hash == CallNode.call_hash)
             .outerjoin(Value, CallNode.value_hash == Value.value_hash)
             .join(Task, Job.task_hash == Task.hash)
@@ -211,7 +211,7 @@ class JobStatusTable(Table):
         )
 
         tasks = (
-            self.app.session.query(Task)
+            self.app.session.query(Task)  # type: ignore[possibly-missing-attribute]
             .join(Job, Job.task_hash == Task.hash)
             .filter(Job.execution_id == self.execution_id)
             .all()

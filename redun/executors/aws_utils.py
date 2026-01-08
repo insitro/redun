@@ -113,7 +113,7 @@ def get_aws_user(aws_region: str = DEFAULT_AWS_REGION) -> str:
     Returns the current AWS user.
     """
     sts_client = get_aws_client("sts", aws_region=aws_region)
-    response = sts_client.get_caller_identity()
+    response = sts_client.get_caller_identity()  # type: ignore[unresolved-attribute]
     return response["Arn"]
 
 
@@ -152,14 +152,14 @@ def iter_log_stream(
     """
     logs_client = get_aws_client("logs", aws_region=aws_region)
     try:
-        response = logs_client.get_log_events(
+        response = logs_client.get_log_events(  # type: ignore[unresolved-attribute]
             logGroupName=log_group_name,
             logStreamName=log_stream,
             startFromHead=not reverse,
             # boto API does not allow passing None, so we must fully exclude the parameter.
             **{"limit": limit} if limit else {},
         )
-    except logs_client.exceptions.ResourceNotFoundException as error:
+    except logs_client.exceptions.ResourceNotFoundException as error:  # type: ignore[unresolved-attribute]
         if required:
             # If logs are required, raise an error.
             raise error
@@ -181,7 +181,7 @@ def iter_log_stream(
             next_token = response["nextForwardToken"]
         else:
             next_token = response["nextBackwardToken"]
-        response = logs_client.get_log_events(
+        response = logs_client.get_log_events(  # type: ignore[unresolved-attribute]
             logGroupName=log_group_name,
             logStreamName=log_stream,
             nextToken=next_token,

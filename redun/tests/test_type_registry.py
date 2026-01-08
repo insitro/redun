@@ -64,7 +64,7 @@ def test_registry_value():
         def __eq__(self, other):
             return self.hash == other.hash and self.x == other.x
 
-        def get_hash(self):
+        def get_hash(self):  # type: ignore[invalid-method-override]
             return self.hash
 
         def serialize(self):

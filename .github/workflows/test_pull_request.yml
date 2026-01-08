@@ -1,21 +1,22 @@
 name: Test pull request
 on: pull_request
+
 jobs:
   setup-validation:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - id: uv-version
+        run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
+      - run: sudo apt-get install -y graphviz graphviz-dev
+      - uses: astral-sh/setup-uv@v7
         with:
+          version: ${{ steps.uv-version.outputs.version }}
           python-version: '3.11'
-      - run: sudo apt-get install graphviz graphviz-dev
-      - name: Run make setup
+          enable-cache: true
+      - name: Verify make setup works
         run: make setup
-      - name: Verify no pip dependency conflicts
-        run: |
-          . .venv/bin/activate
-          pip check
   tox:
     timeout-minutes: 15
     strategy:
@@ -25,31 +26,43 @@ jobs:
         python: ['3.9', '3.10', '3.11', '3.12', '3.13']
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - id: uv-version
+        run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
+      - run: sudo apt-get install -y graphviz graphviz-dev
+      - uses: astral-sh/setup-uv@v7
         with:
+          version: ${{ steps.uv-version.outputs.version }}
           python-version: ${{ matrix.python }}
-      - run: pip install --upgrade pip
-      - run: sudo apt-get install graphviz graphviz-dev
-      - run: pip install tox
+          enable-cache: true
+      - run: uv tool install tox --with tox-uv
       - run: tox -e py
   test-postgres:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - id: uv-version
+        run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
+      - run: sudo apt-get install -y graphviz graphviz-dev
+      - uses: astral-sh/setup-uv@v7
         with:
+          version: ${{ steps.uv-version.outputs.version }}
           python-version: '3.11'
-      - run: sudo apt-get install graphviz graphviz-dev
+          enable-cache: true
+      - run: make setup
       - run: make test-postgres
   lint:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - id: uv-version
+        run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
+      - run: sudo apt-get install -y graphviz graphviz-dev
+      - uses: astral-sh/setup-uv@v7
         with:
+          version: ${{ steps.uv-version.outputs.version }}
           python-version: '3.11'
-      - run: sudo apt-get install graphviz graphviz-dev
+          enable-cache: true
       - run: make lint

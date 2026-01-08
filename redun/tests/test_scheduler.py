@@ -184,7 +184,7 @@ def test_scheduler_incremental(scheduler: Scheduler) -> None:
 
     # Simulate a code change to run_gatk task.
 
-    @task()  # type: ignore[no-redef]
+    @task()
     def run_gatk(align):
         task_calls.append("run_gatk")
         calls = "calls2({})".format(align)
@@ -198,7 +198,7 @@ def test_scheduler_incremental(scheduler: Scheduler) -> None:
 
     # A reverted code change should be fully memoized too.
 
-    @task()  # type: ignore[no-redef]
+    @task()
     def run_gatk(align):
         task_calls.append("run_gatk")
         calls = "calls({})".format(align)
@@ -485,7 +485,7 @@ def test_higher_order(scheduler: Scheduler) -> None:
     assert task_calls == []
 
     # Changing a child of adder(), changes adder(). Caching should detect this.
-    @task()  # type: ignore[no-redef]
+    @task()
     def get_offset():
         task_calls.append("get_offset")
         return 20
@@ -570,7 +570,7 @@ def test_higher_order2(scheduler: Scheduler) -> None:
     assert task_calls == []
 
     # Change definition of task that was cached.
-    @task()  # type: ignore[no-redef]
+    @task()
     def adder(a, b):
         task_calls.append("adder")
         return a + b
@@ -582,7 +582,7 @@ def test_higher_order2(scheduler: Scheduler) -> None:
     assert task_calls == ["chooser", "adder"]
 
     # Changing a child of multiplier, changes multiplier. Caching should detect this.
-    @task()  # type: ignore[no-redef]
+    @task()
     def get_offset():
         task_calls.append("get_offset")
         return 20
@@ -608,7 +608,7 @@ def test_default_args(scheduler: Scheduler) -> None:
     # Now let's change the default args, without changing the task.
     default = 20
 
-    @task()  # type: ignore
+    @task()
     def add(a, b=default):
         return a + b
 
@@ -973,7 +973,7 @@ def test_dryrun_explain(scheduler: Scheduler) -> None:
         )
 
     # Update task.
-    @task(version="2")  # type: ignore
+    @task(version="2")
     def main(x):
         return x
 
@@ -1468,7 +1468,7 @@ def test_catch_task_react(scheduler: Scheduler) -> None:
     assert calls == ["safe"]
 
     # Updating safe task should force re-execution.
-    @task()  # type: ignore[no-redef]
+    @task()
     def safe():
         calls.append("safe2")
         return 2 / 1
@@ -1484,7 +1484,7 @@ def test_catch_task_react(scheduler: Scheduler) -> None:
     assert calls == ["faulty", "recover"]
 
     # Updating recover task should force re-execution.
-    @task()  # type: ignore[no-redef]
+    @task()
     def recover(error):
         calls.append("recover2")
         return 2.0
@@ -1526,7 +1526,7 @@ def test_catch_deep_task_react(scheduler: Scheduler) -> None:
     assert calls == ["safe", "deep"]
 
     # Updating deep task should force re-execution.
-    @task()  # type: ignore[no-redef]
+    @task()
     def deep(denom):
         calls.append("deep2")
         return 2 / denom
@@ -1568,7 +1568,7 @@ def test_catch_deep_recover_react(scheduler: Scheduler) -> None:
     assert calls == ["faulty", "recover", "deep"]
 
     # Updating deep task should force re-execution.
-    @task()  # type: ignore[no-redef]
+    @task()
     def deep():
         calls.append("deep2")
         return 2

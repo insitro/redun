@@ -155,7 +155,7 @@ def test_exception_call_graph(scheduler: Scheduler, session: Session) -> None:
 
     # Exceptions should not be cached. Let's fix the bug without bump version.
 
-    @task(version="1")  # type: ignore[no-redef]
+    @task(version="1")
     def faulty():
         return 20
 
@@ -208,5 +208,5 @@ def test_error_value_fallback(scheduler: Scheduler, session: Session) -> None:
     # CallGraph should have recorded exception as ValueError.
     execution = session.query(Execution).one()
     error = execution.job.call_node.value.value_parsed.error
-    assert type(error) == Exception
+    assert type(error) is Exception
     assert "ValueError" in str(error)

@@ -11,3 +11,5 @@ dist/
 build/
 scratch/
 .dmypy.json
+.claude
+.cursor

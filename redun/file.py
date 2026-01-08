@@ -1291,7 +1291,7 @@ class File(Value):
             Additional arguments for the underlying file stream. They are Filesystem-specific.
         """
 
-        def close():
+        def close() -> None:
             nonlocal stream
 
             original_close()
@@ -1299,12 +1299,12 @@ class File(Value):
 
             # Restore original close. This way double closing doesn't trigger
             # unnecessary hashing.
-            stream.close = original_close
+            stream.close = original_close  # type: ignore[invalid-assignment]
 
         stream = self.filesystem.open(self.path, mode, encoding=encoding, **kwargs)
 
         original_close = stream.close
-        stream.close = close  # type: ignore
+        stream.close = close  # type: ignore[invalid-assignment]
 
         return stream
 
@@ -1882,7 +1882,7 @@ class ShardedS3Dataset(Value):
 
     @format.setter
     def format(self, value):
-        self._format = format
+        self._format = value
         self._calc_hash()
 
     @property
@@ -2127,7 +2127,7 @@ class ShardedS3Dataset(Value):
 
         import pandas
         import pyspark
-        from awsglue.dynamicframe import DynamicFrame
+        from awsglue.dynamicframe import DynamicFrame  # type: ignore[unresolved-import]
 
         # Set default write options.
         f_options: Dict[str, Any] = {}

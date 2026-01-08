@@ -37,7 +37,7 @@ from typing import (
 try:
     from typing import Protocol
 except ImportError:
-    from typing_extensions import Protocol  # type: ignore[assignment]
+    from typing_extensions import Protocol
 
 
 T = TypeVar("T")
@@ -164,7 +164,7 @@ def iter_nested_value_children(value: Any) -> Iterable[Tuple[bool, Any]]:
         for item in value:
             yield False, item
 
-    elif value_type == dict:
+    elif value_type is dict:
         for key in value.keys():
             yield False, key
         for val in value.values():
@@ -198,20 +198,20 @@ def map_nested_value(func: Callable, value: Any) -> Any:
     """
     value_type = type(value)
 
-    if value_type == list:
+    if value_type is list:
         return [map_nested_value(func, item) for item in value]
 
-    elif value_type == tuple:
+    elif value_type is tuple:
         return tuple([map_nested_value(func, item) for item in value])
 
     elif isinstance(value, tuple) and hasattr(value, "_fields"):
         # Namedtuple.
         return value_type(*[map_nested_value(func, item) for item in value])
 
-    elif value_type == set:
+    elif value_type is set:
         return {map_nested_value(func, item) for item in value}
 
-    elif value_type == dict:
+    elif value_type is dict:
         return {
             map_nested_value(func, key): map_nested_value(func, val) for key, val in value.items()
         }
@@ -568,7 +568,7 @@ class MultiMap(Generic[Key, Value]):
             return self._equal_dicts(self._data, other._data)
 
         elif isinstance(other, dict):
-            return self._equal_dicts(self._data, other)
+            return self._equal_dicts(self._data, other)  # type: ignore[invalid-argument-type]
 
         elif isinstance(other, IterableABC):
             return sorted(self) == sorted(other)

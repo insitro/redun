@@ -154,16 +154,16 @@ def postprocess_config(config: Config, config_dir: str) -> Config:
 
         federated_executors = federated_config.get("executors", {})
         for executor_name, executor_config in federated_executors.items():
-            assert (
-                executors_config.get(executor_name) is None
-            ), f"Imported executor name `{executor_name}` is a duplicate."
+            assert executors_config.get(executor_name) is None, (
+                f"Imported executor name `{executor_name}` is a duplicate."
+            )
             executors_config[executor_name] = executor_config
 
         federated_entrypoints = federated_config.get("federated_tasks", {})
         for entrypoint_name, entrypoint_config in federated_entrypoints.items():
-            assert (
-                federated_tasks_configs.get(entrypoint_name) is None
-            ), f"Imported federated_task name `{entrypoint_name}` is a duplicate."
+            assert federated_tasks_configs.get(entrypoint_name) is None, (
+                f"Imported federated_task name `{entrypoint_name}` is a duplicate."
+            )
             federated_tasks_configs[entrypoint_name] = entrypoint_config
 
     return config

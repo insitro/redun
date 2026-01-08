@@ -1,7 +1,7 @@
 import os.path
 import sys
 
-import pygraphviz as pgv
+import pytest
 
 import redun.visualize
 from redun import File
@@ -9,6 +9,16 @@ from redun.backends.db import CallNode, Execution, Job, RedunBackendDb, Value
 from redun.backends.db.query import CallGraphQuery
 from redun.cli import RedunClient
 from redun.visualize import MAX_LABEL_LEN, SEPARATOR
+
+try:
+    import pygraphviz as pgv  # type: ignore[unresolved-import]
+
+    HAS_PYGRAPHVIZ = True
+except ImportError:
+    pgv = None
+    HAS_PYGRAPHVIZ = False
+
+requires_pygraphviz = pytest.mark.skipif(not HAS_PYGRAPHVIZ, reason="pygraphviz not installed")
 
 DEFAULT_WORKFLOW = """
 from redun import task
@@ -46,6 +56,7 @@ def run_workflow(argv, file_contents=DEFAULT_WORKFLOW):
     return client, exec_id, file
 
 
+@requires_pygraphviz
 def test_basic_viz():
     file_contents = """
 from redun import task
@@ -114,6 +125,7 @@ def main(x: str = "hi", y: bool = True):
     image.remove()
 
 
+@requires_pygraphviz
 def test_viz_flags():
     x, y = "hi" * 100, "bye" * 100
     result_value = x + y
@@ -198,6 +210,7 @@ def test_viz_flags():
     dot_file.remove()
 
 
+@requires_pygraphviz
 def test_deduplication():
     argv = [
         "redun",
@@ -254,6 +267,7 @@ def test_deduplication():
     dot_file.remove()
 
 
+@requires_pygraphviz
 def test_dataflow():
     file_contents = """
 from redun import task, File
@@ -395,6 +409,7 @@ def extract_subgraph_labels(graph):
     return labels
 
 
+@requires_pygraphviz
 def test_value_viz():
     file_contents = """
 from redun import task, File

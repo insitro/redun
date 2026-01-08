@@ -102,7 +102,7 @@ def test_executor_docker(
     executor._monitor()
 
     # Ensure job returns result to scheduler.
-    scheduler.done_job.assert_called_with(job, 10)  # type: ignore
+    scheduler.done_job.assert_called_with(job, 10)
 
     container2_id = "container-2"
     run_docker_mock.return_value = container2_id
@@ -128,4 +128,4 @@ def test_executor_docker(
     executor._monitor()
 
     # Ensure job rejected to scheduler.
-    scheduler.reject_job.call_args[:2] == (job, error)  # type: ignore
+    scheduler.reject_job.call_args[:2] == (job, error)

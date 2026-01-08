@@ -43,7 +43,7 @@ from io import SEEK_CUR, BytesIO
 from string import digits
 
 try:
-    str = unicode  # type: ignore
+    str = unicode  # type: ignore[unresolved-reference]
 except NameError:
     pass
 
@@ -167,7 +167,7 @@ def bdecode(f_or_data):
         first_byte = f_or_data.read(1)
         f_or_data.seek(-1, SEEK_CUR)
     else:
-        first_byte = f_or_data.peek(1)[:1]
+        first_byte = f_or_data.peek(1)[:1]  # type: ignore[possibly-missing-attribute]
     btype = TYPES.get(first_byte)
     if btype is not None:
         return btype(f_or_data)

@@ -216,10 +216,10 @@ def get_or_create_glue_job_definition(
 
     try:
         # See if job definition already exists.
-        client.get_job(JobName=glue_job_name)
-    except client.exceptions.EntityNotFoundException:
+        client.get_job(JobName=glue_job_name)  # type: ignore[unresolved-attribute]
+    except client.exceptions.EntityNotFoundException:  # type: ignore[unresolved-attribute]
         # Create job definition.
-        resp = client.create_job(Name=glue_job_name, **glue_job_def)
+        resp = client.create_job(Name=glue_job_name, **glue_job_def)  # type: ignore[unresolved-attribute]
         assert resp["Name"] == glue_job_name
 
     return glue_job_name
@@ -232,7 +232,7 @@ def get_default_glue_service_role(
     Returns the default Glue service role for the current account.
     """
     if not account_num:
-        caller_id = aws_utils.get_aws_client("sts", aws_region=aws_region).get_caller_identity()
+        caller_id = aws_utils.get_aws_client("sts", aws_region=aws_region).get_caller_identity()  # type: ignore[unresolved-attribute]
         account_num = caller_id["Account"]
     return f"arn:aws:iam::{account_num}:role/service-role/AWSGlueServiceRole"
 
@@ -298,7 +298,7 @@ class AWSGlueExecutor(Executor):
         Gets all job runs with given status.
         """
         client = aws_utils.get_aws_client("glue", aws_region=self.aws_region)
-        paginator = client.get_paginator("get_job_runs")
+        paginator = client.get_paginator("get_job_runs")  # type: ignore[unresolved-attribute]
 
         for page in paginator.paginate(JobName=self.glue_job_name):
             for run in page["JobRuns"]:
@@ -563,10 +563,10 @@ class AWSGlueExecutor(Executor):
                 code_file=self.code_file,
                 aws_region=self.aws_region,
             )
-        except client.exceptions.ConcurrentRunsExceededException:
+        except client.exceptions.ConcurrentRunsExceededException:  # type: ignore[unresolved-attribute]
             self.log("Too many concurrent runs of the glue job. Waiting for some to complete...")
             return None
-        except client.exceptions.ResourceNumberLimitExceededException:
+        except client.exceptions.ResourceNumberLimitExceededException:  # type: ignore[unresolved-attribute]
             self.log("No AWS DPUs available. Waiting for some to free up...")
             return None
 
@@ -704,7 +704,7 @@ def submit_glue_job(
     # Submit glue job
     # Any submission exceptions need to be handled by calling function.
     glue_client = aws_utils.get_aws_client("glue", aws_region=aws_region)
-    result = glue_client.start_job_run(
+    result = glue_client.start_job_run(  # type: ignore[unresolved-attribute]
         JobName=glue_job_name,
         Arguments=glue_args,
         Timeout=job_options["timeout"],
@@ -723,7 +723,7 @@ def glue_describe_jobs(
     glue_client = aws_utils.get_aws_client("glue", aws_region=aws_region)
 
     for id in job_ids:
-        response = glue_client.get_job_run(
+        response = glue_client.get_job_run(  # type: ignore[unresolved-attribute]
             JobName=glue_job_name, RunId=id, PredecessorsIncluded=False
         )
         yield response.get("JobRun")

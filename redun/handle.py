@@ -211,7 +211,7 @@ class Handle(Value):
         """
         self.__handle__ = self.HandleInfo(**state)
         self.__handle__.is_recorded = True
-        self.__init__(state["name"], *state["args"], **state["kwargs"])  # type: ignore
+        self.__init__(state["name"], *state["args"], **state["kwargs"])
 
     def apply_call(self, call_hash: str) -> "Handle":
         """

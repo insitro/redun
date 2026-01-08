@@ -1,66 +1,43 @@
-PACKAGE_NAME=redun
-VENV_DIR?=.venv
-VENV_ACTIVATE=$(VENV_DIR)/bin/activate
-WITH_VENV=. $(VENV_ACTIVATE);
-
-
-.PHONY: venv
-venv: $(VENV_ACTIVATE)
-
-
-$(VENV_ACTIVATE):
-	test -f $@ || python3 -m venv $(VENV_DIR)
-	$(WITH_VENV) python -m pip install --upgrade pip
-	$(WITH_VENV) python -m pip install -e .[postgres]
-	$(WITH_VENV) python -m pip install -r requirements-dev.txt -r docs/requirements.txt
-
-
 .PHONY: setup
-setup: venv
-	$(WITH_VENV) pre-commit install
-
+setup:
+	uv sync --all-extras
+	uv run pre-commit install
+	uv tool install tox --with tox-uv
 
 .PHONY: test
-test: venv
-	$(WITH_VENV) tox
+test:
+	tox
 	make test-postgres
 
 
 .PHONY: test-postgres
-test-postgres: venv
+test-postgres:
 	bin/test_postgres.sh
 
 
 .PHONY: lint
-lint: venv
-	$(WITH_VENV) pre-commit run --all-files
+lint:
+	uv run pre-commit run --all-files
 
 .PHONY: format
-format: venv
-	$(WITH_VENV) pre-commit run ruff-format --all-files
+format:
+	uv run pre-commit run ruff-format --all-files
 
 # Migrate example database to latest version.
 .PHONY: upgrade
 upgrade:
-	$(WITH_VENV) alembic -c redun/backends/db/alembic.ini upgrade head
+	uv run alembic -c redun/backends/db/alembic.ini upgrade head
 
 
 # Autogenerate a new migration
 .PHONY: revision
 revision:
-	$(WITH_VENV) alembic -c redun/backends/db/alembic.ini revision --autogenerate -m "$(MESSAGE)"
+	uv run alembic -c redun/backends/db/alembic.ini revision --autogenerate -m "$(MESSAGE)"
 
 
 .PHONY: build
 build: setup
-	.venv/bin/python setup.py sdist
-
-
-.PHONY: test-build
-test-build:
-	python3 -m venv build/venv
-	build/venv/bin/pip install dist/redun-$(shell python3 setup.py --version).tar.gz
-	bin/test_build.sh
+	uv build
 
 
 .PHONY: publish
@@ -69,8 +46,8 @@ publish: lint test build
 
 
 .PHONY: docs
-docs: venv
-	$(WITH_VENV) cd docs; make clean api html
+docs:
+	cd docs && uv run make clean api html
 
 
 .PHONY: docs
@@ -83,10 +60,10 @@ clean:
 	rm -rf build
 	rm -rf dist
 	rm -rf *.egg*/
-	find $(PACKAGE_NAME) -type f -name '*.pyc' -delete
+	find redun -type f -name '*.pyc' -delete
 
 
 .PHONY: teardown
 teardown:
-	rm -rf $(VENV_DIR)/
+	rm -rf .venv/
 	rm -rf .tox/

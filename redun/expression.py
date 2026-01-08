@@ -380,8 +380,8 @@ def lazy_operation(
     """
 
     def deco(func: Callable) -> Callable:
-        _method: str = method or func.__name__
-        _name: str = name or func.__name__
+        _method: str = method or func.__name__  # type: ignore[unresolved-attribute]
+        _name: str = name or func.__name__  # type: ignore[unresolved-attribute]
 
         def wrapper(self, *args, **kwargs) -> SimpleExpression:
             return SimpleExpression(_name, (self, *args), kwargs)

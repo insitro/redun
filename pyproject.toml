@@ -1,7 +1,184 @@
+[project]
+name = "redun"
+version = "0.36.0"
+description = "Yet another redundant workflow engine."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Matt Rasmussen", email = "rasmus@insitro.com"},
+]
+maintainers = [
+    {name = "Matt Rasmussen", email = "rasmus@insitro.com"},
+]
+keywords = ["workflow", "dataflow", "dag", "scheduling", "batch"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
+]
+
+dependencies = [
+    # By using the extra deps boto3 and awscli, we help the solver find
+    # a solution faster, since aiobotocore currently requires pinned dependencies of
+    # boto3 and awscli.
+    "aiobotocore[boto3,awscli]>=2.0.1",
+    "aiohttp>=3.7.4,<4",
+    "alembic>=1.4",
+    "boto3>=1.16.63",
+    # Avoid version botocore-1.28.0
+    # https://github.com/iterative/dvc/issues/8513#issuecomment-1298761683
+    "botocore>=1.22.8,!=1.28.0",
+    "fancycompleter>=0.9.1",
+    "s3fs>=2025.5.1",
+    "sqlalchemy>=2,<3",
+    "python-dateutil>=2.8",
+    # cython3 and pyyaml conflicts
+    # https://github.com/yaml/pyyaml/issues/724#issuecomment-1638591821
+    "pyyaml!=6.0.0,!=5.4.0,!=5.4.1",
+    "requests>=2.27.1",
+    "rich>=13.3.5",
+    "textual>=0.63.0",
+    # If updating this list, check executors/aws_glue.py stays up to date with
+    # packages needed to run in the glue environment.
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg2>=2.8"]
+glue = ["pandas", "pyarrow", "pyspark"]
+k8s = ["kubernetes>=22.6"]
+google-batch = [
+    "gcsfs>=2021.4.0",
+    "google-cloud-batch>=0.2.0",
+    "google-cloud-compute>=1.11.0",
+]
+azure = [
+    "adlfs>=2024.12.0",
+    "azure-ai-ml>=1.23.1",
+]
+viz = [
+    "pygraphviz",  # Requires system graphviz: apt-get install graphviz graphviz-dev
+]
+
+[dependency-groups]
+# Development dependencies
+dev = [
+    "freezegun",
+    "moto[batch,glue,s3]==3.1.10",
+    "numpydoc", # Test dependency for docstring validation
+    "pandas",
+    "pdbpp",
+    "pre-commit",
+    "pyarrow>17", # Pinned to workaround cmake/pip error
+    "pyspark==3.4.3",
+    "pytest<9",
+    "tox",
+    "vcrpy<5",
+    "kubernetes==22.6",
+    "google-cloud-batch==0.9.0",
+    "google-cloud-compute==1.11.0",
+    "urllib3<2",
+    "adlfs==2024.12.0",
+    "azure-ai-ml==1.23.1",
+    # Pin boto for testing. We can unpin if moto is updated.
+    # awscli must be pinned to match botocore version to avoid dependency conflicts.
+    "aiobotocore==2.12.3",
+    "awscli==1.32.69",
+    "boto3==1.34.69",
+    "botocore==1.34.69",
+    "s3fs==2025.5.1",
+    "ty>=0.0.9",
+
+    # Documentation dependencies
+    "docutils>=0.10,<0.17",  # Constrained by awscli in dev group
+    "sphinx>=4.0,<6",        # Constrained by docutils
+    "furo",
+    "myst-parser",
+    "pygments>=2.12.0",
+    "roman",
+    "standard-imghdr",  # Backport of imghdr removed in Python 3.13
+]
+
+[build-system]
+requires = ["uv_build>=0.9.22,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "redun"
+module-root = ""
+source-include = [
+    "redun/backends/db/alembic.ini",
+    "redun/backends/db/alembic/versions/*",
+    "redun/py.typed",
+    "redun/executors/glue_oneshot.py.txt",
+    "redun/**/*.css",
+]
+
+[project.scripts]
+redun = "redun.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/insitro/redun/"
+Repository = "https://github.com/insitro/redun/"
+Documentation = "https://redun.readthedocs.io/"
+"Bug Tracker" = "https://github.com/insitro/redun/issues"
+
 [tool.ruff.lint.per-file-ignores]
 "*/__init__.py" = ["F401"]
 "redun/tests/*" = ["F811"]
 
 [tool.ruff]
 line-length = 99
-target-version = "py38"
+target-version = "py39"
+
+[tool.ty.environment]
+python-version = "3.9"
+python = ".venv"
+
+[tool.ty.src]
+include = ["redun/"]
+
+[tool.ty.rules]
+unused-ignore-comment = "error"
+ignore-comment-unknown-rule = "error"
+invalid-ignore-comment = "error"
+
+[[tool.ty.overrides]]
+# The test suite manipulates redun internals in a myriad of ways that confuse
+# the type checker. If we really want to tackle this, it probably makes more sense
+# to improve the type system surrounding `task`.
+include = ["redun/tests/"]
+
+[tool.ty.overrides.rules]
+unresolved-attribute = "ignore"
+too-many-positional-arguments = "ignore"
+possibly-missing-attribute = "ignore"
+invalid-argument-type = "ignore"
+
+[[tool.ty.overrides]]
+include = ["redun/console/screens.py"]
+
+[tool.ty.overrides.rules]
+possibly-missing-attribute = "warn"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error::pytest.PytestUnhandledThreadExceptionWarning",
+    # boto and moto inherited warnings.
+    "ignore:Using or importing the ABCs from 'collections':DeprecationWarning",
+    "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning",
+    # Until we get the upstream fix: https://github.com/spulec/moto/pull/4484
+    "ignore:stream argument is deprecated. Use stream parameter in request directly:DeprecationWarning",
+    # Prevent backtracking on sqlalchemy warning in preparation for 2.0 release
+    "error::sqlalchemy.exc.Base20DeprecationWarning",
+]
