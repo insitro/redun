@@ -18,6 +18,7 @@ from redun.backends.db.dataflow import (
     walk_dataflow,
 )
 from redun.console.screens import RedunScreen
+from redun.console.utils import rich_escape
 from redun.utils import assert_never, trim_string
 
 
@@ -79,7 +80,7 @@ def display_hash(node: Optional[DataflowNode]) -> str:
 
 def display_link(hash: Optional[str], text: str) -> str:
     if hash:
-        return f"[@click=screen.click_hash('{hash}')]{text}[/]"
+        return f"[@click=screen.click_hash('{hash}')]{rich_escape(text)}[/]"
     else:
         return text
 
@@ -187,7 +188,7 @@ class UpstreamDataflowScreen(RedunScreen):
                 Static(f"[bold]Upstream dataflow[/] {self.value_hash}"),
                 Static(),
                 Static(
-                    f"[bold]value [b]=[/] [@click=screen.click_value('{self.value_hash}')]{display_hash(self.value)}{repr(self.value.preview)}[/]",  # noqa: E501
+                    f"[bold]value [b]=[/] [@click=screen.click_value('{self.value_hash}')]{display_hash(self.value)}{rich_escape(repr(self.value.preview))}[/]",  # noqa: E501
                     classes="dataflow",
                 ),
                 Static(),
