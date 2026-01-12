@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 from redun.backends.db import CallNode, Execution, Job, RedunBackendDb, Value
 
 if TYPE_CHECKING:
-    from pygraphviz import AGraph  # type: ignore[unresolved-import]
+    from pygraphviz import AGraph
 from redun.backends.db.dataflow import ArgumentValue, CallNodeValue, walk_dataflow
 from redun.backends.db.query import CallGraphQuery
 from redun.scheduler import ErrorValue, Scheduler
@@ -54,7 +54,7 @@ def init_graph(direction: str) -> "AGraph":
     """
     Initializes a graph with the desired attributes.
     """
-    import pygraphviz as pgv  # type: ignore[unresolved-import]
+    import pygraphviz as pgv
 
     graph = pgv.AGraph(strict=False, directed=True)
     graph.node_attr.update(

@@ -11,7 +11,7 @@ from redun.cli import RedunClient
 from redun.visualize import MAX_LABEL_LEN, SEPARATOR
 
 try:
-    import pygraphviz as pgv  # type: ignore[unresolved-import]
+    import pygraphviz as pgv
 
     HAS_PYGRAPHVIZ = True
 except ImportError:

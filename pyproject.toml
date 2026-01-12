@@ -171,6 +171,14 @@ include = ["redun/console/screens.py"]
 [tool.ty.overrides.rules]
 possibly-missing-attribute = "warn"
 
+[[tool.ty.overrides]]
+include = ["redun/visualize.py", "redun/tests/test_visualize.py"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
+invalid-assignment = "ignore"
+
+
 [tool.pytest.ini_options]
 filterwarnings = [
     "error::pytest.PytestUnhandledThreadExceptionWarning",
