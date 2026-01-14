@@ -1,0 +1,92 @@
+name: Claude PR Review
+
+# Agent Mode (agent-review job):
+# - Triggers: claude-review label on PR or /claude-review comment
+# - Permissions: read-only on contents, write on PRs
+# - Review focus: code quality, standards conformity, bugs, security
+# - Output: inline comments + summary assessment
+# - Restricted tools: GitHub inline comments, gh CLI commands
+
+# Interactive Mode (interactive-mode job):
+# - Triggers: @claude mentions in PR comments
+# - Full conversational interaction for Q&A and guidance
+# - Deeper fetch depth (full history) for comprehensive analysis
+
+on:
+  # Label-based with automatic updates (track_progress requires these specific types)
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+  # Interactive: Comment-based triggers
+  issue_comment:
+    types: [created]
+
+jobs:
+  # Agent Mode: Full autonomous review
+  agent-review:
+    if: |
+      (github.event_name == 'pull_request' && 
+        contains(github.event.pull_request.labels.*.name, 'claude-review')) ||
+      (github.event_name == 'issue_comment' && 
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '/claude-review'))
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Don't allow Claude to modify repository files and Git history
+      pull-requests: write # Needed to post PR comments
+      id-token: write
+      actions: read # Required for Claude to read CI results on PRs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          # Shallow fetch is sufficient for PR review
+          # https://github.com/anthropics/claude-code-action/blob/f8749bd14b87cec4372f05f03ef45d57f3d0db7a/examples/pr-review-comprehensive.yml#L21
+          fetch-depth: 1
+      - name: Review PR with Claude (Agent Mode)
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          track_progress: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Please review this pull request with a focus on:
+            - Code quality
+            - Conformity to project standards and existing patterns
+            - Potential bugs or issues
+            - Security implications
+
+            Provide detailed feedback using inline comments for specific issues. Create a summary comment on the PR with an overall assessment and any high-level suggestions.
+
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+
+  # Interactive Mode: Conversational assistance
+  interactive-mode:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@claude')
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Claude Interactive Mode
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # No prompt parameter = interactive mode enabled
