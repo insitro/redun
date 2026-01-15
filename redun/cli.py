@@ -475,7 +475,16 @@ def add_value_arg_parser(
 
     def is_typed_list(anno: Any) -> bool:
         klass = get_anno_origin(anno)
-        return isinstance(klass, type) and issubclass(klass, list) and bool(anno.__args__)
+        return (
+            isinstance(klass, type)
+            and issubclass(klass, list)
+            and hasattr(anno, "__args__")
+            and bool(anno.__args__)
+        )
+
+    def is_list(anno: Any) -> bool:
+        klass = get_anno_origin(anno)
+        return isinstance(klass, type) and issubclass(klass, list)
 
     def is_optional(anno: Any) -> bool:
         """
@@ -514,6 +523,10 @@ def add_value_arg_parser(
         if is_typed_list(anno):
             arg_anno = anno.__args__[0]
 
+        elif is_list(anno):
+            # Default to parsing List as List[str].
+            arg_anno = str
+
         elif is_optional(anno):
             # We know that the first class in the tuple is the class of the arg when present and
             # the second is class NoneType so we take the first. For more info, see the docstring
@@ -535,7 +548,7 @@ def add_value_arg_parser(
     parser_kwargs: Dict[str, Any] = {}
     if inspect.isclass(arg_anno) and issubclass(arg_anno, enum.Enum):
         parser_kwargs["choices"] = list(arg_anno)
-    if is_typed_list(anno):
+    if is_list(anno):
         # For lists, we can tell the parser to expect one or more arguments. So, you could pass
         # a list of values like:
         #       redun run workflow.py my_task --plate_pks 1000 1001 1002

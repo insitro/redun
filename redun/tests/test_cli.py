@@ -575,6 +575,9 @@ def apply_not(values: List[bool]) -> List[bool]:
 def color_to_string(colors: List[Color]) -> List[str]:
     return [str(c) for c in colors]
 
+@task()
+def reverse(words: List) -> List:
+    return list(reversed(words))
 
 @task()
 def optional_arg(x: Optional[int] = None) -> int:
@@ -671,6 +674,19 @@ def call_hello2(func: Callable) -> str:
             "blue",
         ]
     ) == ["Color.red", "Color.blue"]
+
+    # Parse a list of implicit Any.
+    assert client.execute(
+        [
+            "redun",
+            "run",
+            "workflow.py",
+            "reverse",
+            "--words",
+            "aa",
+            "bb",
+        ]
+    ) == ["bb", "aa"]
 
     # Confirm list args are validated against their type.
     with pytest.raises(ValueError, match="argument --colors: invalid Color value"):
