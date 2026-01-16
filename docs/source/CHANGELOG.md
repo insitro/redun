@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.38.0
+January 16, 2026
+
+* dummy release
+
 ## 0.37.0
 January 16, 2026
 
