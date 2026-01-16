@@ -1,0 +1,12 @@
+# Placeholder workflow to register the release workflow on the default branch.
+# GitHub Actions requires a workflow file to exist on the default branch
+# before it can be triggered on any branch. The actual implementation
+# is maintained in a separate branch.
+name: Release
+on:
+  workflow_dispatch:
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'true'
