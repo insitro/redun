@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.37.0
+January 16, 2026
+
+* `#449` - [COMP-3385] feat(k8s): add environment variable support to K8S executor
+* `#460` - Allow arg parsing of untyped lists
+* `#450` - Add claude review
+* `#457` - Fix type check issues with optional viz
+* `#456` - add rich_escape for console upstream vis
+* `#446` - Migrate to uv
+
 ## 0.36.0
 December 09, 2025
 
