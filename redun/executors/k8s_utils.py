@@ -234,18 +234,19 @@ def create_job_object(
     annotations: Optional[Dict[str, str]] = None,
     secret_name: Optional[str] = None,
     node_affinity: Optional[Dict[str, Any]] = None,
+    env: Optional[Dict[str, str]] = None,
 ) -> client.V1Job:
     """Creates a job object for redun job.
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
     Also creates necessary sub-objects"""
 
     # Container environment variables.
-    env = []
+    container_env = []
 
     # Forward AWS secrets to the container environment variables.
     aws_env_keys = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN"]
     if secret_name:
-        env.extend(
+        container_env.extend(
             [
                 {
                     "name": key,
@@ -261,7 +262,13 @@ def create_job_object(
             ],
         )
 
-    container = client.V1Container(name=name, image=image, args=command, env=env)
+    # Add user-provided environment variables.
+    if env:
+        container_env.extend(
+            [client.V1EnvVar(name=name, value=value) for name, value in env.items()]
+        )
+
+    container = client.V1Container(name=name, image=image, args=command, env=container_env)
 
     if resources is None:
         container.resources = create_resources()

@@ -1180,3 +1180,172 @@ def test_executor_node_affinity_override(
     assert k8s_submit_mock.call_args[1]["node_affinity"] != default_node_affinity
 
     executor.stop()
+
+
+@mock_k8s
+def test_executor_config_env(scheduler: Scheduler) -> None:
+    """
+    Executor should be able to parse env config.
+    """
+    env_json = json.dumps({"DEBUG": "true", "API_URL": "http://api.example.com"})
+    config = Config(
+        {
+            "k8s": {
+                "image": "image",
+                "scratch": "scratch_prefix",
+                "env": env_json,
+            },
+        },
+    )
+    executor = K8SExecutor("k8s", scheduler, config["k8s"])
+
+    assert "env" in executor.default_task_options
+    assert executor.default_task_options["env"] == {
+        "DEBUG": "true",
+        "API_URL": "http://api.example.com",
+    }
+
+
+@mock_k8s
+def test_k8s_submit_with_env() -> None:
+    """
+    k8s_submit should properly pass environment variables to the container.
+    """
+    k8s_client = redun.executors.k8s_utils.K8SClient()
+
+    # Configure the mock to return the job object that was passed to it
+    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)
+
+    env = {"DEBUG": "true", "API_URL": "http://api.example.com"}
+
+    job = redun.executors.k8s.k8s_submit(
+        k8s_client=k8s_client,
+        command=["echo", "test"],
+        image="test-image",
+        namespace="default",
+        job_name="test-job",
+        env=env,
+    )
+
+    # Verify env vars are configured in the container
+    container_env = job.spec.template.spec.containers[0].env
+    assert container_env is not None
+
+    # Find the user-provided env vars (filter out any AWS secret refs)
+    user_env = [e for e in container_env if hasattr(e, "value") and e.value is not None]
+    assert len(user_env) == 2
+    # Convert to dict for order-independent checking
+    user_env_dict = {e.name: e.value for e in user_env}
+    assert user_env_dict["DEBUG"] == "true"
+    assert user_env_dict["API_URL"] == "http://api.example.com"
+
+
+@mock_s3
+@mock_k8s
+@patch("redun.executors.k8s.k8s_describe_jobs")
+@patch("redun.executors.k8s.k8s_submit")
+def test_executor_with_env(k8s_submit_mock: Mock, k8s_describe_jobs_mock: Mock) -> None:
+    """
+    Executor should pass env from task options to k8s_submit.
+    """
+    # Setup K8S mocks.
+    k8s_describe_jobs_mock.return_value = []
+
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+    executor.start()
+
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash",
+        uid="k8s-job-id",
+    )
+
+    # Submit redun job with env option
+    env = {"DEBUG": "true"}
+
+    expr = task1.options(env=env)(10)
+    job = Job(task1, expr)
+    job.eval_hash = "eval_hash"
+    job.args = ((10,), {})
+    executor.submit(job)
+
+    # Wait until job arrayer actually submits it
+    wait_until(lambda: executor.arrayer.num_pending == 0)
+
+    # Ensure env was passed correctly
+    assert k8s_submit_mock.call_args
+    assert "env" in k8s_submit_mock.call_args[1]
+    assert k8s_submit_mock.call_args[1]["env"] == env
+
+    executor.stop()
+
+
+@mock_s3
+@mock_k8s
+@patch("redun.executors.k8s.k8s_describe_jobs")
+@patch("redun.executors.k8s.k8s_submit")
+def test_executor_env_merge(
+    k8s_submit_mock: Mock,
+    k8s_describe_jobs_mock: Mock,
+) -> None:
+    """
+    Task-level env should merge with and override executor-level env.
+    """
+    # Setup K8S mocks.
+    k8s_describe_jobs_mock.return_value = []
+
+    # Setup executor with default env from config
+    config_env = {"CONFIG_VAR": "from_config", "OVERRIDE_VAR": "config_value"}
+
+    config = Config(
+        {
+            "k8s": {
+                "image": "my-image",
+                "scratch": "s3://example-bucket/redun/",
+                "job_monitor_interval": 0.05,
+                "job_stale_time": 0.01,
+                "env": json.dumps(config_env),
+            },
+        },
+    )
+
+    scheduler = mock_scheduler()
+    executor = K8SExecutor("k8s", scheduler, config["k8s"])
+    executor.get_jobs = Mock()  # type: ignore
+    executor.get_jobs.return_value = []
+
+    s3_client = boto3.client("s3", region_name="us-east-1")
+    s3_client.create_bucket(Bucket="example-bucket")
+
+    executor.start()
+
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash",
+        uid="k8s-job-id",
+    )
+
+    # Submit redun job with different env that should merge and override
+    task_env = {"TASK_VAR": "from_task", "OVERRIDE_VAR": "task_value"}
+
+    expr = task1.options(env=task_env)(10)
+    job = Job(task1, expr)
+    job.eval_hash = "eval_hash"
+    job.args = ((10,), {})
+    executor.submit(job)
+
+    # Wait until job arrayer actually submits it
+    wait_until(lambda: executor.arrayer.num_pending == 0)
+
+    # Ensure env was merged correctly
+    assert k8s_submit_mock.call_args
+    assert "env" in k8s_submit_mock.call_args[1]
+    merged_env = k8s_submit_mock.call_args[1]["env"]
+
+    # Config var should be present
+    assert merged_env["CONFIG_VAR"] == "from_config"
+    # Task var should be present
+    assert merged_env["TASK_VAR"] == "from_task"
+    # Override var should have task value (task overrides config)
+    assert merged_env["OVERRIDE_VAR"] == "task_value"
+
+    executor.stop()

@@ -6,11 +6,11 @@ import threading
 import time
 import uuid
 from collections import OrderedDict, defaultdict
+from collections.abc import Iterator
 from typing import (
     Any,
     Callable,
     Dict,
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -68,7 +68,8 @@ def k8s_submit(
     annotations: Optional[Dict[str, str]] = None,
     secret_name: Optional[str] = None,
     node_affinity: Optional[Dict[str, Any]] = None,
-) -> kubernetes.client.V1Job:  # type: ignore[possibly-missing-attribute]
+    env: Optional[Dict[str, str]] = None,
+) -> kubernetes.client.V1Job:
     """Prepares and submits a k8s job to the API server"""
     requests = {
         "memory": f"{memory}G",
@@ -94,6 +95,7 @@ def k8s_submit(
         annotations=annotations,
         secret_name=secret_name,
         node_affinity=node_affinity,
+        env=env,
     )
 
     if array_size > 1:
@@ -127,8 +129,7 @@ def get_hash_from_job_name(job_name: str) -> Optional[str]:
     """
     # Remove array job suffix, if present.
     array_suffix = "-" + ARRAY_JOB_SUFFIX
-    if job_name.endswith(array_suffix):
-        job_name = job_name[: -len(array_suffix)]
+    job_name = job_name.removesuffix(array_suffix)
 
     # It's possible we found jobs that are unrelated to the this work based off
     # the job_name_prefix matching when fetching in get_jobs. These jobs will
@@ -163,6 +164,7 @@ def get_k8s_job_options(job_options: dict) -> dict:
         "retries",
         "timeout",
         "node_affinity",
+        "env",
     ]
     return {key: job_options[key] for key in keys if key in job_options}
 
@@ -410,6 +412,7 @@ class K8SExecutor(Executor):
         self.secret_name: Optional[str] = config.get("secret_name")
         self.use_import_aws_secrets: bool = config.getboolean("import_aws_secrets", fallback=True)
         self.secret_env_vars = config.get("secret_env_vars", fallback="").strip().split()
+        self.create_namespace: bool = config.getboolean("create_namespace", fallback=True)
 
         self.code_file: Optional[File] = None
 
@@ -430,6 +433,8 @@ class K8SExecutor(Executor):
             self.default_task_options["k8s_labels"] = json.loads(config.get("k8s_labels"))
         if config.get("node_affinity"):
             self.default_task_options["node_affinity"] = json.loads(config.get("node_affinity"))
+        if config.get("env"):
+            self.default_task_options["env"] = json.loads(config.get("env"))
         self.use_default_k8s_labels = config.getboolean("default_k8s_labels", True)
 
         self.is_running = False
@@ -582,7 +587,8 @@ class K8SExecutor(Executor):
         self.is_running = True
 
         # Ensure k8s namespace exists.
-        k8s_utils.create_namespace(self._k8s_client, self.namespace)
+        if self.create_namespace:
+            k8s_utils.create_namespace(self._k8s_client, self.namespace)
 
         self._setup_secrets()
 
@@ -869,6 +875,13 @@ class K8SExecutor(Executor):
         }
         if k8s_labels:
             task_options["k8s_labels"] = k8s_labels
+
+        # Merge env if needed.
+        config_env = self.default_task_options.get("env", {})
+        task_env = job_options.get("env", {})
+        if config_env or task_env:
+            # Task-level env vars override config-level by name.
+            task_options["env"] = {**config_env, **task_env}
 
         return task_options
 

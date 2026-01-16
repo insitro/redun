@@ -627,6 +627,10 @@ A string that specifies the [scratch space](executors.md#s3-scratch-space) used 
 
 A string (default: `default`) that specifies the k8s namespace to use for all resources.
 
+##### `create_namespace`
+
+A bool (default: True) that specifies whether to automatically create the k8s namespace if it doesn't exist. Set to `false` when the namespace is pre-created or managed externally (e.g., by Terraform), or when the service account lacks permissions to create namespaces.
+
 ##### `secret_name`
 
 An optional string that specifies the name of a k8s secret to use for passing environment variables to k8s jobs. When set, this secret will contain AWS credentials (if `import_aws_secrets` is enabled) and any additional environment variables specified in `secret_env_vars`.
@@ -741,6 +745,23 @@ node_affinity = {
             }
         ]
     }
+```
+
+##### `env`
+
+An optional JSON object that specifies environment variables to set in the container. Keys are variable names and values are variable values. This can be overridden on a per task basis using task options. When both executor-level and task-level env vars are specified, they are merged with task-level values taking precedence for variables with the same name.
+
+```ini
+env = {"DEBUG": "true", "API_URL": "http://api.example.com"}
+```
+
+Task-level override example:
+
+```python
+@task(env={"DEBUG": "false"})
+def my_task():
+    # DEBUG will be "false", API_URL will be "http://api.example.com" (inherited from config)
+    ...
 ```
 
 ##### `code_package`
