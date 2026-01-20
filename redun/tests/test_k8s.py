@@ -427,6 +427,8 @@ def test_executor(
             "redun.insitro.com/execution_id": "",
             "redun.insitro.com/job_id": job.id,
             "redun.insitro.com/job_hash": job.eval_hash,
+        },
+        "annotations": {
             "redun.insitro.com/project": "",
             "redun.insitro.com/task_name": "task1",
         },
@@ -463,6 +465,8 @@ def test_executor(
             "redun.insitro.com/execution_id": "",
             "redun.insitro.com/job_id": job2.id,
             "redun.insitro.com/job_hash": job2.eval_hash,
+        },
+        "annotations": {
             "redun.insitro.com/project": "",
             "redun.insitro.com/task_name": "task1",
         },

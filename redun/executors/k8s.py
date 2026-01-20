@@ -857,15 +857,20 @@ class K8SExecutor(Executor):
                 if execution and execution.job and execution.job.task
                 else ""
             )
+            # Labels must be <= 63 characters, so only include short values
             default_labels = {
                 "redun.insitro.com/job_id": job.id,
                 "redun.insitro.com/job_hash": job.eval_hash,
-                "redun.insitro.com/task_name": job.task.fullname,
                 "redun.insitro.com/execution_id": execution.id if execution else "",
+            }
+            # Annotations have no length limit, so put potentially long values here
+            default_annotations = {
+                "redun.insitro.com/task_name": job.task.fullname,
                 "redun.insitro.com/project": project,
             }
         else:
             default_labels = {}
+            default_annotations = {}
 
         # Merge k8s_labels if needed.
         k8s_labels = {
@@ -875,6 +880,15 @@ class K8SExecutor(Executor):
         }
         if k8s_labels:
             task_options["k8s_labels"] = k8s_labels
+
+        # Merge annotations if needed.
+        annotations = {
+            **self.default_task_options.get("annotations", {}),
+            **default_annotations,
+            **job_options.get("annotations", {}),
+        }
+        if annotations:
+            task_options["annotations"] = annotations
 
         # Merge env if needed.
         config_env = self.default_task_options.get("env", {})
