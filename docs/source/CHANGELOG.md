@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.39.0
+January 21, 2026
+
+* `#468` - [COMP-3416] Add executor name as default K8S label
+* `#467` - [COMP-3415] fix(k8s): move task_name and project to annotations
+* `#466` - Register release workflow
+
 ## 0.38.0
 January 16, 2026
 
