@@ -1,12 +1,231 @@
-# Placeholder workflow to register the release workflow on the default branch.
-# GitHub Actions requires a workflow file to exist on the default branch
-# before it can be triggered on any branch. The actual implementation
-# is maintained in a separate branch.
 name: Release
 on:
+  push:
+    tags:
+      # Glob pattern (not regex): matches tags starting with a digit
+      # (e.g., 0.38.0)
+      - '[0-9]*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to release (e.g., 0.38.0)'
+        required: true
+        type: string
+env:
+  # Use input tag for manual dispatch, otherwise use the pushed tag
+  RELEASE_VERSION: ${{ inputs.tag || github.ref_name }}
 jobs:
-  noop:
+  validate:
+    name: Validate Release
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - run: 'true'
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - name: Get uv version
+        id: uv-version
+        run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ steps.uv-version.outputs.version }}
+          python-version: '3.11'
+          enable-cache: true
+      - name: Validate tag matches pyproject.toml version
+        run: |
+          PYPROJECT_VERSION=$(uv version --short)
+          if [ "${{ env.RELEASE_VERSION }}" != "$PYPROJECT_VERSION" ]; then
+            echo "::error::act=validate status=failed reason=version_mismatch tag=${{ env.RELEASE_VERSION }} pyproject=${PYPROJECT_VERSION}"
+            exit 1
+          fi
+          echo "act=validate status=ok check=version version=${{ env.RELEASE_VERSION }}"
+      - name: Validate changelog entry exists
+        run: |
+          if ! grep -q "## ${{ env.RELEASE_VERSION }}" docs/source/CHANGELOG.md; then
+            echo "::error::act=validate status=failed reason=changelog_missing version=${{ env.RELEASE_VERSION }} file=docs/source/CHANGELOG.md"
+            exit 1
+          fi
+          echo "act=validate status=ok check=changelog version=${{ env.RELEASE_VERSION }}"
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - name: Get uv version
+        id: uv-version
+        run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
+      - name: Install system dependencies
+        run: sudo apt-get install -y graphviz graphviz-dev
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ steps.uv-version.outputs.version }}
+          python-version: '3.11'
+          enable-cache: true
+      - name: Build package
+        run: uv build
+      - name: List build artifacts
+        run: ls -la dist/
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - name: Get uv version
+        id: uv-version
+        run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
+      - name: Install system dependencies
+        run: sudo apt-get install -y graphviz graphviz-dev
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ steps.uv-version.outputs.version }}
+          enable-cache: true
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist/
+      - name: Smoke test (wheel)
+        run: |
+          cd examples/01_hello_world
+          OUTPUT=$(uv run --python 3.11 --with ../../dist/*.whl -- redun run hello_world.py main 2>&1)
+          echo "$OUTPUT"
+          if ! echo "$OUTPUT" | grep -q "Hello, World!"; then
+            echo "::error::act=smoke_test status=failed package=wheel expected=Hello, World!"
+            exit 1
+          fi
+          echo "act=smoke_test status=ok package=wheel"
+        env:
+          REDUN_CONFIG_DIR: ${{ runner.temp }}/.redun
+      - name: Smoke test (source distribution)
+        run: |
+          cd examples/01_hello_world
+          OUTPUT=$(uv run --python 3.11 --with ../../dist/*.tar.gz -- redun run hello_world.py main 2>&1)
+          echo "$OUTPUT"
+          if ! echo "$OUTPUT" | grep -q "Hello, World!"; then
+            echo "::error::act=smoke_test status=failed package=sdist expected=Hello, World!"
+            exit 1
+          fi
+          echo "act=smoke_test status=ok package=sdist"
+        env:
+          REDUN_CONFIG_DIR: ${{ runner.temp }}/.redun
+  build-docs:
+    name: Build Documentation
+    runs-on: ubuntu-22.04
+    needs: validate
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - name: Get uv version
+        id: uv-version
+        run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ steps.uv-version.outputs.version }}
+          python-version: '3.11'
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked --group dev
+      - name: Build sphinx documentation
+        run: |
+          cd docs
+          uv run make api html
+      - name: Upload docs artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: docs
+          path: docs/build/html/
+          retention-days: 7
+  publish-packages:
+    name: Publish Packages
+    runs-on:
+      - codebuild-github-actions-runner-prod-${{github.run_id}}-${{github.run_attempt}}
+      # Leave as true.
+      - buildspec-override:true
+    needs: [validate, build, smoke-test]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - name: Get uv version
+        id: uv-version
+        run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ steps.uv-version.outputs.version }}
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist/
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: 'redun-private-github-codebuild-runner'
+          aws-region: us-west-2
+      - name: Publish to CodeArtifact
+        run: |
+          DOMAIN=insitro
+          ENDPOINT=$(aws codeartifact get-repository-endpoint \
+            --domain $DOMAIN \
+            --repository production \
+            --format pypi \
+            --query repositoryEndpoint \
+            --output text)
+          TOKEN=$(aws codeartifact get-authorization-token \
+            --domain $DOMAIN \
+            --query authorizationToken \
+            --output text)
+          uv publish \
+            --publish-url "${ENDPOINT}" \
+            --username aws \
+            --password "${TOKEN}"
+      - name: Publish to S3
+        run: aws s3 cp dist/redun-${{ env.RELEASE_VERSION }}.tar.gz s3://insitro-binaries/pypi/
+  publish-docs-s3:
+    name: Publish Docs to S3
+    runs-on:
+      - codebuild-github-actions-runner-prod-${{github.run_id}}-${{github.run_attempt}}
+      # Leave as true.
+      - buildspec-override:true
+    needs: [validate, build-docs, smoke-test]
+    timeout-minutes: 5
+    steps:
+      - name: Download docs artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: docs
+          path: docs/build/html/
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: 'redun-private-github-codebuild-runner'
+          aws-region: us-west-2
+      - name: Publish docs to S3
+        run: aws s3 sync docs/build/html/ s3://insitro-docs/internal/redun/
