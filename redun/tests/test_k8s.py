@@ -431,6 +431,7 @@ def test_executor(
         "annotations": {
             "redun.insitro.com/project": "",
             "redun.insitro.com/task_name": "task1",
+            "redun.insitro.com/executor": "k8s",
         },
     }
 
@@ -469,6 +470,7 @@ def test_executor(
         "annotations": {
             "redun.insitro.com/project": "",
             "redun.insitro.com/task_name": "task1",
+            "redun.insitro.com/executor": "k8s",
         },
     }
 

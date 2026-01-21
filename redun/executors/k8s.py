@@ -867,6 +867,7 @@ class K8SExecutor(Executor):
             default_annotations = {
                 "redun.insitro.com/task_name": job.task.fullname,
                 "redun.insitro.com/project": project,
+                "redun.insitro.com/executor": self.name,
             }
         else:
             default_labels = {}
