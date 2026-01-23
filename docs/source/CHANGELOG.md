@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.40.0
+January 23, 2026
+
+* `#472` - fix(k8s): move executor to labels and add executor_type for consistency
+* `#471` - ci(release): implement full release workflow
+
 ## 0.39.0
 January 21, 2026
 
