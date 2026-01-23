@@ -406,6 +406,7 @@ class K8SExecutor(Executor):
         self.image = config["image"]
         self.namespace = config.get("namespace", "default")
         self.scratch_prefix = config["scratch"]
+        self.executor_type = config["type"]
 
         # Optional config.
         self.code_package = parse_code_package_config(config)
@@ -862,12 +863,13 @@ class K8SExecutor(Executor):
                 "redun.insitro.com/job_id": job.id,
                 "redun.insitro.com/job_hash": job.eval_hash,
                 "redun.insitro.com/execution_id": execution.id if execution else "",
+                "redun.insitro.com/executor_name": self.name,
+                "redun.insitro.com/executor_type": self.executor_type,
             }
             # Annotations have no length limit, so put potentially long values here
             default_annotations = {
                 "redun.insitro.com/task_name": job.task.fullname,
                 "redun.insitro.com/project": project,
-                "redun.insitro.com/executor": self.name,
             }
         else:
             default_labels = {}

@@ -82,7 +82,8 @@ def mock_executor(scheduler: Scheduler, code_package: bool = False) -> K8SExecut
     # Setup executor.
     config = Config(
         {
-            "k8s": {
+            "k8s_test_name": {
+                "type": "k8s",
                 "image": image,
                 "scratch": scratch_prefix,
                 "job_monitor_interval": 0.05,
@@ -91,7 +92,7 @@ def mock_executor(scheduler: Scheduler, code_package: bool = False) -> K8SExecut
             },
         },
     )
-    executor = K8SExecutor("k8s", scheduler, config["k8s"])
+    executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
 
     executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
@@ -128,7 +129,8 @@ def test_executor_config(scheduler: Scheduler) -> None:
     )
     config = Config(
         {
-            "k8s": {
+            "k8s_test_name": {
+                "type": "k8s",
                 "image": "image",
                 "scratch": "scratch_prefix",
                 "code_includes": "*.txt",
@@ -137,7 +139,7 @@ def test_executor_config(scheduler: Scheduler) -> None:
             },
         },
     )
-    executor = K8SExecutor("k8s", scheduler, config["k8s"])
+    executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
 
     assert executor.image == "image"
     assert executor.scratch_prefix == "scratch_prefix"
@@ -427,11 +429,12 @@ def test_executor(
             "redun.insitro.com/execution_id": "",
             "redun.insitro.com/job_id": job.id,
             "redun.insitro.com/job_hash": job.eval_hash,
+            "redun.insitro.com/executor_name": "k8s_test_name",
+            "redun.insitro.com/executor_type": "k8s",
         },
         "annotations": {
             "redun.insitro.com/project": "",
             "redun.insitro.com/task_name": "task1",
-            "redun.insitro.com/executor": "k8s",
         },
     }
 
@@ -466,11 +469,12 @@ def test_executor(
             "redun.insitro.com/execution_id": "",
             "redun.insitro.com/job_id": job2.id,
             "redun.insitro.com/job_hash": job2.eval_hash,
+            "redun.insitro.com/executor_name": "k8s_test_name",
+            "redun.insitro.com/executor_type": "k8s",
         },
         "annotations": {
             "redun.insitro.com/project": "",
             "redun.insitro.com/task_name": "task1",
-            "redun.insitro.com/executor": "k8s",
         },
     }
 
@@ -814,7 +818,8 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
     # Setup executor.
     config = Config(
         {
-            "k8s": {
+            "k8s_test_name": {
+                "type": "k8s",
                 "image": "image",
                 "scratch": "scratch_prefix",
                 "code_includes": "*.txt",
@@ -824,7 +829,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
     )
     scheduler = mock_scheduler()
 
-    executor = K8SExecutor("k8s", scheduler, config["k8s"])
+    executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
     executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
@@ -1130,7 +1135,8 @@ def test_executor_node_affinity_override(
 
     config = Config(
         {
-            "k8s": {
+            "k8s_test_name": {
+                "type": "k8s",
                 "image": "my-image",
                 "scratch": "s3://example-bucket/redun/",
                 "job_monitor_interval": 0.05,
@@ -1141,7 +1147,7 @@ def test_executor_node_affinity_override(
     )
 
     scheduler = mock_scheduler()
-    executor = K8SExecutor("k8s", scheduler, config["k8s"])
+    executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
     executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
@@ -1196,14 +1202,15 @@ def test_executor_config_env(scheduler: Scheduler) -> None:
     env_json = json.dumps({"DEBUG": "true", "API_URL": "http://api.example.com"})
     config = Config(
         {
-            "k8s": {
+            "k8s_test_name": {
+                "type": "k8s",
                 "image": "image",
                 "scratch": "scratch_prefix",
                 "env": env_json,
             },
         },
     )
-    executor = K8SExecutor("k8s", scheduler, config["k8s"])
+    executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
 
     assert "env" in executor.default_task_options
     assert executor.default_task_options["env"] == {
@@ -1305,7 +1312,8 @@ def test_executor_env_merge(
 
     config = Config(
         {
-            "k8s": {
+            "k8s_test_name": {
+                "type": "k8s",
                 "image": "my-image",
                 "scratch": "s3://example-bucket/redun/",
                 "job_monitor_interval": 0.05,
@@ -1316,7 +1324,7 @@ def test_executor_env_merge(
     )
 
     scheduler = mock_scheduler()
-    executor = K8SExecutor("k8s", scheduler, config["k8s"])
+    executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
     executor.get_jobs = Mock()  # type: ignore
     executor.get_jobs.return_value = []
 
