@@ -1,6 +1,6 @@
-from importlib import metadata
 from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar
 
+from redun._version import __version__
 from redun.file import Dir, File, ShardedS3Dataset
 from redun.handle import Handle
 from redun.namespace import get_current_namespace, namespace
@@ -19,7 +19,7 @@ from redun.task import PartialTask, Task, get_task_registry, task
 from redun.context import get_context
 from redun.executors.base import register_executor
 
-version = metadata.version("redun")
+version = __version__
 
 
 if TYPE_CHECKING:
@@ -79,7 +79,6 @@ def run(
     return scheduler.run(expr, **run_config)
 
 
-__version__ = version
 __all__ = [
     "Dir",
     "File",
@@ -102,4 +101,5 @@ __all__ = [
     "task",
     "throw",
     "version",
+    "__version__",
 ]
