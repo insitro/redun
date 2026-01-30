@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.41.0
+January 30, 2026
+
+* `#474` - Hardcode version and test to avoid drift
+
 ## 0.40.0
 January 23, 2026
 
