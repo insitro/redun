@@ -34,6 +34,10 @@ extras = {
     "glue": ["pandas", "pyarrow", "pyspark"],
     "k8s": "kubernetes>=22.6",
     "viz": "pygraphviz",
+    "server": [
+        "fastapi>=0.109",
+        "uvicorn>=0.27",
+    ],
     "google-batch": [
         "gcsfs>=2021.4.0",
         "google-cloud-batch>=0.2.0",

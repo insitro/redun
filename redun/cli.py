@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from itertools import chain, islice
 from pprint import pprint
 from shlex import quote
-from socket import gethostname, socket
+from socket import socket
 from textwrap import dedent
 from types import ModuleType
 from typing import (
@@ -37,7 +37,6 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import ParseResult, urlparse
 
 import botocore
 import sqlalchemy as sa
@@ -107,7 +106,6 @@ from redun.scheduler import (
 )
 from redun.scheduler_config import (
     DEFAULT_DB_URI,
-    DEFAULT_POSTGRESQL_PORT,
     DEFAULT_REDUN_INI,
     DEFAULT_REPO_NAME,
     REDUN_CONFIG_DIR,
@@ -1438,8 +1436,18 @@ class RedunClient:
         # Server command.
         server_parser = subparsers.add_parser(
             "server",
-            help="Run the redun local web server UI. "
-            "This command must be run from the base of the redun repository.",
+            help="Run the redun local web server UI.",
+        )
+        server_parser.add_argument("--host", default="127.0.0.1", help="Host interface to bind.")
+        server_parser.add_argument("--port", default=8080, type=int, help="Port to bind.")
+        server_parser.add_argument(
+            "--reload", action="store_true", help="Enable auto-reload for development."
+        )
+        server_parser.add_argument(
+            "--poll-interval",
+            default=3,
+            type=int,
+            help="UI polling interval in seconds.",
         )
         server_parser.set_defaults(func=self.server_command)
 
@@ -3172,72 +3180,44 @@ class RedunClient:
         """
         Run redun local web server UI.
         """
-        logger.info(
-            "Attempting to start the redun server application, with the assumption that "
-            "the `redun server` command was run from the root of the redun repository"
-        )
-        config: Config = setup_config(args.config, repo=args.repo)
-        compose_env: Dict[str, Any] = {
-            **os.environ,
-            **{"REDUN_SERVER_DEV": 0, "TARGET": "prod-image"},
-        }
-        parsed_db_uri: ParseResult = urlparse(config["backend"]["db_uri"])
-        if config["backend"].get("db_aws_secret_name"):
-            # RedunBackendDB will handle fetching the AWS secret and establishing a connection
-            # the configured database. Pass the secret name to the container via an environment
-            # variable.
-            compose_env.update(
-                {"REDUN_DB_AWS_SECRET_NAME": config["backend"]["db_aws_secret_name"]}
-            )
-            compose_profile = "postgres_remote"
-        elif parsed_db_uri.scheme == "postgresql":
-            if parsed_db_uri.hostname == "localhost":
-                db_port: int = parsed_db_uri.port or DEFAULT_POSTGRESQL_PORT
-                # `localhost` for the containerized application is different from that for the
-                # host machine. Provide the application with the hostname of the host, so it can
-                # connect to the database instance serving there.
-                parsed_db_uri = parsed_db_uri._replace(netloc=f"{gethostname()}:{db_port}")
-                if is_port_in_use("localhost", db_port):
-                    # If there is a local database instance already running, only the application
-                    # needs to be spun up. Set the Compose profile to `postgres_remote` to convey
-                    # that the DB is independently (ie. not through this Compose file) managed
-                    logger.info(
-                        "Detected service already running on localhost:{db_port}, as configured "
-                        "in the DB URI. Starting the application."
-                    )
-                    compose_profile = "postgres_remote"
-                else:
-                    logger.info(
-                        "Did not detect a running service at the location configured in the DB "
-                        f"URI (localhost:{db_port}). Starting the application and PostgreSQL "
-                        f"database service through Compose"
-                    )
-                    # The `postgres_local` Compose profile will spin up an instance of the DB
-                    compose_profile = "postgres_local"
-                    # Set env var used to bind DB service instance port to the host
-                    compose_env.update({"POSTGRESQL_PORT": db_port})
-            else:
-                compose_profile = "postgres_remote"
-            compose_env.update({"REDUN_DB_URI": parsed_db_uri.geturl()})
-        elif parsed_db_uri.scheme == "sqlite":
-            compose_profile = "sqlite"
-            if "s3://" in parsed_db_uri.path:
-                raise RedunClientError(
-                    "SQLite files in S3 aren't currently a supported backend for redun server. "
-                    "Please consider importing its records to a local SQLite database and "
-                    "retrying."
-                )
-            if ":memory:" not in parsed_db_uri.path:
-                # Make the SQLite DB accessible to the container by mounting its parent directory
-                # as a volume, and pointing the application to it
-                sqlite_db_filepath: str = parsed_db_uri.path[1:]
-                compose_env.update({"SQLITE_DB_FILE": sqlite_db_filepath})
-        else:
+        try:
+            import uvicorn
+        except ModuleNotFoundError as error:
             raise RedunClientError(
-                f"redun server supports SQLite and PostgreSQL backends. Found {config['backend']}"
-            )
-        subprocess.run(
-            f"docker-compose -f redun_server/docker-compose.yml --profile={compose_profile} up",
-            env={k: str(v) for (k, v) in compose_env.items() if v is not None},
-            shell=True,
+                "redun server requires optional dependencies. Install with "
+                "`pip install 'redun[server]'`."
+            ) from error
+
+        try:
+            from redun.server import create_app
+        except ModuleNotFoundError as error:
+            raise RedunClientError(
+                "redun server requires optional dependencies. Install with "
+                "`pip install 'redun[server]'`."
+            ) from error
+
+        logger.info(
+            f"Starting redun server on http://{args.host}:{args.port} "
+            f"(repo={args.repo}, config={args.config or 'default'})"
         )
+        if args.reload:
+            os.environ["REDUN_SERVER_REPO"] = args.repo
+            os.environ["REDUN_SERVER_POLL_INTERVAL"] = str(max(1, args.poll_interval))
+            if args.config:
+                os.environ["REDUN_SERVER_CONFIG"] = args.config
+            else:
+                os.environ.pop("REDUN_SERVER_CONFIG", None)
+            uvicorn.run(
+                "redun.server.app:create_app_from_env",
+                host=args.host,
+                port=args.port,
+                reload=True,
+                factory=True,
+            )
+        else:
+            app = create_app(
+                config_dir=args.config,
+                repo=args.repo,
+                poll_interval_seconds=max(1, args.poll_interval),
+            )
+            uvicorn.run(app, host=args.host, port=args.port, reload=False)

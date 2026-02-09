@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>redun Server</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div>
+          <h1>redun Server</h1>
+          <p>Dispatch workflow runs and inspect execution state.</p>
+        </div>
+        <div class="badges">
+          <span id="healthBadge" class="badge">Connecting</span>
+          <span id="pollBadge" class="badge">Poll: --</span>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="card">
+          <h2>Dispatch Run</h2>
+          <form id="runForm" class="stack">
+            <label>
+              Script
+              <input id="scriptInput" type="text" placeholder="workflow.py" required />
+            </label>
+            <label>
+              Task
+              <input id="taskInput" type="text" placeholder="main" required />
+            </label>
+            <label>
+              CLI Args
+              <input id="argvInput" type="text" placeholder="--foo 10 --bar x" />
+            </label>
+            <label>
+              Config Dir
+              <input id="configInput" type="text" placeholder=".redun/" />
+            </label>
+            <label>
+              Working Dir
+              <input id="cwdInput" type="text" placeholder="." />
+            </label>
+            <button type="submit">Dispatch</button>
+          </form>
+          <p id="runError" class="error"></p>
+        </section>
+
+        <section class="card wide">
+          <div class="section-header">
+            <h2>Executions</h2>
+            <button id="refreshExecutionsButton" type="button">Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Status</th>
+                  <th>Task</th>
+                  <th>Started</th>
+                  <th>Duration (s)</th>
+                </tr>
+              </thead>
+              <tbody id="executionsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-header">
+            <h2>Runs</h2>
+            <button id="refreshRunsButton" type="button">Refresh</button>
+          </div>
+          <div class="table-wrap short">
+            <table>
+              <thead>
+                <tr>
+                  <th>Run ID</th>
+                  <th>Status</th>
+                  <th>Execution</th>
+                </tr>
+              </thead>
+              <tbody id="runsBody"></tbody>
+            </table>
+          </div>
+          <h3>Run Logs</h3>
+          <pre id="runLogs" class="logs"></pre>
+        </section>
+
+        <section class="card wide">
+          <div class="section-header">
+            <h2 id="jobsTitle">Jobs</h2>
+            <button id="refreshJobsButton" type="button">Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Status</th>
+                  <th>Task</th>
+                  <th>Depth</th>
+                  <th>Duration (s)</th>
+                </tr>
+              </thead>
+              <tbody id="jobsBody"></tbody>
+            </table>
+          </div>
+          <h3>Job Details</h3>
+          <pre id="jobDetails" class="logs"></pre>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

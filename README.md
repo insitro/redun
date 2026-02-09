@@ -315,6 +315,32 @@ All workflow executions are recorded into a database that can be explored using 
 
 <a href="docs/source/_static/console-execution.svg"><img width="45%" src="docs/source/_static/console-execution.svg"> <a href="docs/source/_static/console-job.svg"><img width="45%" src="docs/source/_static/console-job.svg">
 
+### Web UI (experimental)
+
+redun also provides an experimental local web UI for dispatching runs and exploring executions/jobs.
+
+Install server dependencies:
+
+```sh
+pip install "redun[server]"
+```
+
+Run the server:
+
+```sh
+redun server --host 127.0.0.1 --port 8080
+```
+
+By default this serves:
+
+- `GET /api/executions`
+- `GET /api/executions/{id}`
+- `GET /api/executions/{id}/jobs`
+- `GET /api/jobs/{id}`
+- `POST /api/runs`
+- `GET /api/runs`
+- `GET /api/runs/{id}/logs`
+
 ## Mixed compute backends
 
 In the above example, each task ran in its own thread. However, more generally each task can run in its own process, Docker container, [AWS Batch job](examples/05_aws_batch), or [Spark job](examples/aws_glue). With [minimal configuration](examples/05_aws_batch/.redun/redun.ini), users can lightly annotate where they would like each task to run. redun will automatically handle the data and code movement as well as backend scheduling:
