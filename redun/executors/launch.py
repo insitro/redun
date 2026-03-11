@@ -53,6 +53,7 @@ def launch_script(
         assert executor_name is not None, "Must provide an executor by object or by name."
         executor = get_executor_from_config(config.get("executors", {}), executor_name)
 
+    executor_name = executor.name
     scheduler = Scheduler()
     execution = Execution(id=execution_id)
     executor.set_scheduler(scheduler)
