@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.42.0
+March 13, 2026
+
+* `#476` - [bugfix] [SWIM-1588] Use jobs objects in k8s executor monitoring, not pods.
+* `#477` - Fix federated logging error
+
 ## 0.41.0
 January 30, 2026
 
