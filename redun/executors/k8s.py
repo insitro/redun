@@ -7,12 +7,14 @@ import time
 import uuid
 from collections import OrderedDict, defaultdict
 from collections.abc import Iterator
+from datetime import datetime, timezone
 from typing import (
     Any,
     Callable,
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     TypeVar,
     Union,
@@ -283,6 +285,21 @@ def k8s_list_jobs(k8s_client: k8s_utils.K8SClient) -> Iterator[V1Job]:
             _continue=_continue,
         ),
     )
+
+
+def _parse_completed_indexes(completed_indexes_str: Optional[str]) -> Set[int]:
+    """Parse K8s Job status.completedIndexes string (e.g. '0,1,2-5') into a set of ints."""
+    if not completed_indexes_str:
+        return set()
+    result: Set[int] = set()
+    for part in completed_indexes_str.split(","):
+        part = part.strip()
+        if "-" in part:
+            start, end = part.split("-", 1)
+            result.update(range(int(start), int(end) + 1))
+        else:
+            result.add(int(part))
+    return result
 
 
 def k8s_describe_jobs(
@@ -641,61 +658,64 @@ class K8SExecutor(Executor):
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
 
-    def _process_pod_status(self, pod: V1Pod) -> Tuple[Optional[str], Optional[str]]:
+    def _get_k8s_job_terminal_status(self, job: V1Job) -> Tuple[Optional[str], Optional[str]]:
         """
-        Determine if there was a failure at the pod-level.
+        Determine terminal status from the K8s Job object's status fields.
+        Returns (job_status, status_reason) or (None, None) if not yet terminal.
 
-        Returns (job_status, status_reason)
+        For singleton jobs (parallelism == 1), ``succeeded > 0`` means the one
+        job finished.  For array jobs (parallelism > 1), the counters are
+        running totals across all indices, so we must check conditions instead:
+
+        Singleton:
+            succeeded > 0           → SUCCEEDED
+            conditions type=Failed  → FAILED  (e.g. deadline exceeded, backoff limit)
+            failed > 0              → FAILED
+
+        Array (parallelism > 1):
+            conditions type=Complete → SUCCEEDED (all completions done)
+            conditions type=Failed   → FAILED   (backoff limit / deadline)
+            otherwise                → still running
+
+        In the array case, ``job.status.completed_indexes`` tells us which
+        specific indices succeeded, and is used by the caller to resolve
+        individual redun jobs.
         """
+        is_array = job.spec.parallelism is not None and job.spec.parallelism > 1
 
-        # Get container states for most recent pod.
-        # TODO: check sorting.
-        if not pod.status.container_statuses:
-            # No container yet, so do nothing.
+        if is_array:
+            # For array jobs, only job-level conditions indicate a true terminal state.
+            # succeeded/failed are running counters and do NOT mean the Job is done.
+            if job.status.conditions is not None:
+                for condition in job.status.conditions:
+                    if condition.type == "Complete" and condition.status == "True":
+                        return SUCCEEDED, None
+                    if condition.type == "Failed" and condition.status == "True":
+                        status_reason = condition.message or "Job failed."
+                        return FAILED, f"Error: {status_reason}"
             return None, None
-        state = pod.status.container_statuses[0].state
 
-        # Detect-specific pod-level errors that aren't caught at the job-level.
-        ERROR_STATES = {"ErrImagePull", "FailedScheduling"}
-        if state.waiting and state.waiting.reason in ERROR_STATES:
-            return FAILED, f"{state.waiting.reason}: {state.waiting.message}"
-
-        if state.terminated:
-            if state.terminated.exit_code == 0:
-                return SUCCEEDED, None
-            return FAILED, f"{state.terminated.reason}: {state.terminated.message}"
-
-        return None, None
-
-    def _process_single_k8s_job_status(self, job: V1Job) -> Tuple[Optional[str], Optional[str]]:
-        """
-        Determine status of a non-array k8s job.
-        """
+        # Singleton job.
         if job.status.succeeded is not None and job.status.succeeded > 0:
             return SUCCEEDED, None
 
+        # Check conditions first — covers both explicit failures and edge cases
+        # like deadline exceeded where failed counter may not be set.
+        if job.status.conditions:
+            for condition in job.status.conditions:
+                if condition.type == "Failed" and condition.status == "True":
+                    status_reason = condition.message or condition.reason or "Job failed."
+                    return FAILED, f"Error: {status_reason}"
+
         if job.status.failed is not None and job.status.failed > 0:
-            try:
-                status_reason = job.status.conditions[0].message
-            except (KeyError, IndexError, TypeError):
-                status_reason = "Job failed."
+            return FAILED, "Error: Job failed."
 
-            return FAILED, f"Error: {status_reason}"
-
-        if job.status.conditions is not None:
-            # Handle a special case where a job times out, but isn't counted
-            # as a 'failure' in job.status.failed.  In this case we want to
-            # reject the job early and skip reading logs from the pod
-            # because the pod was already cleaned up.
-            if job.status.conditions[0].type == "Failed":
-                return FAILED, "Failed: Timeout exceeded."
-            return None, None
         return None, None
 
     def _process_redun_job(
         self,
         job: Job,
-        pod: V1Pod,
+        pod: Optional[V1Pod],
         job_status: str,
         status_reason: Optional[str],
         k8s_labels: Optional[List[Tuple[str, str]]] = None,
@@ -729,23 +749,28 @@ class K8SExecutor(Executor):
 
         elif job_status == FAILED:
             error, error_traceback = parse_job_error(self.scratch_prefix, job)
-            logs = [f"*** Logs for K8S pod {pod.metadata.name}: \n"]
+            logs: List[str] = []
 
-            # TODO: Consider displaying events in the logs since this can have
-            # helpful info as well.
-            # core_api = k8s_utils.get_k8s_core_client()
-            # events = core_api.list_namespaced_event(
-            #     pod.metadata.namespace, field_selector=f"involvedObject.name={pod.metadata.name}"
-            # )
+            if pod:
+                logs.append(f"*** Logs for K8S pod {pod.metadata.name}: \n")
+
+                # TODO: Consider displaying events in the logs since this can have
+                # helpful info as well.
+                # core_api = k8s_utils.get_k8s_core_client()
+                # events = core_api.list_namespaced_event(
+                #     pod.metadata.namespace,
+                #     field_selector=f"involvedObject.name={pod.metadata.name}"
+                # )
+
+                try:
+                    logs.extend(parse_pod_logs(self._k8s_client, pod))
+                except Exception as e:
+                    logs.append(f"Failed to parse task logs for redun job {job.id}: {e}")
 
             # Job failed here, but without an exit code
             # Detect deadline exceeded here and raise exception.
             if status_reason:
                 logs.append(f"statusReason: {status_reason}\n")
-            try:
-                logs.extend(parse_pod_logs(self._k8s_client, pod))
-            except Exception as e:
-                logs.append(f"Failed to parse task logs for redun job {job.id}: {e}")
 
             error_traceback.logs = logs
             self._scheduler.reject_job(
@@ -761,33 +786,44 @@ class K8SExecutor(Executor):
     def _process_k8s_job_status(self, job: kubernetes.client.V1Job) -> None:  # type: ignore[possibly-missing-attribute]
         """
         Process K8S job statuses.
+
+        Notes:
+        ------
+        The logic of this function branches on the concept of singleton vs arrayed k8s jobs.
+        Singleton jobs have a 1:1 relationship with redun jobs, array jobs have a 1:many
+        relationship. Status reporting for k8s jobs means different things depending upon
+        whether it is singleton (parallelism == 1) or array (parallelism > 1). See
+        _get_k8s_job_terminal_status for more.
         """
+        job_status, status_reason = self._get_k8s_job_terminal_status(job)
+        if not job_status:
+            # Job not yet terminal. Check again next polling cycle.
+            return
+
+        # Job has reached a terminal state. Fetch pods for log retrieval only.
+        # Sort by creation_timestamp descending so the most recent pod (with the
+        # most relevant logs) comes first for singleton jobs.
+        pods = sorted(
+            get_k8s_job_pods(self._k8s_client.core, job.metadata.name),
+            key=lambda p: p.metadata.creation_timestamp
+            or datetime.min.replace(tzinfo=timezone.utc),
+            reverse=True,
+        )
+
         if job.spec.parallelism is None or job.spec.parallelism == 1:
-            # Check status of single k8s job.
-            pods = list(get_k8s_job_pods(self._k8s_client.core, job.metadata.name))
-
-            if not pods:
-                # No pods yet, do nothing.
-                return
-
-            # Use most recent pod. TODO: double check sorting.
-            pod = pods[0]
-
-            job_status, status_reason = self._process_single_k8s_job_status(job)
-            if not job_status:
-                # If job does not have status, fallback to pod.
-                job_status, status_reason = self._process_pod_status(pod)
-                if not job_status:
-                    # Job is still running.
-                    return
-
-            # Determine redun Job and job_labels.
+            # Singleton jobs can be processed directly since they have a 1:1 relationship with
+            # redun jobs.
             redun_job: Job = cast("Job", self.pending_k8s_jobs.pop(job.metadata.name))
-
             k8s_labels = [("k8s_job", job.metadata.uid)]
-            self._process_redun_job(redun_job, pod, job_status, status_reason, k8s_labels)
 
-            # Clean up k8s job immediately.
+            self._process_redun_job(
+                redun_job,
+                pods[0] if pods else None,
+                job_status,
+                status_reason,
+                k8s_labels,
+            )
+
             try:
                 k8s_utils.delete_job(self._k8s_client, job.metadata.name, self.namespace)
             except kubernetes.client.exceptions.ApiException as e:  # type: ignore[possibly-missing-attribute]
@@ -796,43 +832,74 @@ class K8SExecutor(Executor):
                     level=logging.WARNING,
                 )
         else:
-            # Check status of array k8s job.
-            k8s_pods = get_k8s_job_pods(self._k8s_client.core, job.metadata.name)
+            # Otherwise, job represents a redun job array, and termination requires management
+            # both of the indexing in the job array, as well as processing the k8s job.
             redun_jobs = cast("Dict[int, Job]", self.pending_k8s_jobs[job.metadata.name])
 
-            for pod in k8s_pods:
-                job_status, status_reason = self._process_pod_status(pod)
-                if not job_status:
-                    # Job is still running.
-                    return
+            # Build a pod index map for log retrieval.
+            pods_by_index: Dict[int, V1Pod] = {}
+            for p in pods:
+                annotations = p.metadata.annotations or {}
+                idx_str = annotations.get("batch.kubernetes.io/job-completion-index")
+                if idx_str is not None:
+                    pods_by_index[int(idx_str)] = p
 
-                if "batch.kubernetes.io/job-completion-index" not in pod.metadata.annotations:
-                    self.log(
-                        f"Pod {pod.metadata.name} is missing job-completion-index: ",
-                        pod.metadata.annotations,
-                    )
-                    continue
-
-                index = int(pod.metadata.annotations["batch.kubernetes.io/job-completion-index"])
-                redun_job2: Optional[Job] = redun_jobs.pop(index, None)
+            # Resolve completed indices from the Job object's completed_indexes field.
+            completed_indexes_from_this_job = _parse_completed_indexes(
+                job.status.completed_indexes
+            )
+            for index in list(completed_indexes_from_this_job):
+                redun_job2 = redun_jobs.pop(index, None)
                 if redun_job2:
                     k8s_labels = [("k8s_job", job.metadata.uid)]
-                    self._process_redun_job(redun_job2, pod, job_status, status_reason, k8s_labels)
+                    self._process_redun_job(
+                        redun_job2,
+                        pods_by_index.get(index),
+                        SUCCEEDED,
+                        None,
+                        k8s_labels,
+                    )
 
-                # When the last pod finishes, clean up the k8s job.
-                if len(redun_jobs) == 0:
-                    try:
-                        k8s_utils.delete_job(
-                            self._k8s_client,
-                            job.metadata.name,
-                            job.metadata.namespace,
-                        )
-                    except kubernetes.client.exceptions.ApiException as e:  # type: ignore[possibly-missing-attribute]
-                        self.log(
-                            f"Failed to delete k8s job {job.metadata.name}: {e}",
-                            level=logging.WARNING,
-                        )
-                    del self.pending_k8s_jobs[job.metadata.name]
+            # Resolve any remaining indices not covered by completed_indexes.
+            if redun_jobs:
+                if job_status == SUCCEEDED:
+                    self.log(
+                        f"K8s job {job.metadata.name} reports SUCCEEDED but indices "
+                        f"{list(redun_jobs.keys())} were not in completed_indexes. "
+                        f"Resolving via scratch output.",
+                        level=logging.WARNING,
+                    )
+                for index in list(redun_jobs.keys()):
+                    redun_job2 = redun_jobs.pop(index)
+                    k8s_labels = [("k8s_job", job.metadata.uid)]
+                    if job_status == SUCCEEDED:
+                        # Treat as SUCCEEDED here; _process_redun_job will
+                        # attempt to read scratch output and reject with
+                        # FileNotFoundError if the result file is missing.
+                        orphan_status = SUCCEEDED
+                        orphan_reason = None
+                    else:
+                        orphan_status = job_status
+                        orphan_reason = status_reason
+                    self._process_redun_job(
+                        redun_job2,
+                        pods_by_index.get(index),
+                        orphan_status,
+                        orphan_reason,
+                        k8s_labels,
+                    )
+            try:
+                k8s_utils.delete_job(
+                    self._k8s_client,
+                    job.metadata.name,
+                    self.namespace,
+                )
+            except kubernetes.client.exceptions.ApiException as e:  # type: ignore[possibly-missing-attribute]
+                self.log(
+                    f"Failed to delete k8s job {job.metadata.name}: {e}",
+                    level=logging.WARNING,
+                )
+            self.pending_k8s_jobs.pop(job.metadata.name, None)
 
     def _get_job_options(self, job: Job) -> dict:
         """

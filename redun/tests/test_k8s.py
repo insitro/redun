@@ -16,7 +16,10 @@ from redun.config import Config
 from redun.executors.code_packaging import create_tar, package_code
 from redun.executors.command import REDUN_REQUIRED_VERSION
 from redun.executors.k8s import (
+    FAILED,
+    SUCCEEDED,
     K8SExecutor,
+    _parse_completed_indexes,
     get_hash_from_job_name,
     get_k8s_job_name,
     submit_task,
@@ -1363,3 +1366,137 @@ def test_executor_env_merge(
     assert merged_env["OVERRIDE_VAR"] == "task_value"
 
     executor.stop()
+
+
+# ---------------------------------------------------------------------------
+# Tests for _parse_completed_indexes
+# ---------------------------------------------------------------------------
+
+
+def test_parse_completed_indexes_empty():
+    assert _parse_completed_indexes(None) == set()
+    assert _parse_completed_indexes("") == set()
+
+
+def test_parse_completed_indexes_single():
+    assert _parse_completed_indexes("0") == {0}
+    assert _parse_completed_indexes("5") == {5}
+
+
+def test_parse_completed_indexes_list():
+    assert _parse_completed_indexes("0,1,2") == {0, 1, 2}
+
+
+def test_parse_completed_indexes_range():
+    assert _parse_completed_indexes("0-5") == {0, 1, 2, 3, 4, 5}
+
+
+def test_parse_completed_indexes_mixed():
+    assert _parse_completed_indexes("0,2-4,7") == {0, 2, 3, 4, 7}
+
+
+@mock_s3
+def _make_executor():
+    scheduler = mock_scheduler()
+    return mock_executor(scheduler)
+
+
+# ---------------------------------------------------------------------------
+# Tests for _get_k8s_job_terminal_status
+# ---------------------------------------------------------------------------
+
+
+def _make_job(
+    parallelism=1,
+    completions=1,
+    succeeded=None,
+    failed=None,
+    conditions=None,
+):
+    """Helper to build a V1Job with the given status fields."""
+    job = create_job_object(name="test-job", uid="test-uid")
+    job.spec.parallelism = parallelism
+    job.spec.completions = completions
+    job.status = client.V1JobStatus(
+        succeeded=succeeded,
+        failed=failed,
+        conditions=conditions,
+    )
+    return job
+
+
+class TestGetK8sJobTerminalStatus:
+    @mock_k8s
+    def test_singleton_succeeded(self):
+        executor = _make_executor()
+        job = _make_job(succeeded=1)
+        status, reason = executor._get_k8s_job_terminal_status(job)
+        assert status == SUCCEEDED
+
+    @mock_k8s
+    def test_singleton_failed(self):
+        executor = _make_executor()
+        job = _make_job(failed=1)
+        status, reason = executor._get_k8s_job_terminal_status(job)
+        assert status == FAILED
+
+    @mock_k8s
+    def test_singleton_running(self):
+        executor = _make_executor()
+        job = _make_job()
+        status, reason = executor._get_k8s_job_terminal_status(job)
+        assert status is None
+
+    @mock_k8s
+    def test_singleton_timeout(self):
+        executor = _make_executor()
+        job = _make_job(
+            conditions=[client.V1JobCondition(type="Failed", status="True", message="timeout")]
+        )
+        status, reason = executor._get_k8s_job_terminal_status(job)
+        assert status == FAILED
+        assert reason == "Error: timeout"
+
+    @mock_k8s
+    def test_array_succeeded_counter_is_not_terminal(self):
+        """For array jobs, succeeded > 0 does NOT mean the job is done."""
+        executor = _make_executor()
+        job = _make_job(parallelism=6, completions=6, succeeded=3)
+        status, reason = executor._get_k8s_job_terminal_status(job)
+        assert status is None
+
+    @mock_k8s
+    def test_array_complete_condition(self):
+        executor = _make_executor()
+        job = _make_job(
+            parallelism=6,
+            completions=6,
+            succeeded=6,
+            conditions=[client.V1JobCondition(type="Complete", status="True")],
+        )
+        status, reason = executor._get_k8s_job_terminal_status(job)
+        assert status == SUCCEEDED
+
+    @mock_k8s
+    def test_array_failed_condition(self):
+        executor = _make_executor()
+        job = _make_job(
+            parallelism=6,
+            completions=6,
+            succeeded=4,
+            failed=2,
+            conditions=[
+                client.V1JobCondition(type="Failed", status="True", message="BackoffLimitExceeded")
+            ],
+        )
+        status, reason = executor._get_k8s_job_terminal_status(job)
+        assert status == FAILED
+        assert "BackoffLimitExceeded" in reason
+
+    @mock_k8s
+    def test_array_partially_complete_no_conditions(self):
+        """Array with some successes and some failures but no terminal condition yet."""
+        executor = _make_executor()
+        job = _make_job(parallelism=6, completions=6, succeeded=4, failed=1)
+        status, reason = executor._get_k8s_job_terminal_status(job)
+        assert status is None
