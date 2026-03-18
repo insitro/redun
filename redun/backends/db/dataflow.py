@@ -1024,7 +1024,7 @@ def iter_dataflow_sections(
     for kind, _, section2 in sections:
         if kind == DataflowSectionKind.CALL:
             # If there is path merging, then we will emit multiple sections.
-            for subsection in iter_subsections(section2):  # type: ignore[invalid-argument-type]
+            for subsection in iter_subsections(section2):  # ty: ignore[invalid-argument-type]
                 yield (kind, subsection)
         else:
             yield (kind, section2)

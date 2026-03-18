@@ -17,7 +17,7 @@ def square_task():
     """A trivial wrapper that is not defined in the same module as the test."""
 
     @wraps_task(wrapper_name="square_task")
-    def _square_task(inner_task: Task) -> Callable[[VarArg(Any), KwArg(Any)], Any]:  # type: ignore[invalid-type-form]
+    def _square_task(inner_task: Task) -> Callable[[VarArg(Any), KwArg(Any)], Any]:  # ty: ignore[invalid-type-form]
         def do_square(*args, **kwargs):
             return inner_task.func(*args, **kwargs) ** 2
 

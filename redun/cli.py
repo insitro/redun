@@ -862,8 +862,8 @@ def get_default_execution_tags(
             tags.append(("user_aws_arn", get_aws_user(aws_region)))
             tags.append(("user_aws", get_simple_aws_user(aws_region)))
         except (
-            botocore.exceptions.NoCredentialsError,  # type: ignore[possibly-missing-attribute]
-            botocore.exceptions.ClientError,  # type: ignore[possibly-missing-attribute]
+            botocore.exceptions.NoCredentialsError,  # ty: ignore[possibly-missing-attribute]
+            botocore.exceptions.ClientError,  # ty: ignore[possibly-missing-attribute]
             RuntimeError,
         ):
             pass
@@ -3019,12 +3019,12 @@ class RedunClient:
         src_backend = RedunBackendDb(config=src_config.get("backend"))
 
         dest_backend = self.get_scheduler(args).backend
-        if dest_backend.db_uri == src_backend.db_uri:  # type: ignore[unresolved-attribute]
+        if dest_backend.db_uri == src_backend.db_uri:  # ty: ignore[unresolved-attribute]
             raise RedunClientError(f"Cannot pull repo {args.push_repo} from itself")
         src_backend.load()
 
         root_ids = self.get_record_ids(extra_args) if extra_args else None
-        num_records = self._sync_records(src_backend, dest_backend, root_ids)  # type: ignore[invalid-argument-type]
+        num_records = self._sync_records(src_backend, dest_backend, root_ids)  # ty: ignore[invalid-argument-type]
         self.display(f"Pulled {num_records} new record(s) from repo '{args.pull_repo}'")
 
     def _sync_records(

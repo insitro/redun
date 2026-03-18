@@ -90,13 +90,13 @@ def test_race_condition_record_value() -> None:
         proper_commit(*args, **kwargs)
         raise IntegrityError("UniquenessViolated", "UniquenessViolated", "UniquenessViolated")
 
-    backend.session.commit = mock.MagicMock(side_effect=commit_but_raise_anyway)  # type: ignore[invalid-assignment]
+    backend.session.commit = mock.MagicMock(side_effect=commit_but_raise_anyway)  # ty: ignore[invalid-assignment]
     # record value should gracefully handle the IntegrityError and return the value_hash
     value_hash1 = backend.record_value("myvalue")
 
     assert backend.get_value(value_hash1) == ("myvalue", True)
 
-    backend.session.commit = mock.MagicMock(  # type: ignore[invalid-assignment]
+    backend.session.commit = mock.MagicMock(  # ty: ignore[invalid-assignment]
         side_effect=IntegrityError("OtherIssue", "OtherIssue", "OtherIssue")
     )
 
@@ -283,7 +283,7 @@ def test_db_migrate() -> None:
     version_row = (
         backend.session.query(RedunVersion).order_by(RedunVersion.timestamp.desc()).first()
     )
-    version_row.version = latest_version.major + 1  # type: ignore[invalid-assignment]
+    version_row.version = latest_version.major + 1  # ty: ignore[invalid-assignment]
     backend.session.add(version_row)
     backend.session.commit()
 

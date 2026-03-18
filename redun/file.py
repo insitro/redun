@@ -1299,12 +1299,12 @@ class File(Value):
 
             # Restore original close. This way double closing doesn't trigger
             # unnecessary hashing.
-            stream.close = original_close  # type: ignore[invalid-assignment]
+            stream.close = original_close  # ty: ignore[invalid-assignment]
 
         stream = self.filesystem.open(self.path, mode, encoding=encoding, **kwargs)
 
         original_close = stream.close
-        stream.close = close  # type: ignore[invalid-assignment]
+        stream.close = close  # ty: ignore[invalid-assignment]
 
         return stream
 
@@ -2127,7 +2127,7 @@ class ShardedS3Dataset(Value):
 
         import pandas
         import pyspark
-        from awsglue.dynamicframe import DynamicFrame  # type: ignore[unresolved-import]
+        from awsglue.dynamicframe import DynamicFrame  # ty: ignore[unresolved-import]
 
         # Set default write options.
         f_options: Dict[str, Any] = {}

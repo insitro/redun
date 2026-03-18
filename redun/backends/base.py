@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
 NULL = object()
 
 # Types.
-TagMap = MultiMap[str, Any]  # type: ignore[invalid-type-arguments]
+TagMap = MultiMap[str, Any]  # ty: ignore[invalid-type-arguments]
 KeyValue = Tuple[str, Any]
 
 

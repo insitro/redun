@@ -97,7 +97,7 @@ def mock_executor(scheduler: Scheduler, code_package: bool = False) -> K8SExecut
     )
     executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
 
-    executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
+    executor.get_jobs = Mock()  # ty: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")
@@ -833,7 +833,7 @@ def test_array_disabling(submit_single_mock: Mock, get_aws_user_mock: Mock) -> N
     scheduler = mock_scheduler()
 
     executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
-    executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
+    executor.get_jobs = Mock()  # ty: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
     # Submit one test job.
@@ -1151,7 +1151,7 @@ def test_executor_node_affinity_override(
 
     scheduler = mock_scheduler()
     executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
-    executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
+    executor.get_jobs = Mock()  # ty: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")
@@ -1328,7 +1328,7 @@ def test_executor_env_merge(
 
     scheduler = mock_scheduler()
     executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
-    executor.get_jobs = Mock()  # type: ignore
+    executor.get_jobs = Mock()  # ty: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")

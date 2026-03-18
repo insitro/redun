@@ -240,9 +240,9 @@ class LocalExecutor(Executor):
 
         def on_done(future):
             try:
-                self._scheduler.done_job(job, future.result())  # type: ignore[possibly-missing-attribute]
+                self._scheduler.done_job(job, future.result())  # ty: ignore[possibly-missing-attribute]
             except Exception as error:
-                self._scheduler.reject_job(job, error)  # type: ignore[possibly-missing-attribute]
+                self._scheduler.reject_job(job, error)  # ty: ignore[possibly-missing-attribute]
 
         assert job.args
         args, kwargs = job.args

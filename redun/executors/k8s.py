@@ -185,7 +185,7 @@ def submit_task(
     array_size: int = 0,
     code_file: Optional[File] = None,
     secret_name: Optional[str] = None,
-) -> kubernetes.client.V1Job:  # type: ignore[possibly-missing-attribute]
+) -> kubernetes.client.V1Job:  # ty: ignore[possibly-missing-attribute]
     """
     Submit a redun Task to K8S.
     """
@@ -235,7 +235,7 @@ def submit_command(
     command: str,
     job_options: dict = {},
     secret_name: Optional[str] = None,
-) -> kubernetes.client.V1Job:  # type: ignore[possibly-missing-attribute]
+) -> kubernetes.client.V1Job:  # ty: ignore[possibly-missing-attribute]
     """
     Submit a shell command to K8S
     """
@@ -306,7 +306,7 @@ def k8s_describe_jobs(
     k8s_client: k8s_utils.K8SClient,
     job_names: List[str],
     namespace: str,
-) -> List[kubernetes.client.V1Job]:  # type: ignore[possibly-missing-attribute]
+) -> List[kubernetes.client.V1Job]:  # ty: ignore[possibly-missing-attribute]
     """
     Returns K8S Job descriptions.
     """
@@ -323,7 +323,7 @@ def k8s_describe_jobs(
 
 def get_pod_logs(
     k8s_client: k8s_utils.K8SClient,
-    pod: kubernetes.client.V1Pod,  # type: ignore[possibly-missing-attribute]
+    pod: kubernetes.client.V1Pod,  # ty: ignore[possibly-missing-attribute]
     max_lines: Optional[int] = None,
 ) -> List[str]:
     """
@@ -351,7 +351,7 @@ def get_pod_logs(
 
 def parse_pod_logs(
     k8s_client: k8s_utils.K8SClient,
-    pod: kubernetes.client.V1Pod,  # type: ignore[possibly-missing-attribute]
+    pod: kubernetes.client.V1Pod,  # ty: ignore[possibly-missing-attribute]
     max_lines: int = 1000,
 ) -> Iterator[str]:
     """
@@ -783,7 +783,7 @@ class K8SExecutor(Executor):
         else:
             raise AssertionError(f"Unexpected job_status: {job_status}")
 
-    def _process_k8s_job_status(self, job: kubernetes.client.V1Job) -> None:  # type: ignore[possibly-missing-attribute]
+    def _process_k8s_job_status(self, job: kubernetes.client.V1Job) -> None:  # ty: ignore[possibly-missing-attribute]
         """
         Process K8S job statuses.
 
@@ -826,7 +826,7 @@ class K8SExecutor(Executor):
 
             try:
                 k8s_utils.delete_job(self._k8s_client, job.metadata.name, self.namespace)
-            except kubernetes.client.exceptions.ApiException as e:  # type: ignore[possibly-missing-attribute]
+            except kubernetes.client.exceptions.ApiException as e:  # ty: ignore[possibly-missing-attribute]
                 self.log(
                     f"Failed to delete k8s job {job.metadata.name}: {e}",
                     level=logging.WARNING,
@@ -894,7 +894,7 @@ class K8SExecutor(Executor):
                     job.metadata.name,
                     self.namespace,
                 )
-            except kubernetes.client.exceptions.ApiException as e:  # type: ignore[possibly-missing-attribute]
+            except kubernetes.client.exceptions.ApiException as e:  # ty: ignore[possibly-missing-attribute]
                 self.log(
                     f"Failed to delete k8s job {job.metadata.name}: {e}",
                     level=logging.WARNING,

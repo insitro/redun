@@ -56,7 +56,7 @@ def run_migrations_online():
     """
     if hasattr(config, "session"):
         # Scheduler has already set session.
-        run_migrations(config.session.connection())  # type: ignore[unresolved-attribute]
+        run_migrations(config.session.connection())  # ty: ignore[unresolved-attribute]
     else:
         url = config.get_main_option("sqlalchemy.url")
         backend = db.RedunBackendDb(url)

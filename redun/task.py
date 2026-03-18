@@ -190,7 +190,7 @@ class Task(Value, Generic[Func]):
         hash_includes: Optional[list] = None,
         source: Optional[str] = None,
     ):
-        self.name = name or func.__name__  # type: ignore[unresolved-attribute]
+        self.name = name or func.__name__  # ty: ignore[unresolved-attribute]
         self.namespace = compute_namespace(func, namespace)
         self.func = func
         if source is not None:
@@ -1061,7 +1061,7 @@ def wraps_task(
 
             nonlocal wrapper_name
             if not wrapper_name:
-                wrapper_name = wrapper_func.__name__  # type: ignore[unresolved-attribute]
+                wrapper_name = wrapper_func.__name__  # ty: ignore[unresolved-attribute]
 
             # *Before* we create the new task, hide the old one
             recursive_rename(hidden_inner_task, wrapper_name)

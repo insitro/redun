@@ -355,7 +355,7 @@ class ConfusedUser:
 
     # Create a class instance and pickle it.
     sys.path.append(".")
-    from the_class import ConfusedUser  # type: ignore[unresolved-import]
+    from the_class import ConfusedUser  # ty: ignore[unresolved-import]
 
     x = ConfusedUser("Robin", 9000)
     data = pickle_dumps(x)

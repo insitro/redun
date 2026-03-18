@@ -234,8 +234,8 @@ def test_repr() -> None:
 
     # Common task calls.
     assert repr(add(1, 2)) == "add(1, 2)"
-    assert repr(add(1, b=2)) == "add(1, b=2)"  # type: ignore[parameter-already-assigned]
-    assert repr(add(a=True, b="2")) == "add(a=True, b='2')"  # type: ignore[unknown-argument]
+    assert repr(add(1, b=2)) == "add(1, b=2)"  # ty: ignore[parameter-already-assigned]
+    assert repr(add(a=True, b="2")) == "add(a=True, b='2')"  # ty: ignore[unknown-argument]
     assert repr(add([1, 2, 3], [4])) == "add([1, 2, 3], [4])"
 
     # Recursive task calls.

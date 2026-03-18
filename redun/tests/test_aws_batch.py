@@ -1228,10 +1228,10 @@ def mock_executor(
     )
     executor = AWSBatchExecutor("batch", scheduler, config["batch"])
 
-    executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
+    executor.get_jobs = Mock()  # ty: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
-    executor.get_array_child_jobs = Mock()  # type: ignore[invalid-assignment]
+    executor.get_array_child_jobs = Mock()  # ty: ignore[invalid-assignment]
     executor.get_array_child_jobs.return_value = []
 
     s3_client = boto3.client("s3", region_name="us-east-1")
@@ -2213,7 +2213,7 @@ def test_array_disabling(submit_single_mock, get_aws_user_mock):
     scheduler = mock_scheduler()
 
     executor = AWSBatchExecutor("batch", scheduler, config["batch"])
-    executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
+    executor.get_jobs = Mock()  # ty: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
     # Submit one test job.

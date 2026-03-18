@@ -153,20 +153,20 @@ class UpstreamDataflowScreen(RedunScreen):
         self.value_hash = value_hash
         super().__init__()
 
-        self.value = self.app.session.get(Value, value_hash)  # type: ignore[possibly-missing-attribute]
+        self.value = self.app.session.get(Value, value_hash)  # ty: ignore[possibly-missing-attribute]
 
     def get_path(self) -> str:
         return f"upstreams/{self.value_hash}"
 
     def action_click_value(self, value_hash: str) -> None:
-        self.app.route([f"values/{value_hash}"])  # type: ignore[possibly-missing-attribute]
+        self.app.route([f"values/{value_hash}"])  # ty: ignore[possibly-missing-attribute]
 
     def action_click_hash(self, hash: str) -> None:
-        self.app.route([hash])  # type: ignore[possibly-missing-attribute]
+        self.app.route([hash])  # ty: ignore[possibly-missing-attribute]
 
     def action_repl(self) -> None:
         screen = self.app.get_screen("ReplScreen")
-        screen.update({"value": self.value.value_parsed}, obj_id=self.value_hash)  # type: ignore[possibly-missing-attribute]
+        screen.update({"value": self.value.value_parsed}, obj_id=self.value_hash)  # ty: ignore[possibly-missing-attribute]
         self.app.push_screen(screen)
 
     def compose(self) -> ComposeResult:
@@ -178,7 +178,7 @@ class UpstreamDataflowScreen(RedunScreen):
             )
             return
 
-        edges = walk_dataflow(self.app.scheduler.backend, self.value)  # type: ignore[possibly-missing-attribute]
+        edges = walk_dataflow(self.app.scheduler.backend, self.value)  # ty: ignore[possibly-missing-attribute]
         dom = make_dataflow_dom(edges, new_varname="value")
         lines = display_dataflow(dom)
 

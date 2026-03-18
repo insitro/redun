@@ -18,7 +18,7 @@ depends_on = None
 
 def upgrade():
     if op.get_bind().dialect.name == "postgresql":
-        json_type = sa.dialects.postgresql.JSONB  # type: ignore[possibly-missing-attribute]
+        json_type = sa.dialects.postgresql.JSONB  # ty: ignore[possibly-missing-attribute]
     else:
         json_type = sa.String
 

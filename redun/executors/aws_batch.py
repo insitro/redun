@@ -127,7 +127,7 @@ def get_job_definition(
         batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
 
     # Check if job definition exists.
-    resp = batch_client.describe_job_definitions(jobDefinitionName=job_def_name, status="ACTIVE")  # type: ignore[unresolved-attribute]
+    resp = batch_client.describe_job_definitions(jobDefinitionName=job_def_name, status="ACTIVE")  # ty: ignore[unresolved-attribute]
     if resp["jobDefinitions"]:
         return sorted(resp["jobDefinitions"], key=lambda jd: jd["revision"])[-1]
 
@@ -150,7 +150,7 @@ def get_job_details(
     """
     # Get default IAM role.
     if role is None:
-        caller_id = aws_utils.get_aws_client("sts", aws_region=aws_region).get_caller_identity()  # type: ignore[unresolved-attribute]
+        caller_id = aws_utils.get_aws_client("sts", aws_region=aws_region).get_caller_identity()  # ty: ignore[unresolved-attribute]
         account_num = caller_id["Account"]
         role = "arn:aws:iam::%d:role/ecsTaskExecutionRole" % int(account_num)
 
@@ -301,7 +301,7 @@ def get_or_create_job_definition(
     # Look for an equivalent existing job defintiion.
     # Give preference for newer job defs.
     existing_job_defs = sorted(
-        batch_client.describe_job_definitions(jobDefinitionName=job_def_name, status="ACTIVE").get(  # type: ignore[unresolved-attribute]
+        batch_client.describe_job_definitions(jobDefinitionName=job_def_name, status="ACTIVE").get(  # ty: ignore[unresolved-attribute]
             "jobDefinitions", []
         ),
         key=lambda job_def: get_job_def_revision(job_def["jobDefinitionName"]),
@@ -312,7 +312,7 @@ def get_or_create_job_definition(
             return existing_job_def
 
     # No equivalent job defs exist, so create a new one.
-    return batch_client.register_job_definition(jobDefinitionName=job_def_name, **job_details)  # type: ignore[unresolved-attribute]
+    return batch_client.register_job_definition(jobDefinitionName=job_def_name, **job_details)  # ty: ignore[unresolved-attribute]
 
 
 def make_job_def_name(image_name: str, job_def_suffix: str = "-jd") -> str:
@@ -463,7 +463,7 @@ def batch_submit(
         batch_job_args["schedulingPriorityOverride"] = scheduling_priority_override
 
     # Submit to batch.
-    batch_run = batch_client.submit_job(  # type: ignore[unresolved-attribute]
+    batch_run = batch_client.submit_job(  # ty: ignore[unresolved-attribute]
         jobName=job_name,
         jobQueue=queue,
         jobDefinition=job_def["jobDefinitionArn"],
@@ -704,7 +704,7 @@ def aws_describe_jobs(
     batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
     for i in range(0, len(job_ids), chunk_size):
         chunk_job_ids = job_ids[i : i + chunk_size]
-        response = batch_client.describe_jobs(jobs=chunk_job_ids)  # type: ignore[unresolved-attribute]
+        response = batch_client.describe_jobs(jobs=chunk_job_ids)  # ty: ignore[unresolved-attribute]
 
         for job in response["jobs"]:
             yield job
@@ -897,7 +897,7 @@ class AWSBatchExecutor(Executor):
             "scheduling_priority_override": config.getint("scheduling_priority_override"),
         }
         if config.get("batch_tags"):
-            self.default_task_options["batch_tags"] = json.loads(config.get("batch_tags"))  # type: ignore[invalid-argument-type]
+            self.default_task_options["batch_tags"] = json.loads(config.get("batch_tags"))  # ty: ignore[invalid-argument-type]
         self.use_default_batch_tags = config.getboolean("default_batch_tags", fallback=True)
 
         self.is_running = False
@@ -1437,7 +1437,7 @@ class AWSBatchExecutor(Executor):
         Returns AWS Batch Job statuses from the AWS API.
         """
         batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
-        paginator = batch_client.get_paginator("list_jobs")  # type: ignore[unresolved-attribute]
+        paginator = batch_client.get_paginator("list_jobs")  # ty: ignore[unresolved-attribute]
 
         if not statuses:
             statuses = BATCH_JOB_STATUSES.all
@@ -1454,7 +1454,7 @@ class AWSBatchExecutor(Executor):
         self, job_id: str, statuses: List[str] = BATCH_JOB_STATUSES.inflight
     ) -> List[Dict[str, Any]]:
         batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
-        paginator = batch_client.get_paginator("list_jobs")  # type: ignore[unresolved-attribute]
+        paginator = batch_client.get_paginator("list_jobs")  # ty: ignore[unresolved-attribute]
 
         found_jobs = []
         for status in statuses:
@@ -1472,7 +1472,7 @@ class AWSBatchExecutor(Executor):
         batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
 
         for job_id in job_ids:
-            yield batch_client.terminate_job(jobId=job_id, reason=reason)  # type: ignore[unresolved-attribute]
+            yield batch_client.terminate_job(jobId=job_id, reason=reason)  # ty: ignore[unresolved-attribute]
 
     def scratch_root(self) -> str:
         return self.s3_scratch_prefix

@@ -34,7 +34,7 @@ def sum_list(values: List[int]) -> int:
 @task()
 def fail_return_task(a: int) -> int:
     # ERROR: return type should be int.
-    return str(a)  # type: ignore[return-value]
+    return str(a)  # ty: ignore[invalid-return-type]
 
 
 @task()

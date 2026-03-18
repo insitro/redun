@@ -131,7 +131,7 @@ def convert_to_response_dict_patch(http_response, operation_model):
             "operation_name": operation_model.name,
         },
     }
-    if response_dict["status_code"] >= 300:  # type: ignore[unsupported-operator]
+    if response_dict["status_code"] >= 300:  # ty: ignore[unsupported-operator]
         response_dict["body"] = http_response.raw._sync_read()
     elif operation_model.has_event_stream_output:
         response_dict["body"] = http_response.raw
@@ -566,8 +566,8 @@ def mock_scheduler():
         ):
             time.sleep(0.1)
 
-    scheduler.done_job = done_job  # type: ignore[invalid-assignment]
-    scheduler.reject_job = reject_job  # type: ignore[invalid-assignment]
+    scheduler.done_job = done_job  # ty: ignore[invalid-assignment]
+    scheduler.reject_job = reject_job  # ty: ignore[invalid-assignment]
     scheduler.batch_wait = batch_wait
 
     return scheduler

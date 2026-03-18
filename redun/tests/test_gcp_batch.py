@@ -59,7 +59,7 @@ def mock_executor(scheduler, debug=False, code_package=True) -> GCPBatchExecutor
         # Prevent monitor thread from running.
         executor._thread = Mock()
 
-    executor._start = executor_start  # type: ignore[invalid-assignment]
+    executor._start = executor_start  # ty: ignore[invalid-assignment]
 
     return executor
 

@@ -234,7 +234,7 @@ class MetaValue(type):
         # and ignore what is set on super classes.
         if not cls.__dict__.get("type_name"):
             if cls.__dict__.get("type"):
-                cls.type_name = get_raw_type_name(cls.type)  # type: ignore[unresolved-attribute]
+                cls.type_name = get_raw_type_name(cls.type)  # ty: ignore[unresolved-attribute]
             else:
                 cls.type_name = get_raw_type_name(cls)
 
@@ -486,7 +486,7 @@ class EnumType(ProxyValue):
     type_name = "enum.Enum"
 
     @classmethod
-    def parse_arg(cls, raw_type: Type[Enum], arg: str) -> Any:  # type: ignore[invalid-method-override]
+    def parse_arg(cls, raw_type: Type[Enum], arg: str) -> Any:  # ty: ignore[invalid-method-override]
         name2item = {item.name: item for item in raw_type}
         try:
             if "." in arg:
@@ -524,7 +524,7 @@ def make_unknown_function(func_name: str) -> Callable:
         raise ValueError(f"Function '{func_name}' cannot be found.")
 
     # Mark this function as an unknown function.
-    unknown_function.unknown_function = True  # type: ignore[unresolved-attribute]
+    unknown_function.unknown_function = True  # ty: ignore[unresolved-attribute]
     return unknown_function
 
 
@@ -546,10 +546,10 @@ class Function(ProxyValue):
     def __init__(self, instance: Callable):
         super().__init__(instance)
         self.module = instance.__module__
-        self.name = instance.__name__  # type: ignore[unresolved-attribute]
+        self.name = instance.__name__  # ty: ignore[unresolved-attribute]
         self._hash = self._calc_hash()
 
-        if not is_unknown_function(instance) and "<locals>" in instance.__qualname__:  # type: ignore[unresolved-attribute]
+        if not is_unknown_function(instance) and "<locals>" in instance.__qualname__:  # ty: ignore[unresolved-attribute]
             raise InvalidValueError(
                 "functions used as redun arguments or results must be defined globally."
             )
@@ -689,7 +689,7 @@ class FileCache(ProxyValue):
         return filename.encode("utf8")
 
     @classmethod
-    def deserialize(cls, raw_type: type, filename: bytes) -> Any:  # type: ignore[invalid-method-override]
+    def deserialize(cls, raw_type: type, filename: bytes) -> Any:  # ty: ignore[invalid-method-override]
         from redun.file import File
 
         # Read data from file.

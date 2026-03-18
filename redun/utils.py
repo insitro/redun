@@ -568,7 +568,7 @@ class MultiMap(Generic[Key, Value]):
             return self._equal_dicts(self._data, other._data)
 
         elif isinstance(other, dict):
-            return self._equal_dicts(self._data, other)  # type: ignore[invalid-argument-type]
+            return self._equal_dicts(self._data, other)  # ty: ignore[invalid-argument-type]
 
         elif isinstance(other, IterableABC):
             return sorted(self) == sorted(other)

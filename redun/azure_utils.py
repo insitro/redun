@@ -13,8 +13,8 @@ try:
     from azure.identity import DefaultAzureCredential
 except (ImportError, ModuleNotFoundError):
     # These stubs allow effective patching in tests.
-    AzureMLOnBehalfOfCredential = None  # type: ignore[invalid-assignment]
-    DefaultAzureCredential = None  # type: ignore[invalid-assignment]
+    AzureMLOnBehalfOfCredential = None  # ty: ignore[invalid-assignment]
+    DefaultAzureCredential = None  # ty: ignore[invalid-assignment]
 
 
 def is_azure_managed_node() -> bool:

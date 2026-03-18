@@ -168,11 +168,11 @@ class CallGraphQuery:
     }
     MODEL_NAMES = list(MODEL_CLASSES.keys())
 
-    ExecTag = sa.orm.aliased(Tag)  # type: ignore[invalid-type-arguments]
+    ExecTag = sa.orm.aliased(Tag)  # ty: ignore[possibly-missing-attribute]
 
     def __init__(
         self,
-        session: sa.orm.Session,  # type: ignore[invalid-type-arguments]
+        session: sa.orm.Session,  # ty: ignore[possibly-missing-attribute]
         joins: Optional[Set[str]] = None,
         execution_joins: Optional[List[Callable[[Query], Query]]] = None,
         filters: Optional[List] = None,
@@ -517,7 +517,7 @@ class CallGraphQuery:
         def filter(query):
             return query.clone(
                 values=query._values.filter(
-                    sa.or_(File.path.like(like_pattern) for like_pattern in like_patterns)  # type: ignore[invalid-argument-type]
+                    sa.or_(File.path.like(like_pattern) for like_pattern in like_patterns)  # ty: ignore[invalid-argument-type]
                 )
             )
 
@@ -638,7 +638,7 @@ class CallGraphQuery:
 
         # Perform order_by.
         if self._order_by == "time":
-            Job2 = sa.orm.aliased(Job)  # type: ignore[invalid-type-arguments]
+            Job2 = sa.orm.aliased(Job)  # ty: ignore[possibly-missing-attribute]
             query = query.clone(
                 executions=(
                     query._executions.add_columns(Job2.start_time)

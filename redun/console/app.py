@@ -114,7 +114,7 @@ class RedunApp(App):
         super().__init__()
 
         self.scheduler = scheduler
-        self.session = cast(sa.orm.Session, cast(RedunBackendDb, self.scheduler.backend).session)  # type: ignore[possibly-missing-attribute]
+        self.session = cast(sa.orm.Session, cast(RedunBackendDb, self.scheduler.backend).session)  # ty: ignore[possibly-missing-attribute]
         assert self.session
         self.args = args
         self.all_argv = argv
@@ -156,7 +156,7 @@ class RedunApp(App):
         """
         screen = self.pop_screen()
         if screen not in self.app.screen_stack:
-            self.uninstall_screen(screen)  # type: ignore[invalid-argument-type]
+            self.uninstall_screen(screen)  # ty: ignore[invalid-argument-type]
 
     def goto_record(self, record: Any) -> None:
         """
@@ -172,7 +172,7 @@ class RedunApp(App):
             self.goto_screen(ValueScreen, record.value_hash, (record.value_hash,))
         else:
             screen = self.get_screen("ReplScreen")
-            screen.update({"obj": record})  # type: ignore[unresolved-attribute]
+            screen.update({"obj": record})  # ty: ignore[unresolved-attribute]
             self.push_screen(screen)
 
     def route(self, argv: List[str]) -> None:
@@ -211,13 +211,13 @@ class RedunApp(App):
                 if self.is_screen_installed(screen_cls.__name__):
                     # Singleton screen that doesn't auto-uninstall.
                     screen = self.get_screen(screen_cls.__name__)
-                    screen.parse(argv)  # type: ignore[unresolved-attribute]
+                    screen.parse(argv)  # ty: ignore[unresolved-attribute]
                     self.push_screen(screen)
                 else:
                     # Auto-installing custom screen.
                     id = groups[1]
                     screen = self.goto_screen(screen_cls, id, (id,))
-                    screen.parse(argv)  # type: ignore[unresolved-attribute]
+                    screen.parse(argv)  # ty: ignore[unresolved-attribute]
                 return
 
         # ReplScreen has its own customization.
@@ -225,7 +225,7 @@ class RedunApp(App):
         if groups:
             obj_id = groups[2]
             screen = self.get_screen("ReplScreen")
-            screen.update(obj_id=obj_id)  # type: ignore[unresolved-attribute]
+            screen.update(obj_id=obj_id)  # ty: ignore[unresolved-attribute]
             self.push_screen(screen)
             return
 

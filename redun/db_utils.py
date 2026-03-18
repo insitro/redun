@@ -20,7 +20,7 @@ def get_or_create(
     if update:
         insert.update(update)
 
-    row = session.query(Model).filter_by(**filter).first()  # type: ignore[no-matching-overload]
+    row = session.query(Model).filter_by(**filter).first()  # ty: ignore[no-matching-overload]
     if not row:
         created = True
         row = Model(**insert)

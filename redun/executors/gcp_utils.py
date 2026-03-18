@@ -118,11 +118,11 @@ def batch_submit(
     allocation_policy = batch_v1.AllocationPolicy()
     policy = batch_v1.AllocationPolicy.InstancePolicy()
     policy.machine_type = machine_type
-    policy.min_cpu_platform = min_cpu_platform.value if min_cpu_platform else None  # type: ignore[invalid-assignment]
+    policy.min_cpu_platform = min_cpu_platform.value if min_cpu_platform else None  # ty: ignore[invalid-assignment]
 
     def create_accelerator(typ, count):
         accelerator = batch_v1.AllocationPolicy.Accelerator()
-        accelerator.type_ = type  # type: ignore[invalid-assignment]
+        accelerator.type_ = type  # ty: ignore[invalid-assignment]
         accelerator.count = count
         return accelerator
 
@@ -155,7 +155,7 @@ def batch_submit(
     # The job's parent is the region in which the job will run
     create_request.parent = f"projects/{project}/locations/{region}"
 
-    return client.create_job(create_request)  # type: ignore[invalid-return-type]
+    return client.create_job(create_request)  # ty: ignore[invalid-return-type]
 
 
 def list_jobs(

@@ -11,8 +11,8 @@ import typing
 from typing import Callable, List, Optional
 
 if typing.TYPE_CHECKING:
-    from awsglue.context import GlueContext  # type: ignore[unresolved-import]
-    from awsglue.job import Job as GlueJob  # type: ignore[unresolved-import]
+    from awsglue.context import GlueContext  # ty: ignore[unresolved-import]
+    from awsglue.job import Job as GlueJob  # ty: ignore[unresolved-import]
     from pyspark.context import SparkContext
     from pyspark.sql import DataFrame, SparkSession
     from pyspark.sql.types import DataType
@@ -20,8 +20,8 @@ if typing.TYPE_CHECKING:
 
 def setup_glue_job(job_name: str, job_args: List[str]) -> "GlueJob":
     try:
-        from awsglue.context import GlueContext  # type: ignore[unresolved-import]
-        from awsglue.job import Job as GlueJob  # type: ignore[unresolved-import]
+        from awsglue.context import GlueContext  # ty: ignore[unresolved-import]
+        from awsglue.job import Job as GlueJob  # ty: ignore[unresolved-import]
         from pyspark.context import SparkContext
     except (ImportError, ModuleNotFoundError):
         raise ValueError("Glue not installed. Are you running locally?")
@@ -39,7 +39,7 @@ def get_glue_context() -> "GlueContext":
     Returns the current glue context
     """
     try:
-        from awsglue.context import GlueContext  # type: ignore[unresolved-import]
+        from awsglue.context import GlueContext  # ty: ignore[unresolved-import]
     except (ImportError, ModuleNotFoundError):
         raise ValueError("Glue not installed. Are you running locally?")
 
@@ -86,7 +86,7 @@ def get_num_workers() -> int:
     Returns the number of workers in the current Spark context.
     """
     workers = get_spark_context().getConf().get("spark.executor.instances")
-    return int(workers)  # type: ignore[invalid-argument-type]
+    return int(workers)  # ty: ignore[invalid-argument-type]
 
 
 def udf(

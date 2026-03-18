@@ -175,7 +175,7 @@ def mock_executor(scheduler, debug=False, code_package=False):
 
     executor = AWSGlueExecutor("glue", scheduler, config["glue"])
 
-    executor.get_jobs = Mock()  # type: ignore[invalid-assignment]
+    executor.get_jobs = Mock()  # ty: ignore[invalid-assignment]
     executor.get_jobs.return_value = []
 
     return executor
@@ -215,7 +215,7 @@ def test_executor_config(scheduler):
     assert executor.aws_region == "pangea"
     assert executor.role == "overlord"
     assert executor.interval == 1.0
-    assert executor.code_package["includes"] == ["*.txt"]  # type: ignore[not-subscriptable]
+    assert executor.code_package["includes"] == ["*.txt"]  # ty: ignore[not-subscriptable]
     assert executor.debug is False
     assert executor.glue_version == "3.0"
 

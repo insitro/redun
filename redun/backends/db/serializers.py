@@ -62,7 +62,7 @@ class Serializer(abc.ABC):
 class ExecutionSerializer(Serializer):
     pk_field = "id"
 
-    def serialize(self, execution: "db.Base") -> dict:  # type: ignore[invalid-method-override]
+    def serialize(self, execution: "db.Base") -> dict:  # ty: ignore[invalid-method-override]
         return {
             "_version": VERSION,
             "_type": "Execution",
@@ -86,7 +86,7 @@ class ExecutionSerializer(Serializer):
 class JobSerializer(Serializer):
     pk_field = "id"
 
-    def serialize(self, job: "db.Base") -> dict:  # type: ignore[invalid-method-override]
+    def serialize(self, job: "db.Base") -> dict:  # ty: ignore[invalid-method-override]
         return {
             "_version": VERSION,
             "_type": "Job",
@@ -162,7 +162,7 @@ class JobSerializer(Serializer):
 class ValueSerializer(Serializer):
     pk_field = "value_hash"
 
-    def serialize(self, value: "db.Base") -> dict:  # type: ignore[invalid-method-override]
+    def serialize(self, value: "db.Base") -> dict:  # ty: ignore[invalid-method-override]
         # Up to one special subtype should exist at a time
         assert not (bool(value.file) and bool(value.task))
         subtype: Optional[Dict[str, Any]] = None
@@ -242,7 +242,7 @@ class ValueSerializer(Serializer):
 class CallNodeSerializer(Serializer):
     pk_field = "call_hash"
 
-    def serialize(self, call_node: "db.Base") -> dict:  # type: ignore[invalid-method-override]
+    def serialize(self, call_node: "db.Base") -> dict:  # ty: ignore[invalid-method-override]
         args = {
             arg.arg_key or str(arg.arg_position): {
                 "arg_hash": arg.arg_hash,
@@ -320,7 +320,7 @@ class CallNodeSerializer(Serializer):
 class TagSerializer(Serializer):
     pk_field = "tag_hash"
 
-    def serialize(self, tag: "db.Base") -> dict:  # type: ignore[invalid-method-override]
+    def serialize(self, tag: "db.Base") -> dict:  # ty: ignore[invalid-method-override]
         return {
             "_version": VERSION,
             "_type": "Tag",
@@ -371,7 +371,7 @@ class RecordSerializer(Serializer):
     def get_subserializer(self, type: str) -> Serializer:
         return self._serializers[type]
 
-    def serialize(self, obj: "db.Base") -> dict:  # type: ignore[invalid-method-override]
+    def serialize(self, obj: "db.Base") -> dict:  # ty: ignore[invalid-method-override]
         if isinstance(obj, db.Task):
             # Use Value-version of Task for serialization.
             obj = obj.value
