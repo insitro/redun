@@ -2707,7 +2707,7 @@ wheels = [
 
 [[package]]
 name = "redun"
-version = "0.42.0"
+version = "0.43.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiobotocore", extra = ["awscli", "boto3"] },

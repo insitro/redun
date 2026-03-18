@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.43.0
+March 18, 2026
+
+* `#481` - chore: drop Python 3.9 support
+* `#479` - fix: use ParamSpec for Task.__call__ to fix ty type checker compatibility
+* `#480` - chore: migrate `# type: ignore` to `# ty: ignore` with staleness audit
+
 ## 0.42.0
 March 13, 2026
 
