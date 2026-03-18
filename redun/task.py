@@ -1,7 +1,6 @@
 import enum
 import inspect
 import re
-import sys
 import typing
 from collections import defaultdict
 from typing import (
@@ -19,12 +18,8 @@ from typing import (
     cast,
     overload,
     DefaultDict,
+    ParamSpec,
 )
-
-if sys.version_info >= (3, 10):
-    from typing import ParamSpec
-else:
-    from typing_extensions import ParamSpec
 
 from redun.expression import SchedulerExpression, TaskExpression
 from redun.hashing import hash_arguments, hash_eval, hash_struct
@@ -106,12 +101,9 @@ def get_tuple_type_length(tuple_type: Any) -> Optional[int]:
         #
         # typing.get_args was added in Python 3.8 so we can use that instead if we detect we are
         # running on Python 3.8+
-        if sys.version_info >= (3, 8):
-            from typing import get_args
+        from typing import get_args
 
-            tuple_type_args = get_args(tuple_type)
-        else:
-            tuple_type_args = tuple_type.__args__
+        tuple_type_args = get_args(tuple_type)
 
         if Ellipsis in tuple_type_args or tuple_type is Tuple:
             # Tuple of unknown length.

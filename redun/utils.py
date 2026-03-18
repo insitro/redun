@@ -34,10 +34,7 @@ from typing import (
     cast,
 )
 
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol
+from typing import Protocol
 
 
 T = TypeVar("T")

@@ -1,10 +1,9 @@
 import asyncio
-import sys
 import threading
 import typing
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextvars import ContextVar
-from multiprocessing import get_context, get_start_method, set_start_method
+from multiprocessing import get_context
 from typing import Any, Callable, Optional, Set, Tuple
 
 from redun.config import create_config_section
@@ -126,19 +125,10 @@ class LocalExecutor(Executor):
             self._thread_executor = ThreadPoolExecutor(max_workers=self.max_workers)
 
         elif mode == PROCESS_MODE and not self._process_executor:
-            if sys.version_info < (3, 7):
-                # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ProcessPoolExecutor
-                # Changed in version 3.7: The mp_context argument was added to allow users
-                # to control the start_method for worker processes created by the pool.
-                # https://github.com/python/cpython/blob/3.6/Lib/multiprocessing/context.py#L240
-                if get_start_method(allow_none=True) is None:
-                    set_start_method(self.start_method)
-                self._process_executor = ProcessPoolExecutor(max_workers=self.max_workers)
-            else:
-                self._process_executor = ProcessPoolExecutor(
-                    max_workers=self.max_workers,
-                    mp_context=get_context(self.start_method),
-                )
+            self._process_executor = ProcessPoolExecutor(
+                max_workers=self.max_workers,
+                mp_context=get_context(self.start_method),
+            )
 
     def _start_async_thread(self) -> None:
         """
@@ -162,10 +152,7 @@ class LocalExecutor(Executor):
             self._thread_executor = None
 
         if self._process_executor:
-            # Shutdown causes problems on python3.8
-            # https://bugs.python.org/issue39995
-            if (sys.version_info.major, sys.version_info.minor) != (3, 8):
-                self._process_executor.shutdown()
+            self._process_executor.shutdown()
             self._process_executor = None
 
         if (

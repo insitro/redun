@@ -4,7 +4,6 @@ import os
 import pickle
 import re
 import subprocess
-import sys
 import time
 from socket import socket
 from typing import Any, List, cast
@@ -757,7 +756,6 @@ def call_hello2(func: Callable) -> str:
 @patch("argparse.ArgumentParser.exit")
 @patch("redun.cli.print")
 @use_tempdir
-@pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10+")
 def test_task_parse_arg_optional(print_mock, arg_exit_mock) -> None:
     """
     CLI should be able to parse optional task arguments in py3.10+ style.
@@ -2351,14 +2349,6 @@ def main() -> int:
             "main",
         ]
     )
-
-    if (sys.version_info.major, sys.version_info.minor) == (
-        3,
-        8,
-    ) and executor == "proc":
-        # Process executors are not shut down in py3.8, so it may still be running.
-        # This is expected but we skip the test rather than try to wait it out
-        return
 
     parser = client.get_command_parser()
     args, extra_args = parser.parse_known_args([])

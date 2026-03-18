@@ -1,4 +1,3 @@
-import sys
 from unittest.mock import MagicMock, patch
 
 import boto3
@@ -11,9 +10,6 @@ from redun.tests.utils import mock_s3
 
 
 @mock_s3
-@pytest.mark.skipif(
-    sys.version_info < (3, 7), reason="moto requires python3.7 or higher for this test"
-)
 def test_file_api():
     client = boto3.client("s3", region_name="us-east-1")
     client.create_bucket(Bucket="example-bucket")

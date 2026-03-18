@@ -147,8 +147,7 @@ try:
 except ModuleNotFoundError:
     viz_is_enabled = False
 
-if sys.version_info >= (3, 10):
-    from types import UnionType
+from types import UnionType
 
 # Constants.
 REDUN_DESCRIPTION = """\
@@ -444,23 +443,13 @@ def get_anno_origin(anno: Any) -> Optional[Any]:
     Returns the origin of an annotation.
 
     Origin is Python's term for the main type of a generic type. For example,
-    the origin of `List[int]` is `list` and its argument is `int`. This function
-    abstracts away change that have occurred in the  Python API since 3.6.
+    the origin of `List[int]` is `list` and its argument is `int`.
 
     https://docs.python.org/3/library/typing.html#typing.get_origin
     """
-    if sys.version_info < (3, 8):
-        try:
-            # Python 3.6
-            return anno.__extra__
-        except AttributeError:
-            # Python 3.7
-            return getattr(anno, "__origin__", None)
-    else:
-        # Python 3.8+
-        from typing import get_origin
+    from typing import get_origin
 
-        return get_origin(anno)
+    return get_origin(anno)
 
 
 def add_value_arg_parser(
@@ -495,18 +484,11 @@ def add_value_arg_parser(
         largely undocumented __args__ which will be a 2-tuple of classes T and NoneType in the
         case we started with Optional[T].
 
-        NOTE: Once we are on Python 3.8+, we can use the helper get_origin and get_args. For more
-        on these introspection helpers, see:
-
-            https://docs.python.org/3/library/typing.html#typing.get_args
+        https://docs.python.org/3/library/typing.html#typing.get_args
         """
         klass = get_anno_origin(anno)
-        if sys.version_info >= (3, 10):
-            if klass is not Union and klass is not UnionType:
-                return False
-        else:
-            if klass is not Union:
-                return False
+        if klass is not Union and klass is not UnionType:
+            return False
 
         try:
             type1, type2 = anno.__args__

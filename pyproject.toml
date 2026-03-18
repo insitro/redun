@@ -3,7 +3,7 @@ name = "redun"
 version = "0.42.0"
 description = "Yet another redundant workflow engine."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
 authors = [
     {name = "Matt Rasmussen", email = "rasmus@insitro.com"},
@@ -19,7 +19,6 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -138,10 +137,10 @@ Documentation = "https://redun.readthedocs.io/"
 
 [tool.ruff]
 line-length = 99
-target-version = "py39"
+target-version = "py310"
 
 [tool.ty.environment]
-python-version = "3.9"
+python-version = "3.10"
 python = ".venv"
 
 [tool.ty.src]
