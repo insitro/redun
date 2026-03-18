@@ -13,3 +13,4 @@ scratch/
 .dmypy.json
 .claude
 .cursor
+.DS_Store

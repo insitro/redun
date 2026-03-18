@@ -2638,7 +2638,7 @@ def catch_all(
     sexpr: SchedulerExpression,
     exprs: T,
     error_class: Union[None, Exception, Tuple[Exception, ...]] = None,
-    recover: Optional[Task[Callable[..., S]]] = None,
+    recover: "Optional[Task[..., S]]" = None,
 ) -> Promise[Union[T, S]]:
     """
     Catch all exceptions that occur in the nested value `exprs`.

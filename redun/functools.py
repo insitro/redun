@@ -50,7 +50,7 @@ def delay(x: T) -> PartialTask:
     return identity.partial(x)
 
 
-def force(x: Task[Callable[[], T]]) -> T:
+def force(x: "Task[[], T]") -> T:
     """
     Force the evaluation of a delayed evaluation.
 
@@ -206,7 +206,7 @@ def map_(
 
 
 def starmap(
-    a_task: Task[Callable[..., T]],
+    a_task: "Task[..., T]",
     kwargs: Union[List[Dict], Expression[List[Dict]]] = [],
 ) -> List[T]:
     """
@@ -224,7 +224,7 @@ def flatten(list_of_lists: Sequence[Sequence[T]]) -> List[T]:
 
 
 @task(namespace="redun", version="1")
-def flat_map(a_task: Task[Callable[..., List[T]]], values: List) -> List[T]:
+def flat_map(a_task: "Task[..., List[T]]", values: List) -> List[T]:
     """
     Apply a task `a_task` on a sequence of `values` and flatten the result.
     """

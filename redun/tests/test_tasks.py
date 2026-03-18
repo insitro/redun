@@ -482,9 +482,9 @@ def test_naked_task() -> None:
 
 
 def test_wraps_task() -> None:
-    def doubled_task(offset: int = 0) -> Callable[[Func], Task[Func]]:
+    def doubled_task(offset: int = 0) -> Callable[[Func], Task]:
         @wraps_task(wrapper_hash_includes=[offset])
-        def _doubled_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
+        def _doubled_task(inner_task: Task) -> Callable[[Task], Func]:
             def do_doubling(*task_args, **task_kwargs) -> Any:
                 return (
                     inner_task.func(*task_args, **task_kwargs)
@@ -528,9 +528,9 @@ def test_wraps_task() -> None:
         return 1 + x
 
     # 3. Demonstrate that we can return tasks lazily.
-    def listify_task() -> Callable[[Func], Task[Func]]:
+    def listify_task() -> Callable[[Func], Task]:
         @wraps_task(wrapper_name="renamed_task")
-        def _listify_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
+        def _listify_task(inner_task: Task) -> Callable[[Task], Func]:
             def make_list(*task_args, copies=1, **task_kwargs) -> Any:
                 return [inner_task] * copies
 
@@ -637,9 +637,9 @@ def test_wraps_task() -> None:
 
 def test_redefine_task_wrapping() -> None:
     def nested_task_definition() -> None:
-        def wrapper() -> Callable[[Func], Task[Func]]:
+        def wrapper() -> Callable[[Func], Task]:
             @wraps_task()
-            def _wrapper(inner_task: Task) -> Callable[[Task[Func]], Func]:
+            def _wrapper(inner_task: Task) -> Callable[[Task], Func]:
                 def do_wrapper(*task_args, **task_kwargs) -> Any:
                     return inner_task.func(*task_args, **task_kwargs) + 1
 
@@ -663,9 +663,9 @@ def test_wraps_task_inner_task(scheduler: Scheduler) -> None:
     wraps_task should maintain a reference to the inner task.
     """
 
-    def doubled_task(offset: int = 0) -> Callable[[Func], Task[Func]]:
+    def doubled_task(offset: int = 0) -> Callable[[Func], Task]:
         @wraps_task(wrapper_hash_includes=[offset])
-        def _doubled_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
+        def _doubled_task(inner_task: Task) -> Callable[[Task], Func]:
             def do_doubling(*task_args, **task_kwargs) -> Any:
                 return (
                     inner_task.func(*task_args, **task_kwargs)

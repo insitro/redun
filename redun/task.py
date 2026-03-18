@@ -21,6 +21,11 @@ from typing import (
     DefaultDict,
 )
 
+if sys.version_info >= (3, 10):
+    from typing import ParamSpec
+else:
+    from typing_extensions import ParamSpec
+
 from redun.expression import SchedulerExpression, TaskExpression
 from redun.hashing import hash_arguments, hash_eval, hash_struct
 from redun.namespace import compute_namespace
@@ -29,6 +34,8 @@ from redun.utils import get_func_source, merge_dicts
 from redun.value import TypeRegistry, Value, get_type_registry
 
 T = TypeVar("T")
+P = ParamSpec("P")
+R = TypeVar("R")
 Func = TypeVar("Func", bound=Callable)
 Func2 = TypeVar("Func2", bound=Callable)
 Result = TypeVar("Result")
@@ -142,7 +149,7 @@ def split_task_fullname(task_fullname: str) -> Tuple[str, str]:
         return "", task_fullname
 
 
-class Task(Value, Generic[Func]):
+class Task(Value, Generic[P, R]):
     """
     A redun Task.
 
@@ -363,12 +370,23 @@ class Task(Value, Generic[Func]):
         else:
             return name
 
-    def _call(self: "Task[Callable[..., Result]]", *args: Any, **kwargs: Any) -> Result:
+    # Typing strategy:
+    #
+    # __call__ uses ParamSpec so that type checkers (both mypy and ty) see the
+    # same parameter signature as the wrapped function.
+    #
+    # The return type is a white lie: __call__ actually returns a TaskExpression,
+    # but we cast it to R so users can write natural types like `-> int` instead
+    # of `-> TaskExpression[int]`. This works because the scheduler resolves
+    # expressions before they reach user code. The tradeoff is that the type
+    # checker won't catch code that passes an unresolved TaskExpression where a
+    # concrete value is expected. Fixing this would require a mypy/ty plugin.
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         """
         Returns a lazy Expression of calling the task.
         """
         return cast(
-            Result,
+            R,
             TaskExpression(
                 self.fullname,
                 args,
@@ -379,21 +397,7 @@ class Task(Value, Generic[Func]):
             ),
         )
 
-    # Typing strategy: Ideally, we could use more honest types for the arguments
-    # and return type of `Task.__call__()`, such as `Union[Arg, Expression[Arg]]`
-    # and `TaskExpression[Result]` respectively. However, dynamically creating
-    # such a signature has several challenges at the moment, such as requiring a
-    # mypy plugin and forcing users to wrap every task return type. Therefore, we
-    # compromise and force cast `Task.__call__()` to have the same signature as
-    # the wrapped function, `Func`. This allows users to write tasks with very
-    # natural types, and mypy can catch most type errors. The one trade off is
-    # that this approach is too permissive about using `TaskExpression[T]`
-    # wherever `T` is allowed.
-
-    # Cast the signature to match the wrapped function.
-    __call__: Func = cast(Func, _call)
-
-    def options(self, **task_options_update: Any) -> "Task[Func]":
+    def options(self, **task_options_update: Any) -> "Task[P, R]":
         """
         Returns a new Task with task_option overrides.
         """
@@ -414,7 +418,7 @@ class Task(Value, Generic[Func]):
             task_options_override=new_task_options_update,
         )
 
-    def export_options(self, **task_options_update: Any) -> "Task[Func]":
+    def export_options(self, **task_options_update: Any) -> "Task[P, R]":
         """
         Returns a new Task with exported option overrides.
         """
@@ -442,7 +446,7 @@ class Task(Value, Generic[Func]):
             export_options=export_options,
         )
 
-    def update_context(self, context: dict = {}, **kwargs: Any) -> "Task[Func]":
+    def update_context(self, context: dict = {}, **kwargs: Any) -> "Task[P, R]":
         """
         Update the context variables for the task.
         """
@@ -548,11 +552,7 @@ class Task(Value, Generic[Func]):
         """
         return self.hash
 
-    # Note: we can't parameterize PartialTask to a more specific type at this
-    # time, due to the complexity of calculating the remaining parameter signature.
-    def partial(
-        self: "Task[Callable[..., Result]]", *args, **kwargs
-    ) -> "PartialTask[Callable[..., Result], Callable[..., Result]]":
+    def partial(self, *args: Any, **kwargs: Any) -> "PartialTask[..., R]":
         """
         Partially apply some arguments to the Task.
         """
@@ -608,17 +608,17 @@ class Task(Value, Generic[Func]):
         return _inner_task
 
 
-class SchedulerTask(Task[Func]):
+class SchedulerTask(Task[P, R]):
     """
     A Task that executes within the scheduler to allow custom evaluation.
     """
 
-    def _call(self: "SchedulerTask[Callable[..., Result]]", *args: Any, **kwargs: Any) -> Result:
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         """
         Returns a lazy Expression of calling the task.
         """
         return cast(
-            Result,
+            R,
             SchedulerExpression(
                 self.fullname,
                 args,
@@ -628,21 +628,15 @@ class SchedulerTask(Task[Func]):
             ),
         )
 
-    __call__ = cast(Func, _call)
 
-
-class PartialTask(Task[Func], Generic[Func, Func2]):
+class PartialTask(Task[P, R]):
     """
     A Task with only some arguments partially applied.
-
-    The type of this class is parameterized by `Func` and `Func2`, where
-    `Func2` is the type of the original function and `Func` is the type
-    of partially applied function. They should match on their return types.
     """
 
     type_name = "redun.PartialTask"
 
-    def __init__(self, task: Task[Func2], args: tuple, kwargs: dict):
+    def __init__(self, task: "Task[..., R]", args: tuple, kwargs: dict):
         self.task = task
         self.args = tuple(args)
         self.kwargs = kwargs
@@ -659,17 +653,10 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
             )
         )
 
-    def _call(
-        self: "PartialTask[Callable[..., Result], Callable[..., Result]]",
-        *args: Any,
-        **kwargs: Any,
-    ) -> Result:
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         # By calling the original task, we ensure that a normal pre-registered
         # task will be the one in the CallGraph recording.
         return self.task(*self.args, *args, **{**self.kwargs, **kwargs})
-
-    # Cast the signature to match the wrapped function.
-    __call__: Func = cast(Func, _call)
 
     def __getstate__(self) -> dict:
         """
@@ -701,17 +688,11 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
     def is_valid(self) -> bool:
         return self.task.is_valid()
 
-    def options(
-        self: "PartialTask[Callable[..., Result], Callable[..., Result]]",
-        **task_options_update: Any,
-    ) -> "Task[Func]":
+    def options(self, **task_options_update: Any) -> "PartialTask[..., R]":
         """
-        Returns a new Task with task_option overrides.
+        Returns a new PartialTask with task_option overrides.
         """
-        return cast(
-            Task[Func],
-            self.task.options(**task_options_update).partial(*self.args, **self.kwargs),
-        )
+        return self.task.options(**task_options_update).partial(*self.args, **self.kwargs)
 
     @overload
     def get_task_option(self, option_name: str) -> Optional[Any]: ...
@@ -739,13 +720,7 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
         """
         return self.task.has_task_option(option_name)
 
-    # Note: we can't parameterize PartialTask to a more specific type at this
-    # time, due to the complexity of calculating the remaining parameter signature.
-    def partial(
-        self: "PartialTask[Callable[..., Result], Callable[..., Result]]",
-        *args,
-        **kwargs,
-    ) -> "PartialTask[Callable[..., Result], Callable[..., Result]]":
+    def partial(self, *args: Any, **kwargs: Any) -> "PartialTask[..., R]":
         """
         Partially apply some arguments to the Task.
         """
@@ -760,8 +735,8 @@ class PartialTask(Task[Func], Generic[Func, Func2]):
 
 @overload
 def task(
-    func: Func,
-) -> Task[Func]: ...
+    func: Callable[P, R],
+) -> Task[P, R]: ...
 
 
 @overload
@@ -776,11 +751,11 @@ def task(
     source: Optional[str] = None,
     export_options: Optional[dict] = None,
     **task_options_base: Any,
-) -> Callable[[Func], Task[Func]]: ...
+) -> Callable[[Callable[P, R]], Task[P, R]]: ...
 
 
 def task(
-    func: Optional[Func] = None,
+    func: Optional[Callable[P, R]] = None,
     *,
     name: Optional[str] = None,
     namespace: Optional[str] = None,
@@ -791,7 +766,7 @@ def task(
     source: Optional[str] = None,
     export_options: Optional[dict] = None,
     **task_options_base: Any,
-) -> Union[Task[Func], Callable[[Func], Task[Func]]]:
+) -> Union[Task[P, R], Callable[[Callable[P, R]], Task[P, R]]]:
     """
     Decorator to register a function as a redun :class:`Task`.
 
@@ -831,7 +806,7 @@ def task(
                 If present, a reference to the task wrapped by this one.
     """
 
-    def deco(func: Func) -> Task[Func]:
+    def deco(func: Callable[P, R]) -> Task[P, R]:
         nonlocal namespace
 
         if export_options:
@@ -841,7 +816,7 @@ def task(
         else:
             export_option_keys = None
 
-        _task: Task[Func] = Task(
+        _task: Task[P, R] = Task(
             func,
             name=name,
             namespace=namespace,
@@ -869,7 +844,7 @@ def scheduler_task(
     namespace: Optional[str] = None,
     version: str = "1",
     **task_options_base: Any,
-) -> Callable[[Callable[..., Promise[Result]]], SchedulerTask[Callable[..., Result]]]:
+) -> Callable[[Callable[..., Promise[Result]]], SchedulerTask]:
     """
     Decorator to register a function as a scheduler task.
 
@@ -916,12 +891,16 @@ def scheduler_task(
             return cond(result, task2(), task3())
     """
 
+    # Note: The return type is unparameterized SchedulerTask because the
+    # function signature includes internal params (scheduler, parent_job, sexpr)
+    # that are injected by the runtime — users never pass them. Capturing the
+    # full ParamSpec would expose those internal params to type checkers.
     def deco(
         func: Callable[..., Promise[Result]],
-    ) -> SchedulerTask[Callable[..., Result]]:
+    ) -> SchedulerTask:
         nonlocal name, namespace
 
-        _task: SchedulerTask[Callable[..., Result]] = SchedulerTask(
+        _task: SchedulerTask = SchedulerTask(
             func,
             name=name,
             namespace=namespace,
@@ -939,7 +918,7 @@ def wraps_task(
     wrapper_hash_includes: list = [],
     use_wrapper_signature: bool = False,
     **wrapper_task_options_base: Any,
-) -> Callable[[Callable[[Task[Func]], Func]], Callable[[Func], Task[Func]]]:
+) -> Callable[[Callable[[Task], Func]], Callable[[Func], Task]]:
     """A helper for creating new decorators that can be used like `@task`, that allow us to
     wrap the task in another one. Conceptually inspired by `@functools.wraps`, which makes it
     easier to create decorators that enclose functions.
@@ -956,12 +935,12 @@ def wraps_task(
 
     .. code-block:: python
 
-        def doubled_task() -> Callable[[Func], Task[Func]]:
+        def doubled_task() -> Callable[[Func], Task]:
 
             # The name of this inner function is used to create the nested namespace,
             # so idiomatically, use the same name as the decorator with a leading underscore.
             @wraps_task()
-            def _doubled_task(inner_task: Task) -> Callable[[Task[Func]], Func]:
+            def _doubled_task(inner_task: Task) -> Callable[[Task], Func]:
 
                 # The behavior when the task is run. Note we have both the task and the
                 # runtime args.
@@ -996,12 +975,12 @@ def wraps_task(
     .. code-block:: python
 
         # An example of arguments consumed by the wrapper
-        def wrapper_with_args(wrapper_arg: int) -> Callable[[Func], Task[Func]]:
+        def wrapper_with_args(wrapper_arg: int) -> Callable[[Func], Task]:
 
             # WARNING: Be sure to pass the extra data for hashing so it participates in the cache
             # evaluation
             @wraps_task(wrapper_hash_includes=[wrapper_arg])
-            def _wrapper_with_args(inner_task: Task) -> Callable[[Task[Func]], Func]:
+            def _wrapper_with_args(inner_task: Task) -> Callable[[Task], Func]:
 
                 def do_wrapper_with_args(*task_args, **task_kwargs) -> Any:
                     return wrapper_arg * inner_task.func(*task_args, **task_kwargs)
@@ -1028,8 +1007,8 @@ def wraps_task(
 
     def transform_wrapper(
         wrapper_func: Callable[[Task], Func],
-    ) -> Callable[[Func], Task[Func]]:
-        def create_tasks(inner_func_or_task: Union[Func, Task[Func]]) -> Task[Func]:
+    ) -> Callable[[Func], Task]:
+        def create_tasks(inner_func_or_task: Union[Func, Task]) -> Task:
             # As a convenience, create the lowest level Task on the fly.
             if isinstance(inner_func_or_task, Task):
                 hidden_inner_task = inner_func_or_task
@@ -1077,7 +1056,7 @@ def wraps_task(
             wrapped_hash_data = [hidden_inner_task]
 
             # We're definitely getting a task back
-            wrapped_task: Task[Func] = task(
+            wrapped_task: Task = task(
                 name=visible_name,
                 namespace=visible_namespace,
                 wrapped_task=hidden_inner_task.fullname,
