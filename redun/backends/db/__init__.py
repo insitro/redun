@@ -96,11 +96,11 @@ from redun.utils import (
     with_pickle_preview,
     utcnow,
 )
+from redun._version import __version__
 from redun.value import MIME_TYPE_PICKLE, InvalidValueError
 from redun.value import TypeError as RedunTypeError
-from importlib import metadata
 
-redun_version = metadata.version("redun")
+redun_version = __version__
 
 # Use MappedColumn class from SQLAlchemy 2.0, if possible, to enable better
 # type checks in redun itself and downstream code.

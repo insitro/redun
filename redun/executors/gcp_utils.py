@@ -1,12 +1,13 @@
 from enum import Enum
 from functools import lru_cache
-from importlib import metadata
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 from google.api_core import gapic_v1
 from google.cloud import batch_v1, compute_v1
 
-version = metadata.version("redun")
+from redun._version import __version__
+
+version = __version__
 
 
 # List of supported available CPU Platforms
