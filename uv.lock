@@ -2526,12 +2526,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pygraphviz"
-version = "1.14"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/66/ca/823d5c74a73d6b8b08e1f5aea12468ef334f0732c65cbb18df2a7f285c87/pygraphviz-1.14.tar.gz", hash = "sha256:c10df02377f4e39b00ae17c862f4ee7e5767317f1c6b2dfd04cea6acc7fc2bea", size = 106003, upload-time = "2024-09-29T18:31:12.471Z" }
-
-[[package]]
 name = "pyjwt"
 version = "2.10.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2746,9 +2740,6 @@ k8s = [
 postgres = [
     { name = "psycopg2" },
 ]
-viz = [
-    { name = "pygraphviz" },
-]
 
 [package.dev-dependencies]
 dev = [
@@ -2801,7 +2792,6 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'glue'" },
     { name = "psycopg2", marker = "extra == 'postgres'", specifier = ">=2.8" },
     { name = "pyarrow", marker = "extra == 'glue'" },
-    { name = "pygraphviz", marker = "extra == 'viz'" },
     { name = "pyspark", marker = "extra == 'glue'" },
     { name = "python-dateutil", specifier = ">=2.8" },
     { name = "pyyaml", specifier = "!=5.4.0,!=5.4.1,!=6.0.0" },
@@ -2811,7 +2801,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2,<3" },
     { name = "textual", specifier = ">=0.63.0" },
 ]
-provides-extras = ["postgres", "glue", "k8s", "google-batch", "azure", "viz"]
+provides-extras = ["postgres", "glue", "k8s", "google-batch", "azure"]
 
 [package.metadata.requires-dev]
 dev = [

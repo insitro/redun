@@ -9,7 +9,6 @@ jobs:
       - uses: actions/checkout@v5
       - id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
-      - run: sudo apt-get install -y graphviz graphviz-dev
       - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ steps.uv-version.outputs.version }}
@@ -29,7 +28,6 @@ jobs:
       - uses: actions/checkout@v5
       - id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
-      - run: sudo apt-get install -y graphviz graphviz-dev
       - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ steps.uv-version.outputs.version }}
@@ -44,7 +42,6 @@ jobs:
       - uses: actions/checkout@v5
       - id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
-      - run: sudo apt-get install -y graphviz graphviz-dev
       - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ steps.uv-version.outputs.version }}
@@ -59,7 +56,6 @@ jobs:
       - uses: actions/checkout@v5
       - id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
-      - run: sudo apt-get install -y graphviz graphviz-dev
       - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ steps.uv-version.outputs.version }}

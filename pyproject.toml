@@ -65,10 +65,6 @@ azure = [
     "adlfs>=2024.12.0",
     "azure-ai-ml>=1.23.1",
 ]
-viz = [
-    "pygraphviz",  # Requires system graphviz: apt-get install graphviz graphviz-dev
-]
-
 [dependency-groups]
 # Development dependencies
 dev = [
@@ -176,14 +172,6 @@ include = ["redun/executors/k8s.py"]
 
 [tool.ty.overrides.rules]
 possibly-missing-attribute = "warn"
-
-[[tool.ty.overrides]]
-include = ["redun/visualize.py", "redun/tests/test_visualize.py"]
-
-[tool.ty.overrides.rules]
-unresolved-import = "ignore"
-invalid-assignment = "ignore"
-
 
 [tool.pytest.ini_options]
 filterwarnings = [
