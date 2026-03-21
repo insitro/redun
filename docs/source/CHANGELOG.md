@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.44.0
+March 21, 2026
+
+* `#486` - chore: modernize typing syntax for Python 3.10+ 
+* `#487` - chore: remove viz feature and pygraphviz dependency 
+* `#489` - finish glue/version fix from #474 
+* `#488` - chore: update tox envlist to match supported Python versions 
+* `#485` - fix(docs): update release docs to match current process
+
 ## 0.43.0
 March 18, 2026
 
