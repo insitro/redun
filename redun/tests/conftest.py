@@ -2,7 +2,8 @@ import logging
 import os
 import sys
 import time
-from typing import Iterator, Optional, Tuple, cast
+from collections.abc import Iterator
+from typing import Optional, cast
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 def connect_with_retries(
     uri: str, interval: float = 0.1, timeout: float = 10.0
-) -> Tuple[Engine, Connection]:
+) -> tuple[Engine, Connection]:
     """
     Connect to database with retries.
     """

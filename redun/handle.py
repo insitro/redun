@@ -1,11 +1,11 @@
-from typing import Any, Optional, Tuple, Type
+from typing import Any, Optional
 
 from redun.hashing import hash_kwargs, hash_positional_args, hash_struct
 from redun.namespace import compute_namespace
 from redun.value import Value, get_type_registry
 
 
-def get_handle_class(handle_class_name: str) -> Type["Handle"]:
+def get_handle_class(handle_class_name: str) -> type["Handle"]:
     """
     Returns a Handle class from the TypeRegistry.
     """
@@ -54,7 +54,7 @@ class Handle(Value):
         def __init__(
             self,
             name: str,
-            args: Tuple,
+            args: tuple,
             kwargs: dict,
             class_name: str,
             namespace: Optional[str] = None,

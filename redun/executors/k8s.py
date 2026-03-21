@@ -6,18 +6,12 @@ import threading
 import time
 import uuid
 from collections import OrderedDict, defaultdict
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import datetime, timezone
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
     Optional,
-    Set,
-    Tuple,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -54,7 +48,7 @@ ARRAY_JOB_SUFFIX = "array"
 
 def k8s_submit(
     k8s_client: k8s_utils.K8SClient,
-    command: List[str],
+    command: list[str],
     image: str,
     namespace: str,
     job_name: str = "k8s-job",
@@ -64,13 +58,13 @@ def k8s_submit(
     gpus: int = 0,
     ephemeral_storage: Optional[str] = None,
     timeout: Optional[int] = None,
-    k8s_labels: Optional[Dict[str, str]] = None,
+    k8s_labels: Optional[dict[str, str]] = None,
     retries: int = 1,
     service_account_name: str = "default",
-    annotations: Optional[Dict[str, str]] = None,
+    annotations: Optional[dict[str, str]] = None,
     secret_name: Optional[str] = None,
-    node_affinity: Optional[Dict[str, Any]] = None,
-    env: Optional[Dict[str, str]] = None,
+    node_affinity: Optional[dict[str, Any]] = None,
+    env: Optional[dict[str, str]] = None,
 ) -> kubernetes.client.V1Job:
     """Prepares and submits a k8s job to the API server"""
     requests = {
@@ -178,8 +172,8 @@ def submit_task(
     scratch_prefix: str,
     job: Job,
     a_task: Task,
-    args: Tuple = (),
-    kwargs: Dict[str, Any] = {},
+    args: tuple = (),
+    kwargs: dict[str, Any] = {},
     job_options: dict = {},
     array_uuid: Optional[str] = None,
     array_size: int = 0,
@@ -287,11 +281,11 @@ def k8s_list_jobs(k8s_client: k8s_utils.K8SClient) -> Iterator[V1Job]:
     )
 
 
-def _parse_completed_indexes(completed_indexes_str: Optional[str]) -> Set[int]:
+def _parse_completed_indexes(completed_indexes_str: Optional[str]) -> set[int]:
     """Parse K8s Job status.completedIndexes string (e.g. '0,1,2-5') into a set of ints."""
     if not completed_indexes_str:
         return set()
-    result: Set[int] = set()
+    result: set[int] = set()
     for part in completed_indexes_str.split(","):
         part = part.strip()
         if "-" in part:
@@ -304,9 +298,9 @@ def _parse_completed_indexes(completed_indexes_str: Optional[str]) -> Set[int]:
 
 def k8s_describe_jobs(
     k8s_client: k8s_utils.K8SClient,
-    job_names: List[str],
+    job_names: list[str],
     namespace: str,
-) -> List[kubernetes.client.V1Job]:  # ty: ignore[possibly-missing-attribute]
+) -> list[kubernetes.client.V1Job]:  # ty: ignore[possibly-missing-attribute]
     """
     Returns K8S Job descriptions.
     """
@@ -325,7 +319,7 @@ def get_pod_logs(
     k8s_client: k8s_utils.K8SClient,
     pod: kubernetes.client.V1Pod,  # ty: ignore[possibly-missing-attribute]
     max_lines: Optional[int] = None,
-) -> List[str]:
+) -> list[str]:
     """
     Returns the logs of a K8S pod.
     """
@@ -458,10 +452,10 @@ class K8SExecutor(Executor):
         self.is_running = False
         self._k8s_client = k8s_utils.K8SClient()
         # We use an OrderedDict in order to retain submission order.
-        self.pending_k8s_jobs: Dict[str, Union[Job, Dict[int, Job]]] = OrderedDict()
-        self.preexisting_k8s_jobs: Dict[
+        self.pending_k8s_jobs: dict[str, Job | dict[int, Job]] = OrderedDict()
+        self.preexisting_k8s_jobs: dict[
             str,
-            Union[str, Tuple[str, str, int, str]],
+            str | tuple[str, str, int, str],
         ] = {}  # Job hash -> Job ID
 
         self.interval = config.getfloat("job_monitor_interval", 5.0)
@@ -489,7 +483,7 @@ class K8SExecutor(Executor):
             max_array_size=max_array_size,
         )
 
-    def _submit_jobs(self, jobs: List[Job]) -> None:
+    def _submit_jobs(self, jobs: list[Job]) -> None:
         """
         Callback for JobArrayer to return arrays of Jobs.
         """
@@ -508,7 +502,7 @@ class K8SExecutor(Executor):
 
     def gather_inflight_jobs(self) -> None:
         """Collect existing k8s jobs and match them up to redun jobs"""
-        running_arrays: Dict[str, List[Tuple[str, str, int]]] = defaultdict(list)
+        running_arrays: dict[str, list[tuple[str, str, int]]] = defaultdict(list)
 
         # We don't currently filter on "inflight" jobs, but that's what the
         # aws_batch implementation does.
@@ -658,7 +652,7 @@ class K8SExecutor(Executor):
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
 
-    def _get_k8s_job_terminal_status(self, job: V1Job) -> Tuple[Optional[str], Optional[str]]:
+    def _get_k8s_job_terminal_status(self, job: V1Job) -> tuple[Optional[str], Optional[str]]:
         """
         Determine terminal status from the K8s Job object's status fields.
         Returns (job_status, status_reason) or (None, None) if not yet terminal.
@@ -718,7 +712,7 @@ class K8SExecutor(Executor):
         pod: Optional[V1Pod],
         job_status: str,
         status_reason: Optional[str],
-        k8s_labels: Optional[List[Tuple[str, str]]] = None,
+        k8s_labels: Optional[list[tuple[str, str]]] = None,
     ) -> None:
         """
         Complete a redun job (done or reject).
@@ -749,7 +743,7 @@ class K8SExecutor(Executor):
 
         elif job_status == FAILED:
             error, error_traceback = parse_job_error(self.scratch_prefix, job)
-            logs: List[str] = []
+            logs: list[str] = []
 
             if pod:
                 logs.append(f"*** Logs for K8S pod {pod.metadata.name}: \n")
@@ -834,10 +828,10 @@ class K8SExecutor(Executor):
         else:
             # Otherwise, job represents a redun job array, and termination requires management
             # both of the indexing in the job array, as well as processing the k8s job.
-            redun_jobs = cast("Dict[int, Job]", self.pending_k8s_jobs[job.metadata.name])
+            redun_jobs = cast("dict[int, Job]", self.pending_k8s_jobs[job.metadata.name])
 
             # Build a pod index map for log retrieval.
-            pods_by_index: Dict[int, V1Pod] = {}
+            pods_by_index: dict[int, V1Pod] = {}
             for p in pods:
                 annotations = p.metadata.annotations or {}
                 idx_str = annotations.get("batch.kubernetes.io/job-completion-index")
@@ -1002,7 +996,7 @@ class K8SExecutor(Executor):
         cache_scope = CacheScope(task_options.get("cache_scope", CacheScope.BACKEND))
 
         # Determine if we can reunite with a previous K8S output or job.
-        k8s_job_id: Optional[Union[str, Tuple[str, str, int, str]]] = None
+        k8s_job_id: Optional[str | tuple[str, str, int, str]] = None
         if cache_scope == CacheScope.BACKEND and job.eval_hash in self.preexisting_k8s_jobs:
             k8s_job_id = self.preexisting_k8s_jobs.pop(job.eval_hash)
 
@@ -1048,8 +1042,8 @@ class K8SExecutor(Executor):
                     )
                     assert k8s_job_id
                     if job_name not in self.pending_k8s_jobs:
-                        self.pending_k8s_jobs[job_name] = cast("Dict[int, Job]", {})
-                    cast("Dict[int, Job]", self.pending_k8s_jobs[job_name])[child_job_index] = job
+                        self.pending_k8s_jobs[job_name] = cast("dict[int, Job]", {})
+                    cast("dict[int, Job]", self.pending_k8s_jobs[job_name])[child_job_index] = job
                 else:
                     k8s_job_id = None
             else:
@@ -1062,7 +1056,7 @@ class K8SExecutor(Executor):
 
         self._start()
 
-    def _submit_array_job(self, jobs: List[Job]) -> str:
+    def _submit_array_job(self, jobs: list[Job]) -> str:
         """Submits an array job, returning job name uuid"""
         array_size = len(jobs)
 
@@ -1108,7 +1102,7 @@ class K8SExecutor(Executor):
         array_job_name = k8s_resp.metadata.name
         self.pending_k8s_jobs[array_job_name] = {}
         for i in range(array_size):
-            cast("Dict[int, Job]", self.pending_k8s_jobs[array_job_name])[i] = jobs[i]
+            cast("dict[int, Job]", self.pending_k8s_jobs[array_job_name])[i] = jobs[i]
         array_job_id = k8s_resp.metadata.uid
 
         self.log(

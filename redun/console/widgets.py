@@ -1,7 +1,7 @@
 import json
 from code import InteractiveInterpreter
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 from rich.console import RenderableType
 from rich.style import Style
@@ -98,7 +98,7 @@ class ExecutionList(DataTable):
             super().__init__()
             self.execution = execution
 
-    def __init__(self, executions: Optional[List[Execution]], **kwargs):
+    def __init__(self, executions: Optional[list[Execution]], **kwargs):
         super().__init__(**kwargs)
         self.cursor_type = "row"
         self.add_columns("ID", "Status", "Started", "Duration", "Execution")
@@ -145,7 +145,7 @@ class JobList(DataTable):
             super().__init__()
             self.job = job
 
-    def __init__(self, jobs: Optional[List[Job]], **kwargs):
+    def __init__(self, jobs: Optional[list[Job]], **kwargs):
         super().__init__(**kwargs)
         self.cursor_type = "row"
 
@@ -190,7 +190,7 @@ class JobStatusTable(Table):
         self.add_columns("TASK", *self.JOB_STATUSES)
         self.add_row("Loading...")
 
-        self.tasks: List[Optional[Task]] = []
+        self.tasks: list[Optional[Task]] = []
 
     def on_mount(self) -> None:
         self.call_after_refresh(self.load_jobs)
@@ -219,7 +219,7 @@ class JobStatusTable(Table):
         name2task = {task.fullname: task for task in tasks}
 
         # Compute status counts.
-        job_status_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        job_status_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
         for job, namespace, name, result_type in self.job_tasks:
             fullname = namespace + "." + name if namespace else name
             job_status_counts[fullname][job.calc_status(result_type)] += 1
@@ -334,7 +334,7 @@ class CommandInput(Input):
         super().__init__(*args, **kwargs)
         if complete:
             self._bindings.bind("tab", "complete", "Complete", show=False)
-        self.history: List[str] = []
+        self.history: list[str] = []
         self.position = -1
 
     def on_input_submitted(self, message: Input.Submitted) -> None:
@@ -370,7 +370,7 @@ class TagLinks(Container):
     Displays links derived from redun Tags.
     """
 
-    def __init__(self, link_patterns: List[str], tags: List[Tag]):
+    def __init__(self, link_patterns: list[str], tags: list[Tag]):
         super().__init__(classes="links")
         self.links = get_links(link_patterns, tags)
 

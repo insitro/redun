@@ -32,7 +32,7 @@ Use ``.. autotask::`` to alternatively manually document a task.
 # https://docs.celeryq.dev/en/latest/_modules/celery/contrib/sphinx.html
 
 from inspect import getfullargspec, signature
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from docutils import nodes
 from sphinx.domains.python import PyFunction
@@ -63,7 +63,7 @@ class TaskDocumenter(FunctionDocumenter):
             return str(signature(wrapped))
         return ""
 
-    def get_doc(self, ignore: Optional[int] = None) -> List[List[str]]:
+    def get_doc(self, ignore: Optional[int] = None) -> list[list[str]]:
         """
         Returns the formatted docstring for the task.
         """
@@ -95,7 +95,7 @@ class TaskDocumenter(FunctionDocumenter):
 class TaskDirective(PyFunction):
     """Sphinx task directive."""
 
-    def get_signature_prefix(self, sig: str) -> List[nodes.Node]:
+    def get_signature_prefix(self, sig: str) -> list[nodes.Node]:
         return [nodes.Text(self.env.config.redun_task_prefix)]
 
 
@@ -132,7 +132,7 @@ class SchedulerTaskDocumenter(TaskDocumenter):
 class SchedulerTaskDirective(PyFunction):
     """Sphinx scheduler_task directive."""
 
-    def get_signature_prefix(self, sig: str) -> List[nodes.Node]:
+    def get_signature_prefix(self, sig: str) -> list[nodes.Node]:
         return [nodes.Text(self.env.config.redun_scheduler_task_prefix)]
 
 

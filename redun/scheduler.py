@@ -16,22 +16,14 @@ import time
 import traceback
 import uuid
 from collections import OrderedDict, defaultdict
+from collections.abc import Callable, Iterable, Iterator
 from itertools import chain, takewhile
 from json import JSONDecodeError
 from traceback import FrameSummary
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
     Optional,
-    Set,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
     cast,
     overload,
 )
@@ -166,7 +158,7 @@ def set_current_scheduler(scheduler: Optional["Scheduler"]) -> None:
             pass
 
 
-def get_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> dict:
+def get_arg_defaults(task: "Task", args: tuple, kwargs: dict) -> dict:
     """
     Get default arguments from Task signature.
     """
@@ -188,7 +180,7 @@ def get_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> dict:
     return default_kwargs
 
 
-def set_arg_defaults(task: "Task", args: Tuple, kwargs: dict) -> Tuple[Tuple, dict]:
+def set_arg_defaults(task: "Task", args: tuple, kwargs: dict) -> tuple[tuple, dict]:
     """
     Set default arguments from Task signature.
     """
@@ -206,7 +198,7 @@ def format_arg(arg_name: str, value: Any, max_length: int = 200) -> str:
     )
 
 
-def format_task_call(task: "Task", args: Tuple, kwargs: dict) -> str:
+def format_task_call(task: "Task", args: tuple, kwargs: dict) -> str:
     """
     Format a Task call into a string.
 
@@ -279,10 +271,10 @@ class Job:
         # Execution state.
 
         # Job-level task option overrides.
-        self.options: Dict[str, Any] = options or {}
+        self.options: dict[str, Any] = options or {}
 
         # Options that have been exported and will be inherited by child Jobs.
-        self.export_options: Set[str] = task._export_options | expr._export_options
+        self.export_options: set[str] = task._export_options | expr._export_options
         if parent_job:
             self.export_options |= parent_job.export_options
 
@@ -291,11 +283,11 @@ class Job:
         self.context_hash: Optional[str] = None
 
         # The evaluated version of (self.expr.args, self.expr.kwargs)
-        self.eval_args: Optional[Tuple[Tuple, Dict]] = None
+        self.eval_args: Optional[tuple[tuple, dict]] = None
 
         # The evaluated and preprocessed arguments.
         # These are the arguments (args, kwargs) submitted to executors.
-        self.args: Optional[Tuple[Tuple, Dict]] = None
+        self.args: Optional[tuple[tuple, dict]] = None
 
         # The hash of the evaluated and preprocessed arguments.
         self.args_hash: Optional[str] = None
@@ -316,28 +308,28 @@ class Job:
         # Maintain a set of all tasks used in this Job's subtree. This is used to
         # correctly perform code reactivity
         # See: docs/source/implementation/graph_reduction_caching.md
-        self.subtree_tasks: Set[Task] = {task}
+        self.subtree_tasks: set[Task] = {task}
 
         # Promise for evaluating self.expr.
         self.result_promise: Promise = Promise()
 
         # The child jobs created for task calls within self.expr.
-        self.child_jobs: List[Job] = []
+        self.child_jobs: list[Job] = []
 
         # The parent job or None if this is the root job of the execution.
         self.parent_job: Optional[Job] = parent_job
 
         # Bookkeeping for handles created during this job.
-        self.handle_forks: Dict[str, int] = defaultdict(int)
+        self.handle_forks: dict[str, int] = defaultdict(int)
 
         # Tags (key-value pairs) that should be added to this job.
-        self.job_tags: List[Tuple[str, Any]] = []
+        self.job_tags: list[tuple[str, Any]] = []
 
         # Tags (key-value pairs) that should be added to the execution.
-        self.execution_tags: List[Tuple[str, Any]] = []
+        self.execution_tags: list[tuple[str, Any]] = []
 
         # Tags (value_hash and key-value pairs) that should be added to values.
-        self.value_tags: List[Tuple[str, List[Tuple[str, Any]]]] = []
+        self.value_tags: list[tuple[str, list[tuple[str, Any]]]] = []
 
         # A cached status of the job (PENDING, RUNNING, CACHED, DONE, FAILED).
         self._status: Optional[str] = None
@@ -385,7 +377,7 @@ class Job:
             **self.options,
         }
 
-    def get_option(self, key: str, default: Any = None, as_type: Optional[Type] = None) -> Any:
+    def get_option(self, key: str, default: Any = None, as_type: Optional[type] = None) -> Any:
         """
         Returns a task option associated with a :class:`Job`.
 
@@ -448,7 +440,7 @@ class Job:
             self._context = merge_dicts([parent_context, context_override])
         return self._context
 
-    def get_limits(self) -> Dict[str, int]:
+    def get_limits(self) -> dict[str, int]:
         """
         Returns resource limits required for this job to run.
         """
@@ -462,7 +454,7 @@ class Job:
 
         assert isinstance(limits, dict)
 
-        job_limits: Dict[str, int] = defaultdict(int)
+        job_limits: dict[str, int] = defaultdict(int)
         job_limits.update(limits)
         return job_limits
 
@@ -472,7 +464,7 @@ class Job:
         """
         parent_job.child_jobs.append(self)
 
-    def calc_subtree_tasks(self) -> Set[Task]:
+    def calc_subtree_tasks(self) -> set[Task]:
         """
         Computes all the tasks in this subtree.
         """
@@ -640,7 +632,7 @@ def get_backend_from_config(
     return backend
 
 
-def get_limits_from_config(limits_config: Optional[Section] = None) -> Dict[str, int]:
+def get_limits_from_config(limits_config: Optional[Section] = None) -> dict[str, int]:
     """
     Parses resource limits from a config object.
     """
@@ -651,7 +643,7 @@ def get_limits_from_config(limits_config: Optional[Section] = None) -> Dict[str,
     )
 
 
-def get_ignore_warnings_from_config(scheduler_config: Section) -> Set[str]:
+def get_ignore_warnings_from_config(scheduler_config: Section) -> set[str]:
     """
     Parses ignore warnings from config.
     """
@@ -662,7 +654,7 @@ def get_ignore_warnings_from_config(scheduler_config: Section) -> Set[str]:
 
 
 def format_job_statuses(
-    job_status_counts: Dict[str, Dict[str, int]],
+    job_status_counts: dict[str, dict[str, int]],
     timestamp: Optional[datetime.datetime] = None,
 ) -> Iterator[str]:
     """
@@ -670,7 +662,7 @@ def format_job_statuses(
     """
     # Create counts table.
     task_names = sorted(job_status_counts.keys())
-    table: List[List[str]] = (
+    table: list[list[str]] = (
         [["TASK"] + Job.STATUSES]
         + [
             ["ALL"]
@@ -707,7 +699,7 @@ class Frame(FrameSummary, Value):
         filename: str,
         lineno: int,
         name: str,
-        locals: Dict[str, Any],
+        locals: dict[str, Any],
         lookup_line: bool = True,
         line: Optional[str] = None,
         job: Optional[Job] = None,
@@ -757,10 +749,10 @@ class Traceback(Value):
 
     type_name = "redun.Traceback"
 
-    def __init__(self, error: Any, frames: List[FrameSummary], logs: Optional[List[str]] = None):
+    def __init__(self, error: Any, frames: list[FrameSummary], logs: Optional[list[str]] = None):
         self.error: Any = error
         self.frames = frames
-        self.logs: List[str] = logs or []
+        self.logs: list[str] = logs or []
 
     def __getstate__(self) -> dict:
         # In Python 3.13+, frame objects contain code which can't be pickled. Suppress code before pickling.
@@ -796,7 +788,7 @@ class Traceback(Value):
         return Traceback(error, frames)
 
     @classmethod
-    def trim_frames(self, frames: List[FrameSummary]) -> List[FrameSummary]:
+    def trim_frames(self, frames: list[FrameSummary]) -> list[FrameSummary]:
         # As we walk back through the call stack, when we reach a frame from
         # redun's executors or cli, we know we have left the user's code.
         redun_path_prefixes = [
@@ -963,7 +955,7 @@ class Scheduler:
         self.backend: RedunBackend = backend
 
         # Setup executors.
-        self.executors: Dict[str, Executor] = {}
+        self.executors: dict[str, Executor] = {}
         if executor:
             self.add_executor(executor)
         else:
@@ -974,9 +966,9 @@ class Scheduler:
             self.add_executor(executor)
 
         # Setup limits.
-        self.limits: Dict[str, int] = get_limits_from_config(self.config.get("limits"))
-        self.limits_used: Dict[str, int] = defaultdict(int)
-        self._jobs_pending_limits: List[Tuple[Job, Tuple[tuple, dict]]] = []
+        self.limits: dict[str, int] = get_limits_from_config(self.config.get("limits"))
+        self.limits_used: dict[str, int] = defaultdict(int)
+        self._jobs_pending_limits: list[tuple[Job, tuple[tuple, dict]]] = []
 
         # Setup execution tags.
         tags = self.config.get("tags", {})
@@ -991,23 +983,23 @@ class Scheduler:
         self.events_queue: queue.Queue = queue.Queue()
         self.workflow_promise: Optional[Promise] = None
         self._current_execution: Optional[Execution] = None
-        self._tracked_promises: Dict[str, Promise] = {}
+        self._tracked_promises: dict[str, Promise] = {}
 
         # Tracking for expression cycles. We store pending expressions by their parent_job
         # because the parent_job's lifetime corresponds to the expression's lifetime.
         # This makes for straightforward deallocation.
-        self._pending_expr: Dict[Optional[Job], Dict[str, Tuple[Promise, Expression]]] = (
+        self._pending_expr: dict[Optional[Job], dict[str, tuple[Promise, Expression]]] = (
             defaultdict(dict)
         )
 
         # Tracking for Common Subexpression Elimination (CSE) for pending Jobs.
-        self._pending_jobs: Dict[Tuple[Optional[str], Optional[str]], Job] = {}
+        self._pending_jobs: dict[tuple[Optional[str], Optional[str]], Job] = {}
 
         # Currently pending/running jobs.
-        self._jobs: Set[Job] = set()
+        self._jobs: set[Job] = set()
 
         # Job status of finalized jobs.
-        self._finalized_jobs: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        self._finalized_jobs: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
         # Execution modes.
         self._dryrun = False
@@ -1130,10 +1122,10 @@ class Scheduler:
     def run(
         self,
         expr: Expression[Result],
-        exec_argv: Optional[List[str]] = None,
+        exec_argv: Optional[list[str]] = None,
         dryrun: bool = False,
         cache: bool = True,
-        tags: Iterable[Tuple[str, Any]] = (),
+        tags: Iterable[tuple[str, Any]] = (),
         context: dict = {},
         execution_id: Optional[str] = None,
     ) -> Result:
@@ -1143,10 +1135,10 @@ class Scheduler:
     def run(
         self,
         expr: Result,
-        exec_argv: Optional[List[str]] = None,
+        exec_argv: Optional[list[str]] = None,
         dryrun: bool = False,
         cache: bool = True,
-        tags: Iterable[Tuple[str, Any]] = (),
+        tags: Iterable[tuple[str, Any]] = (),
         context: dict = {},
         execution_id: Optional[str] = None,
     ) -> Result:
@@ -1154,11 +1146,11 @@ class Scheduler:
 
     def run(
         self,
-        expr: Union[Expression[Result], Result],
-        exec_argv: Optional[List[str]] = None,
+        expr: Expression[Result] | Result,
+        exec_argv: Optional[list[str]] = None,
         dryrun: bool = False,
         cache: bool = True,
-        tags: Iterable[Tuple[str, Any]] = (),
+        tags: Iterable[tuple[str, Any]] = (),
         context: dict = {},
         execution_id: Optional[str] = None,
     ) -> Result:
@@ -1221,7 +1213,7 @@ class Scheduler:
 
     def extend_run(
         self,
-        expr: Union[Expression[Result], Result],
+        expr: Expression[Result] | Result,
         parent_job_id: str,
         dryrun: bool = False,
         cache: bool = True,
@@ -1315,9 +1307,9 @@ class Scheduler:
         # Print final job statuses.
         self.log_job_statuses()
 
-    def get_job_status_report(self) -> List[str]:
+    def get_job_status_report(self) -> list[str]:
         # Gather job status information.
-        status_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        status_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
         for job in self._jobs:
             status_counts[job.task.fullname][job.status] += 1
             status_counts[job.task.fullname]["TOTAL"] += 1
@@ -1443,7 +1435,7 @@ class Scheduler:
                 )
             else:
                 # Downgrade the cache option, if needed.
-                job_options: Dict[str, Any] = {}
+                job_options: dict[str, Any] = {}
                 if not self._use_cache:
                     job_options["cache_scope"] = CacheScope.CSE
 
@@ -1568,21 +1560,21 @@ class Scheduler:
             for limit_name, count in job_limits.items()
         )
 
-    def _consume_resources(self, job_limits: Dict[str, int]) -> None:
+    def _consume_resources(self, job_limits: dict[str, int]) -> None:
         """
         Increments the resource limits used with the supplied job limits.
         """
         for limit_name, count in job_limits.items():
             self.limits_used[limit_name] += count
 
-    def _release_resources(self, job_limits: Dict[str, int]) -> None:
+    def _release_resources(self, job_limits: dict[str, int]) -> None:
         """
         Decrements the resource limits used with the supplied job limits.
         """
         for limit_name, count in job_limits.items():
             self.limits_used[limit_name] -= count
 
-    def _add_job_pending_limits(self, job: Job, eval_args: Tuple[Tuple, dict]) -> None:
+    def _add_job_pending_limits(self, job: Job, eval_args: tuple[tuple, dict]) -> None:
         """
         Adds a job to the queue of jobs waiting to run once resources are available.
         """
@@ -1599,9 +1591,9 @@ class Scheduler:
         Checks whether Jobs pending due to limits can now satisfy limits and run.
         """
 
-        ready_jobs: List[Tuple[Job, Tuple[tuple, dict]]] = []
-        not_ready_jobs: List[Tuple[Job, Tuple[tuple, dict]]] = []
-        ready_job_limits: Dict[str, int] = defaultdict(int)
+        ready_jobs: list[tuple[Job, tuple[tuple, dict]]] = []
+        not_ready_jobs: list[tuple[Job, tuple[tuple, dict]]] = []
+        ready_job_limits: dict[str, int] = defaultdict(int)
 
         # Resource limits that will be consumed by ready jobs.
         for job, eval_args in self._jobs_pending_limits:
@@ -1654,7 +1646,7 @@ class Scheduler:
 
         return None
 
-    def _exec_job(self, job: Job, eval_args: Tuple[Tuple, dict]) -> Promise:
+    def _exec_job(self, job: Job, eval_args: tuple[tuple, dict]) -> Promise:
         """
         Execute a job that is ready using the fully evaluated arguments.
         """
@@ -1662,7 +1654,7 @@ class Scheduler:
         self.events_queue.put(lambda: self._exec_job_main_thread(job, eval_args))
         return job.result_promise
 
-    def _exec_job_main_thread(self, job: Job, eval_args: Tuple[Tuple, dict]) -> None:
+    def _exec_job_main_thread(self, job: Job, eval_args: tuple[tuple, dict]) -> None:
         """
         Execute a job that is ready using the fully evaluated arguments.
 
@@ -1802,7 +1794,7 @@ class Scheduler:
         else:
             executor.submit_script(job)
 
-    def add_job_tags(self, job: Job, tags: List[Tuple[str, Any]]) -> None:
+    def add_job_tags(self, job: Job, tags: list[tuple[str, Any]]) -> None:
         """
         Callback for adding job tags during job execution.
         """
@@ -1813,7 +1805,7 @@ class Scheduler:
             )
         )
 
-    def done_job(self, job: Job, result: Any, job_tags: List[Tuple[str, Any]] = []) -> None:
+    def done_job(self, job: Job, result: Any, job_tags: list[tuple[str, Any]] = []) -> None:
         """
         Mark a :class:`Job` as successfully done with a `result`.
 
@@ -1822,7 +1814,7 @@ class Scheduler:
         self.events_queue.put(lambda: self._done_job_main_thread(job, result, job_tags=job_tags))
 
     def _done_job_main_thread(
-        self, job: Job, result: Any, job_tags: List[Tuple[str, Any]] = []
+        self, job: Job, result: Any, job_tags: list[tuple[str, Any]] = []
     ) -> None:
         """
         Mark a :class:`Job` as successfully done with a `result`.
@@ -1947,7 +1939,7 @@ class Scheduler:
         job.resolve(result)
         self._finalize_job(job)
 
-    def _get_subtree_tasks(self, job: Job) -> Set[Task]:
+    def _get_subtree_tasks(self, job: Job) -> set[Task]:
         """
         Returns all Tasks used by CallNodes within its subtree.
         """
@@ -2015,7 +2007,7 @@ class Scheduler:
         job: Optional[Job],
         error: Any,
         error_traceback: Optional[Traceback] = None,
-        job_tags: List[Tuple[str, Any]] = [],
+        job_tags: list[tuple[str, Any]] = [],
     ) -> None:
         """
         Reject a :class:`Job` that has failed with an `error`.
@@ -2033,7 +2025,7 @@ class Scheduler:
         job: Optional[Job],
         error: Any,
         error_traceback: Optional[Traceback] = None,
-        job_tags: List[Tuple[str, Any]] = [],
+        job_tags: list[tuple[str, Any]] = [],
     ) -> None:
         """
         Reject a :class:`Job` that has failed with an `error`.
@@ -2135,7 +2127,7 @@ class Scheduler:
             return
 
         # Get job stack.
-        job_stack: List[Job] = []
+        job_stack: list[Job] = []
         ptr: Optional[Job] = job
         while ptr:
             job_stack.append(ptr)
@@ -2143,7 +2135,7 @@ class Scheduler:
         job_stack.reverse()
 
         # Get task-based traceback.
-        task_frames: List[FrameSummary] = []
+        task_frames: list[FrameSummary] = []
         for frame_job in job_stack:
             assert frame_job.task
             if frame_job.eval_args:
@@ -2174,7 +2166,7 @@ class Scheduler:
         # Set this execution's traceback.
         self.traceback = Traceback(error, task_frames, logs=error_traceback.logs)
 
-    def _get_cache(self, job: Job) -> Tuple[Any, bool, Optional[str]]:
+    def _get_cache(self, job: Job) -> tuple[Any, bool, Optional[str]]:
         """
         Attempt to find a cached value for an evaluation (`eval_hash`).
 
@@ -2336,7 +2328,7 @@ class Scheduler:
         """
         return self.type_registry.is_valid_nested(value)
 
-    def _perform_rollbacks(self, args: Tuple, kwargs: dict) -> None:
+    def _perform_rollbacks(self, args: tuple, kwargs: dict) -> None:
         """
         Perform any Handle rollbacks needed for the given Task arguments.
         """
@@ -2344,7 +2336,7 @@ class Scheduler:
             if isinstance(value, Handle):
                 self.backend.rollback_handle(value)
 
-    def _preprocess_args(self, job: Job, args: Tuple, kwargs: dict) -> Any:
+    def _preprocess_args(self, job: Job, args: tuple, kwargs: dict) -> Any:
         """
         Preprocess arguments for a Task before execution.
         """
@@ -2397,7 +2389,7 @@ def merge_handles(
     scheduler: Scheduler,
     parent_job: Job,
     sexpr: SchedulerExpression,
-    handles_expr: List[Handle],
+    handles_expr: list[Handle],
 ) -> Promise:
     """
     Merge multiple handles into one.
@@ -2572,8 +2564,8 @@ def catch(
     error_recover_pairs:
         A list of alternating error_class and recover Tasks.
     """
-    errors: List[Union[Type[Exception], Tuple[Type[Exception]]]] = list(catch_args[::2])
-    recovers: List[Callable] = list(catch_args[1::2])
+    errors: list[type[Exception] | tuple[type[Exception]]] = list(catch_args[::2])
+    recovers: list[Callable] = list(catch_args[1::2])
     error_recover_pairs = list(zip(errors, recovers))
     eval_hash: str
     args_hash: str
@@ -2637,9 +2629,9 @@ def catch_all(
     parent_job: Job,
     sexpr: SchedulerExpression,
     exprs: T,
-    error_class: Union[None, Exception, Tuple[Exception, ...]] = None,
-    recover: "Optional[Task[..., S]]" = None,
-) -> Promise[Union[T, S]]:
+    error_class: None | Exception | tuple[Exception, ...] = None,
+    recover: Task[..., S] | None = None,
+) -> Promise[T | S]:
     """
     Catch all exceptions that occur in the nested value `exprs`.
 
@@ -2742,9 +2734,9 @@ def apply_tags(
     parent_job: Job,
     sexpr: SchedulerExpression,
     value: Any,
-    tags: List[Tuple[str, Any]] = [],
-    job_tags: List[Tuple[str, Any]] = [],
-    execution_tags: List[Tuple[str, Any]] = [],
+    tags: list[tuple[str, Any]] = [],
+    job_tags: list[tuple[str, Any]] = [],
+    execution_tags: list[tuple[str, Any]] = [],
 ) -> Promise:
     """
     Apply tags to a value, job, or execution.
@@ -2813,10 +2805,10 @@ def with_export_options(expr: QuotedExpression, options: dict) -> Any:
 )
 def _subrun_root_task(
     expr: QuotedExpression,
-    config: Dict[str, Dict],
+    config: dict[str, dict],
     config_dir: Optional[str],
-    load_modules: List[str],
-    run_config: Dict[str, Any],
+    load_modules: list[str],
+    run_config: dict[str, Any],
     new_execution: bool = False,
     job_info: JobInfo = JobInfo(),
     export_options: Optional[dict] = None,
@@ -2964,10 +2956,10 @@ def subrun(
     sexpr: SchedulerExpression,
     expr: Any,
     executor: str,
-    config: Optional[Dict[str, Any]] = None,
+    config: Optional[dict[str, Any]] = None,
     config_dir: Optional[str] = None,
     new_execution: bool = False,
-    load_modules: Optional[List[str]] = None,
+    load_modules: Optional[list[str]] = None,
     **task_options: dict,
 ) -> Promise:
     """
@@ -3061,7 +3053,7 @@ def subrun(
             load_modules_set.add(module_name)
 
     # Prepare child task call for subrun.
-    run_config: Dict[str, Any] = {
+    run_config: dict[str, Any] = {
         "dryrun": scheduler._dryrun,
         "cache": scheduler._use_cache,
         "context": parent_job.get_context(),
@@ -3072,7 +3064,7 @@ def subrun(
         new_execution = True
 
     # Extract the cache options.
-    all_options: Dict[str, Any] = {
+    all_options: dict[str, Any] = {
         "cache_scope": CacheScope(
             sexpr._options.get("cache_scope", subrun.get_task_option("cache_scope"))
         ),

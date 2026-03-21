@@ -1,5 +1,5 @@
 import pickle
-from typing import List, Optional
+from typing import Optional
 from unittest import mock
 
 import pytest
@@ -521,7 +521,7 @@ def test_handle_fork_many(scheduler: Scheduler) -> None:
         ]
         return merge_handles(conns)
 
-    task_calls: List[str] = []
+    task_calls: list[str] = []
     scheduler.run(workflow())
     assert set(task_calls) == {"a", "b", "c"}
 
@@ -567,7 +567,7 @@ def test_handle_implicit_fork(scheduler: Scheduler) -> None:
         ]
         return merge_handles(conns)
 
-    task_calls: List[str] = []
+    task_calls: list[str] = []
     scheduler.run(workflow())
     assert set(task_calls) == {"a", "b", "c"}
 
@@ -643,7 +643,7 @@ def test_handle_serial(scheduler: Scheduler) -> None:
         conn = task1(conn, "c")
         return conn
 
-    task_calls: List[str] = []
+    task_calls: list[str] = []
     scheduler.run(workflow())
     assert set(task_calls) == {"a", "b", "c"}
 

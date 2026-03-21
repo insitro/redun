@@ -9,6 +9,7 @@ import sys
 import threading
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Callable, Iterable, Iterator
 from collections.abc import Iterable as IterableABC
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone, tzinfo
@@ -19,30 +20,20 @@ from pickle import dumps as allowed_dumps_func
 from typing import (
     IO,
     Any,
-    Callable,
-    Dict,
     Generic,
-    Iterable,
-    Iterator,
-    List,
     NoReturn,
     Optional,
-    Tuple,
-    Type,
+    Protocol,
     TypeVar,
-    Union,
     cast,
 )
-
-from typing import Protocol
-
 
 T = TypeVar("T")
 NULL = object()
 PICKLE_PROTOCOL = 3
 
 # Additional python import paths added by user.
-_redun_import_paths: List[str] = []
+_redun_import_paths: list[str] = []
 
 _local = threading.local()
 
@@ -80,7 +71,7 @@ def add_import_path(path: str) -> None:
     sys.path.insert(0, safe_path)
 
 
-def get_import_paths() -> List[str]:
+def get_import_paths() -> list[str]:
     """
     Returns extra import paths that have been added.
     """
@@ -147,7 +138,7 @@ def with_pickle_preview(raise_error: bool = False) -> Iterator[None]:
     _local.num_pickle_preview_active -= 1
 
 
-def iter_nested_value_children(value: Any) -> Iterable[Tuple[bool, Any]]:
+def iter_nested_value_children(value: Any) -> Iterable[tuple[bool, Any]]:
     """
     Helper function that iterates through the children of a possibly nested value.
 
@@ -250,7 +241,7 @@ def trim_string(text: str, max_length: int = 200, ellipsis: str = "...") -> str:
         return text
 
 
-def merge_dicts(dicts: List[T]) -> T:
+def merge_dicts(dicts: list[T]) -> T:
     """
     Merge a list of (nested) dicts into a single dict.
     .. code-block:: python
@@ -372,7 +363,7 @@ def format_timedelta(duration: timedelta) -> str:
     )
 
 
-def format_table(table: List[List], justs: str, min_width: int = 0) -> Iterator[str]:
+def format_table(table: list[list], justs: str, min_width: int = 0) -> Iterator[str]:
     """
     Format table with justified columns.
     """
@@ -420,7 +411,7 @@ class PreviewClass(ABC):
         return self
 
     def __repr__(self) -> str:
-        attr: List[str] = []
+        attr: list[str] = []
         if hasattr(self, "_preview_args"):
             # Object was instantiated with constructor or with __new__.
             attr.extend(map(repr, self._preview_args))
@@ -458,9 +449,9 @@ class PreviewingUnpickler(Unpickler):
         super().__init__(*args, **kwargs)
 
         # Registry of stub classes for unknown classes.
-        self._classes: Dict[str, Type] = {}
+        self._classes: dict[str, type] = {}
 
-    def find_class(self, module: str, name: str) -> Type:
+    def find_class(self, module: str, name: str) -> type:
         try:
             return super().find_class(module, name)
 
@@ -522,7 +513,7 @@ Key = TypeVar("Key", bound="Comparable")
 Value = TypeVar("Value", bound="Comparable")
 
 
-def _multidict2items(dct: Dict[Key, List[Value]]) -> List[Tuple[Key, Value]]:
+def _multidict2items(dct: dict[Key, list[Value]]) -> list[tuple[Key, Value]]:
     return [(key, value) for key, values in dct.items() for value in values]
 
 
@@ -531,8 +522,8 @@ class MultiMap(Generic[Key, Value]):
     An associative array with repeated keys.
     """
 
-    def __init__(self, items: Iterable[Union[Tuple[Key, Value], List]] = ()):
-        self._data: Dict[Key, List[Value]] = {}
+    def __init__(self, items: Iterable[tuple[Key, Value] | list] = ()):
+        self._data: dict[Key, list[Value]] = {}
         self._len = 0
         for key, value in items:
             if key not in self._data:
@@ -546,10 +537,10 @@ class MultiMap(Generic[Key, Value]):
     def __len__(self) -> int:
         return self._len
 
-    def __getitem__(self, key: Key) -> List[Value]:
+    def __getitem__(self, key: Key) -> list[Value]:
         return self._data[key]
 
-    def __iter__(self) -> Iterator[Tuple[Key, Value]]:
+    def __iter__(self) -> Iterator[tuple[Key, Value]]:
         for key, values in self._data.items():
             for value in values:
                 yield (key, value)
@@ -557,7 +548,7 @@ class MultiMap(Generic[Key, Value]):
     def __contains__(self, key: Key) -> bool:
         return key in self._data
 
-    def _equal_dicts(self, dict1: Dict[Key, List[Value]], dict2: Dict[Key, List[Value]]) -> bool:
+    def _equal_dicts(self, dict1: dict[Key, list[Value]], dict2: dict[Key, list[Value]]) -> bool:
         return sorted(_multidict2items(dict1)) == sorted(_multidict2items(dict2))
 
     def __eq__(self, other: object) -> bool:
@@ -576,7 +567,7 @@ class MultiMap(Generic[Key, Value]):
     def has_item(self, key: Key, value: Value) -> bool:
         return value in self._data.get(key, ())
 
-    def get(self, key: Key, default: Any = NULL) -> List[Value]:
+    def get(self, key: Key, default: Any = NULL) -> list[Value]:
         if default is NULL:
             default = []
         return self._data.get(key, default)
@@ -587,10 +578,10 @@ class MultiMap(Generic[Key, Value]):
     def values(self) -> Iterator[Value]:
         return itertools.chain.from_iterable(self._data.values())
 
-    def items(self) -> Iterator[Tuple[Key, Value]]:
+    def items(self) -> Iterator[tuple[Key, Value]]:
         return iter(self)
 
-    def as_dict(self) -> Dict[Key, List[Value]]:
+    def as_dict(self) -> dict[Key, list[Value]]:
         return self._data
 
     def add(self, key: Key, value: Value) -> None:

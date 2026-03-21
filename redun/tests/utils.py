@@ -5,11 +5,12 @@ import re
 import shutil
 import tempfile
 import time
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from functools import wraps
 from inspect import getmembers, getmodule, isclass, isfunction, ismethod, ismodule
 from itertools import zip_longest
-from typing import IO, Any, Callable, Dict, Iterator, List, NamedTuple, Optional, Type
+from typing import IO, Any, NamedTuple, Optional
 from unittest.mock import patch
 
 import sqlalchemy.event
@@ -186,7 +187,7 @@ def mock_s3(func: Callable) -> Callable:
 
 def get_filesystem_class_mock(
     proto: Optional[str] = None, url: Optional[str] = None
-) -> Type[FileSystem]:
+) -> type[FileSystem]:
     """
     Mock redun filesystem lookup.
     """
@@ -272,7 +273,7 @@ class GSFileSystemMock(GSFileSystem):
         """
         return self._s3fs.copy(self.convert_path(src_path), self.convert_path(dest_path))
 
-    def glob(self, pattern: str) -> List[str]:
+    def glob(self, pattern: str) -> list[str]:
         """
         Returns filenames matching pattern.
         """
@@ -335,7 +336,7 @@ def use_tempdir(func: Callable) -> Callable:
     return wrap
 
 
-def assert_match_lines(patterns: List[str], lines: List[str]) -> None:
+def assert_match_lines(patterns: list[str], lines: list[str]) -> None:
     """
     Asserts whether `lines` match `patterns`.
     """
@@ -373,7 +374,7 @@ class MatchEnv:
     """
 
     def __init__(self) -> None:
-        self.vars: Dict[str, Any] = {}
+        self.vars: dict[str, Any] = {}
 
     def match(self, *args, **kwargs) -> "Match":
         kwargs["env"] = self
@@ -387,7 +388,7 @@ class Match:
 
     def __init__(
         self,
-        type: Optional[Type] = None,
+        type: Optional[type] = None,
         var: Optional[str] = None,
         regex: Optional[str] = None,
         any: bool = True,
@@ -440,7 +441,7 @@ class QueryStats(NamedTuple):
 
 
 @contextmanager
-def listen_queries(engine: Any) -> Iterator[List[QueryStats]]:
+def listen_queries(engine: Any) -> Iterator[list[QueryStats]]:
     """
     Context for capturing SQLAlchemy queries.
 

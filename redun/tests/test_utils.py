@@ -2,16 +2,14 @@ import dataclasses
 import os
 import pickle
 import sys
-from datetime import datetime, timedelta, timezone
 from collections import defaultdict, namedtuple
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import (
     Any,
-    DefaultDict,
-    Dict,
-    Generator,
     Generic,
     NamedTuple,
     Optional,
@@ -42,7 +40,7 @@ T = TypeVar("T", int, float, str)
 @dataclass
 class Data(Generic[T]):
     x: T
-    y: Dict[str, Any]
+    y: dict[str, Any]
     z: Optional["Data"]  # noqa: F821
 
     def echo(self, string: str) -> str:
@@ -57,7 +55,7 @@ class CustomData1(Data[float]):
 @dataclass(frozen=True)
 class FrozenData(Generic[T]):
     x: T
-    y: Dict[str, Any]
+    y: dict[str, Any]
     z: Optional["Data"]  # noqa: F821
 
     def echo(self, string: str) -> str:
@@ -134,7 +132,7 @@ def test_map_nested_value() -> None:
 
     # Nested values are supported for namedtuple, but not defaultdict currently
     my_namedtuple = namedtuple("my_namedtuple", "a")
-    test_defaultdict: DefaultDict[str, int] = defaultdict(int)
+    test_defaultdict: defaultdict[str, int] = defaultdict(int)
     test_defaultdict["a"]
     test_namedtuple = my_namedtuple(a=1)
     test_dataclass = CustomData1(x=1.0, y={"foo": "bar"}, z=CustomData2(x=42, y={}, z=None))

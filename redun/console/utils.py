@@ -1,6 +1,6 @@
 import re
 from itertools import chain
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from redun.backends.db import Argument, Execution, Job, Tag, Task, Value
 from redun.tags import format_tag_value
@@ -18,7 +18,7 @@ def rich_escape(text: str) -> str:
     return text.replace("[", r"\[")
 
 
-def format_link(link_pattern: str, tags: Dict[str, Any]) -> Optional[str]:
+def format_link(link_pattern: str, tags: dict[str, Any]) -> Optional[str]:
     """
     Format a link pattern using a tag dictionary.
     """
@@ -59,11 +59,11 @@ def format_link(link_pattern: str, tags: Dict[str, Any]) -> Optional[str]:
         return None
 
 
-def get_links(link_patterns: List[str], tags: List[Tag]) -> List[str]:
+def get_links(link_patterns: list[str], tags: list[Tag]) -> list[str]:
     """
     Get links from a list of link patterns and redun tags.
     """
-    tags_dict: Dict[str, Any] = {tag.key: tag.value for tag in tags}
+    tags_dict: dict[str, Any] = {tag.key: tag.value for tag in tags}
     return list(
         filter(
             None,
@@ -72,7 +72,7 @@ def get_links(link_patterns: List[str], tags: List[Tag]) -> List[str]:
     )
 
 
-def format_tags(tags: List[Tag], max_length: int = 100, color="#9999cc") -> str:
+def format_tags(tags: list[Tag], max_length: int = 100, color="#9999cc") -> str:
     """
     Format a set of tags.
     """
@@ -89,7 +89,7 @@ def format_tags(tags: List[Tag], max_length: int = 100, color="#9999cc") -> str:
     return ", ".join(format_tag_key_value(tag.key, tag.value) for tag in tags)
 
 
-def format_arguments(args: List[Argument]) -> str:
+def format_arguments(args: list[Argument]) -> str:
     """
     Display CallNode arguments.
 

@@ -14,6 +14,7 @@ import sys
 import textwrap
 from argparse import Namespace
 from collections import Counter, defaultdict
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from collections.abc import Callable as AbstractCallable
 from contextlib import contextmanager
 from itertools import chain, islice
@@ -25,15 +26,8 @@ from types import ModuleType
 from typing import (
     IO,
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
     Optional,
-    Sequence,
     TextIO,
-    Tuple,
     Union,
     cast,
 )
@@ -173,7 +167,7 @@ def format_id(id: str, detail: bool = False, prefix=8) -> str:
         return id[:prefix]
 
 
-def format_arguments(args: List[Argument]) -> str:
+def format_arguments(args: list[Argument]) -> str:
     """
     Display CallNode arguments.
 
@@ -197,7 +191,7 @@ def format_arguments(args: List[Argument]) -> str:
     return text
 
 
-def parse_version(version: str) -> Tuple:
+def parse_version(version: str) -> tuple:
     """
     Parse a version number into a tuple of ints.
     """
@@ -305,7 +299,7 @@ def find_config_dir(cwd: Optional[str] = None) -> Optional[str]:
         base = parent_dir
 
 
-def parse_func_path(path: str) -> Tuple[str, str]:
+def parse_func_path(path: str) -> tuple[str, str]:
     """
     Parses a function path 'file_or_module::func'.
 
@@ -434,7 +428,7 @@ def get_anno_origin(anno: Any) -> Optional[Any]:
     Returns the origin of an annotation.
 
     Origin is Python's term for the main type of a generic type. For example,
-    the origin of `List[int]` is `list` and its argument is `int`.
+    the origin of `list[int]` is `list` and its argument is `int`.
 
     https://docs.python.org/3/library/typing.html#typing.get_origin
     """
@@ -470,10 +464,8 @@ def add_value_arg_parser(
         """
         Return True if the annotation represents an optional arg, False otherwise.
 
-        Arguments annotated with Optional[T] are a shortcut for Union[T, None]. So, this method
-        first checks that we have a Union. Assuming we do have a Union, then we can use the
-        largely undocumented __args__ which will be a 2-tuple of classes T and NoneType in the
-        case we started with Optional[T].
+        Checks for both `Optional[T]` (Union[T, None]) and `T | None` (PEP 604 UnionType).
+        Uses __args__ to verify one of the union members is NoneType.
 
         https://docs.python.org/3/library/typing.html#typing.get_args
         """
@@ -518,7 +510,7 @@ def add_value_arg_parser(
         # Parameters without an annotation are assumed to be str.
         parse_arg = str
 
-    parser_kwargs: Dict[str, Any] = {}
+    parser_kwargs: dict[str, Any] = {}
     if inspect.isclass(arg_anno) and issubclass(arg_anno, enum.Enum):
         parser_kwargs["choices"] = list(arg_anno)
     if is_list(anno):
@@ -540,7 +532,7 @@ def add_value_arg_parser(
 
 def get_setup_parser(
     setup_func: Callable,
-) -> Tuple[argparse.ArgumentParser, Dict[str, str]]:
+) -> tuple[argparse.ArgumentParser, dict[str, str]]:
     """
     Returns an ArgumentParser for setup arguments.
     """
@@ -579,7 +571,7 @@ def format_setup_help(parser: argparse.ArgumentParser) -> Iterator[str]:
         )
 
 
-def parse_setup_args(setup_func: Callable, setup_args: Optional[List[str]]) -> Dict[str, Any]:
+def parse_setup_args(setup_func: Callable, setup_args: Optional[list[str]]) -> dict[str, Any]:
     """
     Parse setup arguments into keyword arguments.
     """
@@ -610,7 +602,7 @@ def is_config_local_db(config: Config) -> bool:
 
 def setup_scheduler(
     config_dir: Optional[str] = None,
-    setup_args: Optional[List[str]] = None,
+    setup_args: Optional[list[str]] = None,
     repo: str = DEFAULT_REPO_NAME,
     migrate: Optional[bool] = None,
     migrate_if_local: bool = False,
@@ -698,7 +690,7 @@ def import_script(filename_or_module: str, add_cwd: bool = True) -> ModuleType:
 
 def get_task_arg_parser(
     task: BaseTask, include_defaults: bool
-) -> Tuple[argparse.ArgumentParser, Dict[str, str]]:
+) -> tuple[argparse.ArgumentParser, dict[str, str]]:
     """
     Returns a CLI parser for a redun Task.
 
@@ -751,7 +743,7 @@ def with_pager(client: "RedunClient", args: Namespace) -> Iterator[None]:
         client.stop_pager()
 
 
-def is_port_in_use(hostname: str, port: Union[int, str]) -> bool:
+def is_port_in_use(hostname: str, port: int | str) -> bool:
     """
     Check if TCP/IP `port` on `hostname` is in use
     """
@@ -765,7 +757,7 @@ def is_port_in_use(hostname: str, port: Union[int, str]) -> bool:
             raise err
 
 
-def format_tags(tags: List[Tag], max_length: int = 50) -> str:
+def format_tags(tags: list[Tag], max_length: int = 50) -> str:
     """
     Format a set of tags.
     """
@@ -778,7 +770,7 @@ def format_tags(tags: List[Tag], max_length: int = 50) -> str:
     return f"({tag_list})"
 
 
-def run_command(argv: List[str]) -> Optional[str]:
+def run_command(argv: list[str]) -> Optional[str]:
     """
     Run a command and return its output.
     """
@@ -801,12 +793,12 @@ def get_default_execution_tags(
     user: Optional[str] = None,
     project: Optional[str] = None,
     doc: Optional[str] = None,
-    exclude_users: List[str] = [],
-) -> List[Tuple[str, Any]]:
+    exclude_users: list[str] = [],
+) -> list[tuple[str, Any]]:
     """
     Get default tags for the Execution.
     """
-    tags: List[Tuple[str, Any]] = []
+    tags: list[tuple[str, Any]] = []
 
     # Redun version.
     tags.append((VERSION_KEY, redun.__version__))
@@ -897,7 +889,7 @@ class RedunClient:
         assert backend.session
         return backend.session
 
-    def execute(self, argv: Optional[List[str]] = None) -> Any:
+    def execute(self, argv: Optional[list[str]] = None) -> Any:
         """
         Execute a command from the command line.
         """
@@ -973,7 +965,7 @@ class RedunClient:
             sys.stderr.close()
             sys.exit()
 
-    def display_doc_tags(self, tags: List[Tag], indent: int = 0) -> None:
+    def display_doc_tags(self, tags: list[Tag], indent: int = 0) -> None:
         """
         Display doc tags.
         """
@@ -1373,7 +1365,7 @@ class RedunClient:
 
         return parser
 
-    def help_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def help_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Show help information.
         """
@@ -1404,7 +1396,7 @@ class RedunClient:
                 )
             )
 
-    def init_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def init_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Initialize redun project directory.
         """
@@ -1417,8 +1409,8 @@ class RedunClient:
         self.display("Initialized redun repository: {}".format(args.config))
 
     def resolve_context_updates(
-        self, context_file: str, context_updates: List[str]
-    ) -> Dict[str, Any]:
+        self, context_file: str, context_updates: list[str]
+    ) -> dict[str, Any]:
         """
         Create a dict with updates to the context from command line arguments.
         """
@@ -1429,7 +1421,7 @@ class RedunClient:
 
         if context_updates:
             # Build a nested dict from the context update keys.
-            context_updates_dict: Dict[str, Any] = {}
+            context_updates_dict: dict[str, Any] = {}
             for key_value in context_updates:
                 key, value = parse_tag_key_value(key_value)
                 current_dict = context_updates_dict
@@ -1443,7 +1435,7 @@ class RedunClient:
 
         return new_context
 
-    def run_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> Any:
+    def run_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> Any:
         """
         Performs the run command.
         """
@@ -1558,7 +1550,7 @@ class RedunClient:
             task = task.update_context(updated_context)
 
         # Determine execution tags.
-        tags: List[Tuple[str, Any]] = get_default_execution_tags(
+        tags: list[tuple[str, Any]] = get_default_execution_tags(
             user=args.user,
             project=args.project or infer_project_name(task),
             doc=args.doc,
@@ -1601,7 +1593,7 @@ class RedunClient:
 
         return result
 
-    def launch_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def launch_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Run a workflow within an Executor (e.g. docker or batch).
         """
@@ -1701,7 +1693,7 @@ class RedunClient:
             required=required,
         )
 
-    def log_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def log_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Performs the log command.
 
@@ -1865,7 +1857,7 @@ class RedunClient:
             self.display()
 
             # Display job status table.
-            job_status_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+            job_status_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
             for job in execution.jobs:
                 job_status_counts[job.task.fullname][job.status] += 1
                 job_status_counts[job.task.fullname]["TOTAL"] += 1
@@ -1995,7 +1987,7 @@ class RedunClient:
 
     def log_task(
         self,
-        task: Union[Task, BaseTask],
+        task: Task | BaseTask,
         show_source: bool = True,
         show_job: bool = True,
         indent: int = 0,
@@ -2287,7 +2279,7 @@ class RedunClient:
             )
             prev_path = file.path
 
-    def console_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def console_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Performs the console command (CLI GUI).
         """
@@ -2297,7 +2289,7 @@ class RedunClient:
 
         RedunApp(scheduler, args, extra_args, argv).run()
 
-    def repl_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def repl_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Get a read-eval-print-loop for querying the history.
         """
@@ -2338,7 +2330,7 @@ class RedunClient:
         _pdb.prompt = "(redun) "
         _pdb.set_trace()
 
-    def tag_list_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def tag_list_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Search tags.
         """
@@ -2422,7 +2414,7 @@ class RedunClient:
             args, extra_args = parser.parse_known_args(argv)
             return self.log_command(args, extra_args, argv)
 
-    def _parse_entity_info(self, id_prefix: str) -> Tuple[str, TagEntity]:
+    def _parse_entity_info(self, id_prefix: str) -> tuple[str, TagEntity]:
         model_pks = {
             Execution: "id",
             Job: "id",
@@ -2445,7 +2437,7 @@ class RedunClient:
 
         return full_id, entity_type
 
-    def tag_add_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def tag_add_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Add new tags to entities.
         """
@@ -2476,7 +2468,7 @@ class RedunClient:
                 )
             )
 
-    def tag_update_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def tag_update_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Update entity tags.
         """
@@ -2507,7 +2499,7 @@ class RedunClient:
                 )
             )
 
-    def tag_rm_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def tag_rm_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Delete tags.
         """
@@ -2543,7 +2535,7 @@ class RedunClient:
                 )
             )
 
-    def oneshot_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> Any:
+    def oneshot_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> Any:
         """
         Evaluate a single task.
         """
@@ -2668,7 +2660,7 @@ class RedunClient:
                         pickle_dump((error2, error_traceback2), out)
             raise error
 
-    def db_info_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def db_info_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Display information about redun repo database.
         """
@@ -2686,16 +2678,16 @@ class RedunClient:
         self.display(f"CLI requires db versions: >={min_version},<{max_version.major + 1}")
         self.display(f"CLI compatible with db: {is_compat}")
 
-    def db_upgrade_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def db_upgrade_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         return self.db_migrate_command("upgrade", args, extra_args, argv)
 
     def db_downgrade_command(
-        self, args: Namespace, extra_args: List[str], argv: List[str]
+        self, args: Namespace, extra_args: list[str], argv: list[str]
     ) -> None:
         return self.db_migrate_command("downgrade", args, extra_args, argv)
 
     def db_migrate_command(
-        self, direction: str, args: Namespace, extra_args: List[str], argv: List[str]
+        self, direction: str, args: Namespace, extra_args: list[str], argv: list[str]
     ) -> None:
         """
         Migrate redun repo database to a new version.
@@ -2728,7 +2720,7 @@ class RedunClient:
         version = backend.get_db_version()
         self.display(f"Final db version: {version}")
 
-    def db_versions_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def db_versions_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Display all available redun repo database versions.
         """
@@ -2746,7 +2738,7 @@ class RedunClient:
         for line in format_table(table, "lll"):
             self.display(line)
 
-    def export_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def export_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Export records from redun database.
         """
@@ -2782,7 +2774,7 @@ class RedunClient:
         if do_close:
             out.close()
 
-    def import_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def import_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Import records into redun database.
         """
@@ -2807,7 +2799,7 @@ class RedunClient:
         if do_close:
             infile.close()
 
-    def repo_add_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def repo_add_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         # Convert relative to absolute path.
         repo_config_path = get_abs_path(args.repo_config_dir)
 
@@ -2840,7 +2832,7 @@ class RedunClient:
             conf.write(f"\n[repos.{args.repo_name}]\n")
             conf.write(f"config_dir = {repo_config_path}\n")
 
-    def repo_remove_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def repo_remove_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         # Check repo is in the config file
         config = setup_config(args.config)
         repos = config.get("repos", {}).get(args.repo_name)
@@ -2852,7 +2844,7 @@ class RedunClient:
             f"the section titled [repos.{args.repo_name}]"
         )
 
-    def repo_list_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def repo_list_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         config = setup_config(args.config)
         self.display("Repositories:")
 
@@ -2867,7 +2859,7 @@ class RedunClient:
                 )
             self.display(f"{repo_name}: {repo_path}", indent=2)
 
-    def get_record_ids(self, prefix_ids: Sequence[str]) -> List[str]:
+    def get_record_ids(self, prefix_ids: Sequence[str]) -> list[str]:
         """
         Expand prefix record ids to full record ids.
         """
@@ -2881,7 +2873,7 @@ class RedunClient:
 
         return list(map(get_record_id, records))
 
-    def push_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def push_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Push records into a redun repository.
         """
@@ -2920,7 +2912,7 @@ class RedunClient:
         self,
         src_backend: RedunBackendDb,
         dest_backend: RedunBackendDb,
-        root_ids: Optional[List[str]] = None,
+        root_ids: Optional[list[str]] = None,
     ) -> int:
         assert src_backend.session
         assert dest_backend.session
@@ -2941,7 +2933,7 @@ class RedunClient:
         return num_records
 
     def aws_list_jobs_command(
-        self, args: Namespace, extra_args: List[str], argv: List[str]
+        self, args: Namespace, extra_args: list[str], argv: list[str]
     ) -> None:
         """
         List AWS Batch jobs.
@@ -2969,7 +2961,7 @@ class RedunClient:
             self.display()
 
     def aws_kill_jobs_command(
-        self, args: Namespace, extra_args: List[str], argv: List[str]
+        self, args: Namespace, extra_args: list[str], argv: list[str]
     ) -> None:
         """
         Kill AWS Batch jobs.
@@ -2990,7 +2982,7 @@ class RedunClient:
                 self.display("Killing job {}...".format(job_id))
                 executor.kill_jobs([job_id])
 
-    def aws_logs_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def aws_logs_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Fetch AWS Batch job logs.
         """
@@ -3005,7 +2997,7 @@ class RedunClient:
         default_aws_region = list(aws_region2executor.keys())[0]
 
         # Build up query of log streams.
-        query: List[Tuple[dict, Optional[Job], str, str]] = []
+        query: list[tuple[dict, Optional[Job], str, str]] = []
         if args.all:
             for executor in aws_region2executor.values():
                 for batch_job in executor.get_jobs(statuses=statuses):
@@ -3052,7 +3044,7 @@ class RedunClient:
 
             self.display()
 
-    def fs_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def fs_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Give information on redun-supported filesystems.
         """
@@ -3061,7 +3053,7 @@ class RedunClient:
         for fs in filesystems:
             self.display(f"  {fs}")
 
-    def fs_copy_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def fs_copy_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Copy files between redun-supported filesystems.
         """
@@ -3070,7 +3062,7 @@ class RedunClient:
         dest_path = args.dest_path if args.dest_path != "-" else None
         copy_file(src_path, dest_path)
 
-    def server_command(self, args: Namespace, extra_args: List[str], argv: List[str]) -> None:
+    def server_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         """
         Run redun local web server UI.
         """
@@ -3079,7 +3071,7 @@ class RedunClient:
             "the `redun server` command was run from the root of the redun repository"
         )
         config: Config = setup_config(args.config, repo=args.repo)
-        compose_env: Dict[str, Any] = {
+        compose_env: dict[str, Any] = {
             **os.environ,
             **{"REDUN_SERVER_DEV": 0, "TARGET": "prod-image"},
         }

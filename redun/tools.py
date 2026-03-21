@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Optional, TypeVar
+from typing import Optional, TypeVar
 
 from redun.file import Dir, File
 from redun.functools import seq
@@ -45,11 +45,11 @@ def copy_file(src_file: File, dest_path: str, skip_if_exists: bool = False) -> F
 
 @task(namespace="redun", version="1", config_args=["skip_if_exists", "copy_options"])
 def copy_files(
-    src_files: List[File],
-    dest_paths: List[str],
+    src_files: list[File],
+    dest_paths: list[str],
     skip_if_exists: bool = False,
-    copy_options: Dict = {},
-) -> List[File]:
+    copy_options: dict = {},
+) -> list[File]:
     """
     Copy multiple Files to new paths.
 
@@ -63,7 +63,7 @@ def copy_files(
 
 @task(namespace="redun", version="1", config_args=["skip_if_exists", "copy_options"])
 def copy_dir(
-    src_dir: Dir, dest_path: str, skip_if_exists: bool = False, copy_options: Dict = {}
+    src_dir: Dir, dest_path: str, skip_if_exists: bool = False, copy_options: dict = {}
 ) -> Dir:
     """
     Copy a Dir to a new path.

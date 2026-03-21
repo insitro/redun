@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import requests
 
@@ -87,7 +87,7 @@ def lambda_federated_task(
     *task_args,
     cache: bool = True,
     **task_kwargs,
-) -> Promise[Tuple[str, Dict]]:
+) -> Promise[tuple[str, dict]]:
     """Submit a task to an AWS Lambda Function, by packaging the inputs and sending as the payload
     with instructions.
 
@@ -126,7 +126,7 @@ def lambda_federated_task(
         Dict
             The data package.
     """
-    promise: Promise[Tuple[str, Dict]] = Promise()
+    promise: Promise[tuple[str, dict]] = Promise()
 
     execution = Execution()
 
@@ -172,7 +172,7 @@ def rest_federated_task(
     *task_args,
     cache: bool = True,
     **task_kwargs,
-) -> Promise[Tuple[str, Dict]]:
+) -> Promise[tuple[str, dict]]:
     """Submit a task to a server over REST, by packaging the inputs and POSTing a data blob
     with instructions.
 
@@ -211,7 +211,7 @@ def rest_federated_task(
         Dict
             The data package.
     """
-    promise: Promise[Tuple[str, Dict]] = Promise()
+    promise: Promise[tuple[str, dict]] = Promise()
 
     execution = Execution()
 
@@ -239,8 +239,8 @@ def rest_federated_task(
 def launch_federated_task(
     federated_config_path: str,
     entrypoint: str,
-    task_args: Optional[Tuple] = None,
-    task_kwargs: Optional[Dict] = None,
+    task_args: Optional[tuple] = None,
+    task_kwargs: Optional[dict] = None,
     input_path: Optional[str] = None,
     execution_id: Optional[str] = None,
     cache: bool = True,
@@ -330,7 +330,7 @@ def launch_federated_task(
     return execution.id
 
 
-def _get_federated_config(config: Config, entrypoint: str) -> Dict[str, Any]:
+def _get_federated_config(config: Config, entrypoint: str) -> dict[str, Any]:
     """
     Helper. Extract the named federated config from the provided object. Raise an error
     if not found.
@@ -342,7 +342,7 @@ def _get_federated_config(config: Config, entrypoint: str) -> Dict[str, Any]:
         f"in the provided federated tasks. Found `{list(config.keys())}`"
     )
 
-    entrypoint_config: Dict[str, Any] = dict(config[entrypoint])
+    entrypoint_config: dict[str, Any] = dict(config[entrypoint])
 
     required_keys = {"namespace", "task_name", "load_module", "executor", "config_dir"}
     available_keys = set(entrypoint_config.keys())

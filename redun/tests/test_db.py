@@ -1,8 +1,9 @@
 import inspect
 from collections import Counter
+from collections.abc import Callable
 from contextlib import contextmanager
 from datetime import timedelta, timezone
-from typing import Callable, Dict, List, Set, cast
+from typing import cast
 from unittest import mock
 from unittest.mock import patch
 
@@ -19,9 +20,6 @@ from redun.backends.db import (
     CallNode,
     DBVersionInfo,
     Execution,
-)
-from redun.backends.db import Handle as DbHandle
-from redun.backends.db import (
     HandleEdge,
     Job,
     PreviewValue,
@@ -35,14 +33,15 @@ from redun.backends.db import (
     Value,
     parse_db_version,
 )
+from redun.backends.db import Handle as DbHandle
 from redun.config import Config, create_config_section
 from redun.file import Dir, File
 from redun.functools import no_prov, seq
 from redun.scheduler import JobInfo
 from redun.tests.utils import use_tempdir
 from redun.utils import PreviewClass, pickle_dumps, utcnow
-from redun.value import Value as BaseValue
 from redun.value import ProxyValue
+from redun.value import Value as BaseValue
 
 
 def test_cache_db() -> None:
@@ -606,7 +605,7 @@ def test_subvalues(scheduler: Scheduler, session: Session) -> None:
     file2.write("goodbye")
 
     @task()
-    def main(files: List[File]) -> Dict[File, str]:
+    def main(files: list[File]) -> dict[File, str]:
         return {file: cast(str, file.read()) for file in files}
 
     assert scheduler.run(main([file1, file2])) == {file1: "hello", file2: "goodbye"}
@@ -638,7 +637,7 @@ def test_dir_subvalues(scheduler: Scheduler, session: Session) -> None:
     dir = Dir("dir")
 
     @task()
-    def main(dir: Dir) -> Set[str]:
+    def main(dir: Dir) -> set[str]:
         return {cast(str, file.read()) for file in dir}
 
     assert scheduler.run(main(dir)) == {"hello", "goodbye"}
@@ -680,7 +679,7 @@ def test_nested_dir_subvalues(scheduler: Scheduler, session: Session) -> None:
     dir2 = Dir("dir2")
 
     @task()
-    def main(dirs: List[Dir]) -> Set[str]:
+    def main(dirs: list[Dir]) -> set[str]:
         return {cast(str, file.read()) for dir in dirs for file in dir}
 
     assert scheduler.run(main([dir1, dir2])) == {"hello", "goodbye", "world"}

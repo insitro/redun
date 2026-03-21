@@ -1,4 +1,5 @@
-from typing import Any, Callable, Generic, List, Optional, Sequence, TypeVar, cast
+from collections.abc import Callable, Sequence
+from typing import Any, Generic, Optional, TypeVar, cast
 
 S = TypeVar("S")
 T = TypeVar("T")
@@ -22,8 +23,8 @@ class Promise(Generic[T]):
 
         self._value: Optional[T] = None
         self._error: Optional[Exception] = None
-        self._resolvers: List[Callable[[T], S]] = []
-        self._rejectors: List[Callable[[Exception], S]] = []
+        self._resolvers: list[Callable[[T], S]] = []
+        self._rejectors: list[Callable[[Exception], S]] = []
 
         if func:
             try:
@@ -150,12 +151,12 @@ class Promise(Generic[T]):
         return self.then(None, rejector)
 
     @classmethod
-    def all(cls, subpromises: Sequence["Promise[T]"]) -> "Promise[List[T]]":
+    def all(cls, subpromises: Sequence["Promise[T]"]) -> "Promise[list[T]]":
         """
         Return a promise that waits for all subpromises to resolve.
         """
-        promise: Promise[List[T]] = Promise()  # ty: ignore[invalid-argument-type]
-        results: List[Optional[T]] = []
+        promise: Promise[list[T]] = Promise()  # ty: ignore[invalid-argument-type]
+        results: list[T | None] = []
         num_done = 0
 
         def then(i: int, result: T) -> None:
@@ -166,7 +167,7 @@ class Promise(Generic[T]):
             if num_done == len(results):
                 # All subpromises are resolved now, so resolve the top-level
                 # promise with the final list.
-                promise.do_resolve(cast(List[T], results))
+                promise.do_resolve(cast(list[T], results))
 
         def fail(error: Exception) -> None:
             # As soon as we get a rejection of a subpromise, we reject the
@@ -183,16 +184,16 @@ class Promise(Generic[T]):
 
         if len(results) == 0:
             # Special case for when we are given no subpromises.
-            promise.do_resolve(cast(List[T], results))
+            promise.do_resolve(cast(list[T], results))
 
         return promise
 
 
-def wait_promises(subpromises: List[Promise[T]]) -> Promise[List[Promise[T]]]:
+def wait_promises(subpromises: list[Promise[T]]) -> Promise[list[Promise[T]]]:
     """
     Wait for all promises to finish (either fulfill or reject).
     """
-    promise: Promise[List[Promise[T]]] = Promise()
+    promise: Promise[list[Promise[T]]] = Promise()
     num_done = 0
 
     def done(result_or_error: Any) -> None:

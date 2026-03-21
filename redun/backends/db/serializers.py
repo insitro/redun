@@ -2,7 +2,8 @@ import abc
 import datetime
 from base64 import b64decode, b64encode
 from collections import defaultdict
-from typing import Any, Dict, Iterator, List, Optional
+from collections.abc import Iterator
+from typing import Any, Optional
 
 from dateutil.parser import parse as parse_date
 from sqlalchemy.orm import aliased, joinedload, selectinload
@@ -42,7 +43,7 @@ class Serializer(abc.ABC):
 
     pk_field: str = ""
 
-    def __init__(self, db_version: "Optional[db.DBVersionInfo]" = None):
+    def __init__(self, db_version: "db.DBVersionInfo | None" = None):
         self._db_version = db_version or db.REDUN_DB_VERSIONS[-1]
 
     def get_pk(self, spec: dict) -> str:
@@ -55,7 +56,7 @@ class Serializer(abc.ABC):
         for row in query.all():
             yield self.serialize(row)
 
-    def deserialize(self, spec: dict) -> "List[db.Base]":
+    def deserialize(self, spec: dict) -> "list[db.Base]":
         raise NotImplementedError()
 
 
@@ -71,7 +72,7 @@ class ExecutionSerializer(Serializer):
             "job_id": execution.job_id,
         }
 
-    def deserialize(self, spec: dict) -> "List[db.Base]":
+    def deserialize(self, spec: dict) -> "list[db.Base]":
         assert spec["_version"] == VERSION
         assert spec["_type"] == "Execution"
         return [
@@ -142,7 +143,7 @@ class JobSerializer(Serializer):
                 "execution_id": job.execution_id,
             }
 
-    def deserialize(self, spec: dict) -> "List[db.Base]":
+    def deserialize(self, spec: dict) -> "list[db.Base]":
         assert spec["_version"] == VERSION
         assert spec["_type"] == "Job"
         return [
@@ -165,7 +166,7 @@ class ValueSerializer(Serializer):
     def serialize(self, value: "db.Base") -> dict:  # ty: ignore[invalid-method-override]
         # Up to one special subtype should exist at a time
         assert not (bool(value.file) and bool(value.task))
-        subtype: Optional[Dict[str, Any]] = None
+        subtype: Optional[dict[str, Any]] = None
         if value.file:
             subtype = {
                 "_type": "File",
@@ -198,7 +199,7 @@ class ValueSerializer(Serializer):
         for row in query.all():
             yield self.serialize(row)
 
-    def deserialize(self, spec: dict) -> "List[db.Base]":
+    def deserialize(self, spec: dict) -> "list[db.Base]":
         assert spec["_version"] == VERSION
         assert spec["_type"] == "Value"
         return (
@@ -273,7 +274,7 @@ class CallNodeSerializer(Serializer):
         for row in query.all():
             yield self.serialize(row)
 
-    def deserialize(self, spec: dict) -> "List[db.Base]":
+    def deserialize(self, spec: dict) -> "list[db.Base]":
         assert spec["_version"] == VERSION
         assert spec["_type"] == "CallNode"
 
@@ -339,7 +340,7 @@ class TagSerializer(Serializer):
         for row in query.all():
             yield self.serialize(row)
 
-    def deserialize(self, spec: dict) -> "List[db.Base]":
+    def deserialize(self, spec: dict) -> "list[db.Base]":
         assert spec["_version"] == VERSION
         assert spec["_type"] == "Tag"
 
@@ -355,7 +356,7 @@ class TagSerializer(Serializer):
 
 
 class RecordSerializer(Serializer):
-    def __init__(self, db_version: "Optional[db.DBVersionInfo]" = None):
+    def __init__(self, db_version: "db.DBVersionInfo | None" = None):
         super().__init__(db_version)
         self._serializers = {
             "Execution": ExecutionSerializer(db_version),
@@ -381,5 +382,5 @@ class RecordSerializer(Serializer):
         [column] = query.column_descriptions
         return self._serializers[column["name"]].serialize_query(query)
 
-    def deserialize(self, spec: dict) -> "List[db.Base]":
+    def deserialize(self, spec: dict) -> "list[db.Base]":
         return self._serializers[spec["_type"]].deserialize(spec)

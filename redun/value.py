@@ -1,8 +1,10 @@
+import builtins
 import datetime
 import importlib
 import os
+from collections.abc import Callable, Iterator
 from enum import Enum
-from typing import Any, Callable, Dict, Iterator, Optional, Type, cast
+from typing import Any, Optional, cast
 
 from dateutil.parser import parse as parse_date
 
@@ -21,7 +23,7 @@ class InvalidValueError(Exception):
 
 
 # Python does not provide a type for None, so we compute it here.
-NoneType: Type = type(None)
+NoneType: type = type(None)
 
 
 def get_raw_type_name(raw_type: Any) -> str:
@@ -34,10 +36,10 @@ class TypeRegistry:
     """
 
     def __init__(self) -> None:
-        self._type_name2value_type: Dict[str, Type["Value"]] = {}
-        self._raw2proxy_type: Dict[Any, Type["ProxyValue"]] = {}
+        self._type_name2value_type: dict[str, type["Value"]] = {}
+        self._raw2proxy_type: dict[Any, type["ProxyValue"]] = {}
 
-    def get_type_name(self, raw_type: Type) -> str:
+    def get_type_name(self, raw_type: type) -> str:
         """
         Returns the type name for a python type.
         """
@@ -51,7 +53,7 @@ class TypeRegistry:
 
         return get_raw_type_name(raw_type)
 
-    def parse_type_name(self, type_name: str) -> Type:
+    def parse_type_name(self, type_name: str) -> type:
         """
         Parse a type name into a python type.
         """
@@ -68,7 +70,7 @@ class TypeRegistry:
         except (ValueError, ModuleNotFoundError, KeyError):
             raise TypeError('Unable to import type "{}"'.format(type_name))
 
-    def register(self, value_type: Type["Value"]) -> None:
+    def register(self, value_type: type["Value"]) -> None:
         """
         Register a Value class with the type system.
         """
@@ -81,12 +83,12 @@ class TypeRegistry:
         # Note: getattr is used because Values start registering even before ProxyValue is defined.
         if getattr(value_type, "proxy", False) and getattr(value_type, "type", None):
             # value_type is a proxy for another raw type.
-            self._raw2proxy_type[getattr(value_type, "type")] = cast(Type[ProxyValue], value_type)
+            self._raw2proxy_type[getattr(value_type, "type")] = cast(type[ProxyValue], value_type)
 
         assert isinstance(value_type.type_name, str)
         self._type_name2value_type[cast(str, value_type.type_name)] = value_type
 
-    def _get_proxy_type(self, raw_type: type) -> Optional[Type["Value"]]:
+    def _get_proxy_type(self, raw_type: type) -> Optional[type["Value"]]:
         """
         Search through a type's superclasses for a registered ProxyValue.
         """
@@ -112,7 +114,7 @@ class TypeRegistry:
         else:
             return ProxyValue(raw_value)
 
-    def get_type(self, raw_type: Type, use_default: bool = True) -> Optional[Type["Value"]]:
+    def get_type(self, raw_type: type, use_default: bool = True) -> Optional[type["Value"]]:
         """
         Return a registered Value class for a raw python type.
         """
@@ -174,7 +176,7 @@ class TypeRegistry:
 
             # Unknown type_name. Fallback to default pickle deserialization.
             raw_type = ProxyValue
-            value_type: Optional[Type[Value]] = ProxyValue
+            value_type: Optional[type[Value]] = ProxyValue
         else:
             value_type = self.get_type(raw_type)
         assert value_type
@@ -195,7 +197,7 @@ class TypeRegistry:
         """
         return self.get_value(raw_value).postprocess(postprocess_args)
 
-    def parse_arg(self, raw_type: Type, arg: str) -> Any:
+    def parse_arg(self, raw_type: type, arg: str) -> Any:
         """
         Parse a command-line argument of type value_type.
         """
@@ -451,7 +453,7 @@ class Bool(ProxyValue):
     type_name = "builtins.bool"
 
     @classmethod
-    def parse_arg(cls, raw_type: Type, arg: str) -> Any:
+    def parse_arg(cls, raw_type: builtins.type, arg: str) -> Any:
         arg = arg.lower()
         if arg == "true":
             return True
@@ -486,7 +488,7 @@ class EnumType(ProxyValue):
     type_name = "enum.Enum"
 
     @classmethod
-    def parse_arg(cls, raw_type: Type[Enum], arg: str) -> Any:  # ty: ignore[invalid-method-override]
+    def parse_arg(cls, raw_type: builtins.type[Enum], arg: str) -> Any:  # ty: ignore[invalid-method-override]
         name2item = {item.name: item for item in raw_type}
         try:
             if "." in arg:
@@ -507,7 +509,7 @@ class DatetimeType(ProxyValue):
     type_name = "datetime.datetime"
 
     @classmethod
-    def parse_arg(cls, raw_type: Type, arg: str) -> datetime.datetime:
+    def parse_arg(cls, raw_type: builtins.type, arg: str) -> datetime.datetime:
         return parse_date(arg)
 
 
@@ -614,7 +616,7 @@ class Function(ProxyValue):
         return func_wrapper.instance
 
     @classmethod
-    def parse_arg(cls, raw_type: Type, arg: str) -> Any:
+    def parse_arg(cls, raw_type: builtins.type, arg: str) -> Any:
         """
         Parses function by fully qualified name from command-line.
         """

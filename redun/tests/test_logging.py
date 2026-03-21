@@ -2,9 +2,8 @@ import os
 import tempfile
 
 from redun import File, Scheduler, task
-from redun.backends.db import Execution
+from redun.backends.db import Execution, Job, RedunBackendDb, Value
 from redun.backends.db import File as RowFile
-from redun.backends.db import Job, RedunBackendDb, Value
 
 
 def test_record_job(scheduler: Scheduler) -> None:

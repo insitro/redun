@@ -1,11 +1,11 @@
 import argparse
 import io
 from argparse import Namespace
-from typing import List, Optional
+from typing import Optional
 from unittest.mock import patch
 
 
-def parse_args(parser: argparse.ArgumentParser, argv: List[str] = []) -> Namespace:
+def parse_args(parser: argparse.ArgumentParser, argv: list[str] = []) -> Namespace:
     """
     Parse an argv into an argparse.Namespace.
     """
@@ -28,7 +28,7 @@ def get_parser_action(parser: argparse.ArgumentParser, key: str) -> Optional[arg
     return None
 
 
-def format_args(parser: argparse.ArgumentParser, args: Namespace) -> List[str]:
+def format_args(parser: argparse.ArgumentParser, args: Namespace) -> list[str]:
     """
     Format a Namespace back into an argv.
     """

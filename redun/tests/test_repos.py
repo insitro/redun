@@ -1,6 +1,5 @@
 import io
 import os
-from typing import List
 from unittest import mock
 
 import boto3
@@ -23,7 +22,7 @@ def make_config(config_path: str) -> None:
         out.write(DEFAULT_REDUN_INI.format(db_uri="sqlite:///other.db"))
 
 
-def run_command(client: RedunClient, argv: List[str]) -> str:
+def run_command(client: RedunClient, argv: list[str]) -> str:
     """
     Run redun cli command and return output as a string.
     """

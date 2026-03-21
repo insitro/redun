@@ -2,8 +2,9 @@ import argparse
 import json
 import shlex
 from collections import defaultdict
+from collections.abc import Iterator
 from pprint import pformat
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Optional
 
 import sqlalchemy as sa
 from fancycompleter import Completer
@@ -17,9 +18,8 @@ from textual.screen import Screen
 from textual.widgets import Footer, Input, Label, RichLog, Static
 
 from redun import File
-from redun.backends.db import Argument, CallNode, Execution
+from redun.backends.db import Argument, CallNode, Execution, Job, Subvalue, Tag, Task, Value
 from redun.backends.db import File as DbFile
-from redun.backends.db import Job, Subvalue, Tag, Task, Value
 from redun.backends.db.query import (
     REDUN_ERROR_TYPE_NAME,
     CallGraphQuery,
@@ -89,7 +89,7 @@ class RedunScreen(Screen):
         """
         return shlex.join(format_args(self.parser, self.args))
 
-    def parse(self, argv: List[str]) -> None:
+    def parse(self, argv: list[str]) -> None:
         """
         Parse command-line arguments and update screen.
         """
@@ -809,8 +809,8 @@ class TaskVersionsScreen(RedunScreen):
         self.table = Table()
         self.table.cursor_type = "row"
         self.table.add_columns("Task", "Version", "Jobs", "Most recent job")
-        self.results: List = []
-        self.tasks: List[Task] = []
+        self.results: list = []
+        self.tasks: list[Task] = []
 
     def get_path(self) -> str:
         return f"tasks/name/{self.task_fullname}"
@@ -1044,7 +1044,7 @@ class JobScreen(RedunScreen):
             return
 
         screen = self.app.get_screen("ReplScreen")
-        locals: Dict[str, Any] = {
+        locals: dict[str, Any] = {
             "job": self.job,
         }
         if self.job.call_node:
@@ -1184,7 +1184,7 @@ class JobScreen(RedunScreen):
         )
 
 
-def tree_sort_jobs(root: Job, jobs: List[Job]) -> List[Job]:
+def tree_sort_jobs(root: Job, jobs: list[Job]) -> list[Job]:
     """
     Sort Jobs in preorder traversal. Annotate tree depth on each job.
     """

@@ -6,7 +6,7 @@ import re
 import subprocess
 import time
 from socket import socket
-from typing import Any, List, cast
+from typing import Any, cast
 from unittest.mock import Mock, patch
 
 import boto3
@@ -1602,7 +1602,7 @@ def test_value_subqueries(scheduler: Scheduler, backend: RedunBackendDb, session
         return 10
 
     @task()
-    def task2(x: Any) -> List[File]:
+    def task2(x: Any) -> list[File]:
         return [File("foo"), File("bar")]
 
     # Single Value argument and result.
@@ -1710,7 +1710,7 @@ def test_query_tags(scheduler: Scheduler, backend: RedunBackendDb, session: Sess
     assert {value.value_parsed for value in values} == {10, 11}
 
 
-def run_command(client: RedunClient, argv: List[str]) -> str:
+def run_command(client: RedunClient, argv: list[str]) -> str:
     """
     Run redun cli command and return output as a string.
     """

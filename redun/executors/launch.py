@@ -1,5 +1,5 @@
 import shlex
-from typing import List, Optional, Union, cast
+from typing import Optional, cast
 
 from redun.config import Config
 from redun.executors.base import Executor, get_executor_from_config
@@ -13,7 +13,7 @@ from redun.value import get_type_registry
 
 def launch_script(
     config: Config,
-    script_command: Union[List[str], str],
+    script_command: list[str] | str,
     executor: Optional[Executor] = None,
     executor_name: Optional[str] = None,
     task_options: Optional[dict] = None,

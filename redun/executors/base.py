@@ -1,6 +1,7 @@
 import importlib
 import typing
-from typing import Any, Callable, Dict, Iterator, Optional, Type, cast, Union
+from collections.abc import Callable, Iterator
+from typing import Any, Optional, cast
 
 if typing.TYPE_CHECKING:
     from redun.scheduler import Job, Scheduler
@@ -77,29 +78,29 @@ class Executor:
 class _ExecutorProvider:
     """Pointer to an executor that we don't want to import until it's actually used."""
 
-    _executor_class: Union[Type[Executor], str]
+    _executor_class: type[Executor] | str
 
-    def __init__(self, executor_class: Union[Type[Executor], str]):
+    def __init__(self, executor_class: type[Executor] | str):
         self._executor_class = executor_class
 
     @property
-    def executor_class(self) -> Type[Executor]:
+    def executor_class(self) -> type[Executor]:
         if isinstance(self._executor_class, str):
             module_name, class_name = self._executor_class.rsplit(".", 1)
             module = importlib.import_module(module_name)
             executor_class = getattr(module, class_name)
             self._executor_class = executor_class
-        return cast(Type[Executor], self._executor_class)
+        return cast(type[Executor], self._executor_class)
 
     def __call__(self, *args, **kwargs) -> Executor:
         return self.executor_class(*args, **kwargs)
 
 
 # Singleton executor registry.
-_executor_providers: Dict[str, _ExecutorProvider] = {}
+_executor_providers: dict[str, _ExecutorProvider] = {}
 
 
-def get_executor_class(executor_name: str, required: bool = True) -> Optional[Type[Executor]]:
+def get_executor_class(executor_name: str, required: bool = True) -> Optional[type[Executor]]:
     """
     Get an Executor by name from the executor registry.
 
@@ -121,7 +122,7 @@ def get_executor_class(executor_name: str, required: bool = True) -> Optional[Ty
 
 
 def _register_executor(
-    executor_name: str, executor_class: Union[Type[Executor], str]
+    executor_name: str, executor_class: type[Executor] | str
 ) -> _ExecutorProvider:
     """
     Register an Executor class to be used by the scheduler.
@@ -150,7 +151,7 @@ def register_executor(executor_name: str, executor_class_name: Optional[str] = N
     if executor_class_name:
         return _register_executor(executor_name, executor_class_name)
 
-    def deco(executor_class: Type[Executor]):
+    def deco(executor_class: type[Executor]):
         _register_executor(executor_name, executor_class)
         return executor_class
 
@@ -162,7 +163,7 @@ def get_executors_from_config(executors_config: dict) -> Iterator[Executor]:
     Instantiate executors defined in an executors config section.
     """
     for executor_name, executor_config in executors_config.items():
-        executor_class = cast(Type[Executor], get_executor_class(executor_config["type"]))
+        executor_class = cast(type[Executor], get_executor_class(executor_config["type"]))
         executor = executor_class(executor_name, config=executor_config)
         yield executor
 
@@ -173,7 +174,7 @@ def get_executor_from_config(executors_config: dict, executor_name: str) -> Exec
         if name != executor_name:
             continue
 
-        executor_class = cast(Type[Executor], get_executor_class(executor_config["type"]))
+        executor_class = cast(type[Executor], get_executor_class(executor_config["type"]))
         executor = executor_class(executor_name, config=executor_config)
         return executor
     raise RuntimeError(f"Unknown Executor {executor_name}.")

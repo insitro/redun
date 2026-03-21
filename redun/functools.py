@@ -1,5 +1,6 @@
+from collections.abc import Callable, Sequence
 from textwrap import dedent
-from typing import Any, Callable, Dict, List, Sequence, Tuple, TypeVar, Union
+from typing import Any, TypeVar
 
 from redun.expression import Expression, QuotedExpression, SchedulerExpression, quote
 from redun.promise import Promise
@@ -50,7 +51,7 @@ def delay(x: T) -> PartialTask:
     return identity.partial(x)
 
 
-def force(x: "Task[[], T]") -> T:
+def force(x: Task[[], T]) -> T:
     """
     Force the evaluation of a delayed evaluation.
 
@@ -206,9 +207,9 @@ def map_(
 
 
 def starmap(
-    a_task: "Task[..., T]",
-    kwargs: Union[List[Dict], Expression[List[Dict]]] = [],
-) -> List[T]:
+    a_task: Task[..., T],
+    kwargs: list[dict] | Expression[list[dict]] = [],
+) -> list[T]:
     """
     Map a task to a list of keyword arguments.
     """
@@ -216,7 +217,7 @@ def starmap(
 
 
 @task(namespace="redun", version="1")
-def flatten(list_of_lists: Sequence[Sequence[T]]) -> List[T]:
+def flatten(list_of_lists: Sequence[Sequence[T]]) -> list[T]:
     """
     Flatten a list of lists into a flat list.
     """
@@ -224,7 +225,7 @@ def flatten(list_of_lists: Sequence[Sequence[T]]) -> List[T]:
 
 
 @task(namespace="redun", version="1")
-def flat_map(a_task: "Task[..., List[T]]", values: List) -> List[T]:
+def flat_map(a_task: Task[..., list[T]], values: list) -> list[T]:
     """
     Apply a task `a_task` on a sequence of `values` and flatten the result.
     """
@@ -232,7 +233,7 @@ def flat_map(a_task: "Task[..., List[T]]", values: List) -> List[T]:
 
 
 @task(namespace="redun", version="1")
-def zip_(*lists: List[T]) -> List[Tuple[T, ...]]:
+def zip_(*lists: list[T]) -> list[tuple[T, ...]]:
     """
     Zips two or lists into a list of tuples.
 

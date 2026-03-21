@@ -6,18 +6,14 @@ import re
 import shutil
 import sys
 import threading
+from collections.abc import Iterator
 from shlex import quote
 from typing import (
     IO,
     TYPE_CHECKING,
     Any,
-    Dict,
     Generic,
-    Iterator,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
     Union,
 )
@@ -51,10 +47,10 @@ T = TypeVar("T")
 _local = threading.local()
 
 # Global singletons for Filesystems.
-_proto2filesystem_class: Dict[str, Type["FileSystem"]] = {}
+_proto2filesystem_class: dict[str, type["FileSystem"]] = {}
 
 
-def register_filesystem(cls: Type["FileSystem"]) -> Type["FileSystem"]:
+def register_filesystem(cls: type["FileSystem"]) -> type["FileSystem"]:
     _proto2filesystem_class[cls.name] = cls
     return cls
 
@@ -73,7 +69,7 @@ def get_proto(url: Optional[str] = None) -> str:
 
 def get_filesystem_class(
     proto: Optional[str] = None, url: Optional[str] = None
-) -> Type["FileSystem"]:
+) -> type["FileSystem"]:
     """
     Returns the corresponding FileSystem class for a given url or protocol.
     """
@@ -83,7 +79,7 @@ def get_filesystem_class(
     return _proto2filesystem_class[proto]
 
 
-def list_filesystems() -> List[Type["FileSystem"]]:
+def list_filesystems() -> list[type["FileSystem"]]:
     """
     Returns list of supported filesystems.
     """
@@ -151,11 +147,11 @@ def copy_file(src_path: Optional[str], dest_path: Optional[str], recursive: bool
             outfile.close()
 
 
-def glob_file(pattern: str) -> List[str]:
+def glob_file(pattern: str) -> list[str]:
     return get_filesystem(url=pattern).glob(pattern)
 
 
-_filesystem_instances: Dict[Type, "FileSystem"] = {}
+_filesystem_instances: dict[type, "FileSystem"] = {}
 
 
 def get_filesystem(proto: Optional[str] = None, url: Optional[str] = None) -> "FileSystem":
@@ -281,9 +277,7 @@ class FileSystem(abc.ABC):
         """
         pass
 
-    def touch(
-        self, path: str, time: Union[Tuple[int, int], Tuple[float, float], None] = None
-    ) -> None:
+    def touch(self, path: str, time: tuple[int, int] | tuple[float, float] | None = None) -> None:
         """
         Create the path on the filesystem with timestamp.
         """
@@ -377,7 +371,7 @@ class FileSystem(abc.ABC):
             raise ValueError("At least one path must be defined.")
 
     @abc.abstractmethod
-    def glob(self, pattern: str) -> List[str]:
+    def glob(self, pattern: str) -> list[str]:
         """
         Returns filenames matching pattern.
         """
@@ -447,9 +441,7 @@ class LocalFileSystem(FileSystem):
         except FileNotFoundError:
             pass
 
-    def touch(
-        self, path: str, time: Union[Tuple[int, int], Tuple[float, float], None] = None
-    ) -> None:
+    def touch(self, path: str, time: tuple[int, int] | tuple[float, float] | None = None) -> None:
         """
         Create the path on the filesystem with timestamp.
         """
@@ -541,7 +533,7 @@ class LocalFileSystem(FileSystem):
         else:
             raise ValueError("At least one path must be given.")
 
-    def glob(self, pattern: str) -> List[str]:
+    def glob(self, pattern: str) -> list[str]:
         """
         Returns filenames matching pattern.
         """
@@ -673,7 +665,7 @@ class FsspecFileSystem(FileSystem):
             dest_path = dest_path or "-"
             return f"redun fs cp {quote(src_path)} {quote(dest_path)}"
 
-    def glob(self, pattern: str) -> List[str]:
+    def glob(self, pattern: str) -> list[str]:
         """
         Returns filenames matching pattern.
         """
@@ -810,7 +802,7 @@ class GSFileSystem(FsspecFileSystem):
         else:
             raise ValueError("At least one path must be given.")
 
-    def glob(self, pattern: str) -> List[str]:
+    def glob(self, pattern: str) -> list[str]:
         return ["gs://" + key for key in self.fs.glob(pattern)]
 
 
@@ -856,7 +848,7 @@ class S3FileSystem(FileSystem):
         return client
 
     @staticmethod
-    def get_bucket_and_key(path: str) -> Tuple[str, str]:
+    def get_bucket_and_key(path: str) -> tuple[str, str]:
         """
         Returns the bucket and key from an S3 path, useful for boto calls.
         """
@@ -999,7 +991,7 @@ class S3FileSystem(FileSystem):
         else:
             raise ValueError("At least one path must be given.")
 
-    def glob(self, pattern: str) -> List[str]:
+    def glob(self, pattern: str) -> list[str]:
         return ["s3://" + key for key in self.s3.glob(pattern)]
 
     def isfile(self, path: str) -> bool:
@@ -1092,7 +1084,7 @@ class AzureBlobFileSystem(FsspecFileSystem):
 
         return fs
 
-    def glob(self, pattern: str) -> List[str]:
+    def glob(self, pattern: str) -> list[str]:
         """
         Returns filenames matching pattern.
         """
@@ -1206,11 +1198,11 @@ class FileClasses:
     A grouping of related File classes.
     """
 
-    File: "Type[File]"
-    FileSet: "Type[FileSet]"
-    Dir: "Type[Dir]"
-    StagingFile: "Type[StagingFile]"
-    StagingDir: "Type[StagingDir]"
+    File: "type[File]"
+    FileSet: "type[FileSet]"
+    Dir: "type[Dir]"
+    StagingFile: "type[StagingFile]"
+    StagingDir: "type[StagingDir]"
 
     def __getattr__(self, attr: str) -> type:
         # We use this getattr in order to support forward references.
@@ -1308,22 +1300,20 @@ class File(Value):
 
         return stream
 
-    def touch(self, time: Union[Tuple[int, int], Tuple[float, float], None] = None) -> None:
+    def touch(self, time: tuple[int, int] | tuple[float, float] | None = None) -> None:
         self.filesystem.touch(self.path, time)
 
-    def read(self, mode: str = "r", encoding: Optional[str] = None) -> Union[str, bytes]:
+    def read(self, mode: str = "r", encoding: Optional[str] = None) -> str | bytes:
         with self.open(mode=mode, encoding=encoding) as infile:
             data = infile.read()
         return data
 
-    def readlines(self, mode: str = "r") -> List[Union[str, bytes]]:
+    def readlines(self, mode: str = "r") -> list[str | bytes]:
         with self.open(mode=mode) as infile:
             data = infile.readlines()
         return data
 
-    def write(
-        self, data: Union[str, bytes], mode: str = "w", encoding: Optional[str] = None
-    ) -> None:
+    def write(self, data: str | bytes, mode: str = "w", encoding: Optional[str] = None) -> None:
         with self.open(mode=mode, encoding=encoding) as out:
             out.write(data)
 
@@ -1393,7 +1383,7 @@ class FileSet(Value):
         self.pattern = pattern
         self.filesystem: FileSystem = get_filesystem(url=self.pattern)
         self._hash: Optional[str] = None
-        self._files: Optional[List[File]] = None
+        self._files: Optional[list[File]] = None
 
     def __repr__(self) -> str:
         return "FileSet(pattern={pattern}, hash={hash})".format(
@@ -1407,7 +1397,7 @@ class FileSet(Value):
             self._hash = self._calc_hash(self._files)
         return self._hash
 
-    def _calc_hash(self, files: Optional[List[File]] = None) -> str:
+    def _calc_hash(self, files: Optional[list[File]] = None) -> str:
         if files is None:
             files = list(self)
         return hash_struct(
@@ -1435,7 +1425,7 @@ class FileSet(Value):
             if self.filesystem.isfile(path):
                 yield self.classes.File(path)
 
-    def files(self) -> List[File]:
+    def files(self) -> list[File]:
         return list(self)
 
     def is_valid(self) -> bool:
@@ -1482,7 +1472,7 @@ class Dir(FileSet):
             self._hash = self._calc_hash()
         return self._hash
 
-    def _calc_hash(self, files: Optional[List[File]] = None) -> str:
+    def _calc_hash(self, files: Optional[list[File]] = None) -> str:
         file_hashes = self.filesystem.iter_file_hashes(self.path)
         return hash_struct([self.type_basename, self.path] + sorted(file_hashes))
 
@@ -1530,7 +1520,7 @@ class Dir(FileSet):
 
 
 class Staging(Value, Generic[T]):
-    def __init__(self, local: Union[T, str], remote: Union[T, str]):
+    def __init__(self, local: T | str, remote: T | str):
         self.local: Any = None
         self.remote: Any = None
 
@@ -1560,7 +1550,7 @@ class StagingFile(Staging[File]):
     type_name = "redun.StagingFile"
     classes = FileClasses()
 
-    def __init__(self, local: Union[File, str], remote: Union[File, str]):
+    def __init__(self, local: File | str, remote: File | str):
         if isinstance(local, str):
             self.local = self.classes.File(local)
         else:
@@ -1624,7 +1614,7 @@ class StagingDir(Staging[Dir]):
     type_name = "redun.StagingDir"
     classes = FileClasses()
 
-    def __init__(self, local: Union[Dir, str], remote: Union[Dir, str]):
+    def __init__(self, local: Dir | str, remote: Dir | str):
         if isinstance(local, str):
             self.local = self.classes.Dir(local)
         else:
@@ -1729,7 +1719,7 @@ class IFileSet(FileSet):
     type_name = "redun.IFileSet"
     classes = IFileClasses()
 
-    def _calc_hash(self, files: Optional[List[File]] = None) -> str:
+    def _calc_hash(self, files: Optional[list[File]] = None) -> str:
         return hash_struct([self.type_basename, self.pattern])
 
     def is_valid(self) -> bool:
@@ -1742,7 +1732,7 @@ class IDir(Dir):
     type_name = "redun.IDir"
     classes = IFileClasses()
 
-    def _calc_hash(self, files: Optional[List[File]] = None) -> str:
+    def _calc_hash(self, files: Optional[list[File]] = None) -> str:
         # IDir hash only depends on the path.
         return hash_struct([self.type_basename, self.path])
 
@@ -1857,9 +1847,9 @@ class ShardedS3Dataset(Value):
         self._format = format
 
         self.filesystem: FileSystem = get_filesystem(url=self.path)
-        self._filenames: List[str] = self._gather_files()
+        self._filenames: list[str] = self._gather_files()
 
-    def _gather_files(self) -> List[str]:
+    def _gather_files(self) -> list[str]:
         # If recursing, look in subdirectories too.
         files = glob_file(f"{self._path}/*.{self._format}")
         if self.recurse:
@@ -1895,7 +1885,7 @@ class ShardedS3Dataset(Value):
         self._calc_hash()
 
     @property
-    def filenames(self) -> List[str]:
+    def filenames(self) -> list[str]:
         return self._filenames
 
     @property
@@ -1965,7 +1955,7 @@ class ShardedS3Dataset(Value):
         self.s3 = self.filesystem.s3
 
     def load_spark(
-        self, validate: bool = False, format_options: Dict[str, Any] = {}
+        self, validate: bool = False, format_options: dict[str, Any] = {}
     ) -> "pyspark.sql.DataFrame":
         """
         Loads the ShardedS3Dataset as a Spark DataFrame. Must be running
@@ -2044,7 +2034,7 @@ class ShardedS3Dataset(Value):
         data = self.load_pandas_shards(max_shards)
         return pandas.concat(data)
 
-    def load_pandas_shards(self, max_shards: int = -1) -> List["pandas.DataFrame"]:
+    def load_pandas_shards(self, max_shards: int = -1) -> list["pandas.DataFrame"]:
         """
         Loads the ShardedS3Dataset as a list of Pandas DataFrames. This is
         deterministic and will load the shards in the same order every time.
@@ -2086,10 +2076,10 @@ class ShardedS3Dataset(Value):
     def save_spark(
         self,
         dataset: Union["pandas.DataFrame", "pyspark.sql.DataFrame"],
-        partition_keys: List[str] = [],
+        partition_keys: list[str] = [],
         catalog_database: str = "default",
         catalog_table: Optional[str] = None,
-        format_options: Dict[str, Any] = {},
+        format_options: dict[str, Any] = {},
     ) -> None:
         """
         Writes a pandas or spark DataFrame to the given path in the given format,
@@ -2130,7 +2120,7 @@ class ShardedS3Dataset(Value):
         from awsglue.dynamicframe import DynamicFrame  # ty: ignore[unresolved-import]
 
         # Set default write options.
-        f_options: Dict[str, Any] = {}
+        f_options: dict[str, Any] = {}
         write_fmt = self.format
 
         # Use glue's parquet implementation as it's compatible and has a more mutable schema.
@@ -2174,7 +2164,7 @@ class ShardedS3Dataset(Value):
         Defaults to 1 hour. Optionally writes removed files to `manifest_file_path/Success.csv`
         """
         context = glue.get_glue_context()
-        options: Dict[str, Any] = {"retentionPeriod": remove_older_than}
+        options: dict[str, Any] = {"retentionPeriod": remove_older_than}
         if manifest_file_path:
             options["manifestFilePath"] = manifest_file_path
 
@@ -2184,7 +2174,7 @@ class ShardedS3Dataset(Value):
     @classmethod
     def from_files(
         cls,
-        files: List[File],
+        files: list[File],
         format: Optional[str] = None,
         allow_additional_files: bool = False,
     ) -> "ShardedS3Dataset":
@@ -2261,10 +2251,10 @@ class ShardedS3Dataset(Value):
         dataset: Union["pandas.DataFrame", "pyspark.sql.DataFrame"],
         output_path: str,
         format: str = "parquet",
-        partition_keys: List[str] = [],
+        partition_keys: list[str] = [],
         catalog_database: str = "default",
         catalog_table: Optional[str] = None,
-        format_options: Dict[str, Any] = {},
+        format_options: dict[str, Any] = {},
     ) -> "ShardedS3Dataset":
         """
         Helper function to create a ShardedS3Dataset from an existing DataFrame-like object.

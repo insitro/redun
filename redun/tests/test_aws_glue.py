@@ -2,7 +2,7 @@ import json
 import os
 import re
 import zipfile
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import Mock, patch
 
 import boto3
@@ -39,7 +39,7 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
 
     def __init__(self) -> None:
         self.job_id_num = 0
-        self.job_defs: Dict[str, dict] = {}  # Job definitions.
+        self.job_defs: dict[str, dict] = {}  # Job definitions.
         super(RedunGlueBackend, self).__init__()
 
     @property
@@ -63,7 +63,7 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
     def url_paths(self):
         return {"{0}/$": RedunGlueResponse.dispatch}
 
-    def get_job(self, JobName: str) -> Dict[str, Any]:
+    def get_job(self, JobName: str) -> dict[str, Any]:
         if JobName in self.job_defs:
             return {"Job": self.job_defs[JobName]}
 
@@ -81,7 +81,7 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
             }
         }
 
-    def create_job(self, **kwargs) -> Dict[str, str]:
+    def create_job(self, **kwargs) -> dict[str, str]:
         assert "Name" in kwargs
         jobname = kwargs["Name"]
 
@@ -92,12 +92,12 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
     def start_job_run(
         self,
         JobName: str,
-        Arguments: Dict,
+        Arguments: dict,
         Timeout: int,
         WorkerType: str,
         NumberOfWorkers: int,
         **kwargs,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         if JobName not in self.job_defs:
             raise self.client.exceptions.EntityNotFoundException(
                 {

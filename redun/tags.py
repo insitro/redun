@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Any, Tuple, Union
+from typing import Any
 
 from redun.utils import trim_string
 
@@ -15,7 +15,7 @@ CONTEXT_KEY = "redun.context"
 ANY_VALUE = object()
 
 
-def str2literal(value_str: str) -> Union[bool, None]:
+def str2literal(value_str: str) -> bool | None:
     """
     Parse a JSON literal.
     """
@@ -66,7 +66,7 @@ def parse_tag_value(value_str: str) -> Any:
     return value_str
 
 
-def parse_tag_key_value(key_value: str, value_required=True) -> Tuple[str, Any]:
+def parse_tag_key_value(key_value: str, value_required=True) -> tuple[str, Any]:
     """
     Parse a tag key=value pair from cli arguments.
     """

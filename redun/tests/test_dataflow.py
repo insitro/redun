@@ -1,4 +1,4 @@
-from typing import Dict, List, cast
+from typing import cast
 
 from redun import File, Scheduler, task
 from redun.backends.db import CallNode, Execution, RedunBackendDb, Value
@@ -42,17 +42,17 @@ def test_dataflow_crawl(scheduler: Scheduler, backend: RedunBackendDb) -> None:
         return vcf
 
     @task()
-    def align_reads_all(fastqs: List[File], ref_genome: File):
+    def align_reads_all(fastqs: list[File], ref_genome: File):
         bams = [align_reads(fastq, ref_genome) for fastq in fastqs]
         return bams
 
     @task()
-    def call_variants_all(bams: List[File], ref_genome: File):
+    def call_variants_all(bams: list[File], ref_genome: File):
         vcfs = [call_variants(bam, ref_genome) for bam in bams]
         return vcfs
 
     @task()
-    def main(fastqs: List[File], ref_genome: File):
+    def main(fastqs: list[File], ref_genome: File):
         bams = align_reads_all(fastqs, ref_genome)
         vcfs = call_variants_all(bams, ref_genome)
         return vcfs
@@ -144,17 +144,17 @@ def test_dataflow(scheduler: Scheduler, backend: RedunBackendDb) -> None:
         return vcf
 
     @task()
-    def align_reads_all(fastqs: List[File], ref_genome: File):
+    def align_reads_all(fastqs: list[File], ref_genome: File):
         bams = [align_reads(fastq, ref_genome) for fastq in fastqs]
         return bams
 
     @task()
-    def call_variants_all(bams: List[File], ref_genome: File):
+    def call_variants_all(bams: list[File], ref_genome: File):
         vcfs = [call_variants(bam, ref_genome) for bam in bams]
         return vcfs
 
     @task()
-    def main(fastqs: List[File], ref_genome: File):
+    def main(fastqs: list[File], ref_genome: File):
         bams = align_reads_all(fastqs, ref_genome)
         vcfs = call_variants_all(bams, ref_genome)
         return vcfs
@@ -451,11 +451,11 @@ def test_dataflow_subvalue(scheduler: Scheduler, backend: RedunBackendDb) -> Non
         return file
 
     @task()
-    def process_files(files: List[File]) -> List[File]:
+    def process_files(files: list[File]) -> list[File]:
         return [task2(file) for file in files]
 
     @task()
-    def main(x: int) -> List[File]:
+    def main(x: int) -> list[File]:
         files = [task1(x), task1(x + 1)]
         return process_files(files)
 
@@ -501,7 +501,7 @@ def test_dataflow_subvalue_mix(scheduler: Scheduler, backend: RedunBackendDb) ->
     assert backend.session
 
     @task()
-    def get_files() -> List[File]:
+    def get_files() -> list[File]:
         file1 = File("a")
         file1.write("a")
         file2 = File("b")
@@ -509,11 +509,11 @@ def test_dataflow_subvalue_mix(scheduler: Scheduler, backend: RedunBackendDb) ->
         return [file1, file2]
 
     @task()
-    def process_files(files: List[File]) -> List[str]:
+    def process_files(files: list[File]) -> list[str]:
         return [cast(str, file.read()) for file in files]
 
     @task()
-    def main() -> List[str]:
+    def main() -> list[str]:
         files = get_files()
         return process_files([files[1], files[0]])
 
@@ -692,7 +692,7 @@ def test_dataflow_subvalue_parallel(scheduler: Scheduler, backend: RedunBackendD
     File("file2").write("b")
 
     @task()
-    def list_files() -> Dict[str, File]:
+    def list_files() -> dict[str, File]:
         return {
             "file1": File("file1"),
             "file2": File("file2"),

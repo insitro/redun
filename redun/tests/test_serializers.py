@@ -2,8 +2,9 @@ import json
 import pickle
 from base64 import b64decode, b64encode
 from collections import defaultdict
+from collections.abc import Callable, Iterable
 from datetime import datetime
-from typing import Callable, Dict, Iterable, List, Tuple, cast
+from typing import cast
 from unittest.mock import Mock, patch
 
 from sqlalchemy.orm import Session
@@ -37,7 +38,7 @@ def serialize(obj: Base) -> dict:
     return RecordSerializer().serialize(obj)
 
 
-def deserialize(spec: dict) -> List[Base]:
+def deserialize(spec: dict) -> list[Base]:
     return RecordSerializer().deserialize(spec)
 
 
@@ -52,7 +53,7 @@ def dump_record(record: dict) -> str:
     return json.dumps(record, sort_keys=True)
 
 
-def group_edges(edges: Iterable[Tuple[str, Base, str]]) -> Dict[str, List[str]]:
+def group_edges(edges: Iterable[tuple[str, Base, str]]) -> dict[str, list[str]]:
     """
     Group serialization edges by edge type.
     """

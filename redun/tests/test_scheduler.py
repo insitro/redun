@@ -2,17 +2,17 @@ import copy
 import dataclasses
 import os
 import time
+from collections.abc import Sequence
 from traceback import FrameSummary
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Optional
 from unittest.mock import Mock, patch
 
 import pytest
 from sqlalchemy.orm import Session
 
 from redun import Scheduler, task
-from redun.backends.db import Execution
+from redun.backends.db import Execution, RedunBackendDb
 from redun.backends.db import Job as JobDb
-from redun.backends.db import RedunBackendDb
 from redun.backends.db import Task as TaskDb
 from redun.config import Config
 from redun.expression import SchedulerExpression
@@ -289,7 +289,7 @@ def test_return_tuple_type(scheduler: Scheduler) -> None:
     """
 
     @task()
-    def make_pair() -> Tuple[str, int]:
+    def make_pair() -> tuple[str, int]:
         return ("Bob", 20)
 
     @task()
@@ -316,7 +316,7 @@ def test_nout(scheduler: Scheduler) -> None:
     """
 
     @task(nout=3)
-    def make_list() -> List[int]:
+    def make_list() -> list[int]:
         return [1, 2, 3]
 
     @task()
@@ -324,7 +324,7 @@ def test_nout(scheduler: Scheduler) -> None:
         return x + 1
 
     @task()
-    def main() -> List[int]:
+    def main() -> list[int]:
         # make_list() supports iteration because of nout.
         return [process(x) for x in make_list()]
 
@@ -337,7 +337,7 @@ def test_nout_undefined(scheduler: Scheduler) -> None:
     """
 
     @task()
-    def make_list() -> List[int]:
+    def make_list() -> list[int]:
         return [1, 2, 3]
 
     with pytest.raises(TypeError):
@@ -352,13 +352,13 @@ def test_nout_bad(scheduler: Scheduler) -> None:
     with pytest.raises(TypeError):
 
         @task(nout="3")
-        def make_list() -> List[int]:
+        def make_list() -> list[int]:
             return [1, 2, 3]
 
     with pytest.raises(TypeError):
 
         @task(nout=-1)
-        def make_list2() -> List[int]:
+        def make_list2() -> list[int]:
             return [1, 2, 3]
 
 
@@ -368,7 +368,7 @@ def test_nout_options(scheduler: Scheduler) -> None:
     """
 
     @task()
-    def make_list() -> List[int]:
+    def make_list() -> list[int]:
         return [1, 2, 3]
 
     @task()
@@ -376,7 +376,7 @@ def test_nout_options(scheduler: Scheduler) -> None:
         return x + 1
 
     @task()
-    def main() -> List[int]:
+    def main() -> list[int]:
         # make_list() supports iteration because of nout.
         return [process(x) for x in make_list.options(nout=3)()]
 
@@ -435,7 +435,7 @@ def test_nested_results2(scheduler: Scheduler) -> None:
     def to_str(x: int) -> str:
         return str(x)
 
-    def create_linked_list(y: List[int]) -> Optional[Node]:
+    def create_linked_list(y: list[int]) -> Optional[Node]:
         if len(y) > 1:
             return Node(value=to_str(y[0]), next_=create_linked_list(y[1:]))
         else:
@@ -622,7 +622,7 @@ def test_novel_kwargs(scheduler: Scheduler) -> None:
     """
 
     @task()
-    def task1(**kwargs: Any) -> Dict[str, Any]:
+    def task1(**kwargs: Any) -> dict[str, Any]:
         return kwargs
 
     assert scheduler.run(task1(a=1, b=2)) == {"a": 1, "b": 2}
@@ -1218,7 +1218,7 @@ def test_reduce(scheduler: Scheduler) -> None:
         init: Any,
         values: Sequence[Any],
     ) -> Promise:
-        def _reduce(args: List):
+        def _reduce(args: list):
             a_task, init, values = args
             reduce_promise: Promise = Promise()
             queue = values if values else [init]
@@ -1391,7 +1391,7 @@ def test_catch_cache(scheduler: Scheduler) -> None:
     def reraise(error):
         raise error
 
-    calls: List[str] = []
+    calls: list[str] = []
     with pytest.raises(ZeroDivisionError):
         scheduler.run(faulty())
 
@@ -1461,7 +1461,7 @@ def test_catch_task_react(scheduler: Scheduler) -> None:
         return 1.0
 
     # Running safe twice should cache.
-    calls: List[str] = []
+    calls: list[str] = []
     assert scheduler.run(catch(safe(), ZeroDivisionError, recover)) == 1
     assert calls == ["safe"]
     assert scheduler.run(catch(safe(), ZeroDivisionError, recover)) == 1
@@ -1519,7 +1519,7 @@ def test_catch_deep_task_react(scheduler: Scheduler) -> None:
         return 1.0
 
     # Running safe twice should cache.
-    calls: List[str] = []
+    calls: list[str] = []
     assert scheduler.run(catch(safe(), ZeroDivisionError, recover)) == 1
     assert calls == ["safe", "deep"]
     assert scheduler.run(catch(safe(), ZeroDivisionError, recover)) == 1
@@ -1561,7 +1561,7 @@ def test_catch_deep_recover_react(scheduler: Scheduler) -> None:
         return deep()
 
     # Running recover twice should cache.
-    calls: List[str] = []
+    calls: list[str] = []
     assert scheduler.run(catch(faulty(), ZeroDivisionError, recover)) == 1
     assert calls == ["faulty", "recover", "deep"]
     assert scheduler.run(catch(faulty(), ZeroDivisionError, recover)) == 1
@@ -1733,7 +1733,7 @@ def test_default_args_expression(scheduler: Scheduler) -> None:
     assert scheduler.run(main(4)) == 4
 
     @task
-    def main2(x: List[int] = [add(1, 2)]) -> List[int]:
+    def main2(x: list[int] = [add(1, 2)]) -> list[int]:
         # Default argument might contain an expression within a nested value (e.g. list).
         return x
 
@@ -1782,11 +1782,11 @@ def test_job_clear(scheduler: Scheduler) -> None:
         return x
 
     @task
-    def parent(n: int) -> List[int]:
+    def parent(n: int) -> list[int]:
         return [child2(child(i)) for i in range(n)]
 
     @task
-    def main(n: int) -> List[int]:
+    def main(n: int) -> list[int]:
         return parent(n)
 
     with pytest.raises(ValueError, match="raised by child"):

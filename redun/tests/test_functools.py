@@ -1,5 +1,4 @@
 import time
-from typing import List
 
 import pytest
 
@@ -186,7 +185,7 @@ def test_map(scheduler: Scheduler, session: Session) -> None:
         return 2 * x
 
     @task()
-    def get_values() -> List[int]:
+    def get_values() -> list[int]:
         return [1, 2, 3]
 
     # Simple map over a list.
@@ -200,7 +199,7 @@ def test_map(scheduler: Scheduler, session: Session) -> None:
 
     # Multiple maps should be composed.
     @task()
-    def main() -> List[int]:
+    def main() -> list[int]:
         return map_(inc, map_(double, [1, 2, 3]))
 
     assert scheduler.run(main()) == [3, 5, 7]
@@ -252,7 +251,7 @@ def test_starmap(scheduler: Scheduler, session: Session) -> None:
 
     # Multiple maps should be composed.
     @task()
-    def main() -> List[int]:
+    def main() -> list[int]:
         return starmap(add, starmap(swap, kwargs))
 
     assert scheduler.run(main()) == [3, 7]
@@ -282,7 +281,7 @@ def test_flatten(scheduler: Scheduler) -> None:
     """
 
     @task()
-    def split(text: str) -> List[str]:
+    def split(text: str) -> list[str]:
         return text.split()
 
     texts = ["hello world", "not invented here"]
@@ -308,7 +307,7 @@ def test_zip(scheduler: Scheduler) -> None:
     """
 
     @task()
-    def range_(a: int, b: int) -> List[int]:
+    def range_(a: int, b: int) -> list[int]:
         return list(range(a, b))
 
     assert scheduler.run(zip_(range_(0, 5), range_(1, 6))) == [

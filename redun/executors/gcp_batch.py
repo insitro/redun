@@ -6,7 +6,7 @@ import time
 import uuid
 from collections import OrderedDict
 from configparser import SectionProxy
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 from google.api_core.exceptions import NotFound
 from google.cloud.batch_v1 import JobStatus, Task, TaskStatus
@@ -80,9 +80,9 @@ class GCPBatchExecutor(Executor):
         self.code_file: Optional[File] = None
 
         # Monitoring internals
-        self.preexisting_batch_tasks: Dict[str, str] = {}  # RedunJob hash -> BatchJob task name
+        self.preexisting_batch_tasks: dict[str, str] = {}  # RedunJob hash -> BatchJob task name
         # We use an OrderedDict in order to retain submission order.
-        self.pending_batch_tasks: Dict[str, "RedunJob"] = OrderedDict()
+        self.pending_batch_tasks: dict[str, "RedunJob"] = OrderedDict()
         self.is_running = False
         self.interval = config.getfloat("job_monitor_interval", fallback=5.0)
         self._thread: Optional[threading.Thread] = None
@@ -96,7 +96,7 @@ class GCPBatchExecutor(Executor):
         )
 
         # Default task options.
-        self.default_task_options: Dict[str, Any] = {
+        self.default_task_options: dict[str, Any] = {
             "machine_type": config.get("machine_type", fallback="e2-standard-4"),
             "task_count": config.getint("task_count", fallback=1),
             "retries": config.getint("retries", fallback=2),
@@ -225,7 +225,7 @@ class GCPBatchExecutor(Executor):
             task_options["vcpus"] = min(requested_vcpus, max_vcpus)
 
         # Merge labels if needed.
-        labels: Dict[str, str] = {
+        labels: dict[str, str] = {
             **self.default_task_options.get("labels", {}),
             **job_options.get("labels", {}),
             **default_tags,
@@ -314,7 +314,7 @@ class GCPBatchExecutor(Executor):
 
         self._start()
 
-    def _submit_jobs(self, jobs: List[RedunJob]) -> None:
+    def _submit_jobs(self, jobs: list[RedunJob]) -> None:
         """
         Callback for JobArrayer to return arrays of Jobs.
         """
@@ -324,7 +324,7 @@ class GCPBatchExecutor(Executor):
         else:
             self._submit_array_job(jobs)
 
-    def _submit_array_job(self, jobs: List[RedunJob]) -> str:
+    def _submit_array_job(self, jobs: list[RedunJob]) -> str:
         """
         Submits an array job, returning job name uuid
         """
@@ -452,7 +452,7 @@ class GCPBatchExecutor(Executor):
             )
 
             # Get buckets - This can probably be improved.
-            mount_buckets: List[str] = list(
+            mount_buckets: list[str] = list(
                 set(re.findall(r"/mnt/disks/([^ \/]+)/", script_command[-1] + task_command))
             )
 

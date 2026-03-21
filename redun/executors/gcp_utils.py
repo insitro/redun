@@ -1,6 +1,7 @@
+from collections.abc import Iterable
 from enum import Enum
 from functools import lru_cache
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Optional
 
 from google.api_core import gapic_v1
 from google.cloud import batch_v1, compute_v1
@@ -25,7 +26,7 @@ class MinCPUPlatform(Enum):
 
 def get_gcp_batch_client(
     sync: bool = True,
-) -> Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient]:
+) -> batch_v1.BatchServiceClient | batch_v1.BatchServiceAsyncClient:
     # TODO: Integrate redun version here later.
     client_info = gapic_v1.client_info.ClientInfo(user_agent=f"redun/{version}")
     return (
@@ -41,7 +42,7 @@ def gb_to_mib(gb):
 
 
 def batch_submit(
-    client: Union[batch_v1.BatchServiceClient, batch_v1.BatchServiceAsyncClient],
+    client: batch_v1.BatchServiceClient | batch_v1.BatchServiceAsyncClient,
     job_name: str,
     project: str,
     region: str,
@@ -52,15 +53,15 @@ def batch_submit(
     priority: int,
     max_duration: Optional[str] = None,
     task_count: int = 1,
-    mount_buckets: List[str] = [],
+    mount_buckets: list[str] = [],
     boot_disk_size: Optional[int] = None,
     min_cpu_platform: Optional[MinCPUPlatform] = None,
-    accelerators: List[Tuple[str, int]] = [],
+    accelerators: list[tuple[str, int]] = [],
     image: Optional[str] = None,
     script: str = "exit 0",
-    commands: List[str] = ["exit 0"],
+    commands: list[str] = ["exit 0"],
     service_account_email: str = "",
-    labels: Dict[str, str] = {},
+    labels: dict[str, str] = {},
     **kwargs,  # Ignore extra args
 ) -> batch_v1.Job:
     # Define what will be done as part of the job.

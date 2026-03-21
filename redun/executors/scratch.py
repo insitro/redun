@@ -5,8 +5,9 @@ Utilities for working with executor scratch directories.
 import json
 import os
 import pickle
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Tuple, cast
+from typing import Any, Optional, cast
 
 from redun.file import File
 from redun.scheduler import Job, Traceback
@@ -83,7 +84,7 @@ class ArrayJobScratchFiles:
 
 
 def write_array_job_scratch_files(
-    jobs: List[Job],
+    jobs: list[Job],
     scratch_prefix: str,
     array_id: str,
     include_eval_hash: bool = True,
@@ -136,7 +137,7 @@ def parse_job_result(
     scratch_prefix: str,
     job: Job,
     is_valid_value: Optional[Callable[[Any], bool]] = None,
-) -> Tuple[Any, bool]:
+) -> tuple[Any, bool]:
     """
     Returns job output from scratch directory.
 
@@ -155,7 +156,7 @@ def parse_job_result(
     return None, False
 
 
-def parse_job_error(scratch_prefix: str, job: Job) -> Tuple[Exception, Traceback]:
+def parse_job_error(scratch_prefix: str, job: Job) -> tuple[Exception, Traceback]:
     """
     Returns job error from scratch directory.
     """

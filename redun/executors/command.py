@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from redun.executors.scratch import (
     SCRATCH_ERROR,
@@ -22,15 +22,15 @@ def get_oneshot_command(
     scratch_prefix: str,
     job: Job,
     a_task: Task,
-    args: Tuple = (),
-    kwargs: Dict[str, Any] = {},
+    args: tuple = (),
+    kwargs: dict[str, Any] = {},
     job_options: dict = {},
     code_file: Optional[File] = None,
     array_uuid: Optional[str] = None,
     input_path: Optional[str] = None,
     output_path: Optional[str] = None,
     error_path: Optional[str] = None,
-) -> List[str]:
+) -> list[str]:
     """
     Returns a redun oneshot command for a Job.
     """
@@ -106,7 +106,7 @@ def get_script_task_command(
     exit_command: str = "",
     as_mount: bool = False,
     suppress_output: bool = False,  # Useful for commands on cluster worker nodes
-) -> List[str]:
+) -> list[str]:
     """
     Returns a shell script to run a script task.
     """

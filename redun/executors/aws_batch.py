@@ -8,10 +8,11 @@ import threading
 import time
 import uuid
 from collections import OrderedDict, defaultdict
+from collections.abc import Iterable, Iterator
 from configparser import SectionProxy
 from functools import lru_cache
 from itertools import islice
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Any, Optional, cast
 
 import boto3
 
@@ -28,10 +29,10 @@ from redun.executors.scratch import (
     get_array_scratch_file,
     get_job_scratch_dir,
     get_job_scratch_file,
+    parse_job_result,
     write_array_job_scratch_files,
 )
 from redun.executors.scratch import parse_job_error as _parse_job_error
-from redun.executors.scratch import parse_job_result
 from redun.file import File
 from redun.job_array import JobArrayer
 from redun.scheduler import Job, Scheduler, Traceback
@@ -136,7 +137,7 @@ def get_job_definition(
 
 def get_job_details(
     image: str,
-    command: Optional[List[str]] = None,
+    command: Optional[list[str]] = None,
     memory: int = 4,
     vcpus: int = 1,
     num_nodes: Optional[int] = None,
@@ -216,7 +217,7 @@ def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
         "resourceRequirements": ["any_requirements"],
     }
 
-    def sanitize_job_def(job_def: Dict) -> Dict:
+    def sanitize_job_def(job_def: dict) -> dict:
         """Overwrite the resource properties with redactions."""
         result = copy.deepcopy(job_def)
 
@@ -235,7 +236,7 @@ def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
     job_def1 = sanitize_job_def(job_def1)
     job_def2 = sanitize_job_def(job_def2)
 
-    def dict_eq_lhs_keys(lhs: Dict, rhs: Dict) -> bool:
+    def dict_eq_lhs_keys(lhs: dict, rhs: dict) -> bool:
         """Recursively check that the lhs is a subset of the rhs - Batch may return more keys
         than we set, usually to empty values, but we don't care."""
 
@@ -262,7 +263,7 @@ def get_job_def_revision(job_def_name: str) -> int:
 def get_or_create_job_definition(
     job_def_name: str,
     image: str,
-    command: Optional[List[str]] = None,
+    command: Optional[list[str]] = None,
     memory: int = 4,
     vcpus: int = 1,
     num_nodes: Optional[int] = None,
@@ -332,10 +333,10 @@ def make_job_def_name(image_name: str, job_def_suffix: str = "-jd") -> str:
 
 
 def create_job_override_command(
-    command: List[str],
-    command_worker: Optional[List[str]] = None,
+    command: list[str],
+    command_worker: Optional[list[str]] = None,
     num_nodes: Optional[int] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Format the command into the form needed for the AWS Batch `submit_job` API.
 
     command: A list of tokens comprising the command
@@ -343,7 +344,7 @@ def create_job_override_command(
     num_nodes: If `None`, this is a single-node job. If not `None`, a multi-node job.
 
     Returns a dictionary to be passed to `submit_job` as kwargs."""
-    batch_job_args: Dict[str, Any] = {}
+    batch_job_args: dict[str, Any] = {}
 
     if num_nodes is None:
         # Single-node jobs override the container.
@@ -381,11 +382,11 @@ def batch_submit(
     privileged: bool = False,
     autocreate_job_def: bool = True,
     timeout: Optional[int] = None,
-    batch_tags: Optional[Dict[str, str]] = None,
+    batch_tags: Optional[dict[str, str]] = None,
     propagate_tags: bool = True,
     share_id: Optional[str] = None,
     scheduling_priority_override: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Actually perform job submission to AWS batch. Create or retrieve the job definition, then
     use it to submit the job.
 
@@ -418,7 +419,7 @@ def batch_submit(
             job_def_extra=job_def_extra,
         )
 
-    def apply_resources(container_properties: Dict) -> None:
+    def apply_resources(container_properties: dict) -> None:
         """Modify the provided dictionary of container properties to apply requested resources"""
 
         # Switch units, redun configs are in GB but AWS uses MB.
@@ -538,14 +539,14 @@ def submit_task(
     s3_scratch_prefix: str,
     job: Job,
     a_task: Task,
-    args: Tuple = (),
-    kwargs: Dict[str, Any] = {},
+    args: tuple = (),
+    kwargs: dict[str, Any] = {},
     job_options: dict = {},
     array_uuid: Optional[str] = None,
     array_size: int = 0,
     code_file: Optional[File] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Submit a redun Task to AWS Batch.
     """
@@ -653,7 +654,7 @@ def submit_command(
 
 def parse_job_error(
     s3_scratch_prefix: str, job: Job, batch_job_metadata: Optional[dict] = None
-) -> Tuple[Exception, "Traceback"]:
+) -> tuple[Exception, "Traceback"]:
     """
     Parse task error from s3 scratch path.
     """
@@ -693,7 +694,7 @@ def parse_job_logs(
 
 
 def aws_describe_jobs(
-    job_ids: List[str],
+    job_ids: list[str],
     chunk_size: int = 100,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> Iterator[dict]:
@@ -711,7 +712,7 @@ def aws_describe_jobs(
 
 
 def iter_batch_job_status(
-    job_ids: List[str],
+    job_ids: list[str],
     pending_truncate: int = 10,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> Iterator[dict]:
@@ -757,7 +758,7 @@ def get_job_log_stream(job: Optional[dict], aws_region: str) -> Optional[str]:
         job_id = job["jobId"]
         # The docs indicate we can rely on this format for getting the per-worker jobs ids:
         # `jobId#worker_id`.
-        jobs: Iterator[Optional[Dict[Any, Any]]] = aws_describe_jobs(
+        jobs: Iterator[Optional[dict[Any, Any]]] = aws_describe_jobs(
             [f"{job_id}#{main_node}"], aws_region=aws_region
         )
         job = next(jobs, None)
@@ -875,7 +876,7 @@ class AWSBatchExecutor(Executor):
 
         # Default task options.
         # Defaults should be set for all values mirrored in get_batch_job_options.
-        self.default_task_options: Dict[str, Any] = {
+        self.default_task_options: dict[str, Any] = {
             "vcpus": config.getint("vcpus", fallback=1),
             "gpus": config.getint("gpus", fallback=0),
             "memory": config.getfloat("memory", fallback=4),
@@ -902,8 +903,8 @@ class AWSBatchExecutor(Executor):
 
         self.is_running = False
         # We use an OrderedDict in order to retain submission order.
-        self.pending_batch_jobs: Dict[str, "Job"] = OrderedDict()
-        self.preexisting_batch_jobs: Dict[str, str] = {}  # Job hash -> Job ID
+        self.pending_batch_jobs: dict[str, "Job"] = OrderedDict()
+        self.preexisting_batch_jobs: dict[str, str] = {}  # Job hash -> Job ID
         self.interval = config.getfloat("job_monitor_interval", fallback=5.0)
 
         self._thread: Optional[threading.Thread] = None
@@ -917,7 +918,7 @@ class AWSBatchExecutor(Executor):
         )
         self._aws_user: Optional[str] = None
 
-    def _submit_jobs(self, jobs: List[Job]) -> None:
+    def _submit_jobs(self, jobs: list[Job]) -> None:
         """
         Callback for JobArrayer to return arrays of Jobs.
         """
@@ -939,7 +940,7 @@ class AWSBatchExecutor(Executor):
         self._docker_executor.set_scheduler(scheduler)
 
     def gather_inflight_jobs(self) -> None:
-        running_arrays: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
+        running_arrays: dict[str, list[tuple[str, int]]] = defaultdict(list)
 
         # Get all running jobs by name
         inflight_jobs = self.get_jobs(BATCH_JOB_STATUSES.inflight)
@@ -1073,7 +1074,7 @@ class AWSBatchExecutor(Executor):
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
 
-    def _can_override_failed(self, job: dict) -> Tuple[bool, str]:
+    def _can_override_failed(self, job: dict) -> tuple[bool, str]:
         """
         Certain AWS errors can be ignored that do not effect the result.
 
@@ -1278,7 +1279,7 @@ class AWSBatchExecutor(Executor):
 
         self._start()
 
-    def _submit_array_job(self, jobs: List[Job]) -> str:
+    def _submit_array_job(self, jobs: list[Job]) -> str:
         """Submits an array job, returning job name uuid"""
         array_size = len(jobs)
 
@@ -1432,7 +1433,7 @@ class AWSBatchExecutor(Executor):
         else:
             return self._submit(job)
 
-    def get_jobs(self, statuses: Optional[List[str]] = None) -> Iterator[dict]:
+    def get_jobs(self, statuses: Optional[list[str]] = None) -> Iterator[dict]:
         """
         Returns AWS Batch Job statuses from the AWS API.
         """
@@ -1451,8 +1452,8 @@ class AWSBatchExecutor(Executor):
                         yield job
 
     def get_array_child_jobs(
-        self, job_id: str, statuses: List[str] = BATCH_JOB_STATUSES.inflight
-    ) -> List[Dict[str, Any]]:
+        self, job_id: str, statuses: list[str] = BATCH_JOB_STATUSES.inflight
+    ) -> list[dict[str, Any]]:
         batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
         paginator = batch_client.get_paginator("list_jobs")  # ty: ignore[unresolved-attribute]
 

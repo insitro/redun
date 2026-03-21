@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, TypeVar
+from collections.abc import Callable, Iterable
+from typing import Any, Optional, TypeVar
 
 from sqlalchemy import Column
 from sqlalchemy.orm import Query, Session
@@ -9,14 +10,14 @@ ModelType = TypeVar("ModelType", bound=Callable)
 def get_or_create(
     session: Session,
     Model: ModelType,
-    filter: Dict[str, Any],
-    update: Optional[Dict[str, Any]] = None,
-) -> Tuple[ModelType, bool]:
+    filter: dict[str, Any],
+    update: Optional[dict[str, Any]] = None,
+) -> tuple[ModelType, bool]:
     """
     Get or create a row for a sqlalchemy Model.
     """
     # An insert is the filter clause with update added on.
-    insert: Dict[str, Any] = dict(filter)
+    insert: dict[str, Any] = dict(filter)
     if update:
         insert.update(update)
 

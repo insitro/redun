@@ -1,6 +1,7 @@
 import os
+from collections.abc import Iterable
 from configparser import ConfigParser, ExtendedInterpolation, SectionProxy
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Any, Optional
 
 from redun.file import File, get_proto
 
@@ -72,7 +73,7 @@ class Config:
         self.parser.read_dict(config_dict)
         self._sections = self._parse_sections(self.parser)
 
-    def _parse_sections(self, parser) -> Union[dict, "Section"]:
+    def _parse_sections(self, parser) -> "dict | Section":
         """
         Parse a dot notation section into nested dicts.
         """
@@ -109,7 +110,7 @@ class Config:
     def items(self):
         return self._sections.items()
 
-    def get_config_dict(self, replace_config_dir=None) -> Dict[str, Dict]:
+    def get_config_dict(self, replace_config_dir=None) -> dict[str, dict]:
         """Return a python dict that can be used to reconstruct the Config object
 
         config2 = Config(config_dict=config1.get_config_dict()) should result in identical
@@ -154,7 +155,7 @@ class Config:
         return result
 
 
-Section = Union[dict, SectionProxy, Config]
+Section = dict | SectionProxy | Config
 
 
 def create_config_section(config_dict: Optional[dict] = None) -> SectionProxy:

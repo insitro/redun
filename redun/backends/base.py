@@ -1,8 +1,9 @@
 import abc
 import enum
 import typing
+from collections.abc import Iterable, Iterator
 from datetime import datetime
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from redun.handle import Handle
 from redun.task import CacheCheckValid, CacheResult, CacheScope
@@ -17,7 +18,7 @@ NULL = object()
 
 # Types.
 TagMap = MultiMap[str, Any]  # ty: ignore[invalid-type-arguments]
-KeyValue = Tuple[str, Any]
+KeyValue = tuple[str, Any]
 
 
 class TagEntity(enum.Enum):
@@ -63,10 +64,10 @@ class RedunBackend(abc.ABC):
         task_name: str,
         task_hash: str,
         args_hash: str,
-        expr_args: Tuple[Tuple, dict],
-        eval_args: Tuple[Tuple, dict],
+        expr_args: tuple[tuple, dict],
+        eval_args: tuple[tuple, dict],
         result_hash: str,
-        child_call_hashes: List[str],
+        child_call_hashes: list[str],
         subtree_tasks: Iterable["BaseTask"],
     ) -> str:
         """
@@ -101,7 +102,7 @@ class RedunBackend(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_subtree_tasks(self, call_hash: str) -> Set[str]:
+    def get_subtree_tasks(self, call_hash: str) -> set[str]:
         """
         Returns all task hashes used by CallNodes within its subtree.
         """
@@ -160,12 +161,12 @@ class RedunBackend(abc.ABC):
         args_hash: str,
         eval_hash: str,
         execution_id: str,
-        scheduler_task_hashes: Set[str],
+        scheduler_task_hashes: set[str],
         cache_scope: CacheScope,
         check_valid: CacheCheckValid,
         context_hash: Optional[str] = None,
-        allowed_cache_results: Optional[Set[CacheResult]] = None,
-    ) -> Tuple[Any, Optional[str], CacheResult]:
+        allowed_cache_results: Optional[set[CacheResult]] = None,
+    ) -> tuple[Any, Optional[str], CacheResult]:
         """
         Check cache for recorded values.
 
@@ -252,14 +253,14 @@ class RedunBackend(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def explain_cache_miss(self, task: "BaseTask", args_hash: str) -> Optional[Dict[str, Any]]:
+    def explain_cache_miss(self, task: "BaseTask", args_hash: str) -> Optional[dict[str, Any]]:
         """
         Determine the reason for a cache miss.
         """
         pass
 
     @abc.abstractmethod
-    def advance_handle(self, handles: List[Handle], child_handle: Handle):
+    def advance_handle(self, handles: list[Handle], child_handle: Handle):
         """
         Record parent-child relationships between Handles.
         """
@@ -280,7 +281,7 @@ class RedunBackend(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def record_execution(self, exec_id, args: List[str]) -> None:
+    def record_execution(self, exec_id, args: list[str]) -> None:
         """
         Records an Execution to the backend.
 
@@ -336,7 +337,7 @@ class RedunBackend(abc.ABC):
         self,
         entity_type: TagEntity,
         entity_id: str,
-        tags: Iterable[Tuple[str, Any]],
+        tags: Iterable[tuple[str, Any]],
         parents: Iterable = (),
         update: bool = False,
         new: bool = False,
@@ -371,7 +372,7 @@ class RedunBackend(abc.ABC):
     @abc.abstractmethod
     def delete_tags(
         self, entity_id: str, tags: Iterable[KeyValue], keys: Iterable[str] = ()
-    ) -> List[Tuple[str, str, str, Any]]:
+    ) -> list[tuple[str, str, str, Any]]:
         """
         Delete tags.
         """
@@ -384,14 +385,14 @@ class RedunBackend(abc.ABC):
         entity_id: str,
         old_keys: Iterable[str],
         new_tags: Iterable[KeyValue],
-    ) -> List[Tuple[str, str, str, Any]]:
+    ) -> list[tuple[str, str, str, Any]]:
         """
         Update tags.
         """
         pass
 
     @abc.abstractmethod
-    def get_tags(self, entity_ids: List[str]) -> Dict[str, TagMap]:
+    def get_tags(self, entity_ids: list[str]) -> dict[str, TagMap]:
         """
         Get the tags of an entity (Execution, Job, CallNode, Task, Value).
         """

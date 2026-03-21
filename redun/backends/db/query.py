@@ -1,9 +1,10 @@
 import argparse
 import os
 import re
+from collections.abc import Callable, Iterable, Iterator
 from functools import reduce
 from itertools import islice
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
@@ -173,22 +174,22 @@ class CallGraphQuery:
     def __init__(
         self,
         session: sa.orm.Session,  # ty: ignore[possibly-missing-attribute]
-        joins: Optional[Set[str]] = None,
-        execution_joins: Optional[List[Callable[[Query], Query]]] = None,
-        filters: Optional[List] = None,
+        joins: set[str] | None = None,
+        execution_joins: list[Callable[[Query], Query]] | None = None,
+        filters: list | None = None,
         order_by: Optional[str] = None,
-        filter_types: Optional[Set] = None,
+        filter_types: Optional[set] = None,
         executions: Optional[Query] = None,
         jobs: Optional[Query] = None,
         call_nodes: Optional[Query] = None,
         tasks: Optional[Query] = None,
         values: Optional[Query] = None,
-        value_subqueries: Optional[List[Query]] = None,
+        value_subqueries: Optional[list[Query]] = None,
     ):
         self._session = session
-        self._joins: Set[str] = joins or set()
-        self._execution_joins: List[Callable[[Query], Query]] = execution_joins or []
-        self._filters: List = filters or []
+        self._joins: set[str] = joins or set()
+        self._execution_joins: list[Callable[[Query], Query]] = execution_joins or []
+        self._filters: list = filters or []
         self._order_by = order_by
         self._filter_types = filter_types if filter_types is not None else set(self.MODEL_NAMES)
 
@@ -201,7 +202,7 @@ class CallGraphQuery:
         self._value_subqueries = value_subqueries
 
     @property
-    def subqueries(self) -> Iterable[Tuple[str, Query]]:
+    def subqueries(self) -> Iterable[tuple[str, Query]]:
         """
         Iterates through all subqueries.
 
@@ -221,7 +222,7 @@ class CallGraphQuery:
         """
         Returns a clone of the query with updates specified by `kwargs`.
         """
-        clone_kwargs: Dict[str, Any] = {
+        clone_kwargs: dict[str, Any] = {
             "joins": self._joins,
             "execution_joins": self._execution_joins,
             "filters": self._filters,
@@ -461,7 +462,7 @@ class CallGraphQuery:
             tasks=self._tasks.filter(Task.hash.in_(task_hashes)),
         )
 
-    def filter_arguments(self, value_hashes: List[str]) -> "CallGraphQuery":
+    def filter_arguments(self, value_hashes: list[str]) -> "CallGraphQuery":
         """
         Filter jobs by argument values.
         """
@@ -477,7 +478,7 @@ class CallGraphQuery:
         )
         return self.clone(filter_types=self._filter_types & {"Job"}, jobs=jobs)
 
-    def filter_results(self, value_hashes: List[str]) -> "CallGraphQuery":
+    def filter_results(self, value_hashes: list[str]) -> "CallGraphQuery":
         """
         Filter jobs by result values.
         """
@@ -532,7 +533,7 @@ class CallGraphQuery:
         query: Query,
         entity_id_col: Any,
         table: Any,
-        tags: Iterable[Tuple[str, Any]],
+        tags: Iterable[tuple[str, Any]],
     ) -> Query:
         """
         Build query for filtering tags.
@@ -549,7 +550,7 @@ class CallGraphQuery:
             query = query.join(tag_query, tag_query.c.entity_id == entity_id_col)
         return query
 
-    def filter_tags(self, tags: Iterable[Tuple[str, Any]]) -> "CallGraphQuery":
+    def filter_tags(self, tags: Iterable[tuple[str, Any]]) -> "CallGraphQuery":
         """
         Filter by tags.
         """
@@ -569,7 +570,7 @@ class CallGraphQuery:
             filters=self._filters + [filter],
         )
 
-    def filter_execution_tags(self, tags: Iterable[Tuple[str, Any]]) -> "CallGraphQuery":
+    def filter_execution_tags(self, tags: Iterable[tuple[str, Any]]) -> "CallGraphQuery":
         """
         Filter by tag on executions.
         """
@@ -745,7 +746,7 @@ class CallGraphQuery:
                 returned += 1
                 yield record
 
-    def count(self) -> Iterator[Tuple[str, int]]:
+    def count(self) -> Iterator[tuple[str, int]]:
         """
         Returns counts for each record type.
         """
@@ -829,7 +830,7 @@ def infer_specialty_id(session: Session, id: str, include_files: bool = True) ->
     return None
 
 
-def find_file(session: Session, path: str) -> Optional[Tuple[File, Job, str]]:
+def find_file(session: Session, path: str) -> Optional[tuple[File, Job, str]]:
     """
     Find a File by its path.
 

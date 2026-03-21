@@ -2,7 +2,8 @@ import os
 import threading
 import time
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional, cast
+from collections.abc import Callable
+from typing import Any, Optional, cast
 
 from redun.scheduler import Job
 
@@ -90,7 +91,7 @@ class JobArrayer:
 
     def __init__(
         self,
-        submit_jobs: Callable[[List[Job]], None],
+        submit_jobs: Callable[[list[Job]], None],
         on_error: Callable[[Exception], None],
         submit_interval: float,
         stale_time: float,
@@ -102,8 +103,8 @@ class JobArrayer:
         if self.max_array_size < self.min_array_size:
             raise ValueError("Maximum array size cannot be less than minimum.")
 
-        self.pending: Dict[JobDescription, List[Job]] = defaultdict(list)
-        self.pending_timestamps: Dict[JobDescription, float] = {}
+        self.pending: dict[JobDescription, list[Job]] = defaultdict(list)
+        self.pending_timestamps: dict[JobDescription, float] = {}
         self._lock = threading.Lock()
 
         self._submit_jobs = submit_jobs
@@ -166,7 +167,7 @@ class JobArrayer:
 
         self.start()
 
-    def get_stale_descrs(self) -> List[JobDescription]:
+    def get_stale_descrs(self) -> list[JobDescription]:
         """Submits jobs that haven't been touched in a while"""
         currtime = time.time()
         stales = [

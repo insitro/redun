@@ -4,7 +4,8 @@ import shlex
 import tarfile
 import tempfile
 import zipfile
-from typing import Iterable, List, Optional, Set, Union
+from collections.abc import Iterable
+from typing import Optional
 
 from redun.executors.scratch import get_code_scratch_file
 from redun.file import File
@@ -13,8 +14,8 @@ from redun.hashing import hash_stream
 
 def find_code_files(
     basedir: str = ".",
-    includes: Optional[List[str]] = None,
-    excludes: Optional[List[str]] = None,
+    includes: Optional[list[str]] = None,
+    excludes: Optional[list[str]] = None,
 ) -> Iterable[str]:
     """
     Find all the workflow code files consistent with the include/exclude patterns.
@@ -24,7 +25,7 @@ def find_code_files(
     if excludes is None:
         excludes = []
 
-    files: Set[str] = set()
+    files: set[str] = set()
     for pattern in includes:
         files |= set(glob.glob(os.path.join(basedir, pattern), recursive=True))
 
@@ -85,7 +86,7 @@ def create_zip(
     return zip_file
 
 
-def parse_code_package_config(config) -> Union[dict, bool]:
+def parse_code_package_config(config) -> dict | bool:
     """
     Parse the code package options from a AWSBatchExecutor config.
     """

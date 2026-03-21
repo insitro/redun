@@ -1,4 +1,4 @@
-from typing import List, cast
+from typing import cast
 
 import pytest
 
@@ -33,7 +33,7 @@ def test_partial(scheduler: Scheduler) -> None:
 
     # Partial should be usable in a workflow.
     @task()
-    def main() -> List[int]:
+    def main() -> list[int]:
         inc = add.partial(1)
         return [inc(10), inc(12)]
 

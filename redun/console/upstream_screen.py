@@ -1,4 +1,5 @@
-from typing import Dict, Iterator, Optional, Tuple
+from collections.abc import Iterator
+from typing import Optional
 
 from textual.app import ComposeResult
 from textual.containers import Container
@@ -22,7 +23,7 @@ from redun.console.utils import rich_escape
 from redun.utils import assert_never, trim_string
 
 
-def display_node(node: Optional[DataflowNode], renames: Dict[str, str]) -> Tuple[str, str]:
+def display_node(node: Optional[DataflowNode], renames: dict[str, str]) -> tuple[str, str]:
     """
     Formats a dataflow node to a string.
     """
@@ -48,7 +49,7 @@ def display_node(node: Optional[DataflowNode], renames: Dict[str, str]) -> Tuple
         assert_never(node)
 
 
-def display_call_node(call_node: CallNode, renames: Dict[str, str]) -> str:
+def display_call_node(call_node: CallNode, renames: dict[str, str]) -> str:
     """
     Formats a CallNode to a string.
     """

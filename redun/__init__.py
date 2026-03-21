@@ -1,6 +1,8 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from redun._version import __version__
+from redun.context import get_context
+from redun.executors.base import register_executor
 from redun.file import Dir, File, ShardedS3Dataset
 from redun.handle import Handle
 from redun.namespace import get_current_namespace, namespace
@@ -16,8 +18,6 @@ from redun.scheduler import (
 )
 from redun.scripting import script
 from redun.task import PartialTask, Task, get_task_registry, task
-from redun.context import get_context
-from redun.executors.base import register_executor
 
 version = __version__
 
@@ -50,12 +50,12 @@ else:
 
 
 # Cached Schedulers.
-_config2scheduler: Dict[Optional[str], Scheduler] = {}
+_config2scheduler: dict[str | None, Scheduler] = {}
 
 
 def run(
     expr: Any,
-    config_dir: Optional[str] = None,
+    config_dir: str | None = None,
     **run_config: Any,
 ) -> Any:
     """
@@ -65,7 +65,7 @@ def run(
     ----------
     expr: Any
         An expression to evaluate with the redun Scheduler.
-    config_dir: Optional[str]
+    config_dir: str | None
         A redun configuration directory to use to define the Scheduler. Defaults to `.redun`.
     run_config:
         Additional run options such as `cache=False`. See :method:`Scheduler.run()` for full details.

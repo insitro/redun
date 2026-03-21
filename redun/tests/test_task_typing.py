@@ -9,7 +9,7 @@ are accepted and invalid calls are rejected.
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import pytest
 
@@ -27,7 +27,7 @@ def _has_mypy() -> bool:
     return _MYPY.exists()
 
 
-def _run_checker(checker: Path, filepath: Path, extra_args: Optional[List[str]] = None) -> str:
+def _run_checker(checker: Path, filepath: Path, extra_args: Optional[list[str]] = None) -> str:
     """Run a type checker on a file and return combined stdout+stderr."""
     args = [str(checker)]
     if extra_args:

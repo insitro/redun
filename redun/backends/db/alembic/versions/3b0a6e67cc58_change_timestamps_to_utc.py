@@ -10,7 +10,6 @@ import os
 
 from alembic import op
 
-
 # revision identifiers, used by Alembic.
 revision = "3b0a6e67cc58"
 down_revision = "f68b3aaee9cc"

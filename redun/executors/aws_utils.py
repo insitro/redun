@@ -1,6 +1,7 @@
 import os
 import threading
-from typing import Dict, Iterator, List, NamedTuple, Optional, Tuple, Any
+from collections.abc import Iterator
+from typing import Any, NamedTuple, Optional
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -12,11 +13,11 @@ from redun.file import File
 DEFAULT_AWS_REGION = "us-west-2"
 
 # Cache for AWS Clients.
-_boto_clients: Dict[Tuple[int, str, str], boto3.Session] = {}
-_boto_config: Dict[str, Any] = {}
+_boto_clients: dict[tuple[int, str, str], boto3.Session] = {}
+_boto_config: dict[str, Any] = {}
 
 
-def set_boto_config(config: Dict[str, Any]) -> None:
+def set_boto_config(config: dict[str, Any]) -> None:
     """
     Set the boto3 config. Resets the cache of clients as a side effect, in case any were made that
     did not use this config.
@@ -27,13 +28,13 @@ def set_boto_config(config: Dict[str, Any]) -> None:
 
 
 class JobStatus(NamedTuple):
-    all: List[str]
-    pending: List[str]
-    inflight: List[str]
-    success: List[str]
-    failure: List[str]
-    stopped: List[str]
-    timeout: List[str]
+    all: list[str]
+    pending: list[str]
+    inflight: list[str]
+    success: list[str]
+    failure: list[str]
+    stopped: list[str]
+    timeout: list[str]
 
 
 def get_aws_client(service: str, aws_region: str = DEFAULT_AWS_REGION) -> boto3.Session:
@@ -73,7 +74,7 @@ def is_ec2_instance() -> bool:
         return False
 
 
-def get_aws_env_vars() -> Dict[str, str]:
+def get_aws_env_vars() -> dict[str, str]:
     """
     Determines the current AWS credentials.
     """

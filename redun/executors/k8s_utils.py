@@ -3,7 +3,7 @@
 # It uses the Official Python client library for kubernetes:
 # https://github.com/kubernetes-client/python
 from base64 import b64encode
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
@@ -41,7 +41,7 @@ class K8SClient:
                 config.load_incluster_config()
             self._is_loaded = True
 
-    def version(self) -> Tuple[int, int]:
+    def version(self) -> tuple[int, int]:
         """
         Returns an API client support k8s version API.
 
@@ -165,7 +165,7 @@ def create_resources(
     return resources
 
 
-def _build_node_affinity(node_affinity: Dict[str, Any]) -> client.V1Affinity:
+def _build_node_affinity(node_affinity: dict[str, Any]) -> client.V1Affinity:
     """
     Builds a V1Affinity object from a node_affinity configuration dict.
 
@@ -224,17 +224,17 @@ def _build_node_affinity(node_affinity: Dict[str, Any]) -> client.V1Affinity:
 def create_job_object(
     name: str = DEFAULT_JOB_PREFIX,
     image: str = "bash",
-    command: List[str] = ["false"],
+    command: list[str] = ["false"],
     resources: Optional[client.V1ResourceRequirements] = None,
     timeout: Optional[int] = None,
     labels: Optional[dict] = None,
     uid: Optional[str] = None,
     retries: int = 1,
     service_account_name: Optional[str] = "default",
-    annotations: Optional[Dict[str, str]] = None,
+    annotations: Optional[dict[str, str]] = None,
     secret_name: Optional[str] = None,
-    node_affinity: Optional[Dict[str, Any]] = None,
-    env: Optional[Dict[str, str]] = None,
+    node_affinity: Optional[dict[str, Any]] = None,
+    env: Optional[dict[str, str]] = None,
 ) -> client.V1Job:
     """Creates a job object for redun job.
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md

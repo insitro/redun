@@ -4,7 +4,8 @@ import tempfile
 import threading
 import time
 from collections import OrderedDict, deque
-from typing import Any, Deque, Dict, Iterator, List, Optional, Tuple, Union, cast
+from collections.abc import Iterator
+from typing import Any, Optional, cast
 
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
@@ -21,9 +22,9 @@ from redun.executors.scratch import (
     ExceptionNotFoundError,
     get_job_scratch_dir,
     get_job_scratch_file,
+    parse_job_result,
 )
 from redun.executors.scratch import parse_job_error as _parse_job_error
-from redun.executors.scratch import parse_job_result
 from redun.file import File
 from redun.hashing import hash_stream, hash_text
 from redun.scheduler import Job, Scheduler, Traceback
@@ -127,7 +128,7 @@ def get_or_create_glue_job_definition(
     extra_py_files: str,
     spark_history_dir: str,
     enable_metrics: bool = False,
-    additional_python_modules: List[str] = [],
+    additional_python_modules: list[str] = [],
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
 ) -> str:
     """
@@ -282,9 +283,9 @@ class AWSGlueExecutor(Executor):
         self.is_running = False
         self._monitor_thread = threading.Thread(target=self._monitor, daemon=False)
         self._submit_thread = threading.Thread(target=self._submission_thread, daemon=False)
-        self.pending_glue_jobs: Deque["Job"] = deque()
-        self.running_glue_jobs: Dict[str, "Job"] = OrderedDict()
-        self.preexisting_glue_jobs: Dict[str, str] = {}  # Job hash -> Job ID
+        self.pending_glue_jobs: deque["Job"] = deque()
+        self.running_glue_jobs: dict[str, "Job"] = OrderedDict()
+        self.preexisting_glue_jobs: dict[str, str] = {}  # Job hash -> Job ID
         self._oneshot_path: Optional[str] = None
         self.redun_zip_location: Optional[str] = None
 
@@ -293,7 +294,7 @@ class AWSGlueExecutor(Executor):
             hash = run["Arguments"].get("--job-hash")
             self.preexisting_glue_jobs[hash] = run["Id"]
 
-    def get_jobs(self, statuses: Optional[List[str]] = None) -> Iterator[dict]:
+    def get_jobs(self, statuses: Optional[list[str]] = None) -> Iterator[dict]:
         """
         Gets all job runs with given status.
         """
@@ -543,7 +544,7 @@ class AWSGlueExecutor(Executor):
 
         self._start()
 
-    def submit_pending_job(self, job: Job) -> Union[str, None]:
+    def submit_pending_job(self, job: Job) -> str | None:
         """
         Returns true if job submission was successful
         """
@@ -599,7 +600,7 @@ def submit_glue_job(
     code_file: File,
     job_options: dict = {},
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Submits a redun task to AWS glue.
 
@@ -716,10 +717,10 @@ def submit_glue_job(
 
 
 def glue_describe_jobs(
-    job_ids: List[str],
+    job_ids: list[str],
     glue_job_name: str,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
-) -> Iterator[Dict[str, Any]]:
+) -> Iterator[dict[str, Any]]:
     glue_client = aws_utils.get_aws_client("glue", aws_region=aws_region)
 
     for id in job_ids:
@@ -731,7 +732,7 @@ def glue_describe_jobs(
 
 def parse_job_error(
     s3_scratch_prefix: str, job: Job, glue_job_metadata: Optional[dict] = None
-) -> Tuple[Exception, "Traceback"]:
+) -> tuple[Exception, "Traceback"]:
     """
     Parse job error from s3 scratch path.
     """
@@ -754,7 +755,7 @@ def get_job_insight_traceback(
     log_group_name: str,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
     max_results=200,
-) -> List[str]:
+) -> list[str]:
     """
     Gets the traceback from AWS' Glue Job insights.
     """

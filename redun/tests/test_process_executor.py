@@ -1,7 +1,7 @@
 import os
 import threading
 import time
-from typing import List, cast
+from typing import cast
 
 import pytest
 
@@ -23,7 +23,7 @@ def task1(x: int, wait: int, count_file: File) -> int:
 
 
 @task()
-def main(count_file: File) -> List[int]:
+def main(count_file: File) -> list[int]:
     return [task1(1, 2, count_file), task1(2, 2, count_file)]
 
 
@@ -64,7 +64,7 @@ def task2(x: int, wait: int, count_file: File) -> int:
 
 
 @task()
-def main2(count_file: File) -> List[int]:
+def main2(count_file: File) -> list[int]:
     return [task2(1, 2, count_file), task2(2, 2, count_file)]
 
 
@@ -95,7 +95,7 @@ def task3(x: int, wait: int, count_file: File) -> str:
 
 
 @task()
-def main3(count_file: File) -> List[str]:
+def main3(count_file: File) -> list[str]:
     return [task3(1, 2, count_file), task3(2, 2, count_file)]
 
 
@@ -136,7 +136,7 @@ def thread_task(x: int) -> dict:
 
 
 @task()
-def main4() -> List[dict]:
+def main4() -> list[dict]:
     return [thread_task(i) for i in range(10)]
 
 

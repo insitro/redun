@@ -9,7 +9,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from io import BytesIO
-from typing import List, Literal, Union, Tuple
+from typing import Literal
 from unittest.mock import MagicMock, Mock, patch
 
 import adlfs
@@ -151,7 +151,7 @@ def run_dataloaders(
     multiprocessing_context: Literal["spawn", "fork", "none"],
     num_processes: int = 2,
     num_items: int = 100,
-) -> List[int]:
+) -> list[int]:
     assert File(path).exists()
 
     if num_processes == 0 or multiprocessing_context == "none":
@@ -169,7 +169,7 @@ def run_dataloaders(
 
 
 @task
-def read_thread(x: int, file: File) -> Tuple[int, Union[str, bytes]]:
+def read_thread(x: int, file: File) -> tuple[int, str | bytes]:
     time.sleep(2)
     res = (x, file.read("rb"))
     time.sleep(2)

@@ -5,9 +5,10 @@ import subprocess
 import threading
 import time
 from collections import OrderedDict
+from collections.abc import Iterable, Iterator
 from configparser import SectionProxy
 from tempfile import mkstemp
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Any, Optional
 
 from redun.config import create_config_section
 from redun.executors import aws_utils
@@ -44,9 +45,9 @@ def get_docker_executor_config(config: SectionProxy) -> SectionProxy:
 
 
 def run_docker(
-    command: List[str],
+    command: list[str],
     image: str,
-    volumes: Iterable[Tuple[str, str]] = [],
+    volumes: Iterable[tuple[str, str]] = [],
     interactive: bool = True,
     cleanup: bool = False,
     memory: int = 4,
@@ -174,12 +175,12 @@ def submit_task(
     scratch_prefix: str,
     job: Job,
     a_task: Task,
-    args: Tuple = (),
-    kwargs: Dict[str, Any] = {},
+    args: tuple = (),
+    kwargs: dict[str, Any] = {},
     job_options: dict = {},
     code_file: Optional[File] = None,
     include_aws_env: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Submit a redun Task to Docker.
     """
@@ -220,7 +221,7 @@ def submit_command(
     return {"jobId": container_id, "redun_job_id": job.id}
 
 
-def iter_job_status(scratch_prefix: str, job_id2job: Dict[str, "Job"]) -> Iterator[dict]:
+def iter_job_status(scratch_prefix: str, job_id2job: dict[str, "Job"]) -> Iterator[dict]:
     """
     Returns local Docker jobs grouped by their status.
     """
@@ -275,7 +276,7 @@ class DockerExecutor(Executor):
         self._code_file: Optional[File] = None
 
         # Default task options.
-        self._default_job_options: Dict[str, Any] = {
+        self._default_job_options: dict[str, Any] = {
             "vcpus": config.getint("vcpus", fallback=1),
             "gpus": config.getint("gpus", fallback=0),
             "memory": config.getint("memory", fallback=4),
@@ -285,7 +286,7 @@ class DockerExecutor(Executor):
         }
 
         self._is_running = False
-        self._pending_jobs: Dict[str, "Job"] = OrderedDict()
+        self._pending_jobs: dict[str, "Job"] = OrderedDict()
         self._thread: Optional[threading.Thread] = None
 
     def set_scheduler(self, scheduler: "Scheduler") -> None:
@@ -295,7 +296,7 @@ class DockerExecutor(Executor):
             self._config.get("volumes", fallback="[]")
         )
 
-    def _parse_volumes(self, volumes_str: str) -> List[List[str]]:
+    def _parse_volumes(self, volumes_str: str) -> list[list[str]]:
         """
         Parses Docker volume mounts from JSON string.
         """

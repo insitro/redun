@@ -1,6 +1,6 @@
 import re
 from argparse import Namespace
-from typing import Any, List, Type, cast
+from typing import Any, cast
 
 import sqlalchemy as sa
 from textual.app import App, ComposeResult
@@ -9,9 +9,8 @@ from textual.screen import Screen
 from textual.widget import Widget
 from textual.widgets import Label, ListItem, ListView
 
-from redun.backends.db import CallNode, Execution
+from redun.backends.db import CallNode, Execution, Job, RedunBackendDb, Task, Value
 from redun.backends.db import File as DbFile
-from redun.backends.db import Job, RedunBackendDb, Task, Value
 from redun.backends.db.query import infer_id
 from redun.console.screens import (
     ExecutionScreen,
@@ -90,7 +89,7 @@ class RedunApp(App):
     }
 
     # Screens that support argv routing.
-    route_screens: List[Type[RedunScreen]] = [
+    route_screens: list[type[RedunScreen]] = [
         ExecutionsScreen,
         ExecutionsNamespaceScreen,
         ExecutionScreen,
@@ -108,8 +107,8 @@ class RedunApp(App):
         self,
         scheduler: Scheduler,
         args: Namespace,
-        extra_args: List[str],
-        argv: List[str],
+        extra_args: list[str],
+        argv: list[str],
     ):
         super().__init__()
 
@@ -137,7 +136,7 @@ class RedunApp(App):
         if self.argv:
             self.route(self.argv)
 
-    def goto_screen(self, screen_cls: Type[Screen], name: str, args: tuple) -> Screen:
+    def goto_screen(self, screen_cls: type[Screen], name: str, args: tuple) -> Screen:
         """
         Get or create a new screen.
         """
@@ -175,7 +174,7 @@ class RedunApp(App):
             screen.update({"obj": record})  # ty: ignore[unresolved-attribute]
             self.push_screen(screen)
 
-    def route(self, argv: List[str]) -> None:
+    def route(self, argv: list[str]) -> None:
         """
         Route a path to the appropriate Screen.
         """

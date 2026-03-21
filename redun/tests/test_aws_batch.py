@@ -4,7 +4,7 @@ import pickle
 import time
 import unittest.mock
 import uuid
-from typing import Any, Dict, cast
+from typing import Any, cast
 from unittest.mock import Mock, patch
 
 import boto3
@@ -1202,7 +1202,7 @@ def test_iter_batch_job_logs(aws_describe_jobs_mock) -> None:
 
 
 def mock_executor(
-    scheduler, custom_config_args: Dict[str, Any] = {}, debug=False, code_package=False
+    scheduler, custom_config_args: dict[str, Any] = {}, debug=False, code_package=False
 ):
     """
     Returns an AWSBatchExecutor with AWS API mocks.

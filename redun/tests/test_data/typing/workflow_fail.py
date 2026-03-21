@@ -6,8 +6,6 @@ errors in this file are _not_ encountered in a mypy run, mypy will report that t
 unused and we will know that the expected error is not being raised.
 """
 
-from typing import List
-
 from redun import Scheduler, task
 
 
@@ -27,7 +25,7 @@ def add(a: int, b: int) -> int:
 
 
 @task()
-def sum_list(values: List[int]) -> int:
+def sum_list(values: list[int]) -> int:
     return sum(values)
 
 

@@ -6,23 +6,17 @@ import typing
 import uuid
 import warnings
 from collections import defaultdict
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 from copy import copy as shallowcopy
 from datetime import datetime, timedelta, timezone
 from functools import wraps
+from importlib import metadata
 from itertools import chain
 from threading import RLock, get_ident
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
     NamedTuple,
-    Optional,
-    Set,
-    Tuple,
     Union,
     cast,
 )
@@ -82,19 +76,19 @@ from redun.handle import Handle as BaseHandle
 from redun.hashing import hash_call_node, hash_struct, hash_tag
 from redun.logging import logger as _logger
 from redun.tags import CONTEXT_KEY
-from redun.task import CacheCheckValid, CacheResult, CacheScope
-from redun.task import Task as BaseTask, get_task_registry
+from redun.task import CacheCheckValid, CacheResult, CacheScope, get_task_registry
+from redun.task import Task as BaseTask
 from redun.utils import (
     MultiMap,
+    format_timestamp,
     iter_nested_value,
     json_dumps,
-    format_timestamp,
     pickle_loads,
     pickle_preview,
     str2bool,
     trim_string,
-    with_pickle_preview,
     utcnow,
+    with_pickle_preview,
 )
 from redun._version import __version__
 from redun.value import MIME_TYPE_PICKLE, InvalidValueError
@@ -477,7 +471,7 @@ class Value(Base):
                     return PreviewValue(self, size)
 
     @property
-    def value_parsed(self) -> Optional[Any]:
+    def value_parsed(self) -> Any | None:
         """
         Returns a deserialized value, or a preview if there is an error.
         """
@@ -544,7 +538,7 @@ class File(Base):
         )
 
     @property
-    def values(self) -> List[Value]:
+    def values(self) -> list[Value]:
         values = []
         if self.value:
             values.append(self.value)
@@ -603,7 +597,7 @@ class Argument(Base):
     arg_results = relationship("ArgumentResult", back_populates="arg")
 
     @property
-    def value_parsed(self) -> Optional[Any]:
+    def value_parsed(self) -> Any | None:
         return self.value.value_parsed
 
     def __repr__(self) -> str:
@@ -633,7 +627,7 @@ class Evaluation(Base):
     value = relationship("Value", foreign_keys=[value_hash], back_populates="evals")
 
     @property
-    def value_parsed(self) -> Optional[Any]:
+    def value_parsed(self) -> Any | None:
         return self.value.value_parsed
 
 
@@ -740,7 +734,7 @@ class CallNode(Base):
         )
 
     @property
-    def value_parsed(self) -> Optional[Any]:
+    def value_parsed(self) -> Any | None:
         return self.value.value_parsed
 
     # NOTE: Ideally we could use relationships for children and parents, instead
@@ -760,7 +754,7 @@ class CallNode(Base):
     # )
 
     @property
-    def children(self) -> List["CallNode"]:
+    def children(self) -> list["CallNode"]:
         if sa.__version__.startswith("1.3."):
             child_nodes = (
                 object_session(self)
@@ -788,7 +782,7 @@ class CallNode(Base):
             return [node for (node,) in child_nodes]
 
     @property
-    def parents(self) -> List["CallNode"]:
+    def parents(self) -> list["CallNode"]:
         parent_nodes = (
             object_session(self)  # ty: ignore[possibly-missing-attribute]
             .execute(
@@ -884,7 +878,7 @@ class Handle(Base):
         )
 
     @property
-    def values(self) -> List[Value]:
+    def values(self) -> list[Value]:
         values = []
         if self.value:
             values.append(self.value)
@@ -931,7 +925,7 @@ class Execution(Base):
 
     @reconstructor
     def _load(self) -> None:
-        self._status: Optional[str] = None
+        self._status: str | None = None
 
     def __repr__(self):
         return "Execution(id='{id}', task_name='{task_name}', args={args})".format(
@@ -941,20 +935,20 @@ class Execution(Base):
         )
 
     @property
-    def call_node(self) -> Optional["CallNode"]:
+    def call_node(self) -> "CallNode | None":
         if not self.job:
             return None
         return self.job.call_node
 
     @property
-    def task(self) -> Optional["Task"]:
+    def task(self) -> "Task | None":
         if not self.job:
             return None
         if not self.job.call_node:
             return None
         return self.job.call_node.task
 
-    def _job_status2exec_status(self, job_status: Optional[str]) -> str:
+    def _job_status2exec_status(self, job_status: str | None) -> str:
         """
         Convert the root Job status into an Execution status.
         """
@@ -965,7 +959,7 @@ class Execution(Base):
         else:
             return job_status
 
-    def calc_status(self, result_type: Optional[str]) -> str:
+    def calc_status(self, result_type: str | None) -> str:
         """
         Compute status from the result_type of the root Job.
         """
@@ -1041,7 +1035,7 @@ class Job(Base):
 
     @reconstructor
     def _load(self) -> None:
-        self._status: Optional[str] = None
+        self._status: str | None = None
 
     def __repr__(self) -> str:
         return "Job(id='{id}', start_time='{start_time}', task_name={task_name})".format(
@@ -1051,7 +1045,7 @@ class Job(Base):
         )
 
     @property
-    def duration(self) -> Optional[timedelta]:
+    def duration(self) -> timedelta | None:
         """
         Returns duration of the Job or None if Job end_time is not recorded.
         """
@@ -1059,7 +1053,7 @@ class Job(Base):
             return None
         return self.end_time - self.start_time
 
-    def calc_status(self, result_type: Optional[str]) -> str:
+    def calc_status(self, result_type: str | None) -> str:
         """
         Calculate Job status from result type.
         """
@@ -1276,7 +1270,7 @@ class Tag(Base):
         )
 
     @property
-    def entity(self) -> Union[Execution, Job, CallNode, Task, Value]:
+    def entity(self) -> Execution | Job | CallNode | Task | Value:
         session = object_session(self)
         if self.entity_type == TagEntity.Execution:
             return session.query(Execution).filter_by(id=self.entity_id).one()  # ty: ignore[possibly-missing-attribute]
@@ -1333,7 +1327,7 @@ class Tag(Base):
 # Methods for walking the database by ownership edges. Used for database syncing.
 #
 
-RecordEdgeType = Tuple[str, Base, str]
+RecordEdgeType = tuple[str, Base, str]
 
 
 def get_execution_child_edges(session: Session, ids: Iterable[str]) -> Iterable[RecordEdgeType]:
@@ -1448,7 +1442,7 @@ def db_retry(func: Callable) -> Callable:
     -------
     @db_retry
     @use_acquire
-    def get_value(self, value_hash: str) -> Tuple[Any, bool]:
+    def get_value(self, value_hash: str) -> tuple[Any, bool]:
         with self.with_session() as session:
             value_row = session.query(Value).filter_by(value_hash=value_hash).one_or_none()
         # ... rest of method
@@ -1531,9 +1525,9 @@ class RedunBackendDb(RedunBackend):
 
     def __init__(
         self,
-        db_uri: Optional[str] = None,
-        config: Optional[Section] = None,
-        logger: Optional[Any] = None,
+        db_uri: str | None = None,
+        config: Section | None = None,
+        logger: Any | None = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -1553,11 +1547,11 @@ class RedunBackendDb(RedunBackend):
 
         self.automigrate = str2bool(config.get("automigrate", default_automigrate))
 
-        self.engine: Optional[Engine] = None
-        self.session: Optional[Session] = None
-        self._record_serializer: Optional[serializers.RecordSerializer] = None
+        self.engine: Engine | None = None
+        self.session: Session | None = None
+        self._record_serializer: serializers.RecordSerializer | None = None
 
-        self.value_store: Optional[ValueStore] = None
+        self.value_store: ValueStore | None = None
         self.value_store_min_size: int = int(
             config.get("value_store_min_size", str(DEFAULT_VALUE_STORE_MIN_SIZE))
         )
@@ -1569,7 +1563,7 @@ class RedunBackendDb(RedunBackend):
             self.value_store = ValueStore(value_store_path)
 
         # Executions pending recording.
-        self._executions: Dict[str, Execution] = {}
+        self._executions: dict[str, Execution] = {}
 
         # User can use redun.ini set a smaller max size.
         self._max_value_size: int = int(config.get("max_value_size", str(DEFAULT_MAX_VALUE_SIZE)))
@@ -1586,7 +1580,7 @@ class RedunBackendDb(RedunBackend):
         self._db_retries_backoff_max: float = float(config.get("db_retries_backoff_max", "60.0"))
         self._db_retries_attempt: int = 0
 
-    def clone(self, session: Optional[Session] = None):
+    def clone(self, session: Session | None = None):
         """
         Return a copy of the backend that shares the instantiated database engine
         """
@@ -1648,14 +1642,14 @@ class RedunBackendDb(RedunBackend):
             yield self.session
 
     @staticmethod
-    def get_db_version_required() -> Tuple[DBVersionInfo, DBVersionInfo]:
+    def get_db_version_required() -> tuple[DBVersionInfo, DBVersionInfo]:
         """
         Returns the DB version range required by this library.
         """
         return REDUN_DB_MIN_VERSION, REDUN_DB_MAX_VERSION
 
     @staticmethod
-    def get_all_db_versions() -> List[DBVersionInfo]:
+    def get_all_db_versions() -> list[DBVersionInfo]:
         """
         Returns list of all DB versions and their migration ids.
         """
@@ -1706,7 +1700,7 @@ class RedunBackendDb(RedunBackend):
     @use_acquire
     def migrate(
         self,
-        desired_version: Optional[DBVersionInfo] = None,
+        desired_version: DBVersionInfo | None = None,
         upgrade_only: bool = False,
     ) -> None:
         """
@@ -1714,7 +1708,7 @@ class RedunBackendDb(RedunBackend):
 
         Parameters
         ----------
-        desired_version: Optional[DBVersionInfo]
+        desired_version: DBVersionInfo | None
             Desired version to update redun database to. If null, update to latest version.
         upgrade_only: bool
             By default, this function will perform both upgrades and downgrades.
@@ -1776,7 +1770,7 @@ class RedunBackendDb(RedunBackend):
         return min_version <= self.get_db_version() <= max_version
 
     @use_acquire
-    def load(self, migrate: Optional[bool] = None) -> None:
+    def load(self, migrate: bool | None = None) -> None:
         """
         Load backend database.
 
@@ -1786,7 +1780,7 @@ class RedunBackendDb(RedunBackend):
 
         Parameters
         ----------
-        migrate : Optional[bool]
+        migrate : bool | None
             If None, defer to automigration config options. If True, perform
             migration after establishing database connection.
         """
@@ -1813,10 +1807,10 @@ class RedunBackendDb(RedunBackend):
         task_name: str,
         task_hash: str,
         args_hash: str,
-        expr_args: Tuple[Tuple, dict],
-        eval_args: Tuple[Tuple, dict],
+        expr_args: tuple[tuple, dict],
+        eval_args: tuple[tuple, dict],
         result_hash: str,
-        child_call_hashes: List[str],
+        child_call_hashes: list[str],
         subtree_tasks: Iterable[BaseTask],
     ) -> str:
         """
@@ -1891,7 +1885,7 @@ class RedunBackendDb(RedunBackend):
         return call_hash
 
     @db_retry
-    def get_subtree_tasks(self, call_hash: str) -> Set[str]:
+    def get_subtree_tasks(self, call_hash: str) -> set[str]:
         """
         Returns all task hashes used by CallNodes within its subtree.
         """
@@ -1929,8 +1923,8 @@ class RedunBackendDb(RedunBackend):
     def _record_args(
         self,
         call_hash: str,
-        expr_args: Tuple[Tuple, dict],
-        eval_args: Tuple[Tuple, dict],
+        expr_args: tuple[tuple, dict],
+        eval_args: tuple[tuple, dict],
     ) -> None:
         """
         Record the Arguments for a CallNode.
@@ -1994,7 +1988,7 @@ class RedunBackendDb(RedunBackend):
 
     @db_retry
     def record_call_node_context(
-        self, call_hash: str, context_hash: Optional[str], context: dict
+        self, call_hash: str, context_hash: str | None, context: dict
     ) -> str:
         """
         Records a context dict for a CallNode as a Tag.
@@ -2006,7 +2000,7 @@ class RedunBackendDb(RedunBackend):
         return context_hash
 
     @db_retry
-    def record_value(self, value: Any, data: Optional[bytes] = None) -> str:
+    def record_value(self, value: Any, data: bytes | None = None) -> str:
         """
         Record a Value into the backend.
 
@@ -2014,7 +2008,7 @@ class RedunBackendDb(RedunBackend):
         ----------
         value : Any
             A value to record.
-        data : Optional[bytes]
+        data : bytes | None
             Byte stream to record. If not given, usual value serialization is used.
 
         Returns
@@ -2084,7 +2078,7 @@ class RedunBackendDb(RedunBackend):
         return value_hash
 
     @use_acquire
-    def _record_special_redun_values(self, values: List[Any], value_hashes: List[str]):
+    def _record_special_redun_values(self, values: list[Any], value_hashes: list[str]):
         """
         Record special Values such as Files and Tasks
         """
@@ -2133,7 +2127,7 @@ class RedunBackendDb(RedunBackend):
         if new_inserts:
             self.session.commit()
 
-    def _record_subvalues(self, subvalues: List[Any], parent_value_hash: str):
+    def _record_subvalues(self, subvalues: list[Any], parent_value_hash: str):
         """
         Record subvalues for a parent Value (parent_value_hash).
         """
@@ -2201,7 +2195,7 @@ class RedunBackendDb(RedunBackend):
 
             self._record_special_redun_values(subvalues, value_hashes)
 
-    def _deserialize_value(self, type_name: str, data: bytes) -> Tuple[Any, bool]:
+    def _deserialize_value(self, type_name: str, data: bytes) -> tuple[Any, bool]:
         """
         Deserialize bytes into a Value using TypeRegistry.
         """
@@ -2211,7 +2205,7 @@ class RedunBackendDb(RedunBackend):
         except InvalidValueError:
             return None, False
 
-    def _get_value_data(self, value_row: Value) -> Tuple[bytes, bool]:
+    def _get_value_data(self, value_row: Value) -> tuple[bytes, bool]:
         """
         Retrieve value data from db row or ValueStore.
         """
@@ -2224,7 +2218,7 @@ class RedunBackendDb(RedunBackend):
         else:
             raise AssertionError("ValueStore is not defined.")
 
-    def _get_value(self, value_row: Value) -> Tuple[Any, bool]:
+    def _get_value(self, value_row: Value) -> tuple[Any, bool]:
         """
         Gets a value from a Value model.
         """
@@ -2247,7 +2241,7 @@ class RedunBackendDb(RedunBackend):
             raise AssertionError("ValueStore is not defined.")
 
     @db_retry
-    def get_value(self, value_hash: str) -> Tuple[Any, bool]:
+    def get_value(self, value_hash: str) -> tuple[Any, bool]:
         """
         Returns a Value from the datastore using the value content address (value_hash).
 
@@ -2276,12 +2270,12 @@ class RedunBackendDb(RedunBackend):
         args_hash: str,
         eval_hash: str,
         execution_id: str,
-        scheduler_task_hashes: Set[str],
+        scheduler_task_hashes: set[str],
         cache_scope: CacheScope,
         check_valid: CacheCheckValid,
-        context_hash: Optional[str] = None,
-        allowed_cache_results: Optional[Set[CacheResult]] = None,
-    ) -> Tuple[Any, Optional[str], CacheResult]:
+        context_hash: str | None = None,
+        allowed_cache_results: set[CacheResult] | None = None,
+    ) -> tuple[Any, str | None, CacheResult]:
         """
         See parent method.
         """
@@ -2293,7 +2287,7 @@ class RedunBackendDb(RedunBackend):
 
         is_cached = False
         result = None
-        call_hash: Optional[str] = None
+        call_hash: str | None = None
         cache_type = CacheResult.MISS
 
         if cache_scope == CacheScope.NONE:
@@ -2352,7 +2346,7 @@ class RedunBackendDb(RedunBackend):
             return None, None, CacheResult.MISS
 
     @db_retry
-    def get_eval_cache(self, eval_hash: str) -> Tuple[Any, bool]:
+    def get_eval_cache(self, eval_hash: str) -> tuple[Any, bool]:
         """
         Checks the Evaluation cache for a cached result.
 
@@ -2385,7 +2379,7 @@ class RedunBackendDb(RedunBackend):
         task_hash: str,
         args_hash: str,
         value: Any,
-        value_hash: Optional[str] = None,
+        value_hash: str | None = None,
     ) -> None:
         """
         Sets a new value in the Evaluation cache.
@@ -2437,9 +2431,9 @@ class RedunBackendDb(RedunBackend):
         self,
         task_hash: str,
         args_hash: str,
-        scheduler_task_hashes: Set[str],
-        context_hash: Optional[str] = None,
-    ) -> Optional[CallNode]:
+        scheduler_task_hashes: set[str],
+        context_hash: str | None = None,
+    ) -> CallNode | None:
         assert self.session
 
         # NOTE: For pure functions, there should not be two current CallNodes
@@ -2479,7 +2473,7 @@ class RedunBackendDb(RedunBackend):
             return None
 
     @db_retry
-    def get_call_cache(self, call_hash: str) -> Tuple[Any, bool]:
+    def get_call_cache(self, call_hash: str) -> tuple[Any, bool]:
         """
         Returns the result of a previously recorded CallNode.
 
@@ -2506,7 +2500,7 @@ class RedunBackendDb(RedunBackend):
 
     @db_retry
     @use_acquire
-    def explain_cache_miss(self, task: "BaseTask", args_hash: str) -> Optional[Dict[str, Any]]:
+    def explain_cache_miss(self, task: "BaseTask", args_hash: str) -> dict[str, Any] | None:
         """
         Determine the reason for a cache miss.
         """
@@ -2558,7 +2552,7 @@ class RedunBackendDb(RedunBackend):
 
     @db_retry
     @use_acquire
-    def advance_handle(self, parent_handles: List[BaseHandle], child_handle: BaseHandle) -> None:
+    def advance_handle(self, parent_handles: list[BaseHandle], child_handle: BaseHandle) -> None:
         """
         Record parent-child relationships between Handles.
         """
@@ -2691,7 +2685,7 @@ class RedunBackendDb(RedunBackend):
         return row and row[0]
 
     @db_retry
-    def record_execution(self, exec_id: str, args: List[str]) -> None:
+    def record_execution(self, exec_id: str, args: list[str]) -> None:
         """
         Records an Execution to the backend.
 
@@ -2732,7 +2726,7 @@ class RedunBackendDb(RedunBackend):
 
     @db_retry
     @use_acquire
-    def record_job_start(self, job: "BaseJob", now: Optional[datetime] = None) -> Job:
+    def record_job_start(self, job: "BaseJob", now: datetime | None = None) -> Job:
         """
         Records the start of a new Job.
         """
@@ -2774,8 +2768,8 @@ class RedunBackendDb(RedunBackend):
     def record_job_end(
         self,
         job: "BaseJob",
-        now: Optional[datetime] = None,
-        status: Optional[str] = None,
+        now: datetime | None = None,
+        status: str | None = None,
     ) -> None:
         """
         Records the end of a Job.
@@ -2797,7 +2791,7 @@ class RedunBackendDb(RedunBackend):
         self.session.commit()
 
     @db_retry
-    def get_job(self, job_id: str) -> Optional[dict]:
+    def get_job(self, job_id: str) -> dict | None:
         """
         Returns details for a Job.
         """
@@ -2821,7 +2815,7 @@ class RedunBackendDb(RedunBackend):
         parents: Iterable[str] = (),
         update: bool = False,
         new: bool = False,
-    ) -> List[Tuple[str, str, str, Any]]:
+    ) -> list[tuple[str, str, str, Any]]:
         """
         Record tags for an entity (Execution, Job, CallNode, Task, Value).
 
@@ -2957,7 +2951,7 @@ class RedunBackendDb(RedunBackend):
     @use_acquire
     def delete_tags(
         self, entity_id: str, tags: Iterable[KeyValue], keys: Iterable[str] = ()
-    ) -> List[Tuple[str, str, str, Any]]:
+    ) -> list[tuple[str, str, str, Any]]:
         """
         Delete tags.
         """
@@ -2992,7 +2986,7 @@ class RedunBackendDb(RedunBackend):
         entity_id: str,
         old_keys: Iterable[str],
         new_tags: Iterable[KeyValue],
-    ) -> List[Tuple[str, str, str, Any]]:
+    ) -> list[tuple[str, str, str, Any]]:
         """
         Update tags.
         """
@@ -3010,7 +3004,7 @@ class RedunBackendDb(RedunBackend):
 
     @db_retry
     @use_acquire
-    def get_tags(self, entity_ids: List[str]) -> Dict[str, TagMap]:
+    def get_tags(self, entity_ids: list[str]) -> dict[str, TagMap]:
         """
         Get the tags of an entity (Execution, Job, CallNode, Task, Value).
         """
@@ -3021,7 +3015,7 @@ class RedunBackendDb(RedunBackend):
             .filter(Tag.entity_id.in_(entity_ids) & Tag.is_current.is_(True))
             .all()
         )
-        entity_tags: Dict[str, TagMap] = {}
+        entity_tags: dict[str, TagMap] = {}
         for tag in tag_rows:
             if tag.entity_id not in entity_tags:
                 entity_tags[tag.entity_id] = MultiMap()
@@ -3071,7 +3065,7 @@ class RedunBackendDb(RedunBackend):
 
     @db_retry
     def get_child_record_ids(
-        self, model_ids: Iterable[Tuple[Base, str]]
+        self, model_ids: Iterable[tuple[Base, str]]
     ) -> Iterable[RecordEdgeType]:
         """
         Iterates through record's ownership edges.
@@ -3107,7 +3101,7 @@ class RedunBackendDb(RedunBackend):
 
     @db_retry
     @use_acquire
-    def has_records(self, record_ids: Iterable[str]) -> List[str]:
+    def has_records(self, record_ids: Iterable[str]) -> list[str]:
         """
         Returns record_ids that exist in the database.
         """
@@ -3175,7 +3169,7 @@ class RedunBackendDb(RedunBackend):
         )
 
     @use_acquire
-    def _get_record_types(self, record_ids: Iterable[str]) -> Iterator[Tuple[Base, str]]:
+    def _get_record_types(self, record_ids: Iterable[str]) -> Iterator[tuple[Base, str]]:
         """
         Determines the record type for each id.
         """
@@ -3194,7 +3188,7 @@ class RedunBackendDb(RedunBackend):
         seen = set()
 
         # For database querying efficiency, we recurse through the graph a layer at a time.
-        child_edges: Iterable[Tuple[str, Any, str]] = [
+        child_edges: Iterable[tuple[str, Any, str]] = [
             ("", model, id) for model, id in self._get_record_types(root_ids)
         ]
         while True:
@@ -3214,7 +3208,7 @@ class RedunBackendDb(RedunBackend):
             child_edges = self.get_child_record_ids(new_model_ids)
 
     @staticmethod
-    def _get_uri(db_uri: Optional[str], conf: Section) -> str:
+    def _get_uri(db_uri: str | None, conf: Section) -> str:
         db_aws_secret_name = conf.get("db_aws_secret_name", "")
         if db_aws_secret_name:
             return RedunBackendDb._get_uri_from_secret(db_aws_secret_name)
@@ -3285,7 +3279,7 @@ class RedunBackendDb(RedunBackend):
         return urlunparse(parts)
 
     @staticmethod
-    def _get_login_credentials(conf: Section, username: Optional[str] = None) -> Optional[str]:
+    def _get_login_credentials(conf: Section, username: str | None = None) -> str | None:
         # Replace username by env var if defined.
         username = os.getenv(conf.get("db_username_env", DEFAULT_DB_USERNAME_ENV), username)
 

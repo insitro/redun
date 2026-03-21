@@ -1,6 +1,7 @@
 import hashlib
 import typing
-from typing import IO, Any, Dict, List, Sequence, Tuple
+from collections.abc import Sequence
+from typing import IO, Any
 
 from redun.bcoding import bencode
 from redun.utils import json_dumps
@@ -76,14 +77,14 @@ def hash_text(text: str) -> str:
     return m.hexdigest()
 
 
-def hash_positional_args(type_registry: "TypeRegistry", args: Sequence) -> List[str]:
+def hash_positional_args(type_registry: "TypeRegistry", args: Sequence) -> list[str]:
     """
     Hash a list of arguments.
     """
     return [type_registry.get_hash(arg) for arg in args]
 
 
-def hash_kwargs(type_registry: "TypeRegistry", kwargs: Dict[str, Any]) -> Dict[str, str]:
+def hash_kwargs(type_registry: "TypeRegistry", kwargs: dict[str, Any]) -> dict[str, str]:
     """
     Hash a list of arguments.
     """
@@ -105,7 +106,7 @@ def hash_arguments(type_registry: "TypeRegistry", args: Sequence, kwargs: dict):
 
 def hash_eval(
     type_registry: "TypeRegistry", task_hash: str, args: Sequence, kwargs: dict
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """
     Hash Task evaluation and arguments.
     """
@@ -113,7 +114,7 @@ def hash_eval(
     return hash_struct(["Eval", task_hash, args_hash]), args_hash
 
 
-def hash_tag(entity_id: str, key: str, value: Any, parents: List[str]) -> str:
+def hash_tag(entity_id: str, key: str, value: Any, parents: list[str]) -> str:
     """
     Hash a CallGraph Tag.
     """
@@ -121,7 +122,7 @@ def hash_tag(entity_id: str, key: str, value: Any, parents: List[str]) -> str:
 
 
 def hash_call_node(
-    task_hash: str, args_hash: str, result_hash: str, child_call_hashes: List[str]
+    task_hash: str, args_hash: str, result_hash: str, child_call_hashes: list[str]
 ) -> str:
     """
     Calculates the call_hash for a CallNode.

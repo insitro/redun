@@ -1,8 +1,9 @@
 import json
 import os
 import pickle
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, cast
+from typing import cast
 from unittest.mock import Mock, patch
 
 import boto3

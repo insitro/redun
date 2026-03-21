@@ -8,7 +8,8 @@ functions that will run when the context is defined.
 
 import functools
 import typing
-from typing import Callable, List, Optional
+from collections.abc import Callable
+from typing import Optional
 
 if typing.TYPE_CHECKING:
     from awsglue.context import GlueContext  # ty: ignore[unresolved-import]
@@ -18,7 +19,7 @@ if typing.TYPE_CHECKING:
     from pyspark.sql.types import DataType
 
 
-def setup_glue_job(job_name: str, job_args: List[str]) -> "GlueJob":
+def setup_glue_job(job_name: str, job_args: list[str]) -> "GlueJob":
     try:
         from awsglue.context import GlueContext  # ty: ignore[unresolved-import]
         from awsglue.job import Job as GlueJob  # ty: ignore[unresolved-import]

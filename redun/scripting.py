@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 from tempfile import mkdtemp
 from textwrap import dedent
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Optional
 
 from redun.file import File, Staging
 from redun.task import Task, task
@@ -22,7 +22,7 @@ class ScriptError(Exception):
     """
 
     def __init__(self, stderr: bytes):
-        self.message: Union[bytes, str]
+        self.message: bytes | str
 
         try:
             self.message = stderr.decode("utf8")
@@ -53,7 +53,7 @@ def prepare_command(command: str, default_shell=DEFAULT_SHELL) -> str:
     return command
 
 
-def get_task_command(task: Task, args: Tuple, kwargs: dict) -> str:
+def get_task_command(task: Task, args: tuple, kwargs: dict) -> str:
     """
     Get command from a script task.
     """
@@ -211,7 +211,7 @@ def postprocess_script(result: Any, outputs: Any, temp_path: Optional[str] = Non
 
 
 def script(
-    command: Union[str, List],
+    command: str | list,
     inputs: Any = [],
     outputs: Any = NULL,
     tempdir: bool = False,

@@ -1,15 +1,10 @@
 import operator
+from collections.abc import Callable, Iterator
 from itertools import chain
 from typing import (
     Any,
-    Callable,
-    Dict,
     Generic,
-    Iterator,
-    List,
     Optional,
-    Set,
-    Tuple,
     TypeVar,
     Union,
 )
@@ -47,7 +42,7 @@ class Expression(Value, Generic[Result]):
 
     def __init__(self) -> None:
         self._hash: Optional[str] = None
-        self._upstreams: List[Any] = []
+        self._upstreams: list[Any] = []
         self._length: Optional[int] = None
 
     def get_hash(self, data: Optional[bytes] = None) -> str:
@@ -118,7 +113,7 @@ class ApplyExpression(Expression[Result]):
     Lazy expression for applying a function or task to arguments.
     """
 
-    def __init__(self, args: Tuple, kwargs: dict):
+    def __init__(self, args: tuple, kwargs: dict):
         super().__init__()
         self.args = args
         self.kwargs = kwargs
@@ -147,10 +142,10 @@ class TaskExpression(ApplyExpression[Result]):
     def __init__(
         self,
         task_name: str,
-        args: Tuple,
+        args: tuple,
         kwargs: dict,
         task_options: Optional[dict] = None,
-        export_options: Optional[Set[str]] = None,
+        export_options: Optional[set[str]] = None,
         length: Optional[int] = None,
     ):
         super().__init__(args, kwargs)
@@ -231,7 +226,7 @@ class SimpleExpression(ApplyExpression[Result]):
     Lazy expression for a simple computation (e.g. getattr, getitem, call).
     """
 
-    def __init__(self, func_name: str, args: Tuple = (), kwargs: dict = {}):
+    def __init__(self, func_name: str, args: tuple = (), kwargs: dict = {}):
         super().__init__(args, kwargs)
         self.func_name = func_name
 
@@ -353,7 +348,7 @@ def quote(expr: Result) -> QuotedExpression[Result]:
     return QuotedExpression(expr)
 
 
-_lazy_operation_registry: Dict[str, Callable] = {}
+_lazy_operation_registry: dict[str, Callable] = {}
 _operator_name2symbol = {}
 _reverse_operators = set()
 

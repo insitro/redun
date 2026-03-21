@@ -1,5 +1,4 @@
 import os
-from typing import Tuple
 
 from redun.file import File
 
@@ -48,7 +47,7 @@ class ValueStore:
         with File(self.get_value_path(value_hash)).open("wb") as out:
             out.write(data)
 
-    def get(self, value_hash: str) -> Tuple[bytes, bool]:
+    def get(self, value_hash: str) -> tuple[bytes, bool]:
         """
         Retrieve Value data.
         """

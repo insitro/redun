@@ -1,10 +1,11 @@
 import asyncio
 import threading
 import typing
+from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextvars import ContextVar
 from multiprocessing import get_context
-from typing import Any, Callable, Optional, Set, Tuple
+from typing import Any, Optional
 
 from redun.config import create_config_section
 from redun.executors.base import Executor, load_task_module, register_executor
@@ -32,14 +33,14 @@ def set_current_job(scheduler: "Scheduler", job: "Job") -> None:
     redun_job_var.set(job)
 
 
-def get_current_job() -> "Tuple[Scheduler, Job]":
+def get_current_job() -> "tuple[Scheduler, Job]":
     """
     Returns the current scheduler and job for this context.
     """
     return (redun_scheduler_var.get(), redun_job_var.get())
 
 
-def exec_task(mode: str, module_name: str, task_fullname: str, args: Tuple, kwargs: dict) -> Any:
+def exec_task(mode: str, module_name: str, task_fullname: str, args: tuple, kwargs: dict) -> Any:
     """
     Execute a task in the new process.
     """
@@ -49,7 +50,7 @@ def exec_task(mode: str, module_name: str, task_fullname: str, args: Tuple, kwar
 
 
 def exec_script_task(
-    mode: str, module_name: str, task_fullname: str, args: Tuple, kwargs: dict
+    mode: str, module_name: str, task_fullname: str, args: tuple, kwargs: dict
 ) -> bytes:
     """
     Execute a script task from the task registry.
@@ -109,7 +110,7 @@ class LocalExecutor(Executor):
         self._async_thread: Optional[threading.Thread] = None
         self._async_loop: Optional[Any] = None
         self._async_ready = threading.Condition()
-        self._async_tasks: Set[Any] = set()
+        self._async_tasks: set[Any] = set()
 
     def supports_async(self) -> bool:
         """

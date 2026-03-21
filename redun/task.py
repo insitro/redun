@@ -3,22 +3,15 @@ import inspect
 import re
 import typing
 from collections import defaultdict
+from collections.abc import Callable, Iterable
 from typing import (
     Any,
-    Callable,
-    Dict,
     Generic,
-    Iterable,
-    List,
     Optional,
-    Set,
-    Tuple,
+    ParamSpec,
     TypeVar,
-    Union,
     cast,
     overload,
-    DefaultDict,
-    ParamSpec,
 )
 
 from redun.expression import SchedulerExpression, TaskExpression
@@ -87,36 +80,23 @@ def get_tuple_type_length(tuple_type: Any) -> Optional[int]:
     """
     Returns the length of a tuple type if inferable.
     """
-    if getattr(tuple_type, "__origin__", None) in (tuple, Tuple):
-        # Return type is Tuple[ * ].
-
-        # __args__ is not available on Tuple type in Python 3.9+ because it was removed from
-        # _SpecialGenericAlias in:
-        #
-        #       https://github.com/python/cpython/pull/19984
-        #
-        # For more info, see bpo-40397 here:
-        #
-        #       https://bugs.python.org/issue40397
-        #
-        # typing.get_args was added in Python 3.8 so we can use that instead if we detect we are
-        # running on Python 3.8+
+    if getattr(tuple_type, "__origin__", None) is tuple:
         from typing import get_args
 
         tuple_type_args = get_args(tuple_type)
 
-        if Ellipsis in tuple_type_args or tuple_type is Tuple:
-            # Tuple of unknown length.
+        if Ellipsis in tuple_type_args or not hasattr(tuple_type, "__args__"):
+            # Variable-length tuple (e.g. tuple[int, ...]) or unparameterized
+            # typing.Tuple. The latter has __origin__ == tuple (so it enters this
+            # block) but no __args__ attribute — unlike tuple[()], which does.
+            # We can't use `tuple_type is Tuple` because the Tuple import was
+            # removed by the typing modernization.
             return None
         elif tuple_type_args == ((),):
-            # Special case for length zero.
-            # Note that the representation of empty tuple types changed in python 3.11
-            # Specifically: get_args(Tuple[()]) now evaluates to () instead of ((),)
-            # which is the same value that get_args(Tuple) evaluates to.
+            # tuple[()] — zero-length tuple. On Python 3.11+ get_args returns ()
+            # for this case (same as bare typing.Tuple), but the hasattr check
+            # above already handled bare typing.Tuple so this is safe.
             # https://docs.python.org/3/whatsnew/3.11.html
-            #
-            # Because of this we need to check for the type `Tuple` above before entering
-            # this branch.
             return 0
 
         return len(tuple_type_args)
@@ -130,7 +110,7 @@ def get_tuple_type_length(tuple_type: Any) -> Optional[int]:
     return None
 
 
-def split_task_fullname(task_fullname: str) -> Tuple[str, str]:
+def split_task_fullname(task_fullname: str) -> tuple[str, str]:
     """
     Split a Task fullname into a namespace and name.
     """
@@ -181,11 +161,11 @@ class Task(Value, Generic[P, R]):
         name: Optional[str] = None,
         namespace: Optional[str] = None,
         version: Optional[str] = None,
-        compat: Optional[List[str]] = None,
+        compat: Optional[list[str]] = None,
         script: bool = False,
         task_options_base: Optional[dict] = None,
         task_options_override: Optional[dict] = None,
-        export_options: Optional[Set[str]] = None,
+        export_options: Optional[set[str]] = None,
         hash_includes: Optional[list] = None,
         source: Optional[str] = None,
     ):
@@ -208,7 +188,7 @@ class Task(Value, Generic[P, R]):
         self._task_options_override = task_options_override or {}
 
         # Options that are exported and should be inherited into child jobs.
-        self._export_options: Set[str] = export_options or set()
+        self._export_options: set[str] = export_options or set()
 
         self._signature: Optional[inspect.Signature] = None
         # Extra data to hash, but not serialize
@@ -628,7 +608,7 @@ class PartialTask(Task[P, R]):
 
     type_name = "redun.PartialTask"
 
-    def __init__(self, task: "Task[..., R]", args: tuple, kwargs: dict):
+    def __init__(self, task: Task[..., R], args: tuple, kwargs: dict):
         self.task = task
         self.args = tuple(args)
         self.kwargs = kwargs
@@ -737,7 +717,7 @@ def task(
     name: Optional[str] = None,
     namespace: Optional[str] = None,
     version: Optional[str] = None,
-    compat: Optional[List[str]] = None,
+    compat: Optional[list[str]] = None,
     script: bool = False,
     hash_includes: Optional[list] = None,
     source: Optional[str] = None,
@@ -752,13 +732,13 @@ def task(
     name: Optional[str] = None,
     namespace: Optional[str] = None,
     version: Optional[str] = None,
-    compat: Optional[List[str]] = None,
+    compat: Optional[list[str]] = None,
     script: bool = False,
     hash_includes: Optional[list] = None,
     source: Optional[str] = None,
     export_options: Optional[dict] = None,
     **task_options_base: Any,
-) -> Union[Task[P, R], Callable[[Callable[P, R]], Task[P, R]]]:
+) -> Task[P, R] | Callable[[Callable[P, R]], Task[P, R]]:
     """
     Decorator to register a function as a redun :class:`Task`.
 
@@ -1000,7 +980,7 @@ def wraps_task(
     def transform_wrapper(
         wrapper_func: Callable[[Task], Func],
     ) -> Callable[[Func], Task]:
-        def create_tasks(inner_func_or_task: Union[Func, Task]) -> Task:
+        def create_tasks(inner_func_or_task: Func | Task) -> Task:
             # As a convenience, create the lowest level Task on the fly.
             if isinstance(inner_func_or_task, Task):
                 hidden_inner_task = inner_func_or_task
@@ -1072,7 +1052,7 @@ class TaskRegistry:
     """
 
     def __init__(self) -> None:
-        self._tasks: Dict[str, Task] = {}
+        self._tasks: dict[str, Task] = {}
 
         # Task hashes are not unique, because simple function, such as an identity, could
         # get registered multiple times. This is especially likely when we have renamed tasks
@@ -1081,7 +1061,7 @@ class TaskRegistry:
         # task name with the same hash.
         #
         # All entries have positive non-zero counts.
-        self._task_hash_counts: DefaultDict[str, int] = defaultdict(int)
+        self._task_hash_counts: defaultdict[str, int] = defaultdict(int)
 
     @property
     def task_hashes(self):
@@ -1145,7 +1125,7 @@ _task_registry = TaskRegistry()
 
 def hash_args_eval(
     type_registry: TypeRegistry, task: Task, args: tuple, kwargs: dict
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """
     Compute eval_hash and args_hash for a task call, filtering out config args before hashing.
     """
@@ -1154,7 +1134,7 @@ def hash_args_eval(
     sig = task.signature
 
     # Filter out config args and JobInfo from argument hashing.
-    config_args: List = task.get_task_option("config_args", [])
+    config_args: list = task.get_task_option("config_args", [])
 
     def keep_arg(param_name: str, value: Any) -> bool:
         return param_name not in config_args and not isinstance(value, JobInfo)

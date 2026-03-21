@@ -115,22 +115,15 @@ To build this visualization, the following strategy is used:
 import ast
 import re
 from collections import defaultdict
+from collections.abc import Callable, Iterable, Iterator
 from enum import Enum
 from itertools import chain
 from textwrap import dedent
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
     NamedTuple,
     Optional,
-    Set,
-    Tuple,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -149,7 +142,7 @@ def iter_unique(items: Iterable[T], key: Callable[[T], Any] = lambda x: x) -> It
     """
     Iterate through unique items.
     """
-    seen: Set[T] = set()
+    seen: set[T] = set()
     for item in items:
         item_key = key(item)
         if item_key not in seen:
@@ -176,7 +169,7 @@ class CallNodeValue(NamedTuple):
 
 
 # There are several kinds of DataflowNodes.
-DataflowNode = Union[ArgumentValue, CallNodeValue, CallNode, Value]
+DataflowNode = ArgumentValue | CallNodeValue | CallNode | Value
 
 
 class DataflowEdge(NamedTuple):
@@ -189,7 +182,7 @@ class DataflowEdge(NamedTuple):
 
 
 # A grouping of DataflowEdges that are displayed as one "paragraph".
-DataflowSection = List[DataflowEdge]
+DataflowSection = list[DataflowEdge]
 
 
 class DataflowSectionKind(Enum):
@@ -237,15 +230,15 @@ class DataflowSectionDOM(NamedTuple):
     """
 
     assign: DataflowAssign
-    routing: List[DataflowRouting]
-    args: List[DataflowArg]
+    routing: list[DataflowRouting]
+    args: list[DataflowArg]
 
 
 # The top-level Dataflow DOM.
 DataflowDOM = Iterable[DataflowSectionDOM]
 
 
-def get_task_args(task: Task) -> List[str]:
+def get_task_args(task: Task) -> list[str]:
     """
     Returns list of argument names of a Task. Raises a SyntaxError if the task source code is not
     properly formatted.
@@ -262,7 +255,7 @@ def get_task_args(task: Task) -> List[str]:
     return [arg.arg for arg in code.body[0].args.args]
 
 
-def make_var_name(var_name_base: str, name2var: Dict[str, DataflowNode], suffix: int = 2) -> str:
+def make_var_name(var_name_base: str, name2var: dict[str, DataflowNode], suffix: int = 2) -> str:
     """
     Generate a new variable using a unique suffix (e.g. myvar_2).
     """
@@ -294,9 +287,9 @@ class DataflowVars:
     """
 
     def __init__(self) -> None:
-        self.var2name: Dict[DataflowNode, str] = {}
-        self.name2var: Dict[str, DataflowNode] = {}
-        self.task2args: Dict[Task, List[str]] = {}
+        self.var2name: dict[DataflowNode, str] = {}
+        self.name2var: dict[str, DataflowNode] = {}
+        self.task2args: dict[Task, list[str]] = {}
 
     def __getitem__(self, node: DataflowNode) -> str:
         """
@@ -318,7 +311,7 @@ class DataflowVars:
         """
         return node in self.var2name
 
-    def get_task_args(self, task: Task) -> List[str]:
+    def get_task_args(self, task: Task) -> list[str]:
         """
         Returns the parameter names of a Task.
         """
@@ -335,7 +328,7 @@ class DataflowVars:
 
     def new_var_name(
         self, node: DataflowNode, base_var_name: Optional[str] = None
-    ) -> Tuple[str, Optional[str]]:
+    ) -> tuple[str, Optional[str]]:
         """
         Get or create a new variable name for a DataflowNode.
         """
@@ -389,7 +382,7 @@ def walk_dataflow_value(backend: RedunBackendDb, value: Value) -> Iterator[Dataf
     # Determine which CallNodes are just routing CallNodes.
     # A routing CallNode is an upstream CallNode that is also an ancestor
     # of another upstream CallNode.
-    seen: Set[CallNode] = set()
+    seen: set[CallNode] = set()
     routing_call_nodes = set()
     for call_node in call_nodes:
         for ancestor in walk_parents(call_node, seen):
@@ -423,7 +416,7 @@ def walk_dataflow_value(backend: RedunBackendDb, value: Value) -> Iterator[Dataf
         yield DataflowEdge(value, None)
 
 
-def get_callnode_arguments(call_node: CallNode) -> List[Argument]:
+def get_callnode_arguments(call_node: CallNode) -> list[Argument]:
     """
     Returns a CallNode's arguments in sorted order.
     """
@@ -617,8 +610,8 @@ def walk_dataflow(backend: RedunBackendDb, init_node: DataflowNode) -> Iterator[
     A 'node' can be a Value, CallNode, CallNodeValue, or an ArgumentValue.
     """
     # Perform depth-first traversal.
-    queue: List[DataflowNode] = [init_node]
-    seen: Set[DataflowNode] = set()
+    queue: list[DataflowNode] = [init_node]
+    seen: set[DataflowNode] = set()
 
     while queue:
         node: DataflowNode = queue.pop()
@@ -684,9 +677,9 @@ def toposort_edges(edges: Iterable[DataflowEdge]) -> Iterator[DataflowEdge]:
     """
 
     # Compute indegree.
-    indegrees: Dict[DataflowNode, int] = defaultdict(int)
-    src2edge: Dict[DataflowNode, List[DataflowEdge]] = defaultdict(
-        cast(Callable[[], List[DataflowEdge]], list)
+    indegrees: dict[DataflowNode, int] = defaultdict(int)
+    src2edge: dict[DataflowNode, list[DataflowEdge]] = defaultdict(
+        cast(Callable[[], list[DataflowEdge]], list)
     )
     for edge in edges:
         src2edge[edge.src].append(edge)
@@ -698,7 +691,7 @@ def toposort_edges(edges: Iterable[DataflowEdge]) -> Iterator[DataflowEdge]:
             indegrees[edge.dest] += 1
 
     # Initialize queue with roots.
-    queue: List[DataflowNode] = [node for node, degree in indegrees.items() if degree == 0]
+    queue: list[DataflowNode] = [node for node, degree in indegrees.items() if degree == 0]
 
     while queue:
         node = queue.pop()
@@ -713,7 +706,7 @@ def toposort_edges(edges: Iterable[DataflowEdge]) -> Iterator[DataflowEdge]:
                     queue.append(edge.dest)
 
 
-def rewrite_call_node_merges(edges: List[DataflowEdge]) -> List[DataflowEdge]:
+def rewrite_call_node_merges(edges: list[DataflowEdge]) -> list[DataflowEdge]:
     """
     Rewrites dataflow graphs to enforce one CallNodeValue per CallNode.
 
@@ -736,7 +729,7 @@ def rewrite_call_node_merges(edges: List[DataflowEdge]) -> List[DataflowEdge]:
     """
 
     # Build graph dict.
-    src2edges: Dict[Optional[DataflowNode], List[DataflowEdge]] = defaultdict(list)
+    src2edges: dict[Optional[DataflowNode], list[DataflowEdge]] = defaultdict(list)
     dest2edges = defaultdict(list)
     nodes = []
     for edge in edges:
@@ -877,7 +870,7 @@ def iter_subsections(section: DataflowSection) -> Iterator[DataflowSection]:
     """
 
     # Build graph dict.
-    src2edges: Dict[Optional[DataflowNode], List[DataflowEdge]] = defaultdict(list)
+    src2edges: dict[Optional[DataflowNode], list[DataflowEdge]] = defaultdict(list)
     dest2edges = defaultdict(list)
     nodes = []
     for edge in section:
@@ -927,7 +920,7 @@ def iter_subsections(section: DataflowSection) -> Iterator[DataflowSection]:
 
 def iter_dataflow_sections(
     dataflow_edges: Iterable[DataflowEdge],
-) -> Iterator[Tuple[DataflowSectionKind, DataflowSection]]:
+) -> Iterator[tuple[DataflowSectionKind, DataflowSection]]:
     """
     Yields dataflow sections from an iterable of dataflow edges.
 
@@ -939,13 +932,13 @@ def iter_dataflow_sections(
         arg3 = <3456abcd> 'hello_world'
         arg4 = <4567abcd> File('foo.txt')
     """
-    node2call_section: Dict[DataflowNode, List[Tuple[int, DataflowEdge]]] = {}
-    node2data_section: Dict[DataflowNode, List[Tuple[int, DataflowEdge]]] = defaultdict(
-        cast(Callable[[], List[Tuple[int, DataflowEdge]]], list)
+    node2call_section: dict[DataflowNode, list[tuple[int, DataflowEdge]]] = {}
+    node2data_section: dict[DataflowNode, list[tuple[int, DataflowEdge]]] = defaultdict(
+        cast(Callable[[], list[tuple[int, DataflowEdge]]], list)
     )
 
-    new_vars: Set[ArgumentValue] = set()
-    section: List[Tuple[int, DataflowEdge]]
+    new_vars: set[ArgumentValue] = set()
+    section: list[tuple[int, DataflowEdge]]
 
     edges = toposort_edges(dataflow_edges)
     edge_list = rewrite_call_node_merges(list(edges))
@@ -994,8 +987,8 @@ def iter_dataflow_sections(
     data_sections = node2data_section.values()
 
     def get_order_section(
-        int_edges: List[Tuple[int, DataflowEdge]],
-    ) -> Tuple[int, List[DataflowEdge]]:
+        int_edges: list[tuple[int, DataflowEdge]],
+    ) -> tuple[int, list[DataflowEdge]]:
         """
         Returns a tuple of section appearance order and the section.
 
@@ -1052,9 +1045,9 @@ def make_section_dom(
         assert not isinstance(src, CallNode)
         assert_never(src)
 
-    routing_defs: List[Optional[DataflowNode]] = []
-    arg_defs: List[Tuple[str, Value]] = []
-    renames: Dict[str, str] = {}
+    routing_defs: list[Optional[DataflowNode]] = []
+    arg_defs: list[tuple[str, Value]] = []
+    renames: dict[str, str] = {}
 
     # Compute whether this section ends with a variable.
     is_var2var = isinstance(assign_node, (ArgumentValue, CallNodeValue))
@@ -1096,7 +1089,7 @@ def make_section_dom(
         dom_assign = DataflowAssign(assign_var_name, prefix, node_display, assign_node)
 
     # Create routing clauses.
-    dom_routing: List[DataflowRouting] = []
+    dom_routing: list[DataflowRouting] = []
     for i, dest in enumerate(routing_defs, 1):
         prefix, node_display = display_node(dest, renames if i == last_line else {})
         dom_routing.append(DataflowRouting(prefix, node_display, dest))
@@ -1113,7 +1106,7 @@ def make_section_dom(
         dom_routing.append(DataflowRouting("", var_name, last_routing_node))
 
     # Create argument definitions.
-    dom_args: List[DataflowArg] = [DataflowArg(var_name, var) for var_name, var in arg_defs]
+    dom_args: list[DataflowArg] = [DataflowArg(var_name, var) for var_name, var in arg_defs]
 
     return DataflowSectionDOM(dom_assign, dom_routing, dom_args)
 
@@ -1140,8 +1133,8 @@ def make_data_section_dom(
       parent_value = [subvalue1, subvalue2]
       task3(parent_value)
     """
-    downstream_nodes: Set[DataflowNode] = set()
-    upstream_nodes: List[CallNodeValue] = []
+    downstream_nodes: set[DataflowNode] = set()
+    upstream_nodes: list[CallNodeValue] = []
 
     for edge in section:
         assert isinstance(edge.dest, CallNodeValue)
@@ -1231,7 +1224,7 @@ def get_node_hash(node: Optional[DataflowNode]) -> Optional[str]:
     return None
 
 
-def display_node(node: Optional[DataflowNode], renames: Dict[str, str]) -> Tuple[str, str]:
+def display_node(node: Optional[DataflowNode], renames: dict[str, str]) -> tuple[str, str]:
     """
     Formats a dataflow node to a string.
     """
@@ -1257,7 +1250,7 @@ def display_node(node: Optional[DataflowNode], renames: Dict[str, str]) -> Tuple
         assert_never(node)
 
 
-def display_call_node(call_node: CallNode, renames: Dict[str, str]) -> str:
+def display_call_node(call_node: CallNode, renames: dict[str, str]) -> str:
     """
     Formats a CallNode to a string.
     """
