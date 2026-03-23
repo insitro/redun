@@ -96,6 +96,51 @@ add_with_opts(1, 2)
 add("wrong", 1)  # type: ignore[arg-type]
 """
 
+# ---------------------------------------------------------------------------
+# Test fixture: scheduler_task typing via Concatenate
+# ---------------------------------------------------------------------------
+
+SCHEDULER_TASK_TYPING_FIXTURE = """\
+'''
+Verify that scheduler_task Concatenate typing strips internal params
+and exposes only user-visible params to type checkers.
+'''
+from redun.scheduler import cond, catch, catch_all, apply_tags, subrun, fork_thread, join_thread
+from redun.functools import seq, map_
+from redun.context import get_context
+from redun.task import task
+
+# ---- valid calls: builtins with various signatures ----
+cond(True, 1, 2)            # pred, then, else
+cond(True, 1, 2, 3, 4, 5)  # variadic *rest is fine
+seq([1, 2, 3])              # single Sequence arg
+
+@task(cache=False)
+def my_task(x: int) -> int:
+    return x
+
+# catch: (expr, *catch_args) — variadic
+catch(my_task(1), Exception, my_task)
+# map_: (a_task, values) — two positional args
+map_(my_task, [1, 2, 3])
+# apply_tags: (value, tags=[], job_tags=[], execution_tags=[]) — defaults
+apply_tags(my_task(1))
+apply_tags(my_task(1), tags=[("key", "val")])
+# get_context: (var_path, default=None) — str + optional default
+get_context("my.var")
+get_context("my.var", default=42)
+# subrun: (expr, executor, config=None, ...) — many optional kwargs
+subrun(my_task(1), "default")
+# fork/join: single arg each
+fork_thread(my_task(1))
+# catch_all: (exprs, error_class=None, recover=None) — generics
+catch_all([my_task(1), my_task(2)])
+
+# ---- invalid calls (SHOULD produce errors) ----
+cond()  # type: ignore[call-arg]
+seq()   # type: ignore[call-arg]
+"""
+
 
 @pytest.mark.skipif(not _has_ty(), reason="ty not installed")
 class TestTyTaskTyping:
@@ -182,3 +227,153 @@ class TestMypyTaskTyping:
         assert "int" in output, (
             f"Expected mypy reveal_type to show int params.\nFull output:\n{output}"
         )
+
+
+@pytest.mark.skipif(not _has_ty(), reason="ty not installed")
+class TestTySchedulerTaskTyping:
+    """Verify that ty correctly types scheduler_task calls via Concatenate."""
+
+    def setup_method(self):
+        self.tmp = _write_tmp(SCHEDULER_TASK_TYPING_FIXTURE)
+
+    def teardown_method(self):
+        _cleanup_tmp()
+
+    def test_no_false_errors_on_valid_calls(self):
+        """ty should accept valid scheduler_task calls (internal params stripped)."""
+        output = _run_checker(_TY, self.tmp, ["check", "--python-version", "3.11"])
+
+        if "ty failed" in output:
+            pytest.skip(f"ty could not run in this environment: {output[:200]}")
+
+        error_lines = [
+            line
+            for line in output.split("\n")
+            if "error[" in line and "unused-ignore-comment" not in line
+        ]
+        assert not error_lines, (
+            "ty produced unexpected errors on valid scheduler_task calls:\n"
+            + "\n".join(error_lines)
+            + f"\n\nFull output:\n{output}"
+        )
+
+
+@pytest.mark.skipif(not _has_mypy(), reason="mypy not installed")
+class TestMypySchedulerTaskTyping:
+    """Verify that mypy accepts scheduler_task Concatenate typing."""
+
+    def setup_method(self):
+        self.tmp = _write_tmp(SCHEDULER_TASK_TYPING_FIXTURE)
+
+    def teardown_method(self):
+        _cleanup_tmp()
+
+    def test_no_errors_on_valid_calls(self):
+        """mypy should accept valid scheduler_task calls."""
+        output = _run_checker(_MYPY, self.tmp, ["--python-executable", sys.executable])
+
+        test_errors = [
+            line for line in output.split("\n") if "error:" in line and "_tmp_typing_test" in line
+        ]
+        assert not test_errors, (
+            "mypy produced unexpected errors on scheduler_task calls:\n" + "\n".join(test_errors)
+        )
+
+
+# ---------------------------------------------------------------------------
+# Runtime tests: scheduler_task definitions with edge-case signatures
+# ---------------------------------------------------------------------------
+
+
+class TestSchedulerTaskRuntimeEdgeCases:
+    """Verify scheduler_task decorator works at runtime for various signatures."""
+
+    def test_zero_user_params(self):
+        """scheduler_task with no user-visible params (like kill in test_db_query)."""
+        from redun.expression import SchedulerExpression
+        from redun.promise import Promise
+        from redun.task import SchedulerTask, scheduler_task
+
+        @scheduler_task()
+        def noop(scheduler, parent_job, sexpr) -> Promise:
+            promise: Promise = Promise()
+            promise.do_resolve(None)
+            return promise
+
+        assert isinstance(noop, SchedulerTask)
+        expr = noop()
+        assert isinstance(expr, SchedulerExpression)
+        assert expr.args == ()
+
+    def test_variadic_args(self):
+        """scheduler_task with *args user params."""
+        from redun.expression import SchedulerExpression
+        from redun.promise import Promise
+        from redun.task import SchedulerTask, scheduler_task
+
+        @scheduler_task()
+        def variadic(scheduler, parent_job, sexpr, *values) -> Promise:
+            promise: Promise = Promise()
+            promise.do_resolve(sum(values))
+            return promise
+
+        assert isinstance(variadic, SchedulerTask)
+        expr = variadic(1, 2, 3)
+        assert isinstance(expr, SchedulerExpression)
+        assert expr.args == (1, 2, 3)
+
+    def test_kwargs_only(self):
+        """scheduler_task with keyword-only user params."""
+        from redun.expression import SchedulerExpression
+        from redun.promise import Promise
+        from redun.task import SchedulerTask, scheduler_task
+
+        @scheduler_task()
+        def kwonly(scheduler, parent_job, sexpr, *, key: str, value: int = 0) -> Promise:
+            promise: Promise = Promise()
+            promise.do_resolve({key: value})
+            return promise
+
+        assert isinstance(kwonly, SchedulerTask)
+        expr = kwonly(key="test", value=42)
+        assert isinstance(expr, SchedulerExpression)
+        assert expr.kwargs == {"key": "test", "value": 42}
+
+    def test_mixed_args_kwargs(self):
+        """scheduler_task with positional + *args + **kwargs."""
+        from redun.expression import SchedulerExpression
+        from redun.promise import Promise
+        from redun.task import SchedulerTask, scheduler_task
+
+        @scheduler_task()
+        def mixed(
+            scheduler, parent_job, sexpr, first, *args, flag: bool = False, **kwargs
+        ) -> Promise:
+            promise: Promise = Promise()
+            promise.do_resolve((first, args, flag, kwargs))
+            return promise
+
+        assert isinstance(mixed, SchedulerTask)
+        expr = mixed("a", "b", "c", flag=True, extra="val")
+        assert isinstance(expr, SchedulerExpression)
+        assert expr.args == ("a", "b", "c")
+        assert expr.kwargs == {"flag": True, "extra": "val"}
+
+    def test_default_params(self):
+        """scheduler_task with default parameter values."""
+        from redun.promise import Promise
+        from redun.task import SchedulerTask, scheduler_task
+
+        @scheduler_task()
+        def with_defaults(scheduler, parent_job, sexpr, x: int, y: int = 10) -> Promise:
+            promise: Promise = Promise()
+            promise.do_resolve(x + y)
+            return promise
+
+        assert isinstance(with_defaults, SchedulerTask)
+        # Call with only required arg
+        expr1 = with_defaults(5)
+        assert expr1.args == (5,)
+        # Call with both args
+        expr2 = with_defaults(5, 20)
+        assert expr2.args == (5, 20)

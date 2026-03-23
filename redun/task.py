@@ -5,7 +5,9 @@ import typing
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from typing import (
+    TYPE_CHECKING,
     Any,
+    Concatenate,
     Generic,
     Optional,
     ParamSpec,
@@ -13,6 +15,9 @@ from typing import (
     cast,
     overload,
 )
+
+if TYPE_CHECKING:
+    from redun.scheduler import Job, Scheduler
 
 from redun.expression import SchedulerExpression, TaskExpression
 from redun.hashing import hash_arguments, hash_eval, hash_struct
@@ -816,7 +821,7 @@ def scheduler_task(
     namespace: Optional[str] = None,
     version: str = "1",
     **task_options_base: Any,
-) -> Callable[[Callable[..., Promise[Result]]], SchedulerTask]:
+) -> "Callable[[Callable[Concatenate[Scheduler, Job, SchedulerExpression, P], Promise[Result]]], SchedulerTask[P, Result]]":
     """
     Decorator to register a function as a scheduler task.
 
@@ -863,13 +868,9 @@ def scheduler_task(
             return cond(result, task2(), task3())
     """
 
-    # Note: The return type is unparameterized SchedulerTask because the
-    # function signature includes internal params (scheduler, parent_job, sexpr)
-    # that are injected by the runtime — users never pass them. Capturing the
-    # full ParamSpec would expose those internal params to type checkers.
     def deco(
-        func: Callable[..., Promise[Result]],
-    ) -> SchedulerTask:
+        func: "Callable[Concatenate[Scheduler, Job, SchedulerExpression, P], Promise[Result]]",
+    ) -> "SchedulerTask[P, Result]":
         nonlocal name, namespace
 
         _task: SchedulerTask = SchedulerTask(

@@ -101,6 +101,7 @@ dev = [
     "pygments>=2.12.0",
     "roman",
     "standard-imghdr", # Backport of imghdr removed in Python 3.13
+    "mypy>=1.19.1",
 ]
 
 [build-system]
