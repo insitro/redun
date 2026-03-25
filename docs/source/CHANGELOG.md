@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.44.1
+March 25, 2026
+
+* `#491` - Bugfix k8s volumes and retries
+* `#483` - feat: use Concatenate to type scheduler_task user-visible params
+
 ## 0.44.0
 March 21, 2026
 

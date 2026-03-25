@@ -1,6 +1,6 @@
 [project]
 name = "redun"
-version = "0.44.0"
+version = "0.44.1"
 description = "Yet another redundant workflow engine."
 readme = "README.md"
 requires-python = ">=3.10"
