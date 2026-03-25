@@ -65,6 +65,8 @@ def k8s_submit(
     secret_name: Optional[str] = None,
     node_affinity: Optional[dict[str, Any]] = None,
     env: Optional[dict[str, str]] = None,
+    volumes: Optional[list[dict[str, Any]]] = None,
+    volume_mounts: Optional[list[dict[str, Any]]] = None,
 ) -> kubernetes.client.V1Job:
     """Prepares and submits a k8s job to the API server"""
     requests = {
@@ -92,6 +94,8 @@ def k8s_submit(
         secret_name=secret_name,
         node_affinity=node_affinity,
         env=env,
+        volumes=volumes,
+        volume_mounts=volume_mounts,
     )
 
     if array_size > 1:
@@ -161,6 +165,8 @@ def get_k8s_job_options(job_options: dict) -> dict:
         "timeout",
         "node_affinity",
         "env",
+        "volumes",
+        "volume_mounts",
     ]
     return {key: job_options[key] for key in keys if key in job_options}
 
@@ -432,7 +438,7 @@ class K8SExecutor(Executor):
         self.default_task_options = {
             "vcpus": config.getint("vcpus", 1),
             "memory": config.getfloat("memory", 4),
-            "retries": config.getint("retries", 1),
+            "retries": config.getint("retries", 0),
             "service_account_name": config.get("service_account_name", "default"),
             "job_name_prefix": config.get("job_name_prefix", k8s_utils.DEFAULT_JOB_PREFIX),
         }

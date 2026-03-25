@@ -424,7 +424,7 @@ def test_executor(
         "namespace": "default",
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash",
         "array_size": 0,
-        "retries": 1,
+        "retries": 0,
         "service_account_name": "default",
         "secret_name": None,
         "vcpus": 1,
@@ -464,7 +464,7 @@ def test_executor(
         "namespace": "default",
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash2",
         "array_size": 0,
-        "retries": 1,
+        "retries": 0,
         "service_account_name": "default",
         "secret_name": None,
         "vcpus": 1,
@@ -1501,3 +1501,98 @@ class TestGetK8sJobTerminalStatus:
         job = _make_job(parallelism=6, completions=6, succeeded=4, failed=1)
         status, reason = executor._get_k8s_job_terminal_status(job)
         assert status is None
+
+
+# ---------------------------------------------------------------------------
+# Tests for volumes and volume_mounts support
+# ---------------------------------------------------------------------------
+
+
+@mock_k8s
+def test_k8s_submit_with_volumes() -> None:
+    """
+    k8s_submit should properly pass volumes and volume_mounts to the job.
+    """
+    k8s_client = redun.executors.k8s_utils.K8SClient()
+
+    # Configure the mock to return the job object that was passed to it
+    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)
+
+    volumes = [
+        {"name": "dshm", "emptyDir": {"medium": "Memory", "sizeLimit": "16Gi"}},
+    ]
+    volume_mounts = [
+        {"name": "dshm", "mountPath": "/dev/shm"},
+    ]
+
+    job = redun.executors.k8s.k8s_submit(
+        k8s_client=k8s_client,
+        command=["echo", "test"],
+        image="test-image",
+        namespace="default",
+        job_name="test-job",
+        volumes=volumes,
+        volume_mounts=volume_mounts,
+    )
+
+    # Verify volumes are configured in the pod spec
+    pod_volumes = job.spec.template.spec.volumes
+    assert pod_volumes is not None
+    assert len(pod_volumes) == 1
+    assert pod_volumes[0]["name"] == "dshm"
+    assert pod_volumes[0]["emptyDir"]["medium"] == "Memory"
+    assert pod_volumes[0]["emptyDir"]["sizeLimit"] == "16Gi"
+
+    # Verify volume mounts are configured in the container
+    container_mounts = job.spec.template.spec.containers[0].volume_mounts
+    assert container_mounts is not None
+    assert len(container_mounts) == 1
+    assert container_mounts[0]["name"] == "dshm"
+    assert container_mounts[0]["mountPath"] == "/dev/shm"
+
+
+@mock_s3
+@mock_k8s
+@patch("redun.executors.k8s.k8s_describe_jobs")
+@patch("redun.executors.k8s.k8s_submit")
+def test_executor_with_volumes(k8s_submit_mock: Mock, k8s_describe_jobs_mock: Mock) -> None:
+    """
+    Executor should pass volumes and volume_mounts from task options to k8s_submit.
+    """
+    # Setup K8S mocks.
+    k8s_describe_jobs_mock.return_value = []
+
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+    executor.start()
+
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash",
+        uid="k8s-job-id",
+    )
+
+    # Submit redun job with volumes and volume_mounts options
+    volumes = [
+        {"name": "dshm", "emptyDir": {"medium": "Memory", "sizeLimit": "16Gi"}},
+    ]
+    volume_mounts = [
+        {"name": "dshm", "mountPath": "/dev/shm"},
+    ]
+
+    expr = task1.options(volumes=volumes, volume_mounts=volume_mounts)(10)
+    job = Job(task1, expr)
+    job.eval_hash = "eval_hash"
+    job.args = ((10,), {})
+    executor.submit(job)
+
+    # Wait until job arrayer actually submits it
+    wait_until(lambda: executor.arrayer.num_pending == 0)
+
+    # Ensure volumes and volume_mounts were passed correctly
+    assert k8s_submit_mock.call_args
+    assert "volumes" in k8s_submit_mock.call_args[1]
+    assert "volume_mounts" in k8s_submit_mock.call_args[1]
+    assert k8s_submit_mock.call_args[1]["volumes"] == volumes
+    assert k8s_submit_mock.call_args[1]["volume_mounts"] == volume_mounts
+
+    executor.stop()

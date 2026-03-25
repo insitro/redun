@@ -235,6 +235,8 @@ def create_job_object(
     secret_name: Optional[str] = None,
     node_affinity: Optional[dict[str, Any]] = None,
     env: Optional[dict[str, str]] = None,
+    volumes: Optional[list[dict[str, Any]]] = None,
+    volume_mounts: Optional[list[dict[str, Any]]] = None,
 ) -> client.V1Job:
     """Creates a job object for redun job.
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
@@ -268,7 +270,13 @@ def create_job_object(
             [client.V1EnvVar(name=name, value=value) for name, value in env.items()]
         )
 
-    container = client.V1Container(name=name, image=image, args=command, env=container_env)
+    container = client.V1Container(
+        name=name,
+        image=image,
+        args=command,
+        env=container_env,
+        volume_mounts=volume_mounts or None,
+    )
 
     if resources is None:
         container.resources = create_resources()
@@ -286,6 +294,7 @@ def create_job_object(
         image_pull_secrets=[{"name": "regcred"}],
         containers=[container],
         affinity=affinity,
+        volumes=volumes or None,
     )
 
     labels = labels or {}
