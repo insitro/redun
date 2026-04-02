@@ -2960,7 +2960,10 @@ def subrun(
     config_dir: Optional[str] = None,
     new_execution: bool = False,
     load_modules: Optional[list[str]] = None,
-    **task_options: dict,
+    # **kwargs: T annotates each expanded value, not the dict itself.
+    # dict here would require every value to be a dict; Any allows int, str, etc.
+    # PEP 692 (Unpack[TypedDict]) could type individual keys in the future.
+    **task_options: Any,
 ) -> Promise:
     """
     Evaluates an expression `expr` in a sub-scheduler running within Executor `executor`.

@@ -1846,7 +1846,9 @@ class ShardedS3Dataset(Value):
             raise ValueError(f"Invalid format {format}")
         self._format = format
 
-        self.filesystem: FileSystem = get_filesystem(url=self.path)
+        _fs = get_filesystem(url=self.path)
+        assert isinstance(_fs, S3FileSystem)
+        self.filesystem: S3FileSystem = _fs
         self._filenames: list[str] = self._gather_files()
 
     def _gather_files(self) -> list[str]:
@@ -1950,8 +1952,9 @@ class ShardedS3Dataset(Value):
         self._filenames = state["files"]
         self._hash = state["hash"]
 
-        self.filesystem = get_filesystem(url=self.path)
-        assert isinstance(self.filesystem, S3FileSystem)
+        _fs = get_filesystem(url=self.path)
+        assert isinstance(_fs, S3FileSystem)
+        self.filesystem = _fs
         self.s3 = self.filesystem.s3
 
     def load_spark(

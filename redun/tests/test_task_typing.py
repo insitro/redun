@@ -73,6 +73,7 @@ def greet(name: str, greeting: str = "hello") -> str:
 
 # ---- reveal_type checks ----
 reveal_type(add)
+reveal_type(add.func)  # should be Callable[[int, int], int], not bare Callable
 reveal_type(add.__call__)
 reveal_type(double.__call__)
 reveal_type(greet.__call__)
@@ -131,6 +132,7 @@ get_context("my.var")
 get_context("my.var", default=42)
 # subrun: (expr, executor, config=None, ...) — many optional kwargs
 subrun(my_task(1), "default")
+subrun(my_task(1), "default", vcpus=8, memory=30)  # non-dict kwargs must be accepted
 # fork/join: single arg each
 fork_thread(my_task(1))
 # catch_all: (exprs, error_class=None, recover=None) — generics
@@ -226,6 +228,21 @@ class TestMypyTaskTyping:
         # mypy's revealed types should show the correct parameter names
         assert "int" in output, (
             f"Expected mypy reveal_type to show int params.\nFull output:\n{output}"
+        )
+
+    def test_func_attribute_preserves_params(self):
+        """mypy should resolve task.func with typed params, not bare Callable."""
+        output = _run_checker(_MYPY, self.tmp, ["--python-executable", sys.executable])
+
+        # With func: Callable (bare), mypy reveals add.func as (*Any, **Any) -> Any.
+        # With func: Callable[P, R], mypy reveals (x: int, y: int) -> int.
+        bare_callable = [
+            line
+            for line in output.split("\n")
+            if "Revealed type" in line and "(*Any, **Any) -> Any" in line
+        ]
+        assert not bare_callable, (
+            f"task.func resolved as bare Callable (lost parameter types):\n{bare_callable[0]}"
         )
 
 

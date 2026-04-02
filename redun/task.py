@@ -162,7 +162,7 @@ class Task(Value, Generic[P, R]):
 
     def __init__(
         self,
-        func: Callable,
+        func: Callable[P, R],
         name: Optional[str] = None,
         namespace: Optional[str] = None,
         version: Optional[str] = None,
@@ -176,7 +176,7 @@ class Task(Value, Generic[P, R]):
     ):
         self.name = name or func.__name__  # ty: ignore[unresolved-attribute]
         self.namespace = compute_namespace(func, namespace)
-        self.func = func
+        self.func: Callable[P, R] = func
         if source is not None:
             self.source = source
         else:
