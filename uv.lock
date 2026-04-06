@@ -2323,16 +2323,16 @@ wheels = [
 ]
 
 [[package]]
-name = "pdbpp"
-version = "0.11.7"
+name = "pdbp"
+version = "1.4.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "fancycompleter" },
     { name = "pygments" },
+    { name = "tabcompleter" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c6/4c/118ef9534ac0632859b48c305d8c5dc9d6f963564fdfa66bc785c560247c/pdbpp-0.11.7.tar.gz", hash = "sha256:cb6604ac31a35ed0f2a29650a8c022b26284620be3e01cfd41b683b91da1ff14", size = 76026, upload-time = "2025-07-18T09:36:02.781Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/77/a6/9fedffc91ebdfd62a363615aa4fa6eb8ddf8220559a50fc4dee2586280e7/pdbp-1.4.4.tar.gz", hash = "sha256:f7c705375cf66dbb44d58edd2d968035ad9271d271387aa8fde249a6f540599b", size = 21187, upload-time = "2023-08-08T18:51:29.494Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/e9/704bbc08aace64fee536e4c2c20f63f64f6fdbad72938c5ed46c9723a9f1/pdbpp-0.11.7-py3-none-any.whl", hash = "sha256:51916b63693898cf4881b36b4501c83947758d73f582f1f84893662b163bdb75", size = 30545, upload-time = "2025-07-18T09:36:01.478Z" },
+    { url = "https://files.pythonhosted.org/packages/47/14/928c7008e6201f087399873996cd0d6fe86a123b0ff573cdfe0d6ff76133/pdbp-1.4.4-py3-none-any.whl", hash = "sha256:e1cd7baf0dd9970015356e5b505ff2cc2a86f8cb20260459e8b73073de739f6f", size = 17792, upload-time = "2023-08-08T18:51:27.644Z" },
 ]
 
 [[package]]
@@ -2909,7 +2909,7 @@ dev = [
     { name = "myst-parser" },
     { name = "numpydoc" },
     { name = "pandas" },
-    { name = "pdbpp" },
+    { name = "pdbp" },
     { name = "pre-commit" },
     { name = "pyarrow" },
     { name = "pygments" },
@@ -2972,7 +2972,7 @@ dev = [
     { name = "myst-parser" },
     { name = "numpydoc" },
     { name = "pandas" },
-    { name = "pdbpp" },
+    { name = "pdbp", specifier = ">=1.4.4" },
     { name = "pre-commit" },
     { name = "pyarrow", specifier = ">17" },
     { name = "pygments", specifier = ">=2.12.0" },
@@ -3419,6 +3419,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b3/08/efd28d49162ce89c2ad61a88bd80e11fb77bc9f6c145402589112d38f8af/strictyaml-1.7.3.tar.gz", hash = "sha256:22f854a5fcab42b5ddba8030a0e4be51ca89af0267961c8d6cfa86395586c407", size = 115206, upload-time = "2023-03-10T12:50:27.062Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/96/7c/a81ef5ef10978dd073a854e0fa93b5d8021d0594b639cc8f6453c3c78a1d/strictyaml-1.7.3-py3-none-any.whl", hash = "sha256:fb5c8a4edb43bebb765959e420f9b3978d7f1af88c80606c03fb420888f5d1c7", size = 123917, upload-time = "2023-03-10T12:50:17.242Z" },
+]
+
+[[package]]
+name = "tabcompleter"
+version = "1.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyreadline3", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/1a/ed3544579628c5709bae6fae2255e94c6982a9ff77d42d8ba59fd2f3b21a/tabcompleter-1.4.0.tar.gz", hash = "sha256:7562a9938e62f8e7c3be612c3ac4e14c5ec4307b58ba9031c148260e866e8814", size = 10431, upload-time = "2024-10-28T00:44:52.665Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/44/bb509c3d2c0b5a87e7a5af1d5917a402a32ff026f777a6d7cb6990746cbb/tabcompleter-1.4.0-py3-none-any.whl", hash = "sha256:d744aa735b49c0a6cc2fb8fcd40077fec47425e4388301010b14e6ce3311368b", size = 6725, upload-time = "2024-10-28T00:44:51.267Z" },
 ]
 
 [[package]]
