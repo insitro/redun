@@ -45,6 +45,17 @@ publish: lint test build
 	bin/publish-packages.sh
 
 
+.PHONY: release
+release:
+	@[ "$$(git branch --show-current)" = "main" ] || { echo "ERROR: must be on main branch"; exit 1; }
+	@VERSION=$$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)"/\1/'); \
+	[ -z "$$(git tag -l $$VERSION)" ] || { echo "ERROR: tag $$VERSION already exists"; exit 1; }; \
+	echo "Creating release tag $$VERSION..."; \
+	git tag -a $$VERSION -m "Release version $$VERSION" && \
+	git push origin tag $$VERSION && \
+	echo "Released $$VERSION"
+
+
 .PHONY: docs
 docs:
 	cd docs && uv run make clean api html

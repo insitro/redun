@@ -27,4 +27,4 @@ make format
    - [`CHANGELOG`](https://github.com/insitro/redun/blob/main/docs/source/CHANGELOG.md) - use [`release_notes.py`](docs/release_notes.py) script to generate the release notes (see that script for usage)
    - `uv.lock` - run `uv lock` to update the lockfile after changing the version
 2. Merge the release branch to `main`
-3. Create and push a new version tag. For example: `git tag 0.43.0 && git push origin tag 0.43.0`
+3. Create and push a new version tag: `make release`
