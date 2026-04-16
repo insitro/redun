@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.44.2
+April 16, 2026
+
+* `#496` - fix: modernize docs publishing and extract docs dependency group
+* `#495` - feat: add make release target for standardized tagging
+* `#494` - use pdbp instead of pdbpp for better python3.13 support
+* `#493` - fix: correct type annotations causing false-positive ty errors
+
 ## 0.44.1
 March 25, 2026
 
