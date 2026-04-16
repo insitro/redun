@@ -4,13 +4,22 @@ on:
     branches:
       - main
 
+permissions: {}
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
   build:
-    timeout-minutes: 10
+    if: github.repository == 'insitro/redun'
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    timeout-minutes: 10
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Get uv version
         id: uv-version
@@ -31,18 +40,22 @@ jobs:
           cd docs
           uv run make api html
 
-      - name: Checkout gh-pages branch
-        uses: actions/checkout@v5
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          ref: gh-pages
-          path: gh-pages
+          path: docs/build/html/
 
-      - name: Commit documentation changes
-        run: |
-          cp -r docs/build/html/* gh-pages/
-          cd gh-pages
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .
-          git commit -am "Update documentation" && git push || true
-          # The above command will fail if no changes were present, so we ignore that.
+  deploy:
+    needs: build
+    if: github.repository == 'insitro/redun'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

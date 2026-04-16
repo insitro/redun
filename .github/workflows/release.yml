@@ -144,7 +144,7 @@ jobs:
           python-version: '3.11'
           enable-cache: true
       - name: Install dependencies
-        run: uv sync --locked --group dev
+        run: uv sync --locked --group docs
       - name: Build sphinx documentation
         run: |
           cd docs
@@ -156,6 +156,7 @@ jobs:
           path: docs/build/html/
           retention-days: 7
   publish-packages:
+    if: github.repository == 'insitro/redun-private'
     name: Publish Packages
     runs-on:
       - codebuild-github-actions-runner-prod-${{github.run_id}}-${{github.run_attempt}}
@@ -205,6 +206,7 @@ jobs:
       - name: Publish to S3
         run: aws s3 cp dist/redun-${{ env.RELEASE_VERSION }}.tar.gz s3://insitro-binaries/pypi/
   publish-docs-s3:
+    if: github.repository == 'insitro/redun-private'
     name: Publish Docs to S3
     runs-on:
       - codebuild-github-actions-runner-prod-${{github.run_id}}-${{github.run_attempt}}

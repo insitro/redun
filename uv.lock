@@ -2924,6 +2924,16 @@ dev = [
     { name = "urllib3" },
     { name = "vcrpy" },
 ]
+docs = [
+    { name = "docutils" },
+    { name = "furo" },
+    { name = "myst-parser" },
+    { name = "numpydoc" },
+    { name = "pygments" },
+    { name = "roman" },
+    { name = "sphinx" },
+    { name = "standard-imghdr" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -2986,6 +2996,16 @@ dev = [
     { name = "ty", specifier = ">=0.0.9" },
     { name = "urllib3", specifier = "<2" },
     { name = "vcrpy", specifier = "<5" },
+]
+docs = [
+    { name = "docutils", specifier = ">=0.10,<0.17" },
+    { name = "furo" },
+    { name = "myst-parser" },
+    { name = "numpydoc" },
+    { name = "pygments", specifier = ">=2.12.0" },
+    { name = "roman" },
+    { name = "sphinx", specifier = ">=4.0,<6" },
+    { name = "standard-imghdr" },
 ]
 
 [[package]]
