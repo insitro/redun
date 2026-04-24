@@ -1,19 +1,29 @@
 import os
 import threading
 from collections.abc import Iterator
-from typing import Any, NamedTuple, Optional
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, overload
 from urllib.error import URLError
 from urllib.request import urlopen
 
 import boto3
+from botocore.client import BaseClient
+from botocore.config import Config as BotoConfig
 
 from redun.file import File
+
+if TYPE_CHECKING:
+    from mypy_boto3_batch.client import BatchClient
+    from mypy_boto3_glue.client import GlueClient
+    from mypy_boto3_lambda.client import LambdaClient
+    from mypy_boto3_logs.client import CloudWatchLogsClient
+    from mypy_boto3_secretsmanager.client import SecretsManagerClient
+    from mypy_boto3_sts.client import STSClient
 
 # Constants.
 DEFAULT_AWS_REGION = "us-west-2"
 
 # Cache for AWS Clients.
-_boto_clients: dict[tuple[int, str, str], boto3.Session] = {}
+_boto_clients: dict[tuple[int, str, str], BaseClient] = {}
 _boto_config: dict[str, Any] = {}
 
 
@@ -37,7 +47,37 @@ class JobStatus(NamedTuple):
     timeout: list[str]
 
 
-def get_aws_client(service: str, aws_region: str = DEFAULT_AWS_REGION) -> boto3.Session:
+@overload
+def get_aws_client(service: Literal["batch"], aws_region: str = ...) -> "BatchClient": ...
+
+
+@overload
+def get_aws_client(service: Literal["sts"], aws_region: str = ...) -> "STSClient": ...
+
+
+@overload
+def get_aws_client(service: Literal["logs"], aws_region: str = ...) -> "CloudWatchLogsClient": ...
+
+
+@overload
+def get_aws_client(service: Literal["glue"], aws_region: str = ...) -> "GlueClient": ...
+
+
+@overload
+def get_aws_client(service: Literal["lambda"], aws_region: str = ...) -> "LambdaClient": ...
+
+
+@overload
+def get_aws_client(
+    service: Literal["secretsmanager"], aws_region: str = ...
+) -> "SecretsManagerClient": ...
+
+
+@overload
+def get_aws_client(service: str, aws_region: str = ...) -> Any: ...
+
+
+def get_aws_client(service: str, aws_region: str = DEFAULT_AWS_REGION) -> Any:
     """
     Get an AWS Client with caching.
     """
@@ -52,9 +92,11 @@ def get_aws_client(service: str, aws_region: str = DEFAULT_AWS_REGION) -> boto3.
         session = boto3.session.Session()
         config = None
         if _boto_config:
-            config = boto3.session.Config(**_boto_config)
+            config = BotoConfig(**_boto_config)
 
-        client = _boto_clients[cache_key] = session.client(
+        # boto3-stubs overloads require Literal service names; our @overloads above
+        # handle that for callers, but inside the implementation service is a plain str.
+        client = _boto_clients[cache_key] = session.client(  # ty: ignore[no-matching-overload]
             service, region_name=aws_region, config=config
         )
 
@@ -114,7 +156,7 @@ def get_aws_user(aws_region: str = DEFAULT_AWS_REGION) -> str:
     Returns the current AWS user.
     """
     sts_client = get_aws_client("sts", aws_region=aws_region)
-    response = sts_client.get_caller_identity()  # ty: ignore[unresolved-attribute]
+    response = sts_client.get_caller_identity()
     return response["Arn"]
 
 
@@ -153,14 +195,14 @@ def iter_log_stream(
     """
     logs_client = get_aws_client("logs", aws_region=aws_region)
     try:
-        response = logs_client.get_log_events(  # ty: ignore[unresolved-attribute]
+        response = logs_client.get_log_events(
             logGroupName=log_group_name,
             logStreamName=log_stream,
             startFromHead=not reverse,
             # boto API does not allow passing None, so we must fully exclude the parameter.
             **{"limit": limit} if limit else {},
         )
-    except logs_client.exceptions.ResourceNotFoundException as error:  # ty: ignore[unresolved-attribute]
+    except logs_client.exceptions.ResourceNotFoundException as error:
         if required:
             # If logs are required, raise an error.
             raise error
@@ -182,7 +224,7 @@ def iter_log_stream(
             next_token = response["nextForwardToken"]
         else:
             next_token = response["nextBackwardToken"]
-        response = logs_client.get_log_events(  # ty: ignore[unresolved-attribute]
+        response = logs_client.get_log_events(
             logGroupName=log_group_name,
             logStreamName=log_stream,
             nextToken=next_token,

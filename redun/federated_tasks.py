@@ -145,7 +145,7 @@ def lambda_federated_task(
     if not dryrun:
         aws_region = os.environ.get("AWS_REGION", DEFAULT_AWS_REGION)
         lambda_client = get_aws_client("lambda", aws_region)
-        response = lambda_client.invoke(  # ty: ignore[unresolved-attribute]
+        response = lambda_client.invoke(
             FunctionName=lambda_function_name,
             Payload=json.dumps(request_data),
         )

@@ -3242,7 +3242,7 @@ class RedunBackendDb(RedunBackend):
         aws_region = os.environ.get("AWS_REGION", DEFAULT_AWS_REGION)
         client = get_aws_client("secretsmanager", aws_region)
 
-        get_secret_value_response = client.get_secret_value(SecretId=secret_name)  # ty: ignore[unresolved-attribute]
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
         secret = get_secret_value_response["SecretString"]
         secret = json.loads(secret)
 

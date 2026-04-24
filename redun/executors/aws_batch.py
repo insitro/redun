@@ -12,9 +12,13 @@ from collections.abc import Iterable, Iterator
 from configparser import SectionProxy
 from functools import lru_cache
 from itertools import islice
-from typing import Any, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 import boto3
+
+if TYPE_CHECKING:
+    from mypy_boto3_batch.client import BatchClient
+    from mypy_boto3_batch.type_defs import SubmitJobResponseTypeDef
 
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
@@ -116,7 +120,7 @@ def is_array_job_name(job_name: str) -> bool:
 def get_job_definition(
     job_def_name: str,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
-    batch_client: Optional[boto3.Session] = None,
+    batch_client: Optional["BatchClient"] = None,
 ) -> dict:
     """
     Returns a job definition with the supplied name or empty dict if no matches are found..
@@ -128,7 +132,7 @@ def get_job_definition(
         batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
 
     # Check if job definition exists.
-    resp = batch_client.describe_job_definitions(jobDefinitionName=job_def_name, status="ACTIVE")  # ty: ignore[unresolved-attribute]
+    resp = batch_client.describe_job_definitions(jobDefinitionName=job_def_name, status="ACTIVE")
     if resp["jobDefinitions"]:
         return sorted(resp["jobDefinitions"], key=lambda jd: jd["revision"])[-1]
 
@@ -151,7 +155,7 @@ def get_job_details(
     """
     # Get default IAM role.
     if role is None:
-        caller_id = aws_utils.get_aws_client("sts", aws_region=aws_region).get_caller_identity()  # ty: ignore[unresolved-attribute]
+        caller_id = aws_utils.get_aws_client("sts", aws_region=aws_region).get_caller_identity()
         account_num = caller_id["Account"]
         role = "arn:aws:iam::%d:role/ecsTaskExecutionRole" % int(account_num)
 
@@ -302,7 +306,7 @@ def get_or_create_job_definition(
     # Look for an equivalent existing job defintiion.
     # Give preference for newer job defs.
     existing_job_defs = sorted(
-        batch_client.describe_job_definitions(jobDefinitionName=job_def_name, status="ACTIVE").get(  # ty: ignore[unresolved-attribute]
+        batch_client.describe_job_definitions(jobDefinitionName=job_def_name, status="ACTIVE").get(
             "jobDefinitions", []
         ),
         key=lambda job_def: get_job_def_revision(job_def["jobDefinitionName"]),
@@ -313,7 +317,7 @@ def get_or_create_job_definition(
             return existing_job_def
 
     # No equivalent job defs exist, so create a new one.
-    return batch_client.register_job_definition(jobDefinitionName=job_def_name, **job_details)  # ty: ignore[unresolved-attribute]
+    return batch_client.register_job_definition(jobDefinitionName=job_def_name, **job_details)  # ty: ignore[invalid-return-type]
 
 
 def make_job_def_name(image_name: str, job_def_suffix: str = "-jd") -> str:
@@ -386,7 +390,7 @@ def batch_submit(
     propagate_tags: bool = True,
     share_id: Optional[str] = None,
     scheduling_priority_override: Optional[str] = None,
-) -> dict[str, Any]:
+) -> "SubmitJobResponseTypeDef":
     """Actually perform job submission to AWS batch. Create or retrieve the job definition, then
     use it to submit the job.
 
@@ -464,7 +468,7 @@ def batch_submit(
         batch_job_args["schedulingPriorityOverride"] = scheduling_priority_override
 
     # Submit to batch.
-    batch_run = batch_client.submit_job(  # ty: ignore[unresolved-attribute]
+    batch_run = batch_client.submit_job(
         jobName=job_name,
         jobQueue=queue,
         jobDefinition=job_def["jobDefinitionArn"],
@@ -546,7 +550,7 @@ def submit_task(
     array_size: int = 0,
     code_file: Optional[File] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
-) -> dict[str, Any]:
+) -> "SubmitJobResponseTypeDef":
     """
     Submit a redun Task to AWS Batch.
     """
@@ -614,7 +618,7 @@ def submit_command(
     command: str,
     job_options: dict = {},
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
-) -> dict:
+) -> "SubmitJobResponseTypeDef":
     """
     Submit a shell command to AWS Batch.
     """
@@ -705,7 +709,7 @@ def aws_describe_jobs(
     batch_client = aws_utils.get_aws_client("batch", aws_region=aws_region)
     for i in range(0, len(job_ids), chunk_size):
         chunk_job_ids = job_ids[i : i + chunk_size]
-        response = batch_client.describe_jobs(jobs=chunk_job_ids)  # ty: ignore[unresolved-attribute]
+        response = batch_client.describe_jobs(jobs=chunk_job_ids)
 
         for job in response["jobs"]:
             yield job
@@ -1438,7 +1442,7 @@ class AWSBatchExecutor(Executor):
         Returns AWS Batch Job statuses from the AWS API.
         """
         batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
-        paginator = batch_client.get_paginator("list_jobs")  # ty: ignore[unresolved-attribute]
+        paginator = batch_client.get_paginator("list_jobs")
 
         if not statuses:
             statuses = BATCH_JOB_STATUSES.all
@@ -1455,7 +1459,7 @@ class AWSBatchExecutor(Executor):
         self, job_id: str, statuses: list[str] = BATCH_JOB_STATUSES.inflight
     ) -> list[dict[str, Any]]:
         batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
-        paginator = batch_client.get_paginator("list_jobs")  # ty: ignore[unresolved-attribute]
+        paginator = batch_client.get_paginator("list_jobs")
 
         found_jobs = []
         for status in statuses:
@@ -1473,7 +1477,7 @@ class AWSBatchExecutor(Executor):
         batch_client = aws_utils.get_aws_client("batch", aws_region=self.aws_region)
 
         for job_id in job_ids:
-            yield batch_client.terminate_job(jobId=job_id, reason=reason)  # ty: ignore[unresolved-attribute]
+            yield batch_client.terminate_job(jobId=job_id, reason=reason)
 
     def scratch_root(self) -> str:
         return self.s3_scratch_prefix
