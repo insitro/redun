@@ -8,6 +8,7 @@ are accepted and invalid calls are rejected.
 
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -38,15 +39,10 @@ def _run_checker(checker: Path, filepath: Path, extra_args: Optional[list[str]] 
 
 
 def _write_tmp(code: str) -> Path:
-    """Write code to a temp file inside the redun project (so imports resolve)."""
-    tmp = _REDUN_ROOT / "_tmp_typing_test.py"
+    """Write code to a uniquely-named temp file inside the redun project (so imports resolve)."""
+    tmp = _REDUN_ROOT / f"_tmp_typing_test_{uuid.uuid4().hex[:8]}.py"
     tmp.write_text(code)
     return tmp
-
-
-def _cleanup_tmp():
-    tmp = _REDUN_ROOT / "_tmp_typing_test.py"
-    tmp.unlink(missing_ok=True)
 
 
 # ---------------------------------------------------------------------------
@@ -152,7 +148,7 @@ class TestTyTaskTyping:
         self.tmp = _write_tmp(REDUN_TYPING_FIXTURE)
 
     def teardown_method(self):
-        _cleanup_tmp()
+        self.tmp.unlink(missing_ok=True)
 
     def test_no_false_errors_on_valid_calls(self):
         """ty should accept all valid task calls without errors."""
@@ -208,7 +204,7 @@ class TestMypyTaskTyping:
         self.tmp = _write_tmp(REDUN_TYPING_FIXTURE)
 
     def teardown_method(self):
-        _cleanup_tmp()
+        self.tmp.unlink(missing_ok=True)
 
     def test_no_errors_on_valid_calls(self):
         """mypy should accept all valid task calls without errors."""
@@ -254,7 +250,7 @@ class TestTySchedulerTaskTyping:
         self.tmp = _write_tmp(SCHEDULER_TASK_TYPING_FIXTURE)
 
     def teardown_method(self):
-        _cleanup_tmp()
+        self.tmp.unlink(missing_ok=True)
 
     def test_no_false_errors_on_valid_calls(self):
         """ty should accept valid scheduler_task calls (internal params stripped)."""
@@ -283,7 +279,7 @@ class TestMypySchedulerTaskTyping:
         self.tmp = _write_tmp(SCHEDULER_TASK_TYPING_FIXTURE)
 
     def teardown_method(self):
-        _cleanup_tmp()
+        self.tmp.unlink(missing_ok=True)
 
     def test_no_errors_on_valid_calls(self):
         """mypy should accept valid scheduler_task calls."""
@@ -394,3 +390,100 @@ class TestSchedulerTaskRuntimeEdgeCases:
         # Call with both args
         expr2 = with_defaults(5, 20)
         assert expr2.args == (5, 20)
+
+
+# ---------------------------------------------------------------------------
+# Test fixture: redun.run() return type inference
+# ---------------------------------------------------------------------------
+
+RUN_TYPING_FIXTURE = """\
+'''
+Verify that redun.run() infers the return type from its expr argument
+and that explicit kwargs are type-checked.
+'''
+from redun import run, task
+
+@task(cache=False)
+def add(x: int, y: int) -> int:
+    return x + y
+
+@task(cache=False)
+def greet(name: str) -> str:
+    return f"hello {name}"
+
+# ---- return type inference ----
+reveal_type(run(add(1, 2)))    # should be int
+reveal_type(run(greet("world")))  # should be str
+
+# ---- valid kwargs (should produce NO errors) ----
+run(add(1, 2), dryrun=True)
+run(add(1, 2), cache=False)
+run(add(1, 2), dryrun=True, cache=False)
+run(add(1, 2), execution_id="abc")
+"""
+
+
+@pytest.mark.skipif(not _has_ty(), reason="ty not installed")
+class TestTyRunTyping:
+    """Verify that ty infers redun.run() return type from expr argument."""
+
+    def setup_method(self):
+        self.tmp = _write_tmp(RUN_TYPING_FIXTURE)
+
+    def teardown_method(self):
+        self.tmp.unlink(missing_ok=True)
+
+    def test_no_errors_on_valid_calls(self):
+        """ty should accept all valid run() calls without errors."""
+        output = _run_checker(_TY, self.tmp, ["check", "--python-version", "3.11"])
+
+        if "ty failed" in output:
+            pytest.skip(f"ty could not run in this environment: {output[:200]}")
+
+        error_lines = [
+            line
+            for line in output.split("\n")
+            if "error[" in line and "unused-ignore-comment" not in line
+        ]
+        assert not error_lines, (
+            "ty produced unexpected errors on valid run() calls:\n"
+            + "\n".join(error_lines)
+            + f"\n\nFull output:\n{output}"
+        )
+
+    def test_run_return_type_is_inferred(self):
+        """ty should infer run(add(1, 2)) as int, not Any."""
+        output = _run_checker(_TY, self.tmp, ["check", "--python-version", "3.11"])
+
+        if "ty failed" in output or "@Todo" in output:
+            pytest.skip("ty cannot fully resolve types in this environment.")
+
+        assert "int" in output, (
+            f"Expected run(add(1, 2)) to reveal as int.\nFull output:\n{output}"
+        )
+
+
+@pytest.mark.skipif(not _has_mypy(), reason="mypy not installed")
+class TestMypyRunTyping:
+    """Verify that mypy infers redun.run() return type from expr argument."""
+
+    def setup_method(self):
+        self.tmp = _write_tmp(RUN_TYPING_FIXTURE)
+
+    def teardown_method(self):
+        self.tmp.unlink(missing_ok=True)
+
+    def test_no_errors_on_valid_calls(self):
+        """mypy should accept all valid run() calls without errors."""
+        output = _run_checker(_MYPY, self.tmp, ["--python-executable", sys.executable])
+
+        test_errors = [
+            line for line in output.split("\n") if "error:" in line and self.tmp.name in line
+        ]
+        assert not test_errors, "mypy produced unexpected errors:\n" + "\n".join(test_errors)
+
+    def test_run_return_type_is_inferred(self):
+        """mypy should infer run(add(1, 2)) as int, not Any."""
+        output = _run_checker(_MYPY, self.tmp, ["--python-executable", sys.executable])
+
+        assert "int" in output, f"Expected mypy reveal_type to show int.\nFull output:\n{output}"

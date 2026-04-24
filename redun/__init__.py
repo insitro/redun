@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from redun._version import __version__
@@ -49,26 +50,43 @@ else:
     LocalExecutor = register_executor("local", "redun.executors.local.LocalExecutor")
 
 
+Result = TypeVar("Result")
+
 # Cached Schedulers.
 _config2scheduler: dict[str | None, Scheduler] = {}
 
 
 def run(
-    expr: Any,
+    expr: Result,
     config_dir: str | None = None,
-    **run_config: Any,
-) -> Any:
+    exec_argv: list[str] | None = None,
+    dryrun: bool = False,
+    cache: bool = True,
+    tags: Iterable[tuple[str, Any]] = (),
+    context: dict = {},
+    execution_id: str | None = None,
+) -> Result:
     """
-    Evaluate an expression using the default redun Scheduler as define by redun.ini.
+    Evaluate an expression using the default redun Scheduler as defined by redun.ini.
 
     Parameters
     ----------
-    expr: Any
+    expr : Result
         An expression to evaluate with the redun Scheduler.
-    config_dir: str | None
-        A redun configuration directory to use to define the Scheduler. Defaults to `.redun`.
-    run_config:
-        Additional run options such as `cache=False`. See :method:`Scheduler.run()` for full details.
+    config_dir : str | None
+        A redun configuration directory to use to define the Scheduler. Defaults to ``.redun``.
+    exec_argv : list[str] | None
+        Optional argv to record for this execution.
+    dryrun : bool
+        If True, perform a dry run without executing tasks.
+    cache : bool
+        If True (default), use caching for task results.
+    tags : Iterable[tuple[str, Any]]
+        Tags to apply to the execution.
+    context : dict
+        Context variables to pass to the execution.
+    execution_id : str | None
+        Optional execution ID. If not given, one is generated.
     """
     from redun.cli import setup_scheduler
 
@@ -76,7 +94,15 @@ def run(
     scheduler = _config2scheduler.get(config_dir)
     if not scheduler:
         scheduler = _config2scheduler[config_dir] = setup_scheduler(config_dir=config_dir)
-    return scheduler.run(expr, **run_config)
+    return scheduler.run(
+        expr,
+        exec_argv=exec_argv,
+        dryrun=dryrun,
+        cache=cache,
+        tags=tags,
+        context=context,
+        execution_id=execution_id,
+    )
 
 
 __all__ = [

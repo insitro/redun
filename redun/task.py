@@ -727,6 +727,7 @@ def task(
     hash_includes: Optional[list] = None,
     source: Optional[str] = None,
     export_options: Optional[dict] = None,
+    # TODO: Replace with **task_options: Unpack[TaskOptionsDict] once Python 3.12+ is minimum (PEP 692).
     **task_options_base: Any,
 ) -> Callable[[Callable[P, R]], Task[P, R]]: ...
 
