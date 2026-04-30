@@ -345,6 +345,26 @@ def test_nout_undefined(scheduler: Scheduler) -> None:
             pass
 
 
+def test_nout_zero(scheduler: Scheduler) -> None:
+    """
+    A task with nout=0 should support iteration and yield an empty sequence.
+
+    This is a regression test for a subtle bug: the old check
+    ``if self._length:`` treated 0 as falsy, so Expression.__iter__
+    raised TypeError instead of returning an empty iterator when nout=0.
+    """
+
+    @task(nout=0)
+    def make_empty() -> tuple:
+        return ()
+
+    @task()
+    def main() -> list:
+        return [x for x in make_empty()]
+
+    assert scheduler.run(main()) == []
+
+
 def test_nout_bad(scheduler: Scheduler) -> None:
     """
     Task nout must be non-negative int.

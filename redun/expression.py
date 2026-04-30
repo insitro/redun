@@ -89,7 +89,7 @@ class Expression(Value, Generic[Result]):
         raise TypeError("Expressions cannot be coerced to bool.")
 
     def __iter__(self) -> Iterator:
-        if self._length:
+        if self._length is not None:
             return (self[i] for i in range(self._length))
         raise TypeError("Expressions of unknown length cannot be iterated.")
 
