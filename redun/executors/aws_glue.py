@@ -4,7 +4,7 @@ import tempfile
 import threading
 import time
 from collections import OrderedDict, deque
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 if TYPE_CHECKING:
@@ -223,7 +223,7 @@ def get_or_create_glue_job_definition(
         client.get_job(JobName=glue_job_name)
     except client.exceptions.EntityNotFoundException:
         # Create job definition.
-        resp = client.create_job(Name=glue_job_name, **glue_job_def)
+        resp = client.create_job(Name=glue_job_name, **glue_job_def)  # ty: ignore[invalid-argument-type]
         assert resp["Name"] == glue_job_name
 
     return glue_job_name
@@ -297,13 +297,13 @@ class AWSGlueExecutor(Executor):
             hash = run["Arguments"].get("--job-hash")
             self.preexisting_glue_jobs[hash] = run["Id"]
 
-    def get_jobs(self, statuses: Optional[list[str]] = None) -> Iterator[dict]:
+    def get_jobs(self, statuses: Optional[list[str]] = None) -> Iterator[Mapping[str, Any]]:
         """
         Gets all job runs with given status.
         """
         client = aws_utils.get_aws_client("glue", aws_region=self.aws_region)
         paginator = client.get_paginator("get_job_runs")
-
+        assert self.glue_job_name
         for page in paginator.paginate(JobName=self.glue_job_name):
             for run in page["JobRuns"]:
                 if statuses:
@@ -419,7 +419,7 @@ class AWSGlueExecutor(Executor):
     def stop(self) -> None:
         self.is_running = False
 
-    def _process_job_status(self, job: dict) -> None:
+    def _process_job_status(self, job: Mapping[str, Any]) -> None:
         assert self._scheduler
 
         error: Optional[Exception] = None
@@ -723,7 +723,7 @@ def glue_describe_jobs(
     job_ids: list[str],
     glue_job_name: str,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
-) -> Iterator[dict[str, Any]]:
+) -> Iterator[Mapping[str, Any]]:
     glue_client = aws_utils.get_aws_client("glue", aws_region=aws_region)
 
     for id in job_ids:
@@ -734,7 +734,7 @@ def glue_describe_jobs(
 
 
 def parse_job_error(
-    s3_scratch_prefix: str, job: Job, glue_job_metadata: Optional[dict] = None
+    s3_scratch_prefix: str, job: Job, glue_job_metadata: Optional[Mapping[str, Any]] = None
 ) -> tuple[Exception, "Traceback"]:
     """
     Parse job error from s3 scratch path.

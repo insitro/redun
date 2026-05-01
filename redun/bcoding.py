@@ -167,7 +167,7 @@ def bdecode(f_or_data):
         first_byte = f_or_data.read(1)
         f_or_data.seek(-1, SEEK_CUR)
     else:
-        first_byte = f_or_data.peek(1)[:1]  # ty: ignore[possibly-missing-attribute]
+        first_byte = f_or_data.peek(1)[:1]  # ty: ignore[unresolved-attribute]
     btype = TYPES.get(first_byte)
     if btype is not None:
         return btype(f_or_data)

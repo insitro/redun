@@ -227,10 +227,11 @@ class LocalExecutor(Executor):
             raise ValueError('Unknown LocalExecutor.mode "{}"'.format(mode))
 
         def on_done(future):
+            assert self._scheduler
             try:
-                self._scheduler.done_job(job, future.result())  # ty: ignore[possibly-missing-attribute]
+                self._scheduler.done_job(job, future.result())
             except Exception as error:
-                self._scheduler.reject_job(job, error)  # ty: ignore[possibly-missing-attribute]
+                self._scheduler.reject_job(job, error)
 
         assert job.args
         args, kwargs = job.args

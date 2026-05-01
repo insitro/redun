@@ -178,8 +178,8 @@ def map_(
     # As an optimization, compose multiple maps into one.
     # e.g. map_(g, map_(f, xs)) == map_(compose(g, f), xs)
     while isinstance(values, SchedulerExpression) and values.task_name == "redun.map_":
-        tasks.append(values.args[0])  # ty: ignore[not-subscriptable]
-        values = values.args[1]  # ty: ignore[not-subscriptable]
+        tasks.append(values.args[0])
+        values = values.args[1]
 
     if len(tasks) == 1:
         [a_task] = tasks
@@ -213,7 +213,7 @@ def starmap(
     """
     Map a task to a list of keyword arguments.
     """
-    return map_(eval_.partial("a_task(**x)", pos_args=["x"], a_task=a_task), kwargs)
+    return map_(eval_.partial("a_task(**x)", pos_args=["x"], a_task=a_task), kwargs)  # ty: ignore[invalid-argument-type]
 
 
 @task(namespace="redun", version="1")

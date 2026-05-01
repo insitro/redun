@@ -48,7 +48,7 @@ class AsyncMockedRawResponse(MockRawResponse):
         self._response = response
         self._content = b""
 
-    async def read(self, *args, **kwargs):
+    async def read(self, *args, **kwargs):  # ty: ignore[invalid-method-override]
         # Provide an async version of the read method.
         return self._sync_read(*args, **kwargs)
 
@@ -132,7 +132,7 @@ def convert_to_response_dict_patch(http_response, operation_model):
             "operation_name": operation_model.name,
         },
     }
-    if response_dict["status_code"] >= 300:  # ty: ignore[unsupported-operator]
+    if response_dict["status_code"] >= 300:
         response_dict["body"] = http_response.raw._sync_read()
     elif operation_model.has_event_stream_output:
         response_dict["body"] = http_response.raw

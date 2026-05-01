@@ -504,7 +504,7 @@ class Task(Value, Generic[P, R]):
             self.source = _task.source or get_func_source(self.func)
             self._hash_includes = _task._hash_includes
         else:
-            self.func = lambda *args, **kwargs: undefined_task(self.fullname, *args, **kwargs)
+            self.func = lambda *args, **kwargs: undefined_task(self.fullname, *args, **kwargs)  # ty: ignore[invalid-assignment]
             self._task_options_base = {}
             self.source = ""
             self._hash_includes = None

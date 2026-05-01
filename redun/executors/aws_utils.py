@@ -1,6 +1,6 @@
 import os
 import threading
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, overload
 from urllib.error import URLError
 from urllib.request import urlopen
@@ -121,7 +121,9 @@ def get_aws_env_vars() -> dict[str, str]:
     Determines the current AWS credentials.
     """
     session = boto3.Session()
-    creds = session.get_credentials().get_frozen_credentials()
+    credentials = session.get_credentials()
+    assert credentials
+    creds = credentials.get_frozen_credentials()
     cred_map = {
         "AWS_ACCESS_KEY_ID": creds.access_key,
         "AWS_SECRET_ACCESS_KEY": creds.secret_key,
@@ -189,19 +191,20 @@ def iter_log_stream(
     reverse: bool = False,
     required: bool = True,
     aws_region: str = DEFAULT_AWS_REGION,
-) -> Iterator[dict]:
+) -> Iterator[Mapping[str, Any]]:
     """
     Iterate through the events of logStream.
     """
     logs_client = get_aws_client("logs", aws_region=aws_region)
     try:
-        response = logs_client.get_log_events(
+        kwargs: dict[str, Any] = dict(
             logGroupName=log_group_name,
             logStreamName=log_stream,
             startFromHead=not reverse,
-            # boto API does not allow passing None, so we must fully exclude the parameter.
-            **{"limit": limit} if limit else {},
         )
+        if limit:
+            kwargs["limit"] = limit
+        response = logs_client.get_log_events(**kwargs)
     except logs_client.exceptions.ResourceNotFoundException as error:
         if required:
             # If logs are required, raise an error.
@@ -224,10 +227,11 @@ def iter_log_stream(
             next_token = response["nextForwardToken"]
         else:
             next_token = response["nextBackwardToken"]
-        response = logs_client.get_log_events(
+        kwargs = dict(
             logGroupName=log_group_name,
             logStreamName=log_stream,
             nextToken=next_token,
-            # boto API does not allow passing None, so we must fully exclude the parameter.
-            **{"limit": limit} if limit else {},
         )
+        if limit:
+            kwargs["limit"] = limit
+        response = logs_client.get_log_events(**kwargs)

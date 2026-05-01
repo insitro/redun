@@ -11,6 +11,7 @@ import pytest
 from kubernetes import client
 
 import redun.executors.k8s
+import redun.executors.k8s_utils
 from redun import File, job_array, task
 from redun.cli import RedunClient, import_script
 from redun.config import Config
@@ -169,7 +170,7 @@ def test_k8s_submit_cpu_limits() -> None:
     k8s_client = redun.executors.k8s_utils.K8SClient()
 
     # Configure the mock to return the job object that was passed to it
-    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)
+    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)  # ty: ignore[invalid-assignment]
 
     job = redun.executors.k8s.k8s_submit(
         k8s_client=k8s_client,
@@ -342,7 +343,7 @@ def task1(x):
     )
 
     # We should get a k8s job id back.
-    assert resp["jobId"] == "k8s-job-id"
+    assert resp["jobId"] == "k8s-job-id"  # ty: ignore[not-subscriptable]
 
     # Input files should be made.
     assert File("s3://example-bucket/redun/jobs/eval_hash/input").exists()
@@ -1013,7 +1014,7 @@ def test_k8s_submit_with_node_affinity() -> None:
     k8s_client = redun.executors.k8s_utils.K8SClient()
 
     # Configure the mock to return the job object that was passed to it
-    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)
+    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)  # ty: ignore[invalid-assignment]
 
     node_affinity = {
         "required_during_scheduling_ignored_during_execution": [
@@ -1231,7 +1232,7 @@ def test_k8s_submit_with_env() -> None:
     k8s_client = redun.executors.k8s_utils.K8SClient()
 
     # Configure the mock to return the job object that was passed to it
-    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)
+    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)  # ty: ignore[invalid-assignment]
 
     env = {"DEBUG": "true", "API_URL": "http://api.example.com"}
 
@@ -1516,7 +1517,7 @@ def test_k8s_submit_with_volumes() -> None:
     k8s_client = redun.executors.k8s_utils.K8SClient()
 
     # Configure the mock to return the job object that was passed to it
-    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)
+    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)  # ty: ignore[invalid-assignment]
 
     volumes = [
         {"name": "dshm", "emptyDir": {"medium": "Memory", "sizeLimit": "16Gi"}},

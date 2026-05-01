@@ -14,7 +14,7 @@ import sys
 import textwrap
 from argparse import Namespace
 from collections import Counter, defaultdict
-from collections.abc import Callable, Iterable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from collections.abc import Callable as AbstractCallable
 from contextlib import contextmanager
 from itertools import chain, islice
@@ -34,6 +34,7 @@ from typing import (
 from urllib.parse import ParseResult, urlparse
 
 import botocore
+import botocore.exceptions
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast as sa_cast
@@ -827,8 +828,8 @@ def get_default_execution_tags(
             tags.append(("user_aws_arn", get_aws_user(aws_region)))
             tags.append(("user_aws", get_simple_aws_user(aws_region)))
         except (
-            botocore.exceptions.NoCredentialsError,  # ty: ignore[possibly-missing-attribute]
-            botocore.exceptions.ClientError,  # ty: ignore[possibly-missing-attribute]
+            botocore.exceptions.NoCredentialsError,
+            botocore.exceptions.ClientError,
             RuntimeError,
         ):
             pass
@@ -2997,7 +2998,7 @@ class RedunClient:
         default_aws_region = list(aws_region2executor.keys())[0]
 
         # Build up query of log streams.
-        query: list[tuple[dict, Optional[Job], str, str]] = []
+        query: list[tuple[Mapping[str, Any], Optional[Job], str, str]] = []
         if args.all:
             for executor in aws_region2executor.values():
                 for batch_job in executor.get_jobs(statuses=statuses):

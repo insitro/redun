@@ -86,7 +86,7 @@ class TypeRegistry:
             self._raw2proxy_type[getattr(value_type, "type")] = cast(type[ProxyValue], value_type)
 
         assert isinstance(value_type.type_name, str)
-        self._type_name2value_type[cast(str, value_type.type_name)] = value_type
+        self._type_name2value_type[value_type.type_name] = value_type
 
     def _get_proxy_type(self, raw_type: type) -> Optional[type["Value"]]:
         """
@@ -242,7 +242,7 @@ class MetaValue(type):
 
         if getattr(cls, "register", True):
             registry = get_type_registry()
-            registry.register(cls)
+            registry.register(cls)  # ty: ignore[invalid-argument-type]
 
 
 class Value(metaclass=MetaValue):

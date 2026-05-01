@@ -202,7 +202,7 @@ class JobStatusTable(Table):
         # Fetch jobs and task names from db.
         # Fetch Value.type in order to help compute Job status.
         self.job_tasks = (
-            self.app.session.query(Job, Task.namespace, Task.name, Value.type)  # ty: ignore[possibly-missing-attribute]
+            self.app.session.query(Job, Task.namespace, Task.name, Value.type)
             .outerjoin(CallNode, Job.call_hash == CallNode.call_hash)
             .outerjoin(Value, CallNode.value_hash == Value.value_hash)
             .join(Task, Job.task_hash == Task.hash)
@@ -211,7 +211,7 @@ class JobStatusTable(Table):
         )
 
         tasks = (
-            self.app.session.query(Task)  # ty: ignore[possibly-missing-attribute]
+            self.app.session.query(Task)
             .join(Job, Job.task_hash == Task.hash)
             .filter(Job.execution_id == self.execution_id)
             .all()

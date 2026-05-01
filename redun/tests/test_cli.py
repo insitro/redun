@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 
 import boto3
 import botocore
+import botocore.exceptions
 import pytest
 from freezegun import freeze_time
 from moto import mock_logs

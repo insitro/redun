@@ -120,7 +120,7 @@ def test_wrong_executor(local_executor, scheduler: Scheduler) -> None:
         return a + b
 
     with pytest.raises(SchedulerError):
-        scheduler.run(add(1, 2))
+        scheduler.run(add(1, 2))  # ty: ignore[unused-awaitable]
 
 
 def test_job_tree(scheduler: Scheduler, backend: RedunBackendDb) -> None:
@@ -145,7 +145,7 @@ def test_job_tree(scheduler: Scheduler, backend: RedunBackendDb) -> None:
         chunks = [chunk(i) for i in range(5)]
         return chunks
 
-    scheduler.run(main())
+    scheduler.run(main())  # ty: ignore[unused-awaitable]
     exec = backend.session.query(Execution).one()
 
     """
@@ -182,7 +182,7 @@ def test_call_graph(scheduler: Scheduler, backend: RedunBackendDb) -> None:
         y = await add(3, 4)
         return add(x, y)
 
-    scheduler.run(main())
+    scheduler.run(main())  # ty: ignore[unused-awaitable]
     exec = backend.session.query(Execution).one()
 
     # All three CallNodes for add() should be under CallNode for main(),

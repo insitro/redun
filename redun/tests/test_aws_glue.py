@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import boto3
 import moto
+import moto.glue
 from moto.core.models import base_decorator
 from moto.glue.responses import GlueResponse
 
@@ -63,7 +64,7 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
     def url_paths(self):
         return {"{0}/$": RedunGlueResponse.dispatch}
 
-    def get_job(self, JobName: str) -> dict[str, Any]:
+    def get_job(self, JobName: str) -> dict[str, Any]:  # ty: ignore[invalid-method-override]
         if JobName in self.job_defs:
             return {"Job": self.job_defs[JobName]}
 
@@ -72,7 +73,7 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
             operation_name="get_job",
         )
 
-    def get_job_run(self, **kwargs):
+    def get_job_run(self, **kwargs):  # ty: ignore[invalid-method-override]
         return {
             "JobRun": {
                 # "JobRunState": "SUCCEEDED",
@@ -81,7 +82,7 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
             }
         }
 
-    def create_job(self, **kwargs) -> dict[str, str]:
+    def create_job(self, **kwargs) -> dict[str, str]:  # ty: ignore[invalid-method-override]
         assert "Name" in kwargs
         jobname = kwargs["Name"]
 
@@ -89,7 +90,7 @@ class RedunGlueBackend(moto.glue.models.GlueBackend):
 
         return {"Name": jobname}
 
-    def start_job_run(
+    def start_job_run(  # ty: ignore[invalid-method-override]
         self,
         JobName: str,
         Arguments: dict,
@@ -141,7 +142,7 @@ class RedunGlueResponse(GlueResponse):
 
 # Creates a fresh redun glue backend for each test.
 def setup_function():
-    redun_glue_backend.jobs = {}
+    redun_glue_backend.jobs = {}  # ty: ignore[invalid-assignment]
 
 
 @moto.mock_s3

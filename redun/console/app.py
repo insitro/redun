@@ -3,6 +3,7 @@ from argparse import Namespace
 from typing import Any, cast
 
 import sqlalchemy as sa
+import sqlalchemy.orm
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.screen import Screen
@@ -113,7 +114,7 @@ class RedunApp(App):
         super().__init__()
 
         self.scheduler = scheduler
-        self.session = cast(sa.orm.Session, cast(RedunBackendDb, self.scheduler.backend).session)  # ty: ignore[possibly-missing-attribute]
+        self.session = cast(sa.orm.Session, cast(RedunBackendDb, self.scheduler.backend).session)
         assert self.session
         self.args = args
         self.all_argv = argv
@@ -171,7 +172,7 @@ class RedunApp(App):
             self.goto_screen(ValueScreen, record.value_hash, (record.value_hash,))
         else:
             screen = self.get_screen("ReplScreen")
-            screen.update({"obj": record})  # ty: ignore[unresolved-attribute]
+            screen.update({"obj": record})
             self.push_screen(screen)
 
     def route(self, argv: list[str]) -> None:
@@ -210,13 +211,13 @@ class RedunApp(App):
                 if self.is_screen_installed(screen_cls.__name__):
                     # Singleton screen that doesn't auto-uninstall.
                     screen = self.get_screen(screen_cls.__name__)
-                    screen.parse(argv)  # ty: ignore[unresolved-attribute]
+                    screen.parse(argv)
                     self.push_screen(screen)
                 else:
                     # Auto-installing custom screen.
                     id = groups[1]
                     screen = self.goto_screen(screen_cls, id, (id,))
-                    screen.parse(argv)  # ty: ignore[unresolved-attribute]
+                    screen.parse(argv)
                 return
 
         # ReplScreen has its own customization.
@@ -224,7 +225,7 @@ class RedunApp(App):
         if groups:
             obj_id = groups[2]
             screen = self.get_screen("ReplScreen")
-            screen.update(obj_id=obj_id)  # ty: ignore[unresolved-attribute]
+            screen.update(obj_id=obj_id)
             self.push_screen(screen)
             return
 

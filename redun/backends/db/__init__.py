@@ -24,6 +24,7 @@ from urllib.parse import quote_plus, urlparse, urlunparse
 
 import sqlalchemy
 import sqlalchemy as sa
+import sqlalchemy.exc
 from alembic.command import downgrade, upgrade
 from alembic.config import Config as AConfig
 from sqlalchemy import (
@@ -769,29 +770,29 @@ class CallNode(Base):
         else:
             # New style available in sqlalchemy>=1.4.0
             # https://docs.sqlalchemy.org/en/14/changelog/migration_20.html#joinedload-not-uniqued
+            session = object_session(self)
+            assert session
             child_nodes = (
-                object_session(self)  # ty: ignore[possibly-missing-attribute]
-                .execute(
+                session.execute(
                     select(CallNode, CallEdge.call_order)
                     .join(CallEdge, CallEdge.child_id == CallNode.call_hash)
                     .filter(CallEdge.parent_id == self.call_hash)
                     .order_by(CallEdge.call_order)
-                )
-                .columns(CallNode)  # ty: ignore[invalid-argument-type]
+                ).columns(CallNode)  # ty: ignore[invalid-argument-type]
             )
             return [node for (node,) in child_nodes]
 
     @property
     def parents(self) -> list["CallNode"]:
+        session = object_session(self)
+        assert session
         parent_nodes = (
-            object_session(self)  # ty: ignore[possibly-missing-attribute]
-            .execute(
+            session.execute(
                 select(CallNode, CallEdge.call_order)
                 .join(CallEdge, CallEdge.parent_id == CallNode.call_hash)
                 .filter(CallEdge.child_id == self.call_hash)
                 .order_by(CallEdge.call_order)
-            )
-            .columns(CallNode)  # ty: ignore[invalid-argument-type]
+            ).columns(CallNode)  # ty: ignore[invalid-argument-type]
         )
         return [node for (node,) in parent_nodes]
 
@@ -1272,20 +1273,21 @@ class Tag(Base):
     @property
     def entity(self) -> Execution | Job | CallNode | Task | Value:
         session = object_session(self)
+        assert session
         if self.entity_type == TagEntity.Execution:
-            return session.query(Execution).filter_by(id=self.entity_id).one()  # ty: ignore[possibly-missing-attribute]
+            return session.query(Execution).filter_by(id=self.entity_id).one()
 
         elif self.entity_type == TagEntity.Job:
-            return session.query(Job).filter_by(id=self.entity_id).one()  # ty: ignore[possibly-missing-attribute]
+            return session.query(Job).filter_by(id=self.entity_id).one()
 
         elif self.entity_type == TagEntity.CallNode:
-            return session.query(CallNode).filter_by(call_hash=self.entity_id).one()  # ty: ignore[possibly-missing-attribute]
+            return session.query(CallNode).filter_by(call_hash=self.entity_id).one()
 
         elif self.entity_type == TagEntity.Task:
-            return session.query(Task).filter_by(hash=self.entity_id).one()  # ty: ignore[possibly-missing-attribute]
+            return session.query(Task).filter_by(hash=self.entity_id).one()
 
         elif self.entity_type == TagEntity.Value:
-            return session.query(Value).filter_by(value_hash=self.entity_id).one()  # ty: ignore[possibly-missing-attribute]
+            return session.query(Value).filter_by(value_hash=self.entity_id).one()
 
         else:
             raise AssertionError(f"Invalid entity_type {self.entity_type}")
@@ -1319,7 +1321,9 @@ class Tag(Base):
         """
         Returns parsed value referenced by Tag.
         """
-        value = object_session(self).query(Value).get(self.value)  # ty: ignore[possibly-missing-attribute]
+        session = object_session(self)
+        assert session
+        value = session.query(Value).get(self.value)
         return value.value_parsed if value is not None else None
 
 
@@ -2056,7 +2060,7 @@ class RedunBackendDb(RedunBackend):
             )
             try:
                 session.commit()
-            except sa.exc.IntegrityError:  # ty: ignore[possibly-missing-attribute]
+            except sa.exc.IntegrityError:
                 # Most likely value recorded in the meantime by another process.
                 session.rollback()
                 # run a double check
@@ -2311,7 +2315,7 @@ class RedunBackendDb(RedunBackend):
                     Tag.key == CONTEXT_KEY, Tag.value == sa_cast(context_hash, JSON)
                 )
 
-            call_node: CallNode = call_nodes.order_by(Job.start_time.desc()).first()
+            call_node = call_nodes.order_by(Job.start_time.desc()).first()
             if call_node:
                 result, is_cached = self.get_call_cache(call_node.call_hash)
                 if is_cached:
@@ -2419,7 +2423,7 @@ class RedunBackendDb(RedunBackend):
                         )
                     )
                     session.commit()
-                except sa.exc.IntegrityError:  # ty: ignore[possibly-missing-attribute]
+                except sa.exc.IntegrityError:
                     # If eval_hash has recently been added, do update instead.
                     session.rollback()
                     eval_row = session.get(Evaluation, eval_hash)

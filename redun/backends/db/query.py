@@ -7,6 +7,7 @@ from itertools import islice
 from typing import Any, Optional
 
 import sqlalchemy as sa
+import sqlalchemy.orm
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql.expression import cast as sa_cast
@@ -169,11 +170,11 @@ class CallGraphQuery:
     }
     MODEL_NAMES = list(MODEL_CLASSES.keys())
 
-    ExecTag = sa.orm.aliased(Tag)  # ty: ignore[possibly-missing-attribute]
+    ExecTag = sa.orm.aliased(Tag)
 
     def __init__(
         self,
-        session: sa.orm.Session,  # ty: ignore[possibly-missing-attribute]
+        session: sa.orm.Session,
         joins: set[str] | None = None,
         execution_joins: list[Callable[[Query], Query]] | None = None,
         filters: list | None = None,
@@ -639,7 +640,7 @@ class CallGraphQuery:
 
         # Perform order_by.
         if self._order_by == "time":
-            Job2 = sa.orm.aliased(Job)  # ty: ignore[possibly-missing-attribute]
+            Job2 = sa.orm.aliased(Job)
             query = query.clone(
                 executions=(
                     query._executions.add_columns(Job2.start_time)
@@ -660,11 +661,11 @@ class CallGraphQuery:
         """
         query = CallGraphQuery(self._session)
         return self.clone(
-            executions=query._executions.filter(False),
-            jobs=query._jobs.filter(False),
-            call_nodes=query._call_nodes.filter(False),
-            tasks=query._tasks.filter(False),
-            values=query._values.filter(False),
+            executions=query._executions.filter(sa.literal(False)),
+            jobs=query._jobs.filter(sa.literal(False)),
+            call_nodes=query._call_nodes.filter(sa.literal(False)),
+            tasks=query._tasks.filter(sa.literal(False)),
+            values=query._values.filter(sa.literal(False)),
         )
 
     def all(self) -> Iterator[Base]:
@@ -869,6 +870,7 @@ def find_file(session: Session, path: str) -> Optional[tuple[File, Job, str]]:
     if row or row2:
         # Return the most recent file and job reference.
         if not row:
+            assert row2
             return (row2[0], row2[1], "result")
         elif not row2:
             return (row[0], row[1], "result")
@@ -906,6 +908,7 @@ def find_file(session: Session, path: str) -> Optional[tuple[File, Job, str]]:
     if row3 or row4:
         # Return the most recent file and job reference.
         if not row3:
+            assert row4
             return (row4[0], row4[1], "arg")
         elif not row4:
             return (row3[0], row3[1], "arg")

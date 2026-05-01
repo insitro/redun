@@ -49,10 +49,8 @@ def _write_tmp(code: str) -> Path:
 # Test fixture: redun @task calls checked by type checkers
 # ---------------------------------------------------------------------------
 
-REDUN_TYPING_FIXTURE = """\
-'''
-Verify that Task.__call__ typing works correctly with both mypy and ty.
-'''
+REDUN_VALID_CALLS_FIXTURE = """\
+'''Valid Task.__call__ usage — type checkers should produce zero errors.'''
 from redun import task
 
 @task(cache=False)
@@ -74,13 +72,13 @@ reveal_type(add.__call__)
 reveal_type(double.__call__)
 reveal_type(greet.__call__)
 
-# ---- valid calls (should produce NO errors) ----
+# ---- valid calls ----
 add(1, 2)
 double(42)
 greet("world")
 greet("world", greeting="hi")
 
-# ---- partial and options (should produce NO errors) ----
+# ---- partial and options ----
 add_one = add.partial(1)
 reveal_type(add_one)
 add_one(2)
@@ -88,56 +86,65 @@ add_one(2)
 add_with_opts = add.options(cache=False)
 reveal_type(add_with_opts)
 add_with_opts(1, 2)
+"""
 
-# ---- invalid calls (SHOULD produce errors) ----
-add("wrong", 1)  # type: ignore[arg-type]
+REDUN_INVALID_CALLS_FIXTURE = """\
+'''Invalid Task.__call__ usage — type checkers SHOULD produce errors.'''
+from redun import task
+
+@task(cache=False)
+def add(x: int, y: int) -> int:
+    return x + y
+
+add("wrong", 1)
 """
 
 # ---------------------------------------------------------------------------
 # Test fixture: scheduler_task typing via Concatenate
 # ---------------------------------------------------------------------------
 
-SCHEDULER_TASK_TYPING_FIXTURE = """\
-'''
-Verify that scheduler_task Concatenate typing strips internal params
-and exposes only user-visible params to type checkers.
-'''
+SCHEDULER_VALID_CALLS_FIXTURE = """\
+'''Valid scheduler_task usage — type checkers should produce zero errors.'''
 from redun.scheduler import cond, catch, catch_all, apply_tags, subrun, fork_thread, join_thread
 from redun.functools import seq, map_
 from redun.context import get_context
 from redun.task import task
 
-# ---- valid calls: builtins with various signatures ----
-cond(True, 1, 2)            # pred, then, else
-cond(True, 1, 2, 3, 4, 5)  # variadic *rest is fine
-seq([1, 2, 3])              # single Sequence arg
+cond(True, 1, 2)
+cond(True, 1, 2, 3, 4, 5)
+seq([1, 2, 3])
 
 @task(cache=False)
 def my_task(x: int) -> int:
     return x
 
-# catch: (expr, *catch_args) — variadic
 catch(my_task(1), Exception, my_task)
-# map_: (a_task, values) — two positional args
 map_(my_task, [1, 2, 3])
-# apply_tags: (value, tags=[], job_tags=[], execution_tags=[]) — defaults
 apply_tags(my_task(1))
 apply_tags(my_task(1), tags=[("key", "val")])
-# get_context: (var_path, default=None) — str + optional default
 get_context("my.var")
 get_context("my.var", default=42)
-# subrun: (expr, executor, config=None, ...) — many optional kwargs
 subrun(my_task(1), "default")
-subrun(my_task(1), "default", vcpus=8, memory=30)  # non-dict kwargs must be accepted
-# fork/join: single arg each
+subrun(my_task(1), "default", vcpus=8, memory=30)
 fork_thread(my_task(1))
-# catch_all: (exprs, error_class=None, recover=None) — generics
 catch_all([my_task(1), my_task(2)])
-
-# ---- invalid calls (SHOULD produce errors) ----
-cond()  # type: ignore[call-arg]
-seq()   # type: ignore[call-arg]
 """
+
+SCHEDULER_INVALID_CALLS_FIXTURE = """\
+'''Invalid scheduler_task usage — type checkers SHOULD produce errors.'''
+from redun.scheduler import cond
+from redun.functools import seq
+
+# cond requires (cond_expr, then_expr, ...) and seq requires (exprs).
+# Calling with zero args should be flagged as missing required arguments.
+cond()
+seq()
+"""
+
+
+def _get_error_lines(output: str) -> list[str]:
+    """Extract error lines from type checker output, ignoring info/warnings."""
+    return [line for line in output.split("\n") if "error[" in line]
 
 
 @pytest.mark.skipif(not _has_ty(), reason="ty not installed")
@@ -145,52 +152,34 @@ class TestTyTaskTyping:
     """Verify that ty correctly types Task.__call__ via ParamSpec."""
 
     def setup_method(self):
-        self.tmp = _write_tmp(REDUN_TYPING_FIXTURE)
+        self.tmp_valid = _write_tmp(REDUN_VALID_CALLS_FIXTURE)
+        self.tmp_invalid = _write_tmp(REDUN_INVALID_CALLS_FIXTURE)
 
     def teardown_method(self):
-        self.tmp.unlink(missing_ok=True)
+        self.tmp_valid.unlink(missing_ok=True)
+        self.tmp_invalid.unlink(missing_ok=True)
 
-    def test_no_false_errors_on_valid_calls(self):
+    def test_valid_calls_produce_no_errors(self):
         """ty should accept all valid task calls without errors."""
-        output = _run_checker(_TY, self.tmp, ["check", "--python-version", "3.11"])
-
-        # Skip if ty can't run (e.g., .venv not found in CI environments)
+        output = _run_checker(_TY, self.tmp_valid, ["check", "--python-version", "3.11"])
         if "ty failed" in output:
             pytest.skip(f"ty could not run in this environment: {output[:200]}")
+        errors = _get_error_lines(output)
+        assert not errors, f"ty produced errors on valid calls:\n{output}"
 
-        # Filter out reveal_type info lines, the intentional invalid call's
-        # unused-ignore-comment (when ty can't resolve types), and warnings
-        error_lines = [
-            line
-            for line in output.split("\n")
-            if "error[" in line and "unused-ignore-comment" not in line
-        ]
-        # The critical errors we must NOT see are descriptor-binding false positives
-        has_false_positive = any(
-            err_type in output
-            for err_type in ["too-many-positional-arguments", "invalid-argument-type"]
-        )
-        assert not has_false_positive, (
-            f"ty produced false type errors on valid calls (descriptor binding bug):\n{output}"
-        )
-        assert not error_lines, (
-            "ty produced unexpected errors on valid calls:\n"
-            + "\n".join(error_lines)
-            + f"\n\nFull output:\n{output}"
-        )
+    def test_invalid_calls_produce_errors(self):
+        """ty should reject invalid task calls."""
+        output = _run_checker(_TY, self.tmp_invalid, ["check", "--python-version", "3.11"])
+        if "ty failed" in output:
+            pytest.skip(f"ty could not run in this environment: {output[:200]}")
+        errors = _get_error_lines(output)
+        assert errors, f"ty should have flagged add('wrong', 1) but produced no errors:\n{output}"
 
     def test_call_signature_preserves_params(self):
         """ty should resolve __call__ with the full parameter signature."""
-        output = _run_checker(_TY, self.tmp, ["check", "--python-version", "3.11"])
-
+        output = _run_checker(_TY, self.tmp_valid, ["check", "--python-version", "3.11"])
         if "@Todo" in output or "Unknown" in output or "ty failed" in output:
-            pytest.skip(
-                "ty cannot fully resolve redun.Task in this environment. "
-                "The no-false-errors test above still validates the fix."
-            )
-
-        # For add(x: int, y: int) -> int, __call__ should show both params
-        # Look for revealed type of add.__call__
+            pytest.skip("ty cannot fully resolve redun.Task in this environment.")
         assert "x: int" in output and "y: int" in output, (
             f"Expected add.__call__ to show both x and y params.\nFull output:\n{output}"
         )
@@ -201,17 +190,14 @@ class TestMypyTaskTyping:
     """Verify that mypy still works correctly with ParamSpec-based Task."""
 
     def setup_method(self):
-        self.tmp = _write_tmp(REDUN_TYPING_FIXTURE)
+        self.tmp = _write_tmp(REDUN_VALID_CALLS_FIXTURE)
 
     def teardown_method(self):
         self.tmp.unlink(missing_ok=True)
 
-    def test_no_errors_on_valid_calls(self):
+    def test_valid_calls_produce_no_errors(self):
         """mypy should accept all valid task calls without errors."""
         output = _run_checker(_MYPY, self.tmp, ["--python-executable", sys.executable])
-
-        # Filter to only errors in our test file (mypy may report pre-existing
-        # errors in transitively imported files like scheduler.py)
         test_errors = [
             line for line in output.split("\n") if "error:" in line and "_tmp_typing_test" in line
         ]
@@ -220,8 +206,6 @@ class TestMypyTaskTyping:
     def test_call_signature_preserves_params(self):
         """mypy should resolve __call__ with the full parameter signature."""
         output = _run_checker(_MYPY, self.tmp, ["--python-executable", sys.executable])
-
-        # mypy's revealed types should show the correct parameter names
         assert "int" in output, (
             f"Expected mypy reveal_type to show int params.\nFull output:\n{output}"
         )
@@ -229,9 +213,6 @@ class TestMypyTaskTyping:
     def test_func_attribute_preserves_params(self):
         """mypy should resolve task.func with typed params, not bare Callable."""
         output = _run_checker(_MYPY, self.tmp, ["--python-executable", sys.executable])
-
-        # With func: Callable (bare), mypy reveals add.func as (*Any, **Any) -> Any.
-        # With func: Callable[P, R], mypy reveals (x: int, y: int) -> int.
         bare_callable = [
             line
             for line in output.split("\n")
@@ -247,28 +228,28 @@ class TestTySchedulerTaskTyping:
     """Verify that ty correctly types scheduler_task calls via Concatenate."""
 
     def setup_method(self):
-        self.tmp = _write_tmp(SCHEDULER_TASK_TYPING_FIXTURE)
+        self.tmp_valid = _write_tmp(SCHEDULER_VALID_CALLS_FIXTURE)
+        self.tmp_invalid = _write_tmp(SCHEDULER_INVALID_CALLS_FIXTURE)
 
     def teardown_method(self):
-        self.tmp.unlink(missing_ok=True)
+        self.tmp_valid.unlink(missing_ok=True)
+        self.tmp_invalid.unlink(missing_ok=True)
 
-    def test_no_false_errors_on_valid_calls(self):
+    def test_valid_calls_produce_no_errors(self):
         """ty should accept valid scheduler_task calls (internal params stripped)."""
-        output = _run_checker(_TY, self.tmp, ["check", "--python-version", "3.11"])
-
+        output = _run_checker(_TY, self.tmp_valid, ["check", "--python-version", "3.11"])
         if "ty failed" in output:
             pytest.skip(f"ty could not run in this environment: {output[:200]}")
+        errors = _get_error_lines(output)
+        assert not errors, f"ty produced errors on valid scheduler_task calls:\n{output}"
 
-        error_lines = [
-            line
-            for line in output.split("\n")
-            if "error[" in line and "unused-ignore-comment" not in line
-        ]
-        assert not error_lines, (
-            "ty produced unexpected errors on valid scheduler_task calls:\n"
-            + "\n".join(error_lines)
-            + f"\n\nFull output:\n{output}"
-        )
+    def test_invalid_calls_produce_errors(self):
+        """ty should reject invalid scheduler_task calls."""
+        output = _run_checker(_TY, self.tmp_invalid, ["check", "--python-version", "3.11"])
+        if "ty failed" in output:
+            pytest.skip(f"ty could not run in this environment: {output[:200]}")
+        errors = _get_error_lines(output)
+        assert errors, f"ty should have flagged cond()/seq() but produced no errors:\n{output}"
 
 
 @pytest.mark.skipif(not _has_mypy(), reason="mypy not installed")
@@ -276,15 +257,14 @@ class TestMypySchedulerTaskTyping:
     """Verify that mypy accepts scheduler_task Concatenate typing."""
 
     def setup_method(self):
-        self.tmp = _write_tmp(SCHEDULER_TASK_TYPING_FIXTURE)
+        self.tmp = _write_tmp(SCHEDULER_VALID_CALLS_FIXTURE)
 
     def teardown_method(self):
         self.tmp.unlink(missing_ok=True)
 
-    def test_no_errors_on_valid_calls(self):
+    def test_valid_calls_produce_no_errors(self):
         """mypy should accept valid scheduler_task calls."""
         output = _run_checker(_MYPY, self.tmp, ["--python-executable", sys.executable])
-
         test_errors = [
             line for line in output.split("\n") if "error:" in line and "_tmp_typing_test" in line
         ]

@@ -1,4 +1,6 @@
-from typing import Any, Optional
+from typing import Any, Optional, TypeVar, cast
+
+from typing_extensions import Self
 
 from redun.hashing import hash_kwargs, hash_positional_args, hash_struct
 from redun.namespace import compute_namespace
@@ -9,8 +11,7 @@ def get_handle_class(handle_class_name: str) -> type["Handle"]:
     """
     Returns a Handle class from the TypeRegistry.
     """
-    klass = get_type_registry().parse_type_name(handle_class_name)
-    return klass
+    return cast(type["Handle"], get_type_registry().parse_type_name(handle_class_name))
 
 
 def get_fullname(namespace: Optional[str], name: str) -> str:
@@ -21,6 +22,9 @@ def get_fullname(namespace: Optional[str], name: str) -> str:
         return namespace + "." + name
     else:
         return name
+
+
+H = TypeVar("H", bound="Handle")
 
 
 class Handle(Value):
@@ -128,14 +132,14 @@ class Handle(Value):
         def update_hash(self) -> None:
             self.hash = self.get_hash()
 
-        def apply_call(self, handle: "Handle", call_hash: str) -> "Handle":
+        def apply_call(self, handle: H, call_hash: str) -> H:
             handle2 = self.clone(handle)
             handle2.__handle__.call_hash = call_hash
             handle2.__handle__.key = ""
             handle2.__handle__.update_hash()
             return handle2
 
-        def fork(self, handle: "Handle", key: str) -> "Handle":
+        def fork(self, handle: H, key: str) -> H:
             handle2 = self.clone(handle)
 
             # Note: When forking, the previous Handle hash is used as the call_hash.
@@ -145,11 +149,16 @@ class Handle(Value):
             handle2.__handle__.fork_parent = handle
             return handle2
 
-        def clone(self, handle: "Handle") -> "Handle":
-            # Create new handle instance.
+        def clone(self, handle: H) -> H:
+            # Create new handle instance. get_handle_class does a string-based
+            # lookup that always returns the original subclass, but the type
+            # checker can't see through that dynamic dispatch.
             klass = get_handle_class(self.class_name)
-            handle2 = klass.__new__(
-                klass, self.name, namespace=self.namespace, *self.args, **self.kwargs
+            handle2 = cast(
+                H,
+                klass.__new__(
+                    klass, self.name, namespace=self.namespace, *self.args, **self.kwargs
+                ),
             )
 
             # Copy over attributes to new handle.
@@ -213,13 +222,13 @@ class Handle(Value):
         self.__handle__.is_recorded = True
         self.__init__(state["name"], *state["args"], **state["kwargs"])
 
-    def apply_call(self, call_hash: str) -> "Handle":
+    def apply_call(self, call_hash: str) -> Self:
         """
         Returns a new Handle derived from this one assuming passage through a call with call_hash.
         """
         return self.__handle__.apply_call(self, call_hash)
 
-    def fork(self, key: str) -> "Handle":
+    def fork(self, key: str) -> Self:
         """
         Forks the handle into a second one for use in parallel tasks. A key must be provided
         to differentiate the fork from the original (although the original may have a key)
@@ -246,14 +255,14 @@ class Handle(Value):
         """
         return self.__handle__.hash
 
-    def preprocess(self, preprocess_args: dict) -> "Handle":
+    def preprocess(self, preprocess_args: dict) -> Self:
         """
         Forks a handle as it passes into a task.
         """
         call_order = preprocess_args["call_order"]
         return self.fork(self.__handle__.key or str(call_order))
 
-    def postprocess(self, postprocess_args: dict) -> "Handle":
+    def postprocess(self, postprocess_args: dict) -> Self:
         """
         Applies the call_hash to the handle as it returns from a task.
         """

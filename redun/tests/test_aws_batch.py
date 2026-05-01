@@ -870,7 +870,7 @@ def task1(x):
     """
     )
 
-    job = Job(task1, task1())
+    job = Job(task1, task1())  # ty: ignore[missing-argument]
     job.id = job_id
     job.eval_hash = "eval_hash"
     code_file = package_code(s3_scratch_prefix)

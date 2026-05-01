@@ -14,6 +14,7 @@ import sys
 import threading
 import time
 import traceback
+import types
 import uuid
 from collections import OrderedDict, defaultdict
 from collections.abc import Callable, Iterable, Iterator
@@ -373,7 +374,7 @@ class Job:
         return {
             **self.task.get_task_options(),
             **parent_job_options,
-            **self.expr._options,  # ty: ignore[possibly-missing-attribute]
+            **self.expr._options,  # ty: ignore[unresolved-attribute]
             **self.options,
         }
 
@@ -1240,7 +1241,7 @@ class Scheduler:
         # - We also mimic the task and eval_args being set like they are in _exec_job().
         parent_job = Job(
             root_task,
-            root_task(quote(None)),
+            root_task(quote(None)),  # ty: ignore[invalid-argument-type]
             id=parent_job_id,
             execution=self._current_execution,
             options={"_context_override": context},
@@ -1486,7 +1487,7 @@ class Scheduler:
 
         elif isinstance(expr, SimpleExpression):
             # Simple Expressions can be executed synchronously.
-            func = get_lazy_operation(expr.func_name)  # ty: ignore[invalid-argument-type]
+            func = get_lazy_operation(expr.func_name)
             if not func:
                 promise = Promise(
                     lambda resolve, reject: reject(
@@ -1910,7 +1911,7 @@ class Scheduler:
                     task_name=job.task.fullname,
                     task_hash=job.task.hash,
                     args_hash=job.args_hash,
-                    expr_args=(job.expr.args, job.expr.kwargs),  # ty: ignore[possibly-missing-attribute]
+                    expr_args=(job.expr.args, job.expr.kwargs),  # ty: ignore[unresolved-attribute]
                     eval_args=job.eval_args,
                     result_hash=result_hash,
                     child_call_hashes=child_call_hashes,
@@ -2086,7 +2087,7 @@ class Scheduler:
                     task_name=job.task.fullname,
                     task_hash=job.task.hash,
                     args_hash=job.args_hash,
-                    expr_args=(job.expr.args, job.expr.kwargs),  # ty: ignore[possibly-missing-attribute]
+                    expr_args=(job.expr.args, job.expr.kwargs),  # ty: ignore[unresolved-attribute]
                     eval_args=job.eval_args,
                     result_hash=error_hash,
                     child_call_hashes=child_call_hashes,
@@ -2147,9 +2148,9 @@ class Scheduler:
             sig = inspect.signature(frame_job.task.func)
             task_frames.append(
                 Frame(
-                    frame_job.task.func.__code__.co_filename,  # ty: ignore[possibly-missing-attribute]
-                    frame_job.task.func.__code__.co_firstlineno,  # ty: ignore[possibly-missing-attribute]
-                    frame_job.task.func.__name__,  # ty: ignore[possibly-missing-attribute]
+                    cast(types.FunctionType, frame_job.task.func).__code__.co_filename,
+                    cast(types.FunctionType, frame_job.task.func).__code__.co_firstlineno,
+                    cast(types.FunctionType, frame_job.task.func).__name__,
                     job=frame_job,
                     locals={
                         **dict(zip(sig.parameters, args)),

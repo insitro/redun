@@ -553,7 +553,7 @@ class MultiMap(Generic[Key, Value]):
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, MultiMap):
-            return self._equal_dicts(self._data, other._data)
+            return self._equal_dicts(self._data, other._data)  # ty: ignore[invalid-argument-type]
 
         elif isinstance(other, dict):
             return self._equal_dicts(self._data, other)  # ty: ignore[invalid-argument-type]

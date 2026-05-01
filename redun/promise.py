@@ -155,7 +155,7 @@ class Promise(Generic[T]):
         """
         Return a promise that waits for all subpromises to resolve.
         """
-        promise: Promise[list[T]] = Promise()  # ty: ignore[invalid-argument-type]
+        promise: Promise[list[T]] = Promise()  # ty: ignore[invalid-assignment, invalid-argument-type]
         results: list[T | None] = []
         num_done = 0
 

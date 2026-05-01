@@ -1003,21 +1003,21 @@ def iter_dataflow_sections(
         return (max(ints), list(iter_unique(section)))
 
     # Label each section with its type ("call" or "data") and determine section order.
-    sections = [
-        (DataflowSectionKind.CALL,) + get_order_section(int_edges) for int_edges in call_sections
+    ordered_sections: list[tuple[DataflowSectionKind, int, DataflowSection]] = [
+        (DataflowSectionKind.CALL, *get_order_section(int_edges)) for int_edges in call_sections
     ]
-    sections.extend(
-        (DataflowSectionKind.DATA,) + get_order_section(int_edges) for int_edges in data_sections
+    ordered_sections.extend(
+        (DataflowSectionKind.DATA, *get_order_section(int_edges)) for int_edges in data_sections
     )
 
     # Sort sections.
-    sections = sorted(sections, key=lambda row: row[1])
+    ordered_sections.sort(key=lambda row: row[1])
 
     # Yield sections.
-    for kind, _, section2 in sections:
+    for kind, _, section2 in ordered_sections:
         if kind == DataflowSectionKind.CALL:
             # If there is path merging, then we will emit multiple sections.
-            for subsection in iter_subsections(section2):  # ty: ignore[invalid-argument-type]
+            for subsection in iter_subsections(section2):
                 yield (kind, subsection)
         else:
             yield (kind, section2)

@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 import sqlalchemy
+import sqlalchemy.exc
 
 from redun.backends.db import Execution, Job
 from redun.cli import get_config_dir, setup_config, setup_scheduler

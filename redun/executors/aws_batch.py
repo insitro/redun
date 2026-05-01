@@ -8,7 +8,7 @@ import threading
 import time
 import uuid
 from collections import OrderedDict, defaultdict
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from configparser import SectionProxy
 from functools import lru_cache
 from itertools import islice
@@ -178,7 +178,7 @@ def get_job_details(
         "privileged": privileged,
     }
     if shared_memory is not None:
-        container_props["linuxParameters"] = {"sharedMemorySize": int(shared_memory * 1024)}
+        container_props["linuxParameters"] = {"sharedMemorySize": int(shared_memory * 1024)}  # ty: ignore[invalid-assignment]
 
     # Don't specify a role if it's None.
     if role.lower() == JOB_ROLE_NONE:
@@ -209,7 +209,7 @@ def get_job_details(
         }
 
 
-def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
+def equiv_job_def(job_def1: Mapping[str, Any], job_def2: Mapping[str, Any]) -> bool:
     """
     Returns True if two job definition are equivalent.
 
@@ -237,8 +237,8 @@ def equiv_job_def(job_def1: dict, job_def2: dict) -> bool:
         return result
 
     # Limit equality to the keys of job_def1.
-    job_def1 = sanitize_job_def(job_def1)
-    job_def2 = sanitize_job_def(job_def2)
+    job_def1 = sanitize_job_def(dict(job_def1))
+    job_def2 = sanitize_job_def(dict(job_def2))
 
     def dict_eq_lhs_keys(lhs: dict, rhs: dict) -> bool:
         """Recursively check that the lhs is a subset of the rhs - Batch may return more keys
@@ -276,7 +276,7 @@ def get_or_create_job_definition(
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
     privileged: bool = False,
     job_def_extra: Optional[dict] = None,
-) -> dict:
+) -> Mapping[str, Any]:
     """
     Returns a job definition with the specified requirements. Although the resource requirements
     provided are used when creating a job, they are specifically excluded from creating new
@@ -317,7 +317,7 @@ def get_or_create_job_definition(
             return existing_job_def
 
     # No equivalent job defs exist, so create a new one.
-    return batch_client.register_job_definition(jobDefinitionName=job_def_name, **job_details)  # ty: ignore[invalid-return-type]
+    return batch_client.register_job_definition(jobDefinitionName=job_def_name, **job_details)
 
 
 def make_job_def_name(image_name: str, job_def_suffix: str = "-jd") -> str:
@@ -657,7 +657,7 @@ def submit_command(
 
 
 def parse_job_error(
-    s3_scratch_prefix: str, job: Job, batch_job_metadata: Optional[dict] = None
+    s3_scratch_prefix: str, job: Job, batch_job_metadata: Optional[Mapping[str, Any]] = None
 ) -> tuple[Exception, "Traceback"]:
     """
     Parse task error from s3 scratch path.
@@ -701,7 +701,7 @@ def aws_describe_jobs(
     job_ids: list[str],
     chunk_size: int = 100,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
-) -> Iterator[dict]:
+) -> Iterator[Mapping[str, Any]]:
     """
     Returns AWS Batch Job descriptions from the AWS API.
     """
@@ -719,7 +719,7 @@ def iter_batch_job_status(
     job_ids: list[str],
     pending_truncate: int = 10,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
-) -> Iterator[dict]:
+) -> Iterator[Mapping[str, Any]]:
     """
     Yields AWS Batch jobs statuses.
 
@@ -751,7 +751,7 @@ def iter_batch_job_status(
             break
 
 
-def get_job_log_stream(job: Optional[dict], aws_region: str) -> Optional[str]:
+def get_job_log_stream(job: Optional[Mapping[str, Any]], aws_region: str) -> Optional[str]:
     """Extract the log stream from a `JobDetail` status dictionary. For non-multi-node jobs,
     (i.e., single node and array jobs), this is simply a field in the detail dictionary. But for
     multi-node jobs, this requires another query to get the log stream for the main node."""
@@ -762,9 +762,7 @@ def get_job_log_stream(job: Optional[dict], aws_region: str) -> Optional[str]:
         job_id = job["jobId"]
         # The docs indicate we can rely on this format for getting the per-worker jobs ids:
         # `jobId#worker_id`.
-        jobs: Iterator[Optional[dict[Any, Any]]] = aws_describe_jobs(
-            [f"{job_id}#{main_node}"], aws_region=aws_region
-        )
+        jobs = aws_describe_jobs([f"{job_id}#{main_node}"], aws_region=aws_region)
         job = next(jobs, None)
     if not job:
         # Job is no longer present in AWS API. Return no logs.
@@ -773,7 +771,7 @@ def get_job_log_stream(job: Optional[dict], aws_region: str) -> Optional[str]:
     return job.get("container", {}).get("logStreamName")
 
 
-def format_log_stream_event(event: dict) -> str:
+def format_log_stream_event(event: Mapping[str, Any]) -> str:
     """
     Format a logStream event as a line.
     """
@@ -788,7 +786,7 @@ def iter_batch_job_logs(
     limit: Optional[int] = None,
     reverse: bool = False,
     required: bool = True,
-) -> Iterator[dict]:
+) -> Iterator[Mapping[str, Any]]:
     """
     Iterate through the log events of an AWS Batch job.
     """
@@ -1078,7 +1076,7 @@ class AWSBatchExecutor(Executor):
         self.log("Shutting down executor...", level=logging.DEBUG)
         self.stop()
 
-    def _can_override_failed(self, job: dict) -> tuple[bool, str]:
+    def _can_override_failed(self, job: Mapping[str, Any]) -> tuple[bool, str]:
         """
         Certain AWS errors can be ignored that do not effect the result.
 
@@ -1107,7 +1105,7 @@ class AWSBatchExecutor(Executor):
 
         return False, container_reason
 
-    def _process_job_status(self, job: dict) -> None:
+    def _process_job_status(self, job: Mapping[str, Any]) -> None:
         """
         Process AWS Batch job statuses.
         """
@@ -1437,7 +1435,7 @@ class AWSBatchExecutor(Executor):
         else:
             return self._submit(job)
 
-    def get_jobs(self, statuses: Optional[list[str]] = None) -> Iterator[dict]:
+    def get_jobs(self, statuses: Optional[list[str]] = None) -> Iterator[Mapping[str, Any]]:
         """
         Returns AWS Batch Job statuses from the AWS API.
         """
@@ -1449,7 +1447,7 @@ class AWSBatchExecutor(Executor):
         job_name_prefix = self.default_task_options["job_name_prefix"]
 
         for status in statuses:
-            pages = paginator.paginate(jobQueue=self.queue, jobStatus=status)
+            pages = paginator.paginate(jobQueue=self.queue, jobStatus=status)  # ty: ignore[invalid-argument-type]
             for response in pages:
                 for job in response["jobSummaryList"]:
                     if job["jobName"].startswith(job_name_prefix):
@@ -1463,7 +1461,7 @@ class AWSBatchExecutor(Executor):
 
         found_jobs = []
         for status in statuses:
-            pages = paginator.paginate(arrayJobId=job_id, jobStatus=status)
+            pages = paginator.paginate(arrayJobId=job_id, jobStatus=status)  # ty: ignore[invalid-argument-type]
             found_jobs.extend([job for response in pages for job in response["jobSummaryList"]])
 
         return found_jobs

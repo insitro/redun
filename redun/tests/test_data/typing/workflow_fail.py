@@ -38,7 +38,7 @@ def fail_return_task(a: int) -> int:
 @task()
 def fail_return_task2(a: int) -> int:
     # ERROR: TaskExpression[str] is not allowed for int.
-    return int2str(a)
+    return int2str(a)  # ty: ignore[invalid-return-type]
 
 
 @task()
@@ -78,7 +78,7 @@ def main() -> None:
     int2str(str_expr)
 
     # ERROR: Return value is TaskExpression[str] and y is int.
-    y: int = int2str(12345)
+    y: int = int2str(12345)  # ty: ignore[invalid-assignment]
 
     sum_list([1, 2, 3])  # OK: arg is List[int].
     # ERROR: some items in list are not int.
@@ -102,7 +102,7 @@ def main() -> None:
     add.partial()("1", 2)  # PUNT: We can't type check arguments to partial.
 
     # ERROR: Partial return value should type check.
-    e: str = add.partial()(1, 2)
+    e: str = add.partial()(1, 2)  # ty: ignore[invalid-assignment]
 
     # Use all variables to satisfy lint.
     _ = [a2, y, d, e]

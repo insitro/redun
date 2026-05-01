@@ -7,6 +7,7 @@ Create Date: 2020-08-16 19:39:28.772684
 """
 
 import sqlalchemy as sa
+import sqlalchemy.dialects.postgresql
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -18,7 +19,7 @@ depends_on = None
 
 def upgrade():
     if op.get_bind().dialect.name == "postgresql":
-        json_type = sa.dialects.postgresql.JSONB  # ty: ignore[possibly-missing-attribute]
+        json_type = sa.dialects.postgresql.JSONB
     else:
         json_type = sa.String
 
