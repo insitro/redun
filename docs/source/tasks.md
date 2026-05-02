@@ -370,6 +370,8 @@ def main() -> str:
     return [name, age, results]
 ```
 
+`nout` only works when the length is fixed and known at definition time. For tasks that return variable-length lists, see [Iterating over variable-length results](#iterating-over-variable-length-results).
+
 ### `prov`
 
 A bool (default: `True`) that specifies whether the job and its sub-jobs should record provenance. This option is automatically [exported](tasks.md#task-options-inheritance) to be inherited by its descendants. Disabling provenance recording also disables [cache checking](tasks.md#cache) for fast-forwarding. Users should typically use [`no_prov()`](https://insitro.github.io/redun/redun/redun.html#redun.functools.no_prov) to cache and fast-forward to the final result of a subworkflow with provenance recording disabled.
@@ -870,4 +872,64 @@ def my_task(a, b):
     # ...
 ```
 
-Due to current implementation limitations, only "shallow" [validity checking](implementation/graph_reduction_caching.md#opt-in-ultimate-reduction-caching) is available when caching is enable.
+Due to current implementation limitations, only "shallow" [validity checking](implementation/graph_reduction_caching.md#opt-in-ultimate-reduction-caching) is available when caching is enabled.
+
+### Iterating over variable-length results
+
+A common need is to iterate over a task result whose length is not known at definition time. For example, a task that discovers files in a directory returns a variable-length list, and you want to process each file as a separate parallel task.
+
+Plain Python iteration does not work because the task result is a lazy Expression with unknown length:
+
+```py
+@task()
+def find_files(directory: str) -> list[str]:
+    return os.listdir(directory)
+
+@task()
+def process_file(filename: str) -> str:
+    return filename.upper()
+
+@task()
+def main(directory: str):
+    files = find_files(directory)
+    # FAIL: TypeError -- Expressions of unknown length cannot be iterated.
+    return [process_file(f) for f in files]
+```
+
+This fails because `find_files()` returns a lazy Expression, and Python's `for` loop requires a concrete iterator immediately. The list doesn't exist yet -- it won't be computed until the scheduler evaluates `find_files`.
+
+#### `map_()`
+
+[`map_()`](redun/redun.html#redun.functools.map_) is a builtin scheduler task that maps a task over a list of values. It evaluates the list first, then applies the task to each element as a parallel job:
+
+```py
+from redun.functools import map_
+
+@task()
+def main(directory: str):
+    return map_(process_file, find_files(directory))
+```
+
+`map_()` works on all executors (local, AWS Batch, K8s, etc.) and supports full caching. Under the hood, it evaluates the upstream list to a concrete value, then constructs `[process_file(f) for f in concrete_list]` and hands that list of expressions back to the scheduler for parallel evaluation.
+
+Related utilities in [`redun.functools`](redun/redun.html#module-redun.functools):
+
+- `starmap(task, list_of_kwargs)` -- like `map_()` but passes keyword arguments from each dict
+- `flat_map(task, values)` -- maps then flattens the result
+- `flatten(list_of_lists)` -- flattens a nested list
+
+#### Passing the list to a single task
+
+If you don't need per-element parallelism, you can pass the entire list to a downstream task. The scheduler will evaluate the list before calling the task:
+
+```py
+@task()
+def process_all_files(filenames: list[str]) -> list[str]:
+    return [f.upper() for f in filenames]
+
+@task()
+def main(directory: str):
+    return process_all_files(find_files(directory))
+```
+
+This is the simplest approach, but all files are processed in a single task rather than as separate parallel jobs.
