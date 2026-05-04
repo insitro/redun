@@ -141,6 +141,7 @@ def test_executor_config(scheduler: Scheduler) -> None:
                 "code_includes": "*.txt",
                 "ephemeral_storage": "10G",
                 "node_affinity": node_affinity_json,
+                "timeout": 123,
             },
         },
     )
@@ -151,6 +152,7 @@ def test_executor_config(scheduler: Scheduler) -> None:
     assert isinstance(executor.code_package, dict)
     assert executor.code_package["includes"] == ["*.txt"]
     assert executor.default_task_options["ephemeral_storage"] == "10G"
+    assert executor.default_task_options["timeout"] == 123
     assert "node_affinity" in executor.default_task_options
     assert (
         executor.default_task_options["node_affinity"][
@@ -1004,6 +1006,76 @@ def other_task(x, y):
         )
 
         assert pickle.loads(cast("bytes", output_file.read("rb"))) == i - 2 * i
+
+
+@mock_s3
+@mock_k8s
+@patch("redun.executors.k8s.k8s_describe_jobs")
+@patch("redun.executors.k8s.k8s_submit")
+def test_executor_with_config_timeout(
+    k8s_submit_mock: Mock,
+    k8s_describe_jobs_mock: Mock,
+) -> None:
+    """
+    Executor-level timeout should be passed to submitted k8s jobs.
+    """
+    k8s_describe_jobs_mock.return_value = []
+
+    config = Config(
+        {
+            "k8s_test_name": {
+                "type": "k8s",
+                "image": "my-image",
+                "scratch": "s3://example-bucket/redun/",
+                "job_monitor_interval": 0.05,
+                "job_stale_time": 0.01,
+                "timeout": 123,
+            },
+        },
+    )
+
+    scheduler = mock_scheduler()
+    executor = K8SExecutor("k8s_test_name", scheduler, config["k8s_test_name"])
+    executor.get_jobs = Mock()  # ty: ignore[invalid-assignment]
+    executor.get_jobs.return_value = []
+
+    s3_client = boto3.client("s3", region_name="us-east-1")
+    s3_client.create_bucket(Bucket="example-bucket")
+
+    executor.start()
+
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash",
+        uid="k8s-job-id",
+    )
+
+    expr = task1(10)
+    job = Job(task1, expr)
+    job.eval_hash = "eval_hash"
+    job.args = ((10,), {})
+    executor.submit(job)
+
+    wait_until(lambda: executor.arrayer.num_pending == 0)
+
+    assert k8s_submit_mock.call_args
+    assert k8s_submit_mock.call_args[1]["timeout"] == 123
+
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash2",
+        uid="k8s-job-id2",
+    )
+
+    expr2 = task1.options(timeout=456)(11)
+    job2 = Job(task1, expr2)
+    job2.eval_hash = "eval_hash2"
+    job2.args = ((11,), {})
+    executor.submit(job2)
+
+    wait_until(lambda: executor.arrayer.num_pending == 0)
+
+    assert k8s_submit_mock.call_args[1]["timeout"] == 456
+
+    executor.stop()
 
 
 @mock_k8s

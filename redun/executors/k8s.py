@@ -443,6 +443,8 @@ class K8SExecutor(Executor):
             "service_account_name": config.get("service_account_name", "default"),
             "job_name_prefix": config.get("job_name_prefix", k8s_utils.DEFAULT_JOB_PREFIX),
         }
+        if config.get("timeout"):
+            self.default_task_options["timeout"] = config.getint("timeout")
         # Add ephemeral_storage to default options if specified in config.
         if config.get("ephemeral_storage"):
             self.default_task_options["ephemeral_storage"] = config.get("ephemeral_storage")
