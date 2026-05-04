@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.45.0
+May 04, 2026
+
+* `#504` - Fix bug where k8s executor does not respect timeouts
+* `#501` - docs: document map_() and variable-length iteration patterns
+* `#503` - Upgrade ty from 0.0.9 to 0.0.33
+* `#500` - fix: handle nout=0 in Expression.__iter__
+* `#499` - feat: add boto3-stubs and typed overloads for get_aws_client
+* `#498` - feat: make redun.run() generic with explicit typed kwargs
+
 ## 0.44.2
 April 16, 2026
 
