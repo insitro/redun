@@ -111,6 +111,17 @@ def is_debugger_active() -> bool:
     """
     Returns True if debugger REPL is currently active.
     """
+    # Newer CPython debugging path (PEP 669 infrastructure via sys.monitoring) https://peps.python.org/pep-0669/
+    mon = getattr(sys, "monitoring", None)
+    if mon is not None:
+        try:
+            # Returns a string name if DEBUGGER_ID is in use, else None.
+            if mon.get_tool(mon.DEBUGGER_ID) is not None:
+                return True
+        except Exception:
+            # If monitoring exists but behaves unexpectedly, fall through.
+            pass
+
     global _is_debugger_active
     return _is_debugger_active
 

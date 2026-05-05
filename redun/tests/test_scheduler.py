@@ -1,6 +1,7 @@
 import copy
 import dataclasses
 import os
+import sys
 import time
 from collections.abc import Sequence
 from traceback import FrameSummary
@@ -30,6 +31,7 @@ from redun.scheduler import (
     catch_all,
     cond,
     fork_thread,
+    is_debugger_active,
     join_thread,
     scheduler_task,
 )
@@ -2316,3 +2318,37 @@ def test_job_info(scheduler: Scheduler, session: Session) -> None:
     assert calls[0].job_id == exec.job.id
     assert calls[1].execution_id == exec.id
     assert calls[1].job_id == exec.job.child_jobs[0].id
+
+
+def test_default_inactive():
+    assert is_debugger_active() is False
+
+
+def test_settrace_detection():
+    """
+    The settrace monkey-patch detects debugger activation.
+    """
+    assert is_debugger_active() is False
+    sys.settrace(lambda *args: None)
+    try:
+        assert is_debugger_active() is True
+    finally:
+        sys.settrace(None)
+    assert is_debugger_active() is False
+
+
+@pytest.mark.skipif(
+    not hasattr(sys, "monitoring"), reason="requires Python 3.12+ (sys.monitoring)"
+)
+def test_sys_monitoring_detection():
+    """
+    sys.monitoring.get_tool(DEBUGGER_ID) detects registered debuggers.
+    """
+    mon = sys.monitoring
+    assert is_debugger_active() is False
+    mon.use_tool_id(mon.DEBUGGER_ID, "test_debugger")
+    try:
+        assert is_debugger_active() is True
+    finally:
+        mon.free_tool_id(mon.DEBUGGER_ID)
+    assert is_debugger_active() is False
