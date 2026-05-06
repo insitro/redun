@@ -175,7 +175,7 @@ class Handle(Value):
         *args,
         namespace: Optional[str] = None,
         **kwargs,
-    ) -> "Handle":
+    ) -> Self:
         handle = super().__new__(cls)
 
         # Note: name is None when loading from a pickle.
