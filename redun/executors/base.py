@@ -89,6 +89,10 @@ class _ExecutorProvider:
             module_name, class_name = self._executor_class.rsplit(".", 1)
             module = importlib.import_module(module_name)
             executor_class = getattr(module, class_name)
+            if not issubclass(executor_class, Executor):
+                raise ExecutorError(
+                    f"Class '{module_name}.{class_name}' is not a subclass of Executor."
+                )
             self._executor_class = executor_class
         return cast(type[Executor], self._executor_class)
 
@@ -100,7 +104,9 @@ class _ExecutorProvider:
 _executor_providers: dict[str, _ExecutorProvider] = {}
 
 
-def get_executor_class(executor_name: str, required: bool = True) -> Optional[type[Executor]]:
+def get_executor_class(
+    executor_name: str, required: bool = True, class_path: Optional[str] = None
+) -> Optional[type[Executor]]:
     """
     Get an Executor by name from the executor registry.
 
@@ -111,14 +117,35 @@ def get_executor_class(executor_name: str, required: bool = True) -> Optional[ty
     required : bool
         If True, raises error if executor is not registered.
         If False, None is returned for unknown executor name.
+    class_path : str, optional
+        Fully-qualified class name (e.g. 'mypackage.executors.MyExecutor').
+        Used as a fallback to lazily register the executor if it is not already
+        in the registry.
     """
     executor_provider = _executor_providers.get(executor_name)
+
+    if not executor_provider and class_path:
+        _register_executor(executor_name, class_path)
+        executor_provider = _executor_providers.get(executor_name)
+
     if not executor_provider:
         if required:
-            raise ExecutorError("Unknown executor {}".format(executor_name))
+            raise ExecutorError(
+                f"Unknown executor '{executor_name}'. "
+                f"Custom executors must be registered before the Scheduler is created. "
+                f"Either add 'class = your.module.ClassName' to the executor config, "
+                f"or import the executor module in your setup_scheduler function."
+            )
         return None
 
-    return executor_provider.executor_class
+    try:
+        return executor_provider.executor_class
+    except (ImportError, AttributeError) as e:
+        if class_path:
+            raise ExecutorError(
+                f"Failed to load executor '{executor_name}' from class path '{class_path}': {e}"
+            ) from e
+        raise
 
 
 def _register_executor(
@@ -163,7 +190,10 @@ def get_executors_from_config(executors_config: dict) -> Iterator[Executor]:
     Instantiate executors defined in an executors config section.
     """
     for executor_name, executor_config in executors_config.items():
-        executor_class = cast(type[Executor], get_executor_class(executor_config["type"]))
+        executor_class = cast(
+            type[Executor],
+            get_executor_class(executor_config["type"], class_path=executor_config.get("class")),
+        )
         executor = executor_class(executor_name, config=executor_config)
         yield executor
 
@@ -174,7 +204,10 @@ def get_executor_from_config(executors_config: dict, executor_name: str) -> Exec
         if name != executor_name:
             continue
 
-        executor_class = cast(type[Executor], get_executor_class(executor_config["type"]))
+        executor_class = cast(
+            type[Executor],
+            get_executor_class(executor_config["type"], class_path=executor_config.get("class")),
+        )
         executor = executor_class(executor_name, config=executor_config)
         return executor
     raise RuntimeError(f"Unknown Executor {executor_name}.")
