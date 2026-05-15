@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.0
+May 15, 2026
+
+* `#508` - feat: allow executor configs to declare class for lazy registration
+* `#507` - Fix Handle.__new__ return type to use Self for correct subclass inference
+* `#506` - add python3.14 compatible way to detect active debugger
+
 ## 0.45.0
 May 04, 2026
 
