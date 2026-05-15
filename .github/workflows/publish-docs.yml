@@ -26,7 +26,7 @@ jobs:
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
           python-version: '3.11'
@@ -41,7 +41,7 @@ jobs:
           uv run make api html
 
       - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/build/html/
 

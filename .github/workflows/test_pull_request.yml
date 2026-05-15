@@ -6,10 +6,10 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
           python-version: '3.11'
@@ -25,10 +25,10 @@ jobs:
         python: ['3.10', '3.11', '3.12', '3.13']
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
           python-version: ${{ matrix.python }}
@@ -39,10 +39,10 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
           python-version: '3.11'
@@ -53,10 +53,10 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
           python-version: '3.11'

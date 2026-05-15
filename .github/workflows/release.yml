@@ -28,7 +28,7 @@ jobs:
         id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
           python-version: '3.11'
@@ -62,7 +62,7 @@ jobs:
         id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
           python-version: '3.11'
@@ -72,7 +72,7 @@ jobs:
       - name: List build artifacts
         run: ls -la dist/
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -91,12 +91,12 @@ jobs:
         id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
           enable-cache: true
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
@@ -138,7 +138,7 @@ jobs:
         id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
           python-version: '3.11'
@@ -150,7 +150,7 @@ jobs:
           cd docs
           uv run make api html
       - name: Upload docs artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: docs
           path: docs/build/html/
@@ -173,16 +173,16 @@ jobs:
         id: uv-version
         run: echo "version=$(cat .uv-version)" >> $GITHUB_OUTPUT
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: 'redun-private-github-codebuild-runner'
           aws-region: us-west-2
@@ -216,12 +216,12 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Download docs artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: docs
           path: docs/build/html/
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: 'redun-private-github-codebuild-runner'
           aws-region: us-west-2
