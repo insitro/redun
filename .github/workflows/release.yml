@@ -14,6 +14,12 @@ on:
 env:
   # Use input tag for manual dispatch, otherwise use the pushed tag
   RELEASE_VERSION: ${{ inputs.tag || github.ref_name }}
+# Serialize runs for the same release version. Without this, two pushes
+# (e.g., a tag push followed by a workflow_dispatch retry) can both pass
+# the `gh release view` 404 check and race on `gh release create`.
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 jobs:
   validate:
     name: Validate Release
@@ -43,7 +49,11 @@ jobs:
           echo "act=validate status=ok check=version version=${{ env.RELEASE_VERSION }}"
       - name: Validate changelog entry exists
         run: |
-          if ! grep -q "## ${{ env.RELEASE_VERSION }}" docs/source/CHANGELOG.md; then
+          # Use the same extractor as github-release so they cannot disagree
+          # on what counts as a valid section. A loose grep here previously
+          # let `0.4` pass, then publish-packages succeeded, then the
+          # github-release job failed with empty notes.
+          if ! bin/extract-changelog-section.sh "${{ env.RELEASE_VERSION }}" docs/source/CHANGELOG.md | grep -q '[^[:space:]]'; then
             echo "::error::act=validate status=failed reason=changelog_missing version=${{ env.RELEASE_VERSION }} file=docs/source/CHANGELOG.md"
             exit 1
           fi
@@ -205,6 +215,47 @@ jobs:
             --password "${TOKEN}"
       - name: Publish to S3
         run: aws s3 cp dist/redun-${{ env.RELEASE_VERSION }}.tar.gz s3://insitro-binaries/pypi/
+  github-release:
+    if: github.repository == 'insitro/redun-private'
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate, smoke-test, publish-packages]
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - name: Extract changelog section
+        run: |
+          VERSION="${{ env.RELEASE_VERSION }}"
+          bin/extract-changelog-section.sh "$VERSION" docs/source/CHANGELOG.md > release-notes.md
+          # Reject whitespace-only sections, not just empty files: a section
+          # consisting of "\n\n" passes [ -s ] but renders as a blank release.
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "::error::act=github_release status=failed reason=changelog_empty version=$VERSION"
+            exit 1
+          fi
+          echo "act=github_release status=ok check=changelog_extracted version=$VERSION"
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ env.RELEASE_VERSION }}"
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            gh release edit "$VERSION" \
+              --title "$VERSION" \
+              --notes-file release-notes.md
+            echo "act=github_release status=ok action=updated version=$VERSION"
+          else
+            gh release create "$VERSION" \
+              --title "$VERSION" \
+              --notes-file release-notes.md \
+              --verify-tag
+            echo "act=github_release status=ok action=created version=$VERSION"
+          fi
   publish-docs-s3:
     if: github.repository == 'insitro/redun-private'
     name: Publish Docs to S3
