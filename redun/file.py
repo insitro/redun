@@ -1283,20 +1283,22 @@ class File(Value):
             Additional arguments for the underlying file stream. They are Filesystem-specific.
         """
 
-        def close() -> None:
-            nonlocal stream
-
-            original_close()
-            self.update_hash()
-
-            # Restore original close. This way double closing doesn't trigger
-            # unnecessary hashing.
-            stream.close = original_close  # ty: ignore[invalid-assignment]
-
         stream = self.filesystem.open(self.path, mode, encoding=encoding, **kwargs)
 
-        original_close = stream.close
-        stream.close = close  # ty: ignore[invalid-assignment]
+        if set(mode) & {"w", "a", "x", "+"}:
+            # Writing to the stream changes the file's contents, so the hash must
+            # be recomputed once the stream is closed. Read-only streams leave the
+            # cached hash untouched.
+            original_close = stream.close
+
+            def close() -> None:
+                original_close()
+                self.update_hash()
+
+                # Restore original close so repeated closes don't re-hash.
+                stream.close = original_close  # ty: ignore[invalid-assignment]
+
+            stream.close = close  # ty: ignore[invalid-assignment]
 
         return stream
 

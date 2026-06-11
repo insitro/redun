@@ -265,6 +265,35 @@ def test_file_hash() -> None:
     assert file.is_valid()
 
 
+@use_tempdir
+def test_open_rehashes_only_on_write() -> None:
+    """
+    Closing a write stream should recompute the cached hash, while closing a
+    read-only stream should leave the cached hash untouched.
+    """
+    file = File("hello.txt")
+    file.write("hello")
+
+    # A read-only open/close must not recompute the hash. Seed a stale cached
+    # hash and confirm reading does not overwrite it.
+    file._hash = "stale"
+    with patch.object(file, "update_hash", wraps=file.update_hash) as update_hash:
+        with file.open("r") as infile:
+            assert infile.read() == "hello"
+    update_hash.assert_not_called()
+    assert file._hash == "stale"
+
+    # A write open/close must recompute the hash exactly once, even if the
+    # stream is closed again afterwards.
+    with patch.object(file, "update_hash", wraps=file.update_hash) as update_hash:
+        stream = file.open("w")
+        stream.write("hello2")
+        stream.close()
+        stream.close()
+    update_hash.assert_called_once()
+    assert file._hash != "stale"
+
+
 def test_glob() -> None:
     expected = [
         "redun/tests/test_data/file_glob/",
