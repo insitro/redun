@@ -24,10 +24,12 @@ s3_scratch = s3://my-bucket/my-path/
 ## Configuration directory
 
 The configuration directory, `.redun/`, is specified by the following (in order of precedence):
-- Command line option: `redun --config <config_dir> ...`
+- Command line option: `redun --config <config_dir> ...` (or `-c <config_dir>`)
 - Environment variable: `export REDUN_CONFIG=<config_dir>`
 - Filesystem search: Find a directory named `.redun/` starting in the current working directory and proceeding to parent directories.
 - Lastly, automatically create a configuration directory, `.redun/`, in the current working directory.
+
+When the configuration directory is given explicitly on the command line with `--config`/`-c` and it does not contain a `redun.ini` file, redun errors instead of creating one, since an explicit path that is missing its config almost always indicates a mistake (e.g. a typo). Use `redun init -c <config_dir>` to create a new configuration directory at an explicit path. The other resolution methods (environment variable, filesystem search, default) still auto-create the directory as before.
 
 
 ## Configuration options

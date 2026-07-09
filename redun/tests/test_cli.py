@@ -32,6 +32,7 @@ from redun.cli import (
     import_script,
     is_port_in_use,
     parse_func_path,
+    setup_config,
     setup_scheduler,
 )
 from redun.executors.aws_batch import BATCH_LOG_GROUP
@@ -410,6 +411,183 @@ def test_init() -> None:
         client.execute(["redun", "init"])
         assert File("config2/redun.ini").exists()
         assert File("config2/redun.db").exists()
+
+
+@use_tempdir
+def test_explicit_config_dir_must_exist() -> None:
+    """
+    Running a command with an explicit `-c`/`--config` dir that has no
+    redun.ini should error instead of silently creating a new config.
+    """
+    File("workflow.py").write(
+        """
+from redun import task
+
+redun_namespace = "test"
+
+@task()
+def main(x: int = 1):
+    return x
+"""
+    )
+
+    client = RedunClient()
+    with pytest.raises(RedunClientError) as excinfo:
+        client.execute(["redun", "-c", "missing", "run", "workflow.py", "main"])
+
+    # Error should mention the missing config and how to create one.
+    message = str(excinfo.value)
+    assert "missing" in message
+    assert "redun init" in message
+
+    # The config dir should not have been auto-created.
+    assert not File("missing/redun.ini").exists()
+
+
+@use_tempdir
+def test_init_creates_explicit_config_dir() -> None:
+    """
+    `redun init -c <dir>` should still create the config at the explicit dir,
+    even though other commands now require it to already exist.
+    """
+    client = RedunClient()
+    client.execute(["redun", "-c", "explicit_dir", "init"])
+    assert File("explicit_dir/redun.ini").exists()
+    assert File("explicit_dir/redun.db").exists()
+
+
+@use_tempdir
+def test_explicit_config_dir_exists_runs() -> None:
+    """
+    An explicit config dir that already exists should run without error.
+    """
+    File("workflow.py").write(
+        """
+from redun import task
+
+redun_namespace = "test"
+
+@task()
+def main(x: int = 1):
+    return x
+"""
+    )
+
+    # Create the config dir up front via init.
+    client = RedunClient()
+    client.execute(["redun", "-c", "existing", "init"])
+    assert File("existing/redun.ini").exists()
+
+    # A subsequent run against the explicit dir should succeed.
+    client = RedunClient()
+    assert client.execute(["redun", "-c", "existing", "run", "workflow.py", "main"]) == 1
+
+
+@use_tempdir
+def test_default_config_dir_still_auto_creates() -> None:
+    """
+    Without an explicit `-c`, redun should still auto-create the default
+    `.redun` config dir (backwards-compatible behavior).
+    """
+    File("workflow.py").write(
+        """
+from redun import task
+
+redun_namespace = "test"
+
+@task()
+def main(x: int = 1):
+    return x
+"""
+    )
+
+    client = RedunClient()
+    assert client.execute(["redun", "run", "workflow.py", "main"]) == 1
+    assert File(".redun/redun.ini").exists()
+
+
+@use_tempdir
+def test_explicit_config_dir_must_exist_non_run_command() -> None:
+    """
+    The explicit-config-dir check should apply to config-reading commands
+    beyond `run` (e.g. `db info`, `log`), not just `run`.
+    """
+    for command in (["db", "info"], ["log"]):
+        client = RedunClient()
+        with pytest.raises(RedunClientError) as excinfo:
+            client.execute(["redun", "-c", "missing", *command])
+        assert "missing" in str(excinfo.value)
+        assert not File("missing/redun.ini").exists()
+
+
+@use_tempdir
+def test_explicit_config_dir_env_var_still_auto_creates() -> None:
+    """
+    The check only applies to the `-c`/`--config` flag. A config dir supplied
+    via the REDUN_CONFIG env var should still auto-create (backwards-compatible).
+    """
+    File("workflow.py").write(
+        """
+from redun import task
+
+redun_namespace = "test"
+
+@task()
+def main(x: int = 1):
+    return x
+"""
+    )
+
+    with patch.dict(os.environ, {REDUN_CONFIG_ENV: "env_config"}, clear=True):
+        client = RedunClient()
+        assert client.execute(["redun", "run", "workflow.py", "main"]) == 1
+        assert File("env_config/redun.ini").exists()
+
+
+@use_tempdir
+def test_setup_config_programmatic_still_auto_creates() -> None:
+    """
+    Programmatic callers of setup_config with an explicit config dir should
+    keep auto-creating it; only the CLI `-c` flag is guarded.
+    """
+    config = setup_config("prog_config")
+    assert config is not None
+    assert File("prog_config/redun.ini").exists()
+
+
+@use_tempdir
+def test_explicit_config_dir_help_not_guarded() -> None:
+    """
+    Informational commands that do not read the config (plain `help`, and the
+    no-subcommand default) should not error on a missing explicit config dir.
+    """
+    # Explicit `help` subcommand with a bad config dir.
+    client = RedunClient()
+    client.stdout = io.StringIO()
+    client.execute(["redun", "-c", "missing", "help"])
+    client.stdout.seek(0)
+    assert "usage:" in client.stdout.read()
+    assert not File("missing/redun.ini").exists()
+
+    # No subcommand (falls back to help) with a bad config dir.
+    client = RedunClient()
+    client.stdout = io.StringIO()
+    client.execute(["redun", "-c", "missing"])
+    client.stdout.seek(0)
+    assert "usage:" in client.stdout.read()
+    assert not File("missing/redun.ini").exists()
+
+
+@use_tempdir
+def test_explicit_config_dir_setup_help_still_guarded() -> None:
+    """
+    `--setup-help` loads the setup function from the config, so unlike plain
+    help it must still require an explicit config dir to exist.
+    """
+    client = RedunClient()
+    with pytest.raises(RedunClientError):
+        client.execute(["redun", "-c", "missing", "--setup-help"])
+    assert not File("missing/redun.ini").exists()
 
 
 @use_tempdir

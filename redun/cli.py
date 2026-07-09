@@ -366,7 +366,10 @@ def setup_config(
             with config_file.open("w") as out:
                 out.write(DEFAULT_REDUN_INI.format(db_uri=db_uri))
         else:
-            raise RedunClientError(f"No redun config found at {config_path}")
+            init_hint = f"redun init -c {config_dir}" if config_dir else "redun init"
+            raise RedunClientError(
+                f"No redun config found at {config_path}. Run `{init_hint}` to create one."
+            )
 
     # Load config file.
     config = Config()
@@ -607,11 +610,12 @@ def setup_scheduler(
     repo: str = DEFAULT_REPO_NAME,
     migrate: Optional[bool] = None,
     migrate_if_local: bool = False,
+    initialize: bool = True,
 ) -> Scheduler:
     """
     Setup Scheduler from config directory.
     """
-    config = setup_config(config_dir, repo=repo)
+    config = setup_config(config_dir, repo=repo, initialize=initialize)
     setup_func = get_user_setup_func(config)
     setup_kwargs = parse_setup_args(setup_func, setup_args)
     scheduler = setup_func(config, **setup_kwargs)
@@ -630,11 +634,12 @@ def setup_scheduler(
 def setup_backend_db(
     config_dir: Optional[str] = None,
     repo: str = DEFAULT_REPO_NAME,
+    initialize: bool = True,
 ) -> RedunBackendDb:
     """
     Setup RedunBackendDb from config directory.
     """
-    config = setup_config(config_dir, repo=repo)
+    config = setup_config(config_dir, repo=repo, initialize=initialize)
     backend_config = config.get("backend") or create_config_section()
     return RedunBackendDb(config=backend_config)
 
@@ -875,6 +880,7 @@ class RedunClient:
                 repo=args.repo,
                 migrate=migrate,
                 migrate_if_local=migrate_if_local,
+                initialize=getattr(args, "initialize", True),
             )
             self.repo = args.repo
         return self.scheduler
@@ -899,6 +905,14 @@ class RedunClient:
 
         parser = self.get_command_parser()
         args, extra_args = parser.parse_known_args(argv[1:])
+
+        # When the user points redun at a config dir explicitly with `-c`/`--config`,
+        # a missing `redun.ini` almost always means a mistyped path. In that case we
+        # do not auto-create a config (which would silently bootstrap an empty config
+        # and local db); instead `setup_config` raises. Without `-c`, redun falls back
+        # to the env var / filesystem search / default `.redun` dir, where auto-creation
+        # remains the expected behavior. `init` overrides this to create the config.
+        args.initialize = not args.config
 
         if args.log_level:
             logger.setLevel(log_levels[args.log_level])
@@ -1376,7 +1390,7 @@ class RedunClient:
 
         elif args.setup_help:
             # Display setup help.
-            config = setup_config(args.config)
+            config = setup_config(args.config, initialize=args.initialize)
             setup_func = get_user_setup_func(config)
             parser, _ = get_setup_parser(setup_func)
             self.display("\n".join(format_setup_help(parser)))
@@ -1406,6 +1420,8 @@ class RedunClient:
             args.config = os.path.join(basedir, REDUN_CONFIG_DIR)
         else:
             args.config = get_config_dir(args.config)
+        # `init` creates the config dir, even when given explicitly with `-c`.
+        args.initialize = True
         self.get_scheduler(args, migrate=True)
         self.display("Initialized redun repository: {}".format(args.config))
 
@@ -1601,7 +1617,7 @@ class RedunClient:
         logger.info(f"redun :: version {redun.__version__}")
         logger.info(f"config dir: {get_config_dir(args.config)}")
 
-        config = setup_config(args.config)
+        config = setup_config(args.config, initialize=args.initialize)
         executor_name = args.executor
         if not executor_name:
             raise RedunClientError("--executor is required.")
@@ -2665,7 +2681,7 @@ class RedunClient:
         """
         Display information about redun repo database.
         """
-        backend = setup_backend_db(args.config, args.repo)
+        backend = setup_backend_db(args.config, args.repo, initialize=args.initialize)
         backend.create_engine()
 
         version = backend.get_db_version()
@@ -2693,7 +2709,7 @@ class RedunClient:
         """
         Migrate redun repo database to a new version.
         """
-        backend = setup_backend_db(args.config, args.repo)
+        backend = setup_backend_db(args.config, args.repo, initialize=args.initialize)
         backend.create_engine()
 
         version = backend.get_db_version()
@@ -2809,7 +2825,7 @@ class RedunClient:
             raise RedunClientError("Repositories may not be named 'default'")
 
         # Only write if repo is not already configured.
-        config = setup_config(args.config, initialize=True)
+        config = setup_config(args.config, initialize=args.initialize)
         repos = config.get("repos", {})
         for repo_name, repo in repos.items():
             if repo_name == args.repo_name:
@@ -2835,7 +2851,7 @@ class RedunClient:
 
     def repo_remove_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
         # Check repo is in the config file
-        config = setup_config(args.config)
+        config = setup_config(args.config, initialize=args.initialize)
         repos = config.get("repos", {}).get(args.repo_name)
         if repos is None:
             raise RedunClientError(f"Repository '{args.repo_name}' is not in the config")
@@ -2846,7 +2862,7 @@ class RedunClient:
         )
 
     def repo_list_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
-        config = setup_config(args.config)
+        config = setup_config(args.config, initialize=args.initialize)
         self.display("Repositories:")
 
         repos = config.get("repos", {})
@@ -2878,7 +2894,7 @@ class RedunClient:
         """
         Push records into a redun repository.
         """
-        dest_config = setup_config(args.config, repo=args.push_repo)
+        dest_config = setup_config(args.config, repo=args.push_repo, initialize=args.initialize)
         dest_backend = RedunBackendDb(config=dest_config.get("backend"))
         src_backend = cast(RedunBackendDb, self.get_scheduler(args).backend)
 
@@ -2897,7 +2913,7 @@ class RedunClient:
         """
         Pull records into another redun database.
         """
-        src_config = setup_config(args.config, repo=args.pull_repo)
+        src_config = setup_config(args.config, repo=args.pull_repo, initialize=args.initialize)
         src_backend = RedunBackendDb(config=src_config.get("backend"))
 
         dest_backend = self.get_scheduler(args).backend
@@ -3071,7 +3087,7 @@ class RedunClient:
             "Attempting to start the redun server application, with the assumption that "
             "the `redun server` command was run from the root of the redun repository"
         )
-        config: Config = setup_config(args.config, repo=args.repo)
+        config: Config = setup_config(args.config, repo=args.repo, initialize=args.initialize)
         compose_env: dict[str, Any] = {
             **os.environ,
             **{"REDUN_SERVER_DEV": 0, "TARGET": "prod-image"},
