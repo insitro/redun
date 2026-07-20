@@ -59,6 +59,7 @@ def k8s_submit(
     gpus: int = 0,
     ephemeral_storage: Optional[str] = None,
     timeout: Optional[int] = None,
+    ttl_seconds_after_finished: int = k8s_utils.DEFAULT_TTL_SECONDS_AFTER_FINISHED,
     k8s_labels: Optional[dict[str, str]] = None,
     retries: int = 1,
     service_account_name: str = "default",
@@ -89,6 +90,7 @@ def k8s_submit(
         command=command,
         resources=resources,
         timeout=timeout,
+        ttl_seconds_after_finished=ttl_seconds_after_finished,
         labels=k8s_labels,
         service_account_name=service_account_name,
         annotations=annotations,
@@ -164,6 +166,7 @@ def get_k8s_job_options(job_options: dict) -> dict:
         "service_account_name",
         "retries",
         "timeout",
+        "ttl_seconds_after_finished",
         "node_affinity",
         "env",
         "volumes",
@@ -440,6 +443,10 @@ class K8SExecutor(Executor):
             "vcpus": config.getint("vcpus", 1),
             "memory": config.getfloat("memory", 4),
             "retries": config.getint("retries", 0),
+            "ttl_seconds_after_finished": config.getint(
+                "ttl_seconds_after_finished",
+                k8s_utils.DEFAULT_TTL_SECONDS_AFTER_FINISHED,
+            ),
             "service_account_name": config.get("service_account_name", "default"),
             "job_name_prefix": config.get("job_name_prefix", k8s_utils.DEFAULT_JOB_PREFIX),
         }
@@ -827,13 +834,6 @@ class K8SExecutor(Executor):
                 k8s_labels,
             )
 
-            try:
-                k8s_utils.delete_job(self._k8s_client, job.metadata.name, self.namespace)
-            except kubernetes.client.exceptions.ApiException as e:
-                self.log(
-                    f"Failed to delete k8s job {job.metadata.name}: {e}",
-                    level=logging.WARNING,
-                )
         else:
             # Otherwise, job represents a redun job array, and termination requires management
             # both of the indexing in the job array, as well as processing the k8s job.
@@ -891,17 +891,6 @@ class K8SExecutor(Executor):
                         orphan_reason,
                         k8s_labels,
                     )
-            try:
-                k8s_utils.delete_job(
-                    self._k8s_client,
-                    job.metadata.name,
-                    self.namespace,
-                )
-            except kubernetes.client.exceptions.ApiException as e:
-                self.log(
-                    f"Failed to delete k8s job {job.metadata.name}: {e}",
-                    level=logging.WARNING,
-                )
             self.pending_k8s_jobs.pop(job.metadata.name, None)
 
     def _get_job_options(self, job: Job) -> dict:

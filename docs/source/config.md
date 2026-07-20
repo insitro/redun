@@ -665,6 +665,10 @@ An optional string that specifies the default amount of ephemeral storage requir
 
 An optional integer that specifies the default time duration in seconds after which k8s will terminate the job. If not specified, no timeout is set and the job will run indefinitely (or until it completes or fails). This can be overridden on a per task basis using task options.
 
+##### `ttl_seconds_after_finished`
+
+An integer (default: 14400, or four hours) that specifies how long Kubernetes retains a completed or failed Job and its Pods before the [TTL-after-finished controller](https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/) deletes them. Retaining terminal Jobs allows concurrent redun executions to reunite with the same in-flight work and inspect its result and logs. This can be overridden on a per-task basis using task options.
+
 ##### `retries`
 
 An integer (default: 1) that specifies the default number of retries for failed jobs. This can be overridden on a per task basis using task options.

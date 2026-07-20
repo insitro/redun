@@ -26,7 +26,12 @@ from redun.executors.k8s import (
     get_k8s_job_name,
     submit_task,
 )
-from redun.executors.k8s_utils import DEFAULT_JOB_PREFIX, K8SClient, create_job_object
+from redun.executors.k8s_utils import (
+    DEFAULT_JOB_PREFIX,
+    DEFAULT_TTL_SECONDS_AFTER_FINISHED,
+    K8SClient,
+    create_job_object,
+)
 from redun.executors.scratch import (
     SCRATCH_ERROR,
     SCRATCH_HASHES,
@@ -142,6 +147,7 @@ def test_executor_config(scheduler: Scheduler) -> None:
                 "ephemeral_storage": "10G",
                 "node_affinity": node_affinity_json,
                 "timeout": 123,
+                "ttl_seconds_after_finished": 120,
             },
         },
     )
@@ -153,6 +159,7 @@ def test_executor_config(scheduler: Scheduler) -> None:
     assert executor.code_package["includes"] == ["*.txt"]
     assert executor.default_task_options["ephemeral_storage"] == "10G"
     assert executor.default_task_options["timeout"] == 123
+    assert executor.default_task_options["ttl_seconds_after_finished"] == 120
     assert "node_affinity" in executor.default_task_options
     assert (
         executor.default_task_options["node_affinity"][
@@ -203,6 +210,32 @@ def test_k8s_submit_cpu_limits() -> None:
     assert job.spec.template.spec.containers[0].resources.requests["nvidia.com/gpu"] == 1
     assert "nvidia.com/gpu" in job.spec.template.spec.containers[0].resources.limits
     assert job.spec.template.spec.containers[0].resources.limits["nvidia.com/gpu"] == 1
+
+
+@mock_k8s
+def test_k8s_submit_ttl_seconds_after_finished() -> None:
+    """
+    K8S jobs are always assigned a cleanup TTL, which callers can override.
+    """
+    k8s_client = redun.executors.k8s_utils.K8SClient()
+    k8s_client.batch.create_namespaced_job = Mock(side_effect=lambda body, namespace: body)  # ty: ignore[invalid-assignment]
+
+    default_job = redun.executors.k8s.k8s_submit(
+        k8s_client=k8s_client,
+        command=["echo", "test"],
+        image="test-image",
+        namespace="default",
+    )
+    override_job = redun.executors.k8s.k8s_submit(
+        k8s_client=k8s_client,
+        command=["echo", "test"],
+        image="test-image",
+        namespace="default",
+        ttl_seconds_after_finished=120,
+    )
+
+    assert default_job.spec.ttl_seconds_after_finished == DEFAULT_TTL_SECONDS_AFTER_FINISHED
+    assert override_job.spec.ttl_seconds_after_finished == 120
 
 
 @task()
@@ -428,6 +461,7 @@ def test_executor(
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash",
         "array_size": 0,
         "retries": 0,
+        "ttl_seconds_after_finished": DEFAULT_TTL_SECONDS_AFTER_FINISHED,
         "service_account_name": "default",
         "secret_name": None,
         "vcpus": 1,
@@ -468,6 +502,7 @@ def test_executor(
         "job_name": DEFAULT_JOB_PREFIX + "-eval_hash2",
         "array_size": 0,
         "retries": 0,
+        "ttl_seconds_after_finished": DEFAULT_TTL_SECONDS_AFTER_FINISHED,
         "service_account_name": "default",
         "secret_name": None,
         "vcpus": 1,
@@ -492,7 +527,7 @@ def test_executor(
     )
 
     # Submit redun job with ephemeral_storage option.
-    expr3 = task1.options(ephemeral_storage="20G")(12)
+    expr3 = task1.options(ephemeral_storage="20G", ttl_seconds_after_finished=120)(12)
     job3 = Job(task1, expr3)
     job3.eval_hash = "eval_hash3"
     job3.args = ((12,), {})
@@ -503,6 +538,7 @@ def test_executor(
 
     # Ensure ephemeral_storage option was passed correctly.
     assert k8s_submit_mock.call_args[1]["ephemeral_storage"] == "20G"
+    assert k8s_submit_mock.call_args[1]["ttl_seconds_after_finished"] == 120
 
     # Simulate k8s completing job.
     output_file = File("s3://example-bucket/redun/jobs/eval_hash/output")
@@ -553,6 +589,46 @@ def test_executor(
     # Assert job tags.
     job.job_tags == [("k8s_job", "k8s-job-id"), ("aws_log_stream", "log1")]
     job.job_tags == [("k8s_job", "k8s-job2-id"), ("aws_log_stream", "log2")]
+    delete_job_mock.assert_not_called()
+
+
+@mock_s3
+@mock_k8s
+@patch("redun.executors.k8s.k8s_utils.delete_job")
+@patch("redun.executors.k8s.get_k8s_job_pods", return_value=[])
+def test_completed_array_job_is_retained(
+    get_k8s_job_pods_mock: Mock,
+    delete_job_mock: Mock,
+) -> None:
+    """
+    Completed array jobs remain available until Kubernetes applies their TTL.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+    redun_jobs = {}
+    for index in range(2):
+        redun_job = Job(task1, task1(index))
+        redun_job.id = f"task-{index}"
+        redun_job.eval_hash = f"hash-{index}"
+        redun_jobs[index] = redun_job
+
+    k8s_job = create_job_object(name="test-array", uid="test-array-uid")
+    k8s_job.spec.parallelism = 2
+    k8s_job.spec.completions = 2
+    k8s_job.status = client.V1JobStatus(
+        succeeded=2,
+        completed_indexes="0,1",
+        conditions=[client.V1JobCondition(type="Complete", status="True")],
+    )
+    executor.pending_k8s_jobs[k8s_job.metadata.name] = redun_jobs
+
+    with patch.object(executor, "_process_redun_job") as process_redun_job_mock:
+        executor._process_k8s_job_status(k8s_job)
+
+    assert process_redun_job_mock.call_count == 2
+    assert k8s_job.metadata.name not in executor.pending_k8s_jobs
+    get_k8s_job_pods_mock.assert_called_once()
+    delete_job_mock.assert_not_called()
 
 
 @mock_s3

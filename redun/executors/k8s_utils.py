@@ -12,6 +12,7 @@ from kubernetes.config import ConfigException
 from redun.logging import logger
 
 DEFAULT_JOB_PREFIX = "redun-job"
+DEFAULT_TTL_SECONDS_AFTER_FINISHED = 4 * 60 * 60
 
 
 class K8SClient:
@@ -237,6 +238,7 @@ def create_job_object(
     env: Optional[dict[str, str]] = None,
     volumes: Optional[list[dict[str, Any]]] = None,
     volume_mounts: Optional[list[dict[str, Any]]] = None,
+    ttl_seconds_after_finished: int = DEFAULT_TTL_SECONDS_AFTER_FINISHED,
 ) -> client.V1Job:
     """Creates a job object for redun job.
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Job.md
@@ -310,7 +312,7 @@ def create_job_object(
     spec = client.V1JobSpec(
         template=template,
         backoff_limit=retries,
-        # ttl_seconds_after_finished=100,
+        ttl_seconds_after_finished=ttl_seconds_after_finished,
     )
     if timeout:
         spec.active_deadline_seconds = timeout
