@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.47.0
+July 22, 2026
+
+* `#515` - fix: Deduplicate k8s job names by execution id
+* `#518` - feat(cli): error when explicit --config dir has no redun.ini
+* `#516` - ci: use official docker postgres:11 image for tests
+* `#514` - fix: only recompute File hash on close for write modes
+* `#513` - ci(release): auto-create GitHub Releases from tags and CHANGELOG
+* `#512` - stops the multiple log lines issue, I think
+* `#511` - chore: bump GitHub Actions to Node 24 runtimes
+
 ## 0.46.0
 May 15, 2026
 
