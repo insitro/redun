@@ -570,6 +570,49 @@ def test_job_submit_resources(get_or_create_job_definition_mock, get_aws_client_
     )
 
 
+@patch("redun.executors.aws_utils.get_aws_client")
+@patch("redun.executors.aws_batch.get_or_create_job_definition")
+def test_batch_submit_retry_strategy(
+    get_or_create_job_definition_mock, get_aws_client_mock
+) -> None:
+    """
+    Confirm that retries and evaluate_on_exit are passed through as the AWS retryStrategy.
+    """
+    get_or_create_job_definition_mock.return_value = {"jobDefinitionArn": "test-jd-arn"}
+
+    evaluate_on_exit = [
+        {"action": "RETRY", "onStatusReason": "Host EC2*"},
+        {"action": "EXIT", "onReason": "*"},
+    ]
+
+    # 1. retries plus evaluate_on_exit produces attempts + evaluateOnExit.
+    batch_submit(
+        batch_job_args={"containerOverrides": {"command": ["test_command"]}},
+        job_name="test",
+        queue="test_queue",
+        image="test_image",
+        retries=5,
+        evaluate_on_exit=evaluate_on_exit,
+    )
+    assert get_aws_client_mock.return_value.submit_job.call_args[1]["retryStrategy"] == {
+        "attempts": 5,
+        "evaluateOnExit": evaluate_on_exit,
+    }
+
+    # 2. Without evaluate_on_exit, only attempts is set (no empty evaluateOnExit key).
+    get_aws_client_mock.return_value.submit_job.reset_mock()
+    batch_submit(
+        batch_job_args={"containerOverrides": {"command": ["test_command"]}},
+        job_name="test",
+        queue="test_queue",
+        image="test_image",
+        retries=3,
+    )
+    assert get_aws_client_mock.return_value.submit_job.call_args[1]["retryStrategy"] == {
+        "attempts": 3,
+    }
+
+
 def test_batch_tags(scheduler: Scheduler) -> None:
     """
     Executor should be able to determine batch tags for a batch job.
@@ -653,6 +696,11 @@ def test_executor_config(scheduler: Scheduler) -> None:
                 "s3_scratch": "s3_scratch_prefix",
                 "code_includes": "*.txt",
                 "job_def_extra": '{"a_json_key": {"a_json_nested_key": 42}}',
+                "retries": "5",
+                "evaluate_on_exit": (
+                    '[{"action": "RETRY", "onStatusReason": "Host EC2*"}, '
+                    '{"action": "EXIT", "onReason": "*"}]'
+                ),
             }
         }
     )
@@ -667,6 +715,29 @@ def test_executor_config(scheduler: Scheduler) -> None:
     assert executor.default_task_options["job_def_extra"] == {
         "a_json_key": {"a_json_nested_key": 42}
     }
+    assert executor.default_task_options["retries"] == 5
+    assert executor.default_task_options["evaluate_on_exit"] == [
+        {"action": "RETRY", "onStatusReason": "Host EC2*"},
+        {"action": "EXIT", "onReason": "*"},
+    ]
+
+
+def test_executor_config_evaluate_on_exit_default(scheduler: Scheduler) -> None:
+    """
+    evaluate_on_exit should default to None when not configured.
+    """
+    config = Config(
+        {
+            "batch": {
+                "image": "image",
+                "queue": "queue",
+                "s3_scratch": "s3_scratch_prefix",
+            }
+        }
+    )
+    executor = AWSBatchExecutor("batch", scheduler, config["batch"])
+
+    assert executor.default_task_options["evaluate_on_exit"] is None
 
 
 @task()
@@ -1297,6 +1368,7 @@ def test_executor(
             "job_def_name": None,
             "role": None,
             "retries": 1,
+            "evaluate_on_exit": None,
             "aws_region": "us-west-2",
             "num_nodes": None,
             "job_def_extra": None,
@@ -1341,6 +1413,7 @@ def test_executor(
             "job_def_name": None,
             "role": None,
             "retries": 1,
+            "evaluate_on_exit": None,
             "aws_region": "us-west-2",
             "num_nodes": None,
             "job_def_extra": None,
@@ -1450,6 +1523,7 @@ def test_executor_multinode(
             "job_def_name": None,
             "role": None,
             "retries": 1,
+            "evaluate_on_exit": None,
             "aws_region": "us-west-2",
             "num_nodes": 4,
             "job_def_extra": None,

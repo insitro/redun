@@ -18,7 +18,7 @@ import boto3
 
 if TYPE_CHECKING:
     from mypy_boto3_batch.client import BatchClient
-    from mypy_boto3_batch.type_defs import SubmitJobResponseTypeDef
+    from mypy_boto3_batch.type_defs import RetryStrategyTypeDef, SubmitJobResponseTypeDef
 
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
@@ -380,6 +380,7 @@ def batch_submit(
     num_nodes: Optional[int] = None,
     shared_memory: Optional[int] = None,
     retries: int = 1,
+    evaluate_on_exit: Optional[list] = None,
     role: Optional[str] = None,
     job_def_extra: Optional[dict] = None,
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
@@ -467,12 +468,20 @@ def batch_submit(
     if scheduling_priority_override is not None:
         batch_job_args["schedulingPriorityOverride"] = scheduling_priority_override
 
+    # Build retry strategy. `attempts` is the max number of attempts, and the optional
+    # `evaluateOnExit` is a list of conditions (matched top to bottom) that decide whether a
+    # failed attempt should RETRY or EXIT. See:
+    # https://docs.aws.amazon.com/batch/latest/APIReference/API_RetryStrategy.html
+    retry_strategy: "RetryStrategyTypeDef" = {"attempts": retries}
+    if evaluate_on_exit:
+        retry_strategy["evaluateOnExit"] = evaluate_on_exit
+
     # Submit to batch.
     batch_run = batch_client.submit_job(
         jobName=job_name,
         jobQueue=queue,
         jobDefinition=job_def["jobDefinitionArn"],
-        retryStrategy={"attempts": retries},
+        retryStrategy=retry_strategy,
         **batch_job_args,
     )
 
@@ -524,6 +533,7 @@ def get_batch_job_options(job_options: dict) -> dict:
         "shared_memory",
         "role",
         "retries",
+        "evaluate_on_exit",
         "privileged",
         "job_def_name",
         "autocreate_job_def",
@@ -892,6 +902,7 @@ class AWSBatchExecutor(Executor):
             ),
             "job_def_name": config.get("job_def_name", fallback=None),
             "retries": config.getint("retries", fallback=1),
+            "evaluate_on_exit": parse_nullable_json(config.get("evaluate_on_exit", fallback=None)),
             "role": config.get("role"),
             "job_name_prefix": config.get("job_name_prefix", fallback="redun-job"),
             "num_nodes": config.getint("num_nodes", fallback=None),

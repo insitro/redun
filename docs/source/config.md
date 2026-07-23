@@ -406,7 +406,19 @@ A float (default: 4) that specifies the default amount of memory (in Gb) require
 
 ##### `retries`
 
-An integer (default: 1) that specifies the default number of retries to use for submitting a job to the AWS Batch queue. This can be overridden on a per task basis using task options.
+An integer (default: 1) that specifies the default number of retries to use for submitting a job to the AWS Batch queue. This maps to `attempts` in the AWS Batch [retry strategy](https://docs.aws.amazon.com/batch/latest/APIReference/API_RetryStrategy.html). This can be overridden on a per task basis using task options.
+
+##### `evaluate_on_exit`
+
+An optional JSON list (default: None) of conditions that determine whether a failed job attempt should be retried or exit. This maps to `evaluateOnExit` in the AWS Batch [retry strategy](https://docs.aws.amazon.com/batch/latest/APIReference/API_RetryStrategy.html), and is used together with `retries` (`attempts`). Each entry specifies an `action` (`RETRY` or `EXIT`) and one or more match conditions (`onStatusReason`, `onReason`, `onExitCode`). Conditions are evaluated top to bottom, and the first matching entry decides the action. This can be overridden on a per task basis using task options.
+
+```ini
+retries = 5
+evaluate_on_exit = [
+    {"action": "RETRY", "onStatusReason": "Host EC2*"},
+    {"action": "EXIT", "onReason": "*"}
+]
+```
 
 ##### `job_name_prefix`
 
