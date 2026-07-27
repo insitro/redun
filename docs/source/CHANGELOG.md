@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.48.0
+July 27, 2026
+
+* `#522` - feat(batch): support evaluateOnExit in AWS Batch executor config
+
 ## 0.47.0
 July 22, 2026
 
