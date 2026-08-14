@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.49.0
+August 14, 2026
+
+* `#521` - add first example of resource feature
+
 ## 0.48.0
 July 27, 2026
 
