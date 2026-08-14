@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from itertools import chain, islice
 from pprint import pprint
 from shlex import quote
-from socket import gethostname, socket
+from socket import socket
 from textwrap import dedent
 from types import ModuleType
 from typing import (
@@ -31,7 +31,6 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import ParseResult, urlparse
 
 import botocore
 import botocore.exceptions
@@ -51,6 +50,8 @@ from redun.backends.db import (
     Job,
     RedunBackendDb,
     RedunVersionError,
+    Resource,
+    ResourceClaim,
     Subvalue,
     Tag,
     Task,
@@ -102,7 +103,6 @@ from redun.scheduler import (
 )
 from redun.scheduler_config import (
     DEFAULT_DB_URI,
-    DEFAULT_POSTGRESQL_PORT,
     DEFAULT_REDUN_INI,
     DEFAULT_REPO_NAME,
     REDUN_CONFIG_DIR,
@@ -1370,13 +1370,38 @@ class RedunClient:
         fs_copy_parser.set_defaults(func=self.fs_copy_command)
         fs_copy_parser.set_defaults(show_help=False)
 
-        # Server command.
-        server_parser = subparsers.add_parser(
-            "server",
-            help="Run the redun local web server UI. "
-            "This command must be run from the base of the redun repository.",
+        # Resource command.
+        resource_parser = subparsers.add_parser(
+            "resource",
+            help="Create or delete new resource limits to control job concurrency.",
         )
-        server_parser.set_defaults(func=self.server_command)
+        resource_subparsers = resource_parser.add_subparsers()
+
+        # Set resource command.
+        resource_set_parser = resource_subparsers.add_parser(
+            "set", allow_abbrev=False, help="Set a new resource limit."
+        )
+        resource_set_parser.add_argument("name", help="Resource name.")
+        resource_set_parser.add_argument(
+            "--capacity", type=int, required=True, help="Resource capacity."
+        )
+        resource_set_parser.set_defaults(func=self.resource_set_command)
+        resource_set_parser.set_defaults(show_help=False)
+
+        # Remove resource command.
+        resource_rm_parser = resource_subparsers.add_parser(
+            "rm", allow_abbrev=False, help="Remove a resource limit."
+        )
+        resource_rm_parser.add_argument("name", help="Resource name.")
+        resource_rm_parser.set_defaults(func=self.resource_rm_command)
+        resource_rm_parser.set_defaults(show_help=False)
+
+        # List resources command.
+        resource_list_parser = resource_subparsers.add_parser(
+            "list", allow_abbrev=False, help="List resource limits."
+        )
+        resource_list_parser.set_defaults(func=self.resource_list_command)
+        resource_list_parser.set_defaults(show_help=False)
 
         return parser
 
@@ -3079,79 +3104,47 @@ class RedunClient:
         dest_path = args.dest_path if args.dest_path != "-" else None
         copy_file(src_path, dest_path)
 
-    def server_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
+    def resource_set_command(
+        self, args: Namespace, extra_args: list[str], argv: list[str]
+    ) -> None:
         """
-        Run redun local web server UI.
+        Create a new resource limit.
         """
-        logger.info(
-            "Attempting to start the redun server application, with the assumption that "
-            "the `redun server` command was run from the root of the redun repository"
-        )
-        config: Config = setup_config(args.config, repo=args.repo, initialize=args.initialize)
-        compose_env: dict[str, Any] = {
-            **os.environ,
-            **{"REDUN_SERVER_DEV": 0, "TARGET": "prod-image"},
-        }
-        parsed_db_uri: ParseResult = urlparse(config["backend"]["db_uri"])
-        if config["backend"].get("db_aws_secret_name"):
-            # RedunBackendDB will handle fetching the AWS secret and establishing a connection
-            # the configured database. Pass the secret name to the container via an environment
-            # variable.
-            compose_env.update(
-                {"REDUN_DB_AWS_SECRET_NAME": config["backend"]["db_aws_secret_name"]}
-            )
-            compose_profile = "postgres_remote"
-        elif parsed_db_uri.scheme == "postgresql":
-            if parsed_db_uri.hostname == "localhost":
-                db_port: int = parsed_db_uri.port or DEFAULT_POSTGRESQL_PORT
-                # `localhost` for the containerized application is different from that for the
-                # host machine. Provide the application with the hostname of the host, so it can
-                # connect to the database instance serving there.
-                parsed_db_uri = parsed_db_uri._replace(netloc=f"{gethostname()}:{db_port}")
-                if is_port_in_use("localhost", db_port):
-                    # If there is a local database instance already running, only the application
-                    # needs to be spun up. Set the Compose profile to `postgres_remote` to convey
-                    # that the DB is independently (ie. not through this Compose file) managed
-                    logger.info(
-                        "Detected service already running on localhost:{db_port}, as configured "
-                        "in the DB URI. Starting the application."
-                    )
-                    compose_profile = "postgres_remote"
-                else:
-                    logger.info(
-                        "Did not detect a running service at the location configured in the DB "
-                        f"URI (localhost:{db_port}). Starting the application and PostgreSQL "
-                        f"database service through Compose"
-                    )
-                    # The `postgres_local` Compose profile will spin up an instance of the DB
-                    compose_profile = "postgres_local"
-                    # Set env var used to bind DB service instance port to the host
-                    compose_env.update({"POSTGRESQL_PORT": db_port})
-            else:
-                compose_profile = "postgres_remote"
-            compose_env.update({"REDUN_DB_URI": parsed_db_uri.geturl()})
-        elif parsed_db_uri.scheme == "sqlite":
-            compose_profile = "sqlite"
-            if "s3://" in parsed_db_uri.path:
-                raise RedunClientError(
-                    "SQLite files in S3 aren't currently a supported backend for redun server. "
-                    "Please consider importing its records to a local SQLite database and "
-                    "retrying."
-                )
-            if ":memory:" not in parsed_db_uri.path:
-                # Make the SQLite DB accessible to the container by mounting its parent directory
-                # as a volume, and pointing the application to it
-                sqlite_db_filepath: str = parsed_db_uri.path[1:]
-                compose_env.update({"SQLITE_DB_FILE": sqlite_db_filepath})
+        session = self.get_session(args)
+        resource = session.query(Resource).filter(Resource.name == args.name).one_or_none()
+
+        if resource:
+            # Update existing Resource.
+            resource.capacity = args.capacity
+            session.add(resource)
         else:
-            raise RedunClientError(
-                f"redun server supports SQLite and PostgreSQL backends. Found {config['backend']}"
-            )
-        subprocess.run(
-            f"docker-compose -f redun_server/docker-compose.yml --profile={compose_profile} up",
-            env={k: str(v) for (k, v) in compose_env.items() if v is not None},
-            shell=True,
+            # Create new Resource.
+            session.add(Resource(name=args.name, capacity=args.capacity))
+        session.commit()
+
+    def resource_rm_command(self, args: Namespace, extra_args: list[str], argv: list[str]) -> None:
+        """
+        Remove a resource limit.
+        """
+        session = self.get_session(args)
+        deleted_claims = (
+            session.query(ResourceClaim).filter(ResourceClaim.name == args.name).delete()
         )
+        deleted = session.query(Resource).filter(Resource.name == args.name).delete()
+        session.commit()
+        self.display(f"{deleted} resources removed with {deleted_claims} claims")
+
+    def resource_list_command(
+        self, args: Namespace, extra_args: list[str], argv: list[str]
+    ) -> None:
+        """
+        List active resource limits.
+        """
+        session = self.get_session(args)
+        resources = session.query(Resource).order_by(Resource.name).all()
+        self.display("Resources:")
+        for resource in resources:
+            self.display(f"  {resource.name}: capacity={resource.capacity}")
 
 
 def main() -> None:

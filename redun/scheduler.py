@@ -8,6 +8,7 @@ import logging
 import os
 import pprint
 import queue
+import random
 import re
 import shlex
 import sys
@@ -966,6 +967,22 @@ class Scheduler:
 
         self.backend: RedunBackend = backend
 
+        # Setup resource heartbeat for renewing held resource claims. Constructed
+        # cheaply here (no thread); the thread starts lazily on the first claim.
+        scheduler_config = self.config.get("scheduler", {})
+        self.resource_heartbeat = ResourceHeartbeat(
+            self,
+            lease_seconds=float(
+                scheduler_config.get("resource_lease_seconds", DEFAULT_RESOURCE_LEASE_SECONDS)
+            ),
+            interval_seconds=float(
+                scheduler_config.get(
+                    "resource_heartbeat_interval_seconds",
+                    DEFAULT_RESOURCE_HEARTBEAT_INTERVAL_SECONDS,
+                )
+            ),
+        )
+
         # Setup executors.
         self.executors: dict[str, Executor] = {}
         if executor:
@@ -1124,6 +1141,9 @@ class Scheduler:
             # Stop executors and unset scheduler.
             for executor in self.executors.values():
                 executor.stop()
+
+            # Stop the resource heartbeat (no-op if it was never started).
+            self.resource_heartbeat.stop()
 
             self._current_execution = None
             set_current_scheduler(None)
@@ -3248,3 +3268,284 @@ def join_thread(
     else:
         # We no longer have the original promise running. Let's just evaluate the expr ourselves.
         return scheduler.evaluate(thread._expr, parent_job=parent_job)
+
+
+# Default lease (max_time) applied to a resource claim, in seconds.
+DEFAULT_RESOURCE_LEASE_SECONDS = 120
+
+# Default heartbeat interval between lease renewals, in seconds. Should be comfortably
+# less than the lease so that transient misses do not reap a still-held claim.
+DEFAULT_RESOURCE_HEARTBEAT_INTERVAL_SECONDS = 30
+
+
+class ResourceHeartbeat:
+    """
+    Periodically renews the leases of held resource claims for a Scheduler.
+
+    A resource claim carries a `max_time` lease so that a crashed scheduler's claims
+    are eventually reaped and their capacity reclaimed (see
+    `RedunBackendDb.acquire_resource`). To keep that lease short (fast crash recovery)
+    without reaping claims belonging to still-running jobs, each holder registers its
+    claim here with the ResourceHeartbeat. A single dedicated background thread renews
+    all registered claims in one batched UPDATE per tick.
+
+    Notes
+    -----
+    - The renewal thread runs independently to prevent stalls in the main thread from
+    delaying lease renewals.
+    - The heartbeat thread is only spun up once the first claim is registered. Workflows
+    that do not register resource claims will not incur the cost of the heartbeat thread.
+    """
+
+    def __init__(
+        self,
+        scheduler: "Scheduler",
+        lease_seconds: float = DEFAULT_RESOURCE_LEASE_SECONDS,
+        interval_seconds: float = DEFAULT_RESOURCE_HEARTBEAT_INTERVAL_SECONDS,
+    ):
+        self.scheduler = scheduler
+        self.lease_seconds = lease_seconds
+        self.interval_seconds = interval_seconds
+
+        # Map of active claim_id -> resource_name (name is used only for logging).
+        self._claims: dict[int, str] = {}
+        self._lock = threading.Lock()
+        self._stop = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+
+        # Backend used by the heartbeat thread. SQLAlchemy sessions are not thread-safe, so
+        # the heartbeat needs to clone the session.
+        # NOTE: during testing backend may be mocked, so fall back to the original backend.
+        self._backend: Any = None
+
+        if self.interval_seconds > self.lease_seconds:
+            logging.warning(
+                f"Resource heartbeat lease ({self.lease_seconds}s) is less than "
+                f"the heartbeat interval ({self.interval_seconds}s). This may cause resource "
+                f"claims to be reaped even when they are still held. Consider increasing the "
+                f"lease or decreasing the interval."
+            )
+
+    def register(self, claim_id: int, resource_name: str) -> None:
+        """
+        Begin renewing `claim_id`. Lazily starts the heartbeat thread on first use.
+        """
+        with self._lock:
+            self._claims[claim_id] = resource_name
+            if self._thread is None:
+                if self._backend is None:
+                    backend = self.scheduler.backend
+                    clone = getattr(backend, "clone", None)
+                    self._backend = clone() if clone is not None else backend
+                self._stop.clear()
+                self._thread = threading.Thread(
+                    target=self._run, name="redun-resource-heartbeat", daemon=True
+                )
+                self._thread.start()
+
+    def unregister(self, claim_id: int) -> None:
+        """
+        Stop renewing `claim_id` (its holder has released or failed).
+        """
+        with self._lock:
+            self._claims.pop(claim_id, None)
+
+    def stop(self) -> None:
+        """
+        Stop the heartbeat thread. No-op if it was never started.
+        """
+        thread = self._thread
+        if thread is None:
+            return
+        self._stop.set()
+        thread.join()
+        self._thread = None
+        self._stop.clear()
+        self._claims.clear()
+
+    def _run(self) -> None:
+        # Tick on a wall-clock timer until stopped. Event.wait returns True when
+        # stopped, False on timeout (a normal tick).
+        while not self._stop.wait(self.interval_seconds):
+            self._renew_once()
+
+    def _renew_once(self) -> None:
+        with self._lock:
+            claims = dict(self._claims)
+
+        if not claims:
+            return
+
+        claim_ids = list(claims)
+        try:
+            renewed = self._backend.renew_resources(claim_ids, self.lease_seconds)
+        except Exception as error:
+            # Given that lease time is longer than heartbeat interval, we should not
+            # crash on a single renewal failure.
+            self.scheduler.logger.warning(f"Resource heartbeat renewal failed: {error}")
+            return
+
+        if renewed < len(claim_ids):
+            resource_names = sorted(set(claims.values()))
+            self.scheduler.logger.warning(
+                f"Resource heartbeat renewed {renewed}/{len(claim_ids)} claims; "
+                f"{len(claim_ids) - renewed} were already reaped, likely because the "
+                f"scheduler was stalled longer than the lease "
+                f"({self.lease_seconds}s). Affected resource(s): {resource_names}. "
+                f"These resources may be temporarily oversubscribed until the holding "
+                f"jobs complete; no jobs will be failed. Consider increasing the lease "
+                f"if this recurs."
+            )
+
+
+@scheduler_task(namespace="redun")
+def acquire_resource(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    resource_name: str,
+    job_id: str,
+    amount: int = 1,
+    attempt: int = 1,
+) -> Promise:
+    """
+    Attempt to acquire a resource claim from the backend. If the attempt succeeds,
+    check the claim into the scheduler's heartbeat to ensure its lease is renewed
+    periodically until either it is explicitly released, or the scheduler dies.
+    """
+    heartbeat = scheduler.resource_heartbeat
+    try:
+        claim_id = scheduler.backend.acquire_resource(
+            resource_name=resource_name,
+            amount=amount,
+            timeout=heartbeat.lease_seconds,
+            job_id=job_id,
+        )
+    except ValueError as error:
+        # The backend raises ValueError for permanent failures (unknown resource,
+        # amount exceeding capacity). Surface them as a SchedulerError.
+        raise SchedulerError(str(error)) from error
+
+    if claim_id is not None:
+        heartbeat.register(claim_id, resource_name)
+    return Promise(lambda resolve, reject: resolve(claim_id))
+
+
+@scheduler_task(namespace="redun")
+def release_resource(
+    scheduler: Scheduler,
+    parent_job: Job,
+    sexpr: SchedulerExpression,
+    claim_id: int,
+) -> Promise:
+    scheduler.resource_heartbeat.unregister(claim_id)
+    scheduler.backend.release_resource(claim_id)
+    return Promise(lambda resolve, reject: resolve(None))
+
+
+def with_resource(
+    expr: T,
+    resource_name: str,
+    amount: int = 1,
+    retry_interval: float = 10,
+    retry_giveup: float | None = None,
+) -> T:
+    """
+    Limit the concurrent evaluation of an expression `expr` by acquiring a global resource beforehand.
+
+    Parameters
+    ----------
+    expr : Any
+        An expression to evaluate.
+    resource_name : str
+        Name of a resource to acquire.
+    amount : int
+        Amount (default 1) of a resource to acquire
+    retry_interval : float
+        Interval in seconds to wait between attempts to acquire resource.
+    retry_giveup : int | None
+        If set, give up (raise SchedulerError) after this many seconds of waiting to
+        acquire the resource. If None (default), retry indefinitely.
+
+    Returns
+    -------
+    Returns the result of evaluating `expr`.
+    """
+    return _with_resource(
+        quote(expr),
+        resource_name=resource_name,
+        amount=amount,
+        retry_interval=retry_interval,
+        retry_giveup=retry_giveup,
+    )  # ty: ignore[invalid-return-type]
+
+
+@task(cache=True, check_valid="shallow", namespace="redun")
+async def _with_resource(
+    expr: QuotedExpression[T],
+    resource_name: str,
+    amount: int = 1,
+    retry_interval: float = 30,
+    retry_jitter: float = 15,
+    retry_giveup: float | None = None,
+    job_info: JobInfo = JobInfo(),
+) -> T:
+    """
+    Limit the concurrent evaluation of an expression `expr` by acquiring a global resource beforehand.
+
+    Parameters
+    ----------
+    expr : Any
+        An expression to evaluate.
+    resource_name : str
+        Name of a resource to acquire.
+    amount : int
+        Amount (default 1) of a resource to acquire
+    retry_interval : float
+        Interval in seconds to wait between attempts to acquire resource.
+    retry_jitter : float
+        Half-width of symmetric jitter envelope in seconds to apply to retries.
+    retry_giveup : float | None
+        If set, give up (raise SchedulerError) after this many wall-clock seconds of waiting to
+        acquire the resource. If None (default), retry indefinitely.
+
+    Returns
+    -------
+    Returns the result of evaluating `expr`.
+    """
+    start = time.monotonic()
+
+    attempt = 1
+    while True:
+        # Vary `attempt` each iteration to ensure each acquire is a distinct sexpr. Needed to avoid
+        # scheduler's caching.
+        claim_id = await acquire_resource(
+            resource_name=resource_name,
+            job_id=job_info.job_id,
+            amount=amount,
+            attempt=attempt,  # vary each time to make each expression unique
+        )
+
+        if claim_id is not None:
+            break
+
+        # Give up if we have exceeded the allowed wall-clock budget.
+        elapsed = time.monotonic() - start
+        if retry_giveup is not None and elapsed >= retry_giveup:
+            raise SchedulerError(
+                f"Gave up acquiring resource {resource_name!r} after {elapsed:.0f}s "
+                f"(retry_giveup={retry_giveup})."
+            )
+
+        # jitter uniformly to reduce lockstep retries.
+        jitter = random.uniform(-retry_jitter, retry_jitter)
+        await asyncio.sleep(retry_interval + jitter)
+        attempt += 1
+
+    # Evaluate wrapped expression.
+    try:
+        result = await expr.eval()  # ty: ignore[invalid-await]
+    finally:
+        await release_resource(claim_id)
+
+    return result

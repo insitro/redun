@@ -12,7 +12,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from redun import Scheduler, task
-from redun.backends.db import Execution, RedunBackendDb
+from redun.backends.db import Execution, RedunBackendDb, Resource
 from redun.backends.db import Job as JobDb
 from redun.backends.db import Task as TaskDb
 from redun.config import Config
@@ -24,6 +24,7 @@ from redun.scheduler import (
     Frame,
     Job,
     JobInfo,
+    ResourceHeartbeat,
     SchedulerError,
     Task,
     Traceback,
@@ -34,6 +35,7 @@ from redun.scheduler import (
     is_debugger_active,
     join_thread,
     scheduler_task,
+    with_resource,
 )
 from redun.scheduler_config import postprocess_config
 from redun.task import CacheScope, PartialTask, SchedulerTask, hash_args_eval
@@ -2352,3 +2354,169 @@ def test_sys_monitoring_detection():
     finally:
         mon.free_tool_id(mon.DEBUGGER_ID)
     assert is_debugger_active() is False
+
+
+class _FakeResourceBackend:
+    """Backend standin that records renew_resources calls.
+    For sqlite backend see test_with_resource_registers_and_releases_claim.
+    """
+
+    def __init__(self, renew_return: Optional[int] = None):
+        self.renew_calls: list[tuple[list[int], float]] = []
+        self._renew_return = renew_return
+
+    def renew_resources(self, claim_ids, timeout):
+        self.renew_calls.append((list(claim_ids), timeout))
+        # By default renew everything; override to simulate reaped claims.
+        return len(claim_ids) if self._renew_return is None else self._renew_return
+
+
+class _FakeScheduler:
+    """Scheduler standin for ResourceHeartbeat testing.
+    For redun scheduler see test_with_resource_registers_and_releases_claim.
+    """
+
+    def __init__(self, backend):
+        self.backend = backend
+        self.logger = Mock()
+
+
+def test_resource_heartbeat_renew_once():
+    """
+    A heartbeat tick renews all registered claims in a single batched call.
+    """
+    backend = _FakeResourceBackend()
+    heartbeat = ResourceHeartbeat(_FakeScheduler(backend), lease_seconds=120)
+
+    # No claims registered: no backend call.
+    heartbeat._renew_once()
+    assert backend.renew_calls == []
+
+    heartbeat.register(101, "s3")
+    heartbeat.register(102, "s3")
+    heartbeat._renew_once()
+
+    # One batched call covering both claims, using the configured lease.
+    assert len(backend.renew_calls) == 1
+    claim_ids, timeout = backend.renew_calls[0]
+    assert sorted(claim_ids) == [101, 102]
+    assert timeout == 120
+
+    # Clean up the lazily-started thread.
+    heartbeat.stop()
+
+
+def test_resource_heartbeat_warns_on_reaped_claim():
+    """
+    When fewer claims are renewed than registered, warn (but do not fail).
+    """
+    backend = _FakeResourceBackend(renew_return=1)  # only 1 of 2 renewed
+    scheduler = _FakeScheduler(backend)
+    heartbeat = ResourceHeartbeat(scheduler, lease_seconds=120)
+
+    heartbeat.register(1, "s3")
+    heartbeat.register(2, "s3")
+    heartbeat._renew_once()
+
+    assert scheduler.logger.warning.called
+    message = scheduler.logger.warning.call_args[0][0]
+    assert "1/2" in message
+    assert "s3" in message
+
+    heartbeat.stop()
+
+
+def test_resource_heartbeat_lazy_start_and_stop():
+    """
+    The heartbeat thread starts lazily on first register() and stops cleanly.
+    """
+    backend = _FakeResourceBackend()
+    heartbeat = ResourceHeartbeat(_FakeScheduler(backend), lease_seconds=120)
+
+    # No thread until a claim is registered.
+    assert heartbeat._thread is None
+
+    heartbeat.register(1, "s3")
+    assert heartbeat._thread is not None
+    assert heartbeat._thread.is_alive()
+
+    heartbeat.stop()
+    assert heartbeat._thread is None
+
+    # stop() is a no-op when never (re)started.
+    heartbeat.stop()
+
+
+def test_with_resource_registers_and_releases_claim():
+    """
+    Test that with_resource acquires a claim, registers it with the heartbeat
+    while the wrapped expression runs, and unregisters + releases it afterward.
+    """
+    scheduler = Scheduler(
+        config=Config(
+            {
+                "backend": {"db_uri": "sqlite:///:memory:"},
+                "scheduler": {"ignore_warnings": "namespace"},
+            }
+        )
+    )
+    scheduler.load()
+    assert isinstance(scheduler.backend, RedunBackendDb)
+    scheduler.backend.session.add(Resource(name="s3", capacity=1))
+    scheduler.backend.session.commit()
+
+    @task(namespace="test")
+    def inner(x):
+        # While this runs, the claim should be registered with the heartbeat.
+        assert len(scheduler.resource_heartbeat._claims) == 1
+        return x * 2
+
+    result = scheduler.run(with_resource(inner(5), resource_name="s3"))
+    assert result == 10
+
+    # After completion the claim is released and unregistered, and the heartbeat
+    # thread has been stopped by Scheduler._run's finally block.
+    assert scheduler.resource_heartbeat._claims == {}
+    assert scheduler.resource_heartbeat._thread is None
+
+
+def test_with_resource_contention_retries():
+    """
+    Under contention (more claimants than capacity), holders that cannot immediately
+    acquire must retry and eventually succeed once capacity frees up.
+
+    Test that each retry is a distinct scheduler expression (via `attempt`)
+    so unique-expression dedup does not return the first cached result for claim
+    acquisition.
+    """
+    scheduler = Scheduler(
+        config=Config(
+            {
+                "backend": {"db_uri": "sqlite:///:memory:"},
+                "scheduler": {"ignore_warnings": "namespace"},
+            }
+        )
+    )
+    scheduler.load()
+    assert isinstance(scheduler.backend, RedunBackendDb)
+    scheduler.backend.session.add(Resource(name="s3", capacity=1))
+    scheduler.backend.session.commit()
+
+    @task(namespace="test")
+    def inner(x):
+        return x * 2
+
+    @task(namespace="test")
+    def main():
+        # Three claimants, capacity 1: two must retry and succeed, not spin to giveup.
+        return [
+            with_resource(
+                inner(i),
+                resource_name="s3",
+                retry_interval=0.1,
+                retry_giveup=30,
+            )
+            for i in range(3)
+        ]
+
+    assert scheduler.run(main()) == [0, 2, 4]

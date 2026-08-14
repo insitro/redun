@@ -1,8 +1,9 @@
 import inspect
+import threading
 from collections import Counter
 from collections.abc import Callable
 from contextlib import contextmanager
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import cast
 from unittest import mock
 from unittest.mock import patch
@@ -28,6 +29,8 @@ from redun.backends.db import (
     RedunMigration,
     RedunVersion,
     RedunVersionError,
+    Resource,
+    ResourceClaim,
     Tag,
     TagEntity,
     Value,
@@ -101,6 +104,183 @@ def test_race_condition_record_value() -> None:
 
     with pytest.raises(IntegrityError):
         backend.record_value("my-other-value")
+
+
+def test_acquire_resource() -> None:
+    """
+    acquire_resource enforces capacity, frees on release, and fails fast on
+    permanent conditions (unknown resource or amount exceeding capacity).
+    """
+    backend = RedunBackendDb(db_uri="sqlite:///:memory:")
+    backend.load()
+    assert backend.session
+
+    backend.session.add(Resource(name="s3", capacity=2))
+    backend.session.commit()
+
+    # Acquire up to capacity.
+    claim1 = backend.acquire_resource("s3", job_id="123", amount=1, timeout=3600)
+    claim2 = backend.acquire_resource("s3", job_id="123", amount=1, timeout=3600)
+    assert claim1 is not None
+    assert claim2 is not None
+
+    # At capacity: further acquires return None (transient, caller may retry).
+    assert backend.acquire_resource("s3", job_id="123", amount=1, timeout=3600) is None
+
+    # Releasing frees capacity for a subsequent acquire.
+    backend.release_resource(claim1)
+    claim3 = backend.acquire_resource("s3", job_id="123", amount=1, timeout=3600)
+    assert claim3 is not None
+
+    # Permanent failures raise ValueError rather than returning None.
+    with pytest.raises(ValueError):
+        backend.acquire_resource("does-not-exist", job_id="123", amount=1, timeout=3600)
+    with pytest.raises(ValueError):
+        backend.acquire_resource("s3", job_id="123", amount=3, timeout=3600)
+
+
+def test_release_resource_stale_claim_id_aba() -> None:
+    """
+    A stale resource claim_id must not release a different holder's live claim.
+
+    SQLite doesn't natively have a monotonic primary key sequence, which means
+    when running locally, claim ids can be re-used by different holders. This
+    could lead to a stale holder releasing a different holder's live claim. We
+    fix this by using sqlite_autoincrement to force monotonic claim ids.
+
+    This regression test checks that that works (i.e., a stale claim_id does not
+    release a different holder's live claim).
+    """
+    backend = RedunBackendDb(db_uri="sqlite:///:memory:")
+    backend.load()
+    assert backend.session
+
+    backend.session.add(Resource(name="s3", capacity=1))
+    backend.session.commit()
+
+    # (1) Holder A acquires a claim that is already expired (a negative timeout
+    # puts max_time in the past), so the next acquire's cleanup will reap it.
+    claim_a = backend.acquire_resource("s3", job_id="123", amount=1, timeout=-1)
+    assert claim_a is not None
+
+    # (2 + 3) Holder B acquires. acquire_resource first deletes A's expired
+    # claim, emptying the table; on SQLite the next insert reuses the freed id.
+    claim_b = backend.acquire_resource("s3", job_id="123", amount=1, timeout=3600)
+    assert claim_b is not None
+
+    # (4) A releases its stale id. This must NOT delete B's live claim.
+    backend.release_resource(claim_a)
+
+    surviving = backend.session.query(ResourceClaim).filter(ResourceClaim.name == "s3").count()
+    assert surviving == 1, (
+        "Holder A's stale claim_id released holder B's live claim: "
+        "the resource is now silently over-admitted."
+    )
+
+
+def test_renew_resources() -> None:
+    """
+    renew_resources extends claim leases in one batch and reports how many claims
+    were actually renewed (so a caller can detect claims that were already reaped).
+    """
+    backend = RedunBackendDb(db_uri="sqlite:///:memory:")
+    backend.load()
+    assert backend.session
+
+    backend.session.add(Resource(name="s3", capacity=3))
+    backend.session.commit()
+
+    # Acquire with a short lease, then renew to a much longer one.
+    claim1 = backend.acquire_resource("s3", job_id="123", amount=1, timeout=1)
+    claim2 = backend.acquire_resource("s3", job_id="123", amount=1, timeout=1)
+    assert claim1 is not None and claim2 is not None
+
+    def max_time(claim_id: int) -> datetime:
+        return (
+            backend.session.query(ResourceClaim.max_time)
+            .filter(ResourceClaim.id == claim_id)
+            .scalar()
+        )
+
+    before = max_time(claim1)
+    renewed = backend.renew_resources([claim1, claim2], timeout=3600)
+    assert renewed == 2
+    assert max_time(claim1) > before
+
+    # Trying to renew a mix of live and reaped claims should return live count only
+    backend.release_resource(claim2)
+    missing_id = 999999
+    renewed = backend.renew_resources([claim1, claim2, missing_id], timeout=3600)
+    assert renewed == 1
+
+    # Empty input is a no-op.
+    assert backend.renew_resources([], timeout=3600) == 0
+
+
+def test_acquire_resource_race_condition(testdb) -> None:
+    """
+    Concurrent acquires of a Resource must not over-admit claims.
+
+    Postgres's default isolation level is READ COMMITTED, which does *not*
+    prevent concurrent transactions from submitting claims to the same
+    resource. This is subject to a write-skew fault (if two transactions
+    occur simultaneously and attempt to claim the same resource, they can
+    both claim it, since neither has seen the other's claim yet). We get around
+    this by acquiring the resource row with a lock before checking and inserting
+    claims.
+
+    This test requires a real Postgres backend (``REDUN_TEST_POSTGRES=1``); it is
+    skipped on SQLite, which serializes all writers globally and so cannot exhibit
+    the anomaly.
+    """
+    if not testdb:
+        pytest.skip("Requires Postgres backend (REDUN_TEST_POSTGRES=1).")
+
+    # Migrate the schema and create a capacity-1 resource once.
+    setup = RedunBackendDb(db_uri=testdb)
+    setup.load(migrate=True)
+    assert setup.session
+    setup.session.query(Resource).filter(Resource.name == "res").delete()
+    setup.session.add(Resource(name="res", capacity=1))
+    setup.session.commit()
+
+    num_threads = 8
+    barrier = threading.Barrier(num_threads)
+    claims: list[int | None] = [None] * num_threads
+
+    def worker(i: int) -> None:
+        # Each thread gets its own backend => its own connection/session.
+        backend = RedunBackendDb(db_uri=testdb)
+        backend.load(migrate=False)
+        assert backend.session
+        try:
+            # Maximize simultaneity: all threads read-decide-write at once.
+            barrier.wait()
+            claim_id = backend.acquire_resource("res", job_id="123", amount=1, timeout=3600)
+            backend.session.commit()
+            claims[i] = claim_id
+        finally:
+            backend.session.close()
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(num_threads)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    granted = [c for c in claims if c is not None]
+
+    # Ground truth: count the claims that actually committed to the table.
+    committed_claims = (
+        setup.session.query(ResourceClaim).filter(ResourceClaim.name == "res").count()
+    )
+    setup.session.query(ResourceClaim).filter(ResourceClaim.name == "res").delete()
+    setup.session.commit()
+
+    assert len(granted) == 1 and committed_claims == 1, (
+        f"Resource over-admitted: {len(granted)} acquirers were granted and "
+        f"{committed_claims} claims committed for a capacity-1 resource. Expected exactly 1."
+    )
 
 
 def test_call_graph_db() -> None:

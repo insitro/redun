@@ -425,3 +425,35 @@ class RedunBackend(abc.ABC):
         Iterate the record ids of descendants of root_ids.
         """
         pass
+
+    @abc.abstractmethod
+    def acquire_resource(
+        self, resource_name: str, amount: int, timeout: float, job_id: str
+    ) -> int | None:
+        """
+        Attempt to acquire a Resource.
+
+        Returns the claim_id on success, or None if the resource is temporarily at
+        capacity (the caller may retry). Implementations should raise ValueError for
+        permanent failures (e.g. an unknown resource or an amount exceeding total
+        capacity).
+        """
+        pass
+
+    @abc.abstractmethod
+    def release_resource(self, claim_id: int) -> None:
+        """
+        Release a Resource.
+        """
+        pass
+
+    @abc.abstractmethod
+    def renew_resources(self, claim_ids: list[int], timeout: float) -> int:
+        """
+        Extend the lease (max_time) of the given resource claims.
+
+        Returns the number of claims actually renewed. A value less than
+        len(claim_ids) indicates some claims were already reaped and could not
+        be renewed.
+        """
+        pass

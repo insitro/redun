@@ -184,6 +184,7 @@ REDUN_DB_VERSIONS = [
     DBVersionInfo("f68b3aaee9cc", 3, 3, "Add job and value indexes."),
     DBVersionInfo("3b0a6e67cc58", 3, 4, "Add UTC timezone to timestamps."),
     DBVersionInfo("0bee3d6dba76", 3, 5, "Add updated_time."),
+    DBVersionInfo("9e323da29ac7", 3, 6, "Add resource schemas."),
 ]
 REDUN_DB_MIN_VERSION = DBVersionInfo("", 3, 5, "")  # Min db version needed by redun library.
 REDUN_DB_MAX_VERSION = DBVersionInfo("", 3, 99, "")  # Max db version needed by redun library.
@@ -1325,6 +1326,39 @@ class Tag(Base):
         assert session
         value = session.query(Value).get(self.value)
         return value.value_parsed if value is not None else None
+
+
+class Resource(Base):
+    """
+    A Resource can be acquired by Jobs to limit their concurrency.
+    """
+
+    __tablename__ = "resource"
+
+    name = Column(String, primary_key=True)
+    capacity = Column(Integer)
+
+
+class ResourceClaim(Base):
+    """
+    A claim by a Job on a Resource.
+    """
+
+    __tablename__ = "resource_claim"
+
+    # forced so that claim IDs are never reused
+    __table_args__ = {"sqlite_autoincrement": True}
+
+    id = Column(Integer, primary_key=True)
+    name = Column(
+        String,
+        ForeignKey("resource.name"),
+        index=True,
+    )
+    amount = Column(Integer)
+    start_time = Column(DateTimeUTC)
+    max_time = Column(DateTimeUTC)
+    job_id = Column(String)
 
 
 #
@@ -3296,3 +3330,126 @@ class RedunBackendDb(RedunBackend):
                 return username
         else:
             return None
+
+    @use_acquire
+    def acquire_resource(
+        self, resource_name: str, amount: int, timeout: float, job_id: str
+    ) -> int | None:
+        """
+        Attempt to acquire a Resource.
+
+        Returns
+        -------
+        int | None
+            The `claim_id` on success, or none if the resource is at capacity.
+
+        Notes
+        -----
+        Raises `ValueError` for unresolvable failures (i.e. unknown resource or claim amount
+        exceeding total capacity).
+        """
+        assert self.session
+
+        # Ensure database is new enough before using ResourceClaim feature.
+        inspector = sa.inspect(self.engine)
+        assert inspector
+        if not inspector.has_table("resource_claim"):
+            raise ValueError("Database must be upgraded to atleast version 3.6 to use Resources")
+
+        now = utcnow()
+
+        # Lock the resource row for the duration of the transaction so that concurrent
+        # acquirers of the same resource get serialized under READ_COMMITTED isolation.
+        # See `test_db.py::test_acquire_resource_race_condition` for an example.
+        capacity = self.session.execute(
+            select(Resource.capacity).where(Resource.name == resource_name).with_for_update()
+        ).scalar()
+
+        # Fail fast on permanent conditions that no amount of retrying can satisfy.
+        if capacity is None:
+            self.session.commit()
+            raise ValueError(f"Unknown resource: {resource_name!r}.")
+        if amount > capacity or amount <= 0 or capacity <= 0:
+            self.session.commit()
+            raise ValueError(
+                f"Cannot acquire amount={amount} of resource {resource_name!r} "
+                f"which has capacity={capacity}."
+            )
+
+        # Perform maintenance by deleting expired resources.
+        self.session.query(ResourceClaim).filter(
+            ResourceClaim.name == resource_name, ResourceClaim.max_time < now
+        ).delete()
+
+        # Existing total for this resource name.
+        existing = (
+            select(sa.func.coalesce(sa.func.sum(ResourceClaim.amount), 0))
+            .where(ResourceClaim.name == resource_name)
+            .scalar_subquery()
+        )
+
+        # SELECT of literal values, emitted only if the guard passes.
+        sel = select(
+            sa.literal(resource_name),
+            sa.literal(amount),
+            sa.literal(now),
+            sa.literal(now + timedelta(seconds=timeout)),
+            sa.literal(job_id),
+        ).where(amount + existing <= capacity)
+
+        stmt = (
+            sa.insert(ResourceClaim)
+            .from_select(["name", "amount", "start_time", "max_time", "job_id"], sel)
+            .returning(ResourceClaim.id)
+        )
+
+        claim_id = self.session.execute(stmt).scalar()
+
+        # Commit to publish claim and release resource row lock
+        self.session.commit()
+        return claim_id
+
+    def release_resource(self, claim_id: int) -> None:
+        """
+        Release a Resource.
+        """
+        assert self.session
+
+        self.session.query(ResourceClaim).filter(ResourceClaim.id == claim_id).delete()
+        self.session.commit()
+
+    @use_acquire
+    def renew_resources(self, claim_ids: list[int], timeout: float) -> int:
+        """
+        Extend the lease (max_time) of the given resource claims.
+
+        Parameters
+        ----------
+        claim_ids : list[int]
+            List of resource claim IDs to renew.
+        timeout : float
+            The additional time (in seconds) to extend the lease for each claim.
+
+        Returns
+        -------
+        int
+            The number of resource claims that were successfully renewed.
+
+        Notes
+        -----
+        A value less than `len(claim_ids)` indicates that renewal failed (e.g. if
+        the requested claims were already reaped).
+        """
+        assert self.session
+
+        if not claim_ids:
+            return 0
+
+        now = utcnow()
+        result = self.session.execute(
+            sa.update(ResourceClaim)
+            .where(ResourceClaim.id.in_(claim_ids))
+            .values(max_time=now + timedelta(seconds=timeout))
+        )
+        self.session.commit()
+        return result.rowcount  # ty: ignore[unresolved-attribute]
