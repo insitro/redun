@@ -42,6 +42,9 @@ if TYPE_CHECKING:
         pass
 
 T = TypeVar("T")
+# Bound TypeVar so `@register_filesystem` preserves the decorated subclass type. Otherwise every
+# registered class is seen as `type[FileSystem]` and `isinstance(fs, S3FileSystem)` cannot narrow.
+_FS = TypeVar("_FS", bound=type["FileSystem"])
 
 # Thread-local storage is used for thread-specific s3 clients.
 _local = threading.local()
@@ -50,7 +53,7 @@ _local = threading.local()
 _proto2filesystem_class: dict[str, type["FileSystem"]] = {}
 
 
-def register_filesystem(cls: type["FileSystem"]) -> type["FileSystem"]:
+def register_filesystem(cls: _FS) -> _FS:
     _proto2filesystem_class[cls.name] = cls
     return cls
 
