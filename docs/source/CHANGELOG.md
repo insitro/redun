@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.49.1
+September 04, 2026
+
+* `#528` - fix(file): preserve the subclass type through register_filesystem
+
 ## 0.49.0
 August 14, 2026
 
