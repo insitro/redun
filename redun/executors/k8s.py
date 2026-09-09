@@ -520,12 +520,20 @@ class K8SExecutor(Executor):
         """Collect existing k8s jobs and match them up to redun jobs"""
         running_arrays: dict[str, list[tuple[str, str, int]]] = defaultdict(list)
 
-        # We don't currently filter on "inflight" jobs, but that's what the
-        # aws_batch implementation does.
         jobs = self.get_jobs()
 
         # Get all running jobs by name.
         for job in jobs:
+            # Only reunite with jobs that are still in flight. A terminal-FAILED
+            # Job can linger in the cluster until its TTL garbage-collects it;
+            # reuniting with it would re-serve that stale failure and immediately
+            # reject the redun job instead of re-running it. Skip failed Jobs so
+            # they are resubmitted, matching the aws_batch executor, which only
+            # gathers inflight jobs. Terminal-SUCCEEDED Jobs are still gathered so
+            # a restarted scheduler can recover their result by reuniting rather
+            # than recomputing.
+            if job.status is not None and self._get_k8s_job_terminal_status(job)[0] == FAILED:
+                continue
             job_name = job.metadata.name
             if not is_array_job_name(job_name):
                 job_hash = get_hash_from_job_name(job_name)

@@ -671,6 +671,44 @@ def test_executor_handles_unrelated_jobs() -> None:
 
 @mock_s3
 @mock_k8s
+def test_failed_jobs_are_not_reunited() -> None:
+    """A terminal-FAILED Job must not be gathered for reuniting.
+
+    K8s keeps failed Jobs until their TTL garbage-collects them, so a failed
+    publish can still be returned by ``get_jobs``. Reuniting with it would
+    re-serve the stale failure and reject the redun job instead of re-running
+    it. Only inflight and succeeded Jobs should be gathered: inflight so a
+    restarted scheduler re-attaches instead of double-submitting, succeeded so
+    it can recover the result. Failed Jobs are skipped so they are resubmitted.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+
+    prefix = "liveratlas_spearmancor"
+    running_hash = "111111111"
+    failed_hash = "222222222"
+    succeeded_hash = "333333333"
+
+    running = create_job_object(uid="running", name=f"{prefix}_run-{running_hash}")
+    running.status = client.V1JobStatus(active=1)
+    failed = create_job_object(uid="failed", name=f"{prefix}_fail-{failed_hash}")
+    failed.status = client.V1JobStatus(failed=1)
+    succeeded = create_job_object(uid="succeeded", name=f"{prefix}_done-{succeeded_hash}")
+    succeeded.status = client.V1JobStatus(succeeded=1)
+
+    executor.get_jobs.return_value = [running, failed, succeeded]
+
+    executor.gather_inflight_jobs()
+
+    # The failed Job is dropped; the inflight and succeeded Jobs are retained.
+    assert executor.preexisting_k8s_jobs == {
+        running_hash: "running",
+        succeeded_hash: "succeeded",
+    }
+
+
+@mock_s3
+@mock_k8s
 @patch("redun.executors.k8s.package_code")
 def test_code_packaging(package_code_mock: Mock) -> None:
     """
