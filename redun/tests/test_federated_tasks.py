@@ -1,12 +1,14 @@
 import copy
 import os
 from typing import Optional
+from unittest.mock import MagicMock
 
 import pytest
 
 from redun import Scheduler, task
 from redun.config import Config
 from redun.federated_tasks import (
+    InvocationException,
     federated_task,
     lambda_federated_task,
     launch_federated_task,
@@ -153,6 +155,60 @@ def test_lambda_federated_task(tmpdir) -> None:
     with open(result_path, "r") as fp:
         result = fp.read()
     assert result == "17"
+
+
+def test_lambda_federated_task_rejects_on_non_200(tmpdir, monkeypatch) -> None:
+    """A non-200 lambda invoke must reject the promise (not raise synchronously), so the
+    failure flows through normal evaluation instead of crashing the scheduler."""
+    fake_client = MagicMock()
+    fake_client.invoke.return_value = {
+        "StatusCode": 500,
+        "FunctionError": "Unhandled",
+        "Payload": "kaboom",
+    }
+    monkeypatch.setattr(
+        "redun.federated_tasks.get_aws_client", lambda *args, **kwargs: fake_client
+    )
+
+    scheduler = Scheduler()
+    with pytest.raises(
+        InvocationException, match="Failed to invoke lambda 'fake-lambda-function'"
+    ):
+        scheduler.run(
+            lambda_federated_task(
+                config_name="unused",
+                entrypoint="sample_task",
+                lambda_function_name="fake-lambda-function",
+                scratch_prefix=str(tmpdir),
+                dryrun=False,
+                cache=False,
+            )
+        )
+
+
+def test_lambda_federated_task_rejects_when_invoke_raises(tmpdir, monkeypatch) -> None:
+    """A synchronous error from the lambda client (e.g. an IAM AccessDenied on Invoke) must be
+    turned into a rejected promise, not propagate out and crash the scheduler."""
+    fake_client = MagicMock()
+    fake_client.invoke.side_effect = RuntimeError(
+        "not authorized to perform lambda:InvokeFunction"
+    )
+    monkeypatch.setattr(
+        "redun.federated_tasks.get_aws_client", lambda *args, **kwargs: fake_client
+    )
+
+    scheduler = Scheduler()
+    with pytest.raises(InvocationException, match="not authorized to perform"):
+        scheduler.run(
+            lambda_federated_task(
+                config_name="unused",
+                entrypoint="sample_task",
+                lambda_function_name="fake-lambda-function",
+                scratch_prefix=str(tmpdir),
+                dryrun=False,
+                cache=False,
+            )
+        )
 
 
 def test_rest_federated_task(tmpdir) -> None:

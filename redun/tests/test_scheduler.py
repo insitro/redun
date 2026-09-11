@@ -5,7 +5,7 @@ import sys
 import time
 from collections.abc import Sequence
 from traceback import FrameSummary
-from typing import Any, Optional
+from typing import Any, Optional, cast
 from unittest.mock import Mock, patch
 
 import pytest
@@ -1207,6 +1207,63 @@ def test_scheduler_task(scheduler: Scheduler) -> None:
     assert isinstance(expr2, PartialTask)
     assert isinstance(expr2(1), SchedulerExpression)
     assert scheduler.run(task1.partial()(1)) == 2
+
+
+def test_scheduler_task_raising_synchronously(scheduler: Scheduler) -> None:
+    """
+    A scheduler task that raises synchronously (instead of returning a rejected Promise)
+    must not crash the scheduler. Its error should surface as a normal rejected evaluation
+    that propagates from `run()` and is recoverable by `catch`.
+    """
+
+    @scheduler_task(namespace="redun.tests.test_scheduler")
+    def faulty_scheduler_task(
+        scheduler: Scheduler, parent_job: Job, sexpr: SchedulerExpression
+    ) -> Promise:
+        # Misbehaving scheduler task: raises instead of returning a rejected Promise.
+        raise ValueError("boom from a scheduler task")
+
+    @task()
+    def recover(error):
+        return f"recovered: {error}"
+
+    # The raise must surface as a normal exception from run(), not take down the scheduler.
+    with pytest.raises(ValueError, match="boom from a scheduler task"):
+        scheduler.run(faulty_scheduler_task())
+
+    # And it must be recoverable by `catch`, since the failure is now a rejected Promise.
+    assert (
+        scheduler.run(catch(faulty_scheduler_task(), ValueError, recover))
+        == "recovered: boom from a scheduler task"
+    )
+
+
+def test_scheduler_task_returning_non_promise(scheduler: Scheduler) -> None:
+    """
+    A scheduler task that returns a non-Promise (instead of a Promise) must not crash the
+    scheduler. It should surface as a normal rejected evaluation (a `TypeError`) that
+    propagates from `run()` and is recoverable by `catch`.
+    """
+
+    @scheduler_task(namespace="redun.tests.test_scheduler")
+    def non_promise_scheduler_task(
+        scheduler: Scheduler, parent_job: Job, sexpr: SchedulerExpression
+    ) -> Promise:
+        # Misbehaving scheduler task: returns a plain value instead of a Promise.
+        return cast(Promise, "not a promise")
+
+    @task()
+    def recover(error):
+        return f"recovered: {error}"
+
+    # The non-Promise return must surface as a TypeError from run(), not crash the scheduler.
+    with pytest.raises(TypeError, match="did not return a Promise"):
+        scheduler.run(non_promise_scheduler_task())
+
+    # And it must be recoverable by `catch`, since the failure is now a rejected Promise.
+    result = scheduler.run(catch(non_promise_scheduler_task(), TypeError, recover))
+    assert result.startswith("recovered:")
+    assert "did not return a Promise" in result
 
 
 def test_cond(scheduler: Scheduler) -> None:

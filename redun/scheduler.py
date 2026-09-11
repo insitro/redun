@@ -1447,8 +1447,19 @@ class Scheduler:
                 )
             else:
                 # Scheduler tasks are executed with access to scheduler, parent_job, and
-                # raw args (i.e. possibly unevaluated).
-                promise = task.func(self, parent_job, expr, *expr.args, **expr.kwargs)
+                # raw args (i.e. possibly unevaluated). They run inline in this scheduler
+                # thread and are trusted to return a Promise, signaling failure by rejecting
+                # it. A scheduler task that instead raises synchronously — or returns a
+                # non-Promise — would propagate out of the scheduler loop and crash the whole
+                # run, leaving its Job stuck in a non-terminal state. Guard against both here so
+                # a misbehaving scheduler task is surfaced as a normal rejected evaluation
+                # (recoverable by `catch`) instead.
+                try:
+                    promise = task.func(self, parent_job, expr, *expr.args, **expr.kwargs)
+                    if not isinstance(promise, Promise):
+                        raise TypeError(f"scheduler task {task.fullname} did not return a Promise")
+                except Exception as error:
+                    promise = Promise(lambda resolve, reject, error=error: reject(error))
 
         elif isinstance(expr, TaskExpression):
             # Evaluate task_name to specific task.

@@ -145,15 +145,33 @@ def lambda_federated_task(
     if not dryrun:
         aws_region = os.environ.get("AWS_REGION", DEFAULT_AWS_REGION)
         lambda_client = get_aws_client("lambda", aws_region)
-        response = lambda_client.invoke(
-            FunctionName=lambda_function_name,
-            Payload=json.dumps(request_data),
-        )
-        if not response["StatusCode"] == 200:
-            raise InvocationException(
-                f"Failed to invoke lambda '{lambda_function_name}'. Encountered erorr "
-                f"{response['FunctionError']}: {response['Payload']}"
+        # As a scheduler task we must not raise synchronously (that would escape the
+        # scheduler loop); reject the promise instead so the failure flows through normal
+        # evaluation and can be recovered by `catch`. Include the function, entrypoint, and
+        # execution id so a submission failure (e.g. an IAM AccessDenied on Invoke) is
+        # self-explanatory.
+        try:
+            response = lambda_client.invoke(
+                FunctionName=lambda_function_name,
+                Payload=json.dumps(request_data),
             )
+        except Exception as error:
+            promise.do_reject(
+                InvocationException(
+                    f"Failed to invoke lambda '{lambda_function_name}' for entrypoint "
+                    f"'{entrypoint}' (execution {execution.id}): {error!r}"
+                )
+            )
+            return promise
+        if not response["StatusCode"] == 200:
+            promise.do_reject(
+                InvocationException(
+                    f"Failed to invoke lambda '{lambda_function_name}' for entrypoint "
+                    f"'{entrypoint}' (execution {execution.id}). Encountered error "
+                    f"{response.get('FunctionError')}: {response.get('Payload')}"
+                )
+            )
+            return promise
 
     promise.do_resolve((execution.id, request_data))
     return promise
@@ -228,9 +246,20 @@ def rest_federated_task(
     }
 
     if not dryrun:
-        response = requests.post(url, data=request_data)
-        if not response.ok:
+        # As a scheduler task we must not raise synchronously (that would escape the
+        # scheduler loop); reject the promise instead so the failure flows through normal
+        # evaluation and can be recovered by `catch`.
+        try:
+            response = requests.post(url, data=request_data)
             response.raise_for_status()
+        except Exception as error:
+            promise.do_reject(
+                InvocationException(
+                    f"Failed to POST federated task to '{url}' for entrypoint "
+                    f"'{entrypoint}' (execution {execution.id}): {error!r}"
+                )
+            )
+            return promise
 
     promise.do_resolve((execution.id, request_data))
     return promise
