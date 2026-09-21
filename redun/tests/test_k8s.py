@@ -9,6 +9,17 @@ from unittest.mock import Mock, patch
 import boto3
 import pytest
 from kubernetes import client
+from kubernetes.client.exceptions import ApiException
+from urllib3 import HTTPSConnectionPool
+from urllib3.exceptions import (
+    DecodeError,
+    HTTPError,
+    MaxRetryError,
+    ProtocolError,
+    ProxyError,
+    SSLError,
+)
+from urllib3.exceptions import TimeoutError as URLLib3TimeoutError
 
 import redun.executors.k8s
 import redun.executors.k8s_utils
@@ -18,12 +29,16 @@ from redun.config import Config
 from redun.executors.code_packaging import create_tar, package_code
 from redun.executors.command import REDUN_REQUIRED_VERSION
 from redun.executors.k8s import (
+    DEFAULT_LOG_FETCH_MAX_BACKOFF_TOTAL,
     FAILED,
     SUCCEEDED,
     K8SExecutor,
+    LogFetchRetryBudget,
     _parse_completed_indexes,
     get_hash_from_job_name,
     get_k8s_job_name,
+    get_pod_logs,
+    is_transient_log_fetch_error,
     submit_task,
 )
 from redun.executors.k8s_utils import (
@@ -1781,5 +1796,476 @@ def test_executor_with_volumes(k8s_submit_mock: Mock, k8s_describe_jobs_mock: Mo
     assert "volume_mounts" in k8s_submit_mock.call_args[1]
     assert k8s_submit_mock.call_args[1]["volumes"] == volumes
     assert k8s_submit_mock.call_args[1]["volume_mounts"] == volume_mounts
+
+    executor.stop()
+
+
+# ---------------------------------------------------------------------------
+# Tests for resilient pod-log retrieval (COMP-3871)
+# ---------------------------------------------------------------------------
+
+
+def _make_log_pod(exit_code: int = 0) -> client.V1Pod:
+    """Build a V1Pod with a terminated container status, as get_pod_logs expects."""
+    return client.V1Pod(
+        metadata=client.V1ObjectMeta(name="pod-1", namespace="default"),
+        status=client.V1PodStatus(
+            container_statuses=[
+                client.V1ContainerStatus(
+                    image="img",
+                    image_id="id",
+                    name="c",
+                    ready=False,
+                    restart_count=0,
+                    state=client.V1ContainerState(
+                        terminated=client.V1ContainerStateTerminated(exit_code=exit_code),
+                    ),
+                ),
+            ],
+        ),
+    )
+
+
+def _api_exception(status: int, body: str = "") -> ApiException:
+    error = ApiException(status=status)
+    error.body = body
+    return error
+
+
+@pytest.mark.parametrize(
+    "error,expected",
+    [
+        (_api_exception(500), True),
+        (_api_exception(503), True),
+        (_api_exception(500, "remote error: tls: internal error"), True),
+        (_api_exception(0), True),
+        (ProtocolError("connection reset"), True),
+        (URLLib3TimeoutError("read timed out"), True),
+        (ProxyError("cannot connect to proxy", OSError("connection refused")), True),
+        (SSLError("handshake failure"), True),
+        (
+            MaxRetryError(
+                HTTPSConnectionPool(host="h", port=443),
+                "/url",
+                reason=ProtocolError("x"),
+            ),
+            True,
+        ),
+        (_api_exception(404), False),
+        (_api_exception(400), False),
+        # A generic HTTPError or a deterministic urllib3 subclass (e.g. a
+        # malformed response body) is not a transient transport failure and
+        # must not be retried.
+        (HTTPError("generic"), False),
+        (DecodeError("bad response body"), False),
+        (ValueError("not a transport error"), False),
+    ],
+)
+def test_is_transient_log_fetch_error(error: BaseException, expected: bool) -> None:
+    assert is_transient_log_fetch_error(error) is expected
+
+
+def test_get_pod_logs_handles_pod_without_container_statuses() -> None:
+    """A pod that failed before any container started has no container statuses."""
+    k8s_client = Mock()
+    k8s_client.core.read_namespaced_pod_log.return_value = "line1\nline2"
+    pod = client.V1Pod(
+        metadata=client.V1ObjectMeta(name="pod-1", namespace="default"),
+        status=client.V1PodStatus(container_statuses=None),
+    )
+
+    lines = get_pod_logs(k8s_client, pod)
+
+    assert lines == ["line1", "line2"]
+
+
+def test_get_pod_logs_appends_exit_line_when_container_statuses_present() -> None:
+    """A non-zero exit code on the last container status is appended as a log line."""
+    k8s_client = Mock()
+    k8s_client.core.read_namespaced_pod_log.return_value = "line1\nline2"
+    pod = client.V1Pod(
+        metadata=client.V1ObjectMeta(name="pod-1", namespace="default"),
+        status=client.V1PodStatus(
+            container_statuses=[
+                client.V1ContainerStatus(
+                    image="img",
+                    image_id="id",
+                    name="c",
+                    ready=False,
+                    restart_count=0,
+                    state=client.V1ContainerState(
+                        terminated=client.V1ContainerStateTerminated(
+                            exit_code=1,
+                            reason="Error",
+                            message="boom",
+                        ),
+                    ),
+                ),
+            ],
+        ),
+    )
+
+    lines = get_pod_logs(k8s_client, pod)
+
+    assert lines == ["line1", "line2", "Exit 1 (Error): boom"]
+
+
+@patch("redun.executors.k8s.time.sleep")
+def test_get_pod_logs_retries_transient_then_succeeds(sleep_mock: Mock) -> None:
+    """A transient 5xx is retried and, on eventual success, logs are returned."""
+    k8s_client = Mock()
+    k8s_client.core.read_namespaced_pod_log.side_effect = [
+        _api_exception(500, "remote error: tls: internal error"),
+        _api_exception(500, "remote error: tls: internal error"),
+        "line1\nline2",
+    ]
+
+    lines = get_pod_logs(k8s_client, _make_log_pod(), max_retries=5, backoff=0.0)
+
+    assert lines == ["line1", "line2"]
+    assert k8s_client.core.read_namespaced_pod_log.call_count == 3
+    assert sleep_mock.call_count == 2
+
+
+@patch("redun.executors.k8s.time.sleep")
+def test_get_pod_logs_does_not_retry_non_transient(sleep_mock: Mock) -> None:
+    """A 404 (definitive "no such log") is raised immediately, without retry."""
+    k8s_client = Mock()
+    k8s_client.core.read_namespaced_pod_log.side_effect = _api_exception(404)
+
+    with pytest.raises(ApiException):
+        get_pod_logs(k8s_client, _make_log_pod(), max_retries=5, backoff=0.0)
+
+    assert k8s_client.core.read_namespaced_pod_log.call_count == 1
+    sleep_mock.assert_not_called()
+
+
+@patch("redun.executors.k8s.random.random")
+@patch("redun.executors.k8s.time.sleep")
+def test_get_pod_logs_non_transient_error_does_not_spend_shared_budget(
+    sleep_mock: Mock,
+    random_mock: Mock,
+) -> None:
+    """
+    A non-transient failure (e.g. a 404 for a genuinely missing log) must not
+    spend any of the shared per-cycle retry budget, otherwise one pod with no
+    log would reduce the retry runway available to every other pod sharing
+    the budget this cycle. ``backoff`` is deliberately non-zero here (unlike
+    ``test_get_pod_logs_does_not_retry_non_transient``) so that, were the
+    transient-error guard ever bypassed for a non-transient error, the
+    resulting non-zero delay would actually be deducted from ``budget`` and
+    this test would catch it even if call-count/sleep assertions did not.
+    """
+    random_mock.return_value = 1.0  # Deterministic max-jitter backoff.
+    k8s_client = Mock()
+    k8s_client.core.read_namespaced_pod_log.side_effect = _api_exception(404)
+    budget = LogFetchRetryBudget(DEFAULT_LOG_FETCH_MAX_BACKOFF_TOTAL)
+
+    with pytest.raises(ApiException):
+        get_pod_logs(k8s_client, _make_log_pod(), max_retries=5, backoff=1.0, budget=budget)
+
+    assert budget.remaining == DEFAULT_LOG_FETCH_MAX_BACKOFF_TOTAL
+    assert k8s_client.core.read_namespaced_pod_log.call_count == 1
+    sleep_mock.assert_not_called()
+
+
+@patch("redun.executors.k8s.logger")
+@patch("redun.executors.k8s.time.sleep")
+def test_get_pod_logs_reraises_after_exhausting_retries(
+    sleep_mock: Mock, logger_mock: Mock
+) -> None:
+    """After max_retries transient failures, the last error propagates."""
+    k8s_client = Mock()
+    k8s_client.core.read_namespaced_pod_log.side_effect = _api_exception(503)
+
+    with pytest.raises(ApiException):
+        get_pod_logs(k8s_client, _make_log_pod(), max_retries=2, backoff=0.0)
+
+    # 1 initial attempt + 2 retries.
+    assert k8s_client.core.read_namespaced_pod_log.call_count == 3
+    assert sleep_mock.call_count == 2
+
+    # The give-up event is logged once retries are exhausted, in the same
+    # place as the retry attempts.
+    give_up_messages = [
+        call.args[0]
+        for call in logger_mock.warning.call_args_list
+        if call.args[0].startswith("Exhausted")
+    ]
+    assert len(give_up_messages) == 1
+
+
+@patch("redun.executors.k8s.random.random")
+@patch("redun.executors.k8s.time.sleep")
+def test_get_pod_logs_shared_budget_bounds_cumulative_retries_across_flaky_pods(
+    sleep_mock: Mock,
+    random_mock: Mock,
+) -> None:
+    """
+    A partially degraded node doesn't necessarily fail every log fetch
+    outright - each pod's fetch may fail a few times before recovering. A
+    retry-backoff budget shared across pods (as ``K8SExecutor`` shares one
+    across all pods processed within a monitor cycle) must bound the
+    *cumulative* retry time paid across all of them, not just cap retries
+    per pod: once earlier pods have spent most of the shared budget, a
+    later pod gets less runway even on the exact same transient error.
+    """
+    random_mock.return_value = 1.0  # Deterministic max-jitter backoff.
+    budget = LogFetchRetryBudget(DEFAULT_LOG_FETCH_MAX_BACKOFF_TOTAL)  # 15.0
+
+    # Pods A and B: each fails 3 times (1s + 2s + 4s = 7s of backoff)
+    # then recovers on the 4th attempt, well within the shared budget.
+    for _ in range(2):
+        k8s_client = Mock()
+        k8s_client.core.read_namespaced_pod_log.side_effect = [
+            _api_exception(503),
+            _api_exception(503),
+            _api_exception(503),
+            "line1",
+        ]
+        lines = get_pod_logs(k8s_client, _make_log_pod(), budget=budget)
+        assert lines == ["line1"]
+
+    # 2 pods x 7s of cumulative backoff already spent this cycle.
+    assert sum(call.args[0] for call in sleep_mock.call_args_list) == 14.0
+
+    # Pod C hits the exact same transient error, but the shared budget is
+    # nearly spent: it only gets 1 retry (spending the last 1s of budget)
+    # before giving up, instead of the 3 retries A and B got.
+    sleep_mock.reset_mock()
+    k8s_client = Mock()
+    k8s_client.core.read_namespaced_pod_log.side_effect = _api_exception(503)
+    with pytest.raises(ApiException):
+        get_pod_logs(k8s_client, _make_log_pod(), budget=budget)
+
+    assert k8s_client.core.read_namespaced_pod_log.call_count == 2
+    assert sum(call.args[0] for call in sleep_mock.call_args_list) == 1.0
+    assert budget.remaining == 0.0
+
+
+@patch("redun.executors.k8s.random.random")
+@patch("redun.executors.k8s.time.sleep")
+def test_get_pod_logs_truncates_delay_to_remaining_budget_instead_of_refusing(
+    sleep_mock: Mock,
+    random_mock: Mock,
+) -> None:
+    """
+    A retry whose requested delay exceeds what remains in the shared budget
+    must still be granted a truncated sleep for whatever *does* remain,
+    rather than being refused outright. Refusing the request while budget
+    remains would both abandon that unspent runway and make a subsequently
+    granted, smaller request from another pod contradict an "exhausted"
+    warning that hasn't actually fired yet.
+    """
+    random_mock.return_value = 1.0  # Deterministic max-jitter backoff.
+    # Covers attempt 0's 1.0s delay in full, but only part of attempt 1's 2.0s
+    # delay.
+    budget = LogFetchRetryBudget(1.5)
+    k8s_client = Mock()
+    k8s_client.core.read_namespaced_pod_log.side_effect = [
+        _api_exception(503),
+        _api_exception(503),
+        "line1",
+    ]
+
+    lines = get_pod_logs(k8s_client, _make_log_pod(), backoff=1.0, budget=budget)
+
+    assert lines == ["line1"]
+    # The second sleep is truncated to the 0.5s actually remaining, not the
+    # 2.0s requested, and the fetch still proceeds to a successful retry
+    # instead of giving up.
+    assert [call.args[0] for call in sleep_mock.call_args_list] == [1.0, 0.5]
+    assert budget.remaining == 0.0
+
+
+@patch("redun.executors.k8s.random.random")
+@patch("redun.executors.k8s.logger")
+@patch("redun.executors.k8s.time.sleep")
+def test_get_pod_logs_logs_budget_exhaustion_once_across_pods(
+    sleep_mock: Mock,
+    logger_mock: Mock,
+    random_mock: Mock,
+) -> None:
+    """
+    A depleted shared budget is a single per-cycle fact, not a per-pod one: an
+    array job where many pods each hit a transient error after the budget is
+    already spent must log "budget exhausted" once total for the cycle, not
+    once per affected pod.
+    """
+    random_mock.return_value = 1.0  # Deterministic max-jitter backoff.
+    budget = LogFetchRetryBudget(0.0)  # Already exhausted.
+
+    for _ in range(2):
+        k8s_client = Mock()
+        k8s_client.core.read_namespaced_pod_log.side_effect = _api_exception(503)
+        with pytest.raises(ApiException):
+            get_pod_logs(k8s_client, _make_log_pod(), budget=budget)
+
+    exhausted_messages = [
+        call.args[0]
+        for call in logger_mock.warning.call_args_list
+        if call.args[0].startswith("Log-fetch retry budget for this monitor cycle is exhausted")
+    ]
+    assert len(exhausted_messages) == 1
+
+
+@patch("redun.executors.k8s.logger")
+@patch("redun.executors.k8s.time.sleep")
+def test_get_pod_logs_zero_backoff_against_full_budget_retries_without_exhaustion_warning(
+    sleep_mock: Mock,
+    logger_mock: Mock,
+) -> None:
+    """
+    A zero-length requested delay (e.g. from ``backoff=0.0``) against a
+    non-exhausted budget is a legitimate no-op grant, not evidence the pool
+    is spent. ``get_pod_logs`` must still retry normally instead of giving
+    up, and must not log the once-per-cycle exhaustion warning: doing so
+    would both burn the ``warned`` flag (silencing the real exhaustion
+    later in the cycle) and abort a retry that should have proceeded.
+    """
+    budget = LogFetchRetryBudget(DEFAULT_LOG_FETCH_MAX_BACKOFF_TOTAL)
+    k8s_client = Mock()
+    k8s_client.core.read_namespaced_pod_log.side_effect = [
+        _api_exception(503),
+        _api_exception(503),
+        "line1",
+    ]
+
+    lines = get_pod_logs(k8s_client, _make_log_pod(), backoff=0.0, budget=budget)
+
+    assert lines == ["line1"]
+    exhausted_messages = [
+        call.args[0]
+        for call in logger_mock.warning.call_args_list
+        if call.args[0].startswith("Log-fetch retry budget for this monitor cycle is exhausted")
+    ]
+    assert exhausted_messages == []
+    # Zero-length requests never draw down the pool.
+    assert budget.remaining == DEFAULT_LOG_FETCH_MAX_BACKOFF_TOTAL
+
+
+@patch("redun.executors.k8s.logger")
+def test_log_fetch_retry_budget_consume_zero_against_exhausted_budget_returns_none_and_warns_once(
+    logger_mock: Mock,
+) -> None:
+    """
+    Exhaustion is a one-way per-cycle fact determined by the pool's own
+    state, not by whether this particular request came out to zero: unlike
+    the mirrored case against a non-exhausted budget
+    (``test_get_pod_logs_zero_backoff_against_full_budget_retries_without_exhaustion_warning``),
+    a zero-length request against an *already-exhausted* budget must still be
+    refused like any other request -- returning ``None`` -- and must still
+    log the "budget exhausted" warning exactly once, not skip it just
+    because the caller asked for 0.0 seconds.
+    """
+    budget = LogFetchRetryBudget(0.0)  # Already exhausted.
+
+    granted = budget.consume(0.0)
+
+    assert granted is None
+    # A second zero-length request against the same spent pool is refused the
+    # same way, and doesn't re-log: the zero-length path participates in the
+    # once-per-cycle suppression rather than bypassing the `warned` flag.
+    assert budget.consume(0.0) is None
+    exhausted_messages = [
+        call.args[0]
+        for call in logger_mock.warning.call_args_list
+        if call.args[0].startswith("Log-fetch retry budget for this monitor cycle is exhausted")
+    ]
+    assert len(exhausted_messages) == 1
+
+
+@mock_s3
+@mock_k8s
+@patch("redun.executors.k8s.get_pod_logs")
+def test_process_redun_job_shares_log_fetch_budget_across_pods_in_a_cycle(
+    get_pod_logs_mock: Mock,
+) -> None:
+    """
+    All pods processed within the same monitor cycle share one
+    ``LogFetchRetryBudget`` instance: ``_monitor`` constructs it once at the
+    top of the cycle, and every pod processed in that cycle reuses that same
+    object rather than getting a fresh per-pod budget. A new monitor cycle
+    constructs a fresh ``LogFetchRetryBudget``, discarding the old one.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+    get_pod_logs_mock.side_effect = _api_exception(503)
+
+    def make_job(index: int) -> Job:
+        job = Job(task1, task1(index))
+        job.id = f"task-{index}"
+        job.eval_hash = f"hash-{index}"
+        return job
+
+    # Simulate the top of a monitor cycle, as `_monitor` does.
+    executor._log_fetch_budget = LogFetchRetryBudget()
+    first_budget = executor._log_fetch_budget
+
+    executor._process_redun_job(make_job(0), _make_log_pod(), FAILED, "node bad")
+    assert get_pod_logs_mock.call_args_list[0].kwargs["budget"] is first_budget
+
+    # Second pod in the *same* cycle: reuses the same budget instance.
+    executor._process_redun_job(make_job(1), _make_log_pod(), FAILED, "node bad")
+    assert get_pod_logs_mock.call_args_list[1].kwargs["budget"] is first_budget
+
+    # A new monitor cycle constructs a fresh budget (as `_monitor` does), so
+    # the next pod gets a different instance.
+    executor._log_fetch_budget = LogFetchRetryBudget()
+    second_budget = executor._log_fetch_budget
+    assert second_budget is not first_budget
+
+    executor._process_redun_job(make_job(2), _make_log_pod(), FAILED, "node bad")
+    assert get_pod_logs_mock.call_args_list[2].kwargs["budget"] is second_budget
+
+
+@mock_s3
+@mock_k8s
+@patch("redun.executors.k8s.k8s_describe_jobs")
+@patch("redun.executors.k8s.k8s_submit")
+def test_monitor_constructs_log_fetch_budget(
+    k8s_submit_mock: Mock,
+    k8s_describe_jobs_mock: Mock,
+) -> None:
+    """
+    A real ``_monitor`` cycle (as started by ``executor.submit()``) must wire
+    up ``self._log_fetch_budget`` itself. Unlike
+    ``test_process_redun_job_shares_log_fetch_budget_across_pods_in_a_cycle``,
+    which hand-assigns ``executor._log_fetch_budget`` to test sharing
+    semantics, this test never touches ``_log_fetch_budget`` directly, so it
+    pins the ``self._log_fetch_budget = LogFetchRetryBudget()`` assignment
+    inside ``_monitor``.
+    """
+    k8s_describe_jobs_mock.return_value = []
+
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+    assert executor._log_fetch_budget is None
+
+    executor.start()
+
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash",
+        uid="k8s-job-id",
+    )
+
+    job = Job(task1, task1(10))
+    job.eval_hash = "eval_hash"
+    job.args = ((10,), {})
+    # `_submit` calls `arrayer.add_job(job)` before `self._start()`, so the
+    # queue is already non-empty when the monitor thread starts: its loop
+    # condition (`pending_k8s_jobs or arrayer.num_pending`) is guaranteed
+    # true on the first check, so it can't exit before running a cycle.
+    executor.submit(job)
+
+    # Wait for a real `_monitor` cycle to run, constructing the budget.
+    wait_until(lambda: executor._log_fetch_budget is not None)
+    first_budget = executor._log_fetch_budget
+
+    # A *fresh* budget each cycle, not a lazily-initialized or
+    # refresh-only-when-spent one: the next cycle must hand out a new
+    # instance regardless of how much of this one was spent.
+    assert first_budget is not None
+    wait_until(lambda: executor._log_fetch_budget is not first_budget)
 
     executor.stop()

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 import re
 import threading
 import time
@@ -19,6 +20,13 @@ import kubernetes
 import kubernetes.client
 from kubernetes.client import CoreV1Api, V1Job, V1Pod
 from kubernetes.client.exceptions import ApiException
+from urllib3.exceptions import (
+    MaxRetryError,
+    ProtocolError,
+    ProxyError,
+    SSLError,
+)
+from urllib3.exceptions import TimeoutError as URLLib3TimeoutError
 
 from redun.executors import aws_utils, k8s_utils
 from redun.executors.base import Executor, register_executor
@@ -45,6 +53,89 @@ T = TypeVar("T")
 SUCCEEDED = "SUCCEEDED"
 FAILED = "FAILED"
 ARRAY_JOB_SUFFIX = "array"
+
+# Pod-log retrieval goes through the API-server→kubelet log proxy, which can
+# return transient transport errors that are unrelated to the task itself. The
+# canonical case is a freshly-provisioned (cold) node briefly serving a bad
+# kubelet serving-certificate state on its :10250 endpoint, surfacing as
+# "remote error: tls: internal error" (HTTP 500); connection resets and other
+# 5xx from the proxy count as the same failure. These must not be mistaken
+# for the pod having no logs, so log retrieval is retried a bounded number of
+# times with jittered exponential backoff. See COMP-3871.
+#
+# The retry runs inline in the single job-monitor thread, so its worst-case
+# blocking time must stay small. We mirror botocore's default ("legacy") retry
+# policy, which the AWS Batch executor relies on for the same class of transient
+# errors: 4 retries with a jittered exponential delay of
+# ``backoff * random() * 2**attempt`` seconds, bounding total backoff to <15s
+# (≈7.5s expected).
+DEFAULT_LOG_FETCH_MAX_RETRIES = 4
+DEFAULT_LOG_FETCH_BACKOFF = 1.0
+
+# Upper bound on the total backoff a single pod's log fetch could spend
+# retrying (worst case ``sum(backoff * 2**attempt for attempt in
+# range(max_retries))`` == 1+2+4+8 == 15s, since ``random() < 1``). Used as
+# the *aggregate* retry-time budget shared across every pod processed in a
+# single monitor cycle (see ``K8SExecutor._log_fetch_budget``), so that a
+# node-wide transient issue is bounded in total wall-clock time regardless
+# of whether it fails every pod outright or just makes each one flaky.
+#
+# Known trade-off: reusing the single-pod worst case as the cycle-wide pool
+# size means the pool isn't split fairly across pods -- in a node-wide
+# incident, one unlucky pod that draws near-max jittered delays on all of
+# its own retries can by itself consume the whole 15s, leaving nothing for
+# other pods processed later in the same cycle. Those pods are *not*
+# revisited: `_process_redun_job` runs once per redun job at its terminal
+# transition, so they fall back to the "Failed to parse task logs..." line
+# and their logs are lost. This is a deliberate choice: a starved pod ends up
+# exactly where `main` left it (which never retried at all, so lost the logs
+# too), while pods that do get budget recover theirs -- and the cycle-wide
+# bound is what keeps the monitor thread from paying N x 15s of backoff, as
+# an unbudgeted per-pod retry would. A fair per-pod split would add meaningful
+# complexity for a failure mode (one pod monopolizing the pool) that hasn't
+# been observed in practice. Revisit if that changes.
+DEFAULT_LOG_FETCH_MAX_BACKOFF_TOTAL = 15.0
+
+
+class LogFetchRetryBudget:
+    """
+    Pool of retry-backoff seconds shared by every pod-log fetch in one monitor
+    cycle. Only time actually spent sleeping between retries is consumed, so the
+    ordinary per-pod work of a large array job does not eat the budget.
+
+    Exhaustion of the budget is a single per-cycle fact -- once ``consume``
+    first refuses a request, every other pod still processing this cycle will
+    also find the budget spent, so the "budget exhausted" warning is logged
+    exactly once (see ``warned``) rather than once per affected pod.
+    """
+
+    def __init__(self, seconds: float = DEFAULT_LOG_FETCH_MAX_BACKOFF_TOTAL) -> None:
+        self.remaining = seconds
+        self.warned = False
+
+    def consume(self, seconds: float) -> Optional[float]:
+        """
+        Reserves up to ``seconds`` of retry backoff from the pool, returning
+        the number of seconds actually granted, or ``None`` if the pool is
+        already spent. A request larger than what remains is truncated
+        rather than refused, so the budget is never abandoned part-spent.
+        Exhaustion is determined by the pool's own state
+        (``self.remaining <= 0``), not by whether this particular grant came
+        out to zero, so a zero-length request (e.g. ``consume(0.0)``)
+        against a non-empty pool is a no-op that returns ``0.0`` rather than
+        ``None``.
+        """
+        if self.remaining <= 0:
+            if not self.warned:
+                self.warned = True
+                logger.warning(
+                    "Log-fetch retry budget for this monitor cycle is exhausted; "
+                    "remaining pods this cycle will not retry transient log-fetch errors."
+                )
+            return None
+        granted = min(seconds, self.remaining)
+        self.remaining -= granted
+        return granted
 
 
 def k8s_submit(
@@ -325,28 +416,121 @@ def k8s_describe_jobs(
     return jobs
 
 
+def is_transient_log_fetch_error(error: BaseException) -> bool:
+    """
+    Returns True if a pod-log fetch error looks like a transient transport
+    failure at the API-server→kubelet log proxy (worth retrying), rather than a
+    definitive response such as a 4xx or an empty log.
+    """
+    # Connection-level failures (resets, broken pipes, timeouts, failed TLS
+    # handshakes, exhausted transport retries) raised by the underlying urllib3
+    # transport. This deliberately excludes deterministic urllib3 errors such as
+    # DecodeError / InvalidHeader / LocationValueError, which will never succeed
+    # on retry.
+    if isinstance(
+        error,
+        (ProtocolError, URLLib3TimeoutError, ProxyError, SSLError, MaxRetryError),
+    ):
+        return True
+
+    if isinstance(error, ApiException):
+        # A status of None/0 means the client could not complete the request at
+        # all; any 5xx is a proxy/server-side failure. The cold-node kubelet TLS
+        # race surfaces as HTTP 500 with a "remote error: tls: internal error"
+        # body, which is already covered by the 5xx check.
+        status = error.status or 0
+        if status == 0 or status >= 500:
+            return True
+
+    return False
+
+
 def get_pod_logs(
     k8s_client: k8s_utils.K8SClient,
     pod: kubernetes.client.V1Pod,
     max_lines: Optional[int] = None,
+    max_retries: int = DEFAULT_LOG_FETCH_MAX_RETRIES,
+    backoff: float = DEFAULT_LOG_FETCH_BACKOFF,
+    budget: Optional[LogFetchRetryBudget] = None,
 ) -> list[str]:
     """
     Returns the logs of a K8S pod.
+
+    Retrieval is retried up to ``max_retries`` times with jittered exponential
+    backoff on transient transport errors from the kubelet log proxy (see
+    ``is_transient_log_fetch_error``); non-transient errors are raised
+    immediately. The backoff schedule mirrors botocore's default retry policy
+    (``backoff * random() * 2**attempt`` seconds).
+
+    ``budget``, if given, is a ``LogFetchRetryBudget`` shared across multiple
+    calls (e.g. one per pod processed in a monitor cycle); each retry's delay
+    is deducted from it, truncated to whatever remains, and once the pool is
+    fully spent retrying stops even if ``max_retries`` has not been reached.
+    Only time actually spent sleeping is deducted, so this bounds the
+    *aggregate* retry time spent across all callers sharing the budget, not
+    just the retries for this one pod. The fact that the cycle's budget is
+    exhausted is logged once per cycle by ``budget.consume``, not once per
+    pod that subsequently finds it spent.
     """
     kwargs = {}
     if max_lines is not None:
         kwargs["tail_lines"] = max_lines
 
-    log_response = k8s_client.core.read_namespaced_pod_log(
-        pod.metadata.name,
-        namespace=pod.metadata.namespace,
-        timestamps=True,
-        **kwargs,
-    )
+    attempt = 0
+    while True:
+        try:
+            log_response = k8s_client.core.read_namespaced_pod_log(
+                pod.metadata.name,
+                namespace=pod.metadata.namespace,
+                timestamps=True,
+                **kwargs,
+            )
+            break
+        except Exception as error:
+            if not is_transient_log_fetch_error(error):
+                raise
+            if attempt >= max_retries:
+                logger.warning(
+                    "Exhausted %d retries fetching logs for pod %s, giving up: %s",
+                    max_retries,
+                    pod.metadata.name,
+                    error,
+                )
+                raise
+            delay = backoff * random.random() * (2**attempt)
+            if budget is not None:
+                granted = budget.consume(delay)
+                if granted is None:
+                    # The cycle-level "budget exhausted" fact was already
+                    # logged (once) by ``budget.consume``. Log per-pod detail
+                    # at a lower level so a large array job hitting an
+                    # exhausted budget doesn't add another WARNING per pod on
+                    # top of that.
+                    logger.debug(
+                        "Giving up on pod %s: log-fetch retry budget for this "
+                        "monitor cycle is exhausted: %s",
+                        pod.metadata.name,
+                        error,
+                    )
+                    raise
+                delay = granted
+            logger.warning(
+                "Transient error fetching logs for pod %s (retry %d of %d), retrying in %.1fs: %s",
+                pod.metadata.name,
+                attempt + 1,
+                max_retries,
+                delay,
+                error,
+            )
+            time.sleep(delay)
+            attempt += 1
     lines = log_response.split("\n")
 
-    # Use latest container status.
-    state = pod.status.container_statuses[-1].state.terminated
+    # Use latest container status. A pod that failed before any container was
+    # created (e.g. a scheduling or image-pull failure) has no container
+    # statuses, in which case there is no exit code to report.
+    container_statuses = pod.status.container_statuses or []
+    state = container_statuses[-1].state.terminated if container_statuses else None
     if state and state.exit_code != 0:
         lines.append(f"Exit {state.exit_code} ({state.reason}): {state.message}")
 
@@ -357,11 +541,17 @@ def parse_pod_logs(
     k8s_client: k8s_utils.K8SClient,
     pod: kubernetes.client.V1Pod,
     max_lines: int = 1000,
+    budget: Optional[LogFetchRetryBudget] = None,
 ) -> Iterator[str]:
     """
     Iterates through most recent logs of an K8S Job.
     """
-    lines = get_pod_logs(k8s_client, pod, max_lines=max_lines)
+    lines = get_pod_logs(
+        k8s_client,
+        pod,
+        max_lines=max_lines,
+        budget=budget,
+    )
     if len(lines) < max_lines:
         yield "\n*** Earlier logs are truncated ***\n"
     yield from lines
@@ -475,6 +665,17 @@ class K8SExecutor(Executor):
         ] = {}  # Job hash -> Job ID
 
         self.interval = config.getfloat("job_monitor_interval", 5.0)
+
+        # Shared per-monitor-cycle budget for transient pod-log fetch
+        # retries. A cold/bad kubelet on a node makes log fetches for every
+        # pod scheduled there either fail outright or become flaky (each
+        # retries a few times before recovering). Rather than letting every
+        # pod pay its own full per-pod retry budget, all pods processed in a
+        # cycle share this pool of retry-backoff seconds, so the *aggregate*
+        # retry time paid this cycle is bounded regardless of whether the
+        # node fails pods outright or just slows them down. Constructed
+        # fresh at the start of every monitor cycle.
+        self._log_fetch_budget: Optional[LogFetchRetryBudget] = None
 
         min_array_size = config.getint("min_array_size", 5)
         max_array_size = config.getint("max_array_size", 1000)
@@ -660,6 +861,10 @@ class K8SExecutor(Executor):
                 # submissions.
                 pending_jobs = list(self.pending_k8s_jobs.keys())
                 jobs = k8s_describe_jobs(self._k8s_client, pending_jobs, self.namespace)
+                # Construct a fresh shared log-fetch retry budget each cycle
+                # so a bad node detected in a prior cycle doesn't suppress
+                # retries forever.
+                self._log_fetch_budget = LogFetchRetryBudget()
                 # changing this (IE, removing iter_k8s_job_status) breaks
                 # inflight test jobs =
                 for job in jobs:
@@ -781,7 +986,13 @@ class K8SExecutor(Executor):
                 # )
 
                 try:
-                    logs.extend(parse_pod_logs(self._k8s_client, pod))
+                    logs.extend(
+                        parse_pod_logs(
+                            self._k8s_client,
+                            pod,
+                            budget=self._log_fetch_budget,
+                        )
+                    )
                 except Exception as e:
                     logs.append(f"Failed to parse task logs for redun job {job.id}: {e}")
 
