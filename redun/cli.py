@@ -30,6 +30,7 @@ from typing import (
     TextIO,
     Union,
     cast,
+    get_type_hints,
 )
 
 import botocore
@@ -442,7 +443,7 @@ def get_anno_origin(anno: Any) -> Optional[Any]:
 
 
 def add_value_arg_parser(
-    parser: argparse.ArgumentParser, arg_name: str, anno: Any, default: Any
+    func: Callable, parser: argparse.ArgumentParser, arg_name: str, anno: Any, default: Any
 ) -> argparse.Action:
     """
     Add argument parser inferred from a parameter type.
@@ -483,6 +484,23 @@ def add_value_arg_parser(
             return False
 
         return type1 is NoneType or type2 is NoneType
+
+    if isinstance(anno, str):
+        # Convert annotations defined as strings into types.
+        try:
+            hints = get_type_hints(func)
+        except NameError:
+            raise TypeError(
+                f"Unknown type annotation '{anno}' for parameter '{arg_name}'. "
+                f"Make sure the type is defined or imported in {func.__module__}"
+            )
+        if arg_name in hints:
+            anno = hints[arg_name]
+        else:
+            raise TypeError(
+                f"Unknown type annotation '{anno}' for parameter '{arg_name}'. "
+                f"Make sure the type is defined or imported in {func.__module__}"
+            )
 
     if anno is not None:
         # For lists, we are going to parse each of the list args independently so we need the
@@ -545,6 +563,7 @@ def get_setup_parser(
     cli2arg = {}
     for param in islice(sig.parameters.values(), 1, None):
         opt = add_value_arg_parser(
+            setup_func,
             parser,
             param.name,
             param.annotation if param.annotation != param.empty else None,
@@ -727,6 +746,7 @@ def get_task_arg_parser(
     sig = task.signature
     for param in sig.parameters.values():
         opt = add_value_arg_parser(
+            task.func,
             parser,
             param.name,
             param.annotation if param.annotation is not param.empty else None,

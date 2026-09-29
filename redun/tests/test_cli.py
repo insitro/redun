@@ -984,9 +984,103 @@ def add(n1: int, n2: int):
 
 
 @patch("argparse.ArgumentParser.exit")
-@patch("redun.cli.print")
 @use_tempdir
-def test_task_parse_config_arg(print_mock, arg_exit_mock) -> None:
+def test_task_parse_arg_future(arg_exit_mock) -> None:
+    """
+    CLI should be able to parse task arguments with future option enabled.
+    """
+    File("workflow.py").write(
+        """
+# https://peps.python.org/pep-0749/
+from __future__ import annotations
+
+from redun import task
+
+@task
+def foo(x: int) -> int:
+    return 10 * x
+
+class Bar:
+    def __init__(self, x):
+        self.x = x
+
+    def __str__(self) -> str:
+        return f"Bar({self.x})"
+
+@task
+def bar(x: Bar) -> str:
+    return str(x)
+"""
+    )
+
+    def arg_exit(status=0, message=None):
+        raise ValueError(message)
+
+    arg_exit_mock.side_effect = arg_exit
+    client = RedunClient()
+
+    assert client.execute(["redun", "run", "workflow.py", "foo", "--x", "2"]) == 20
+    assert client.execute(["redun", "run", "workflow.py", "bar", "--x", "2"]) == "Bar(2)"
+
+
+@patch("argparse.ArgumentParser.exit")
+@use_tempdir
+def test_task_parse_arg_str_anno(arg_exit_mock) -> None:
+    """
+    CLI should be able to parse task arguments that use string annotations.
+    """
+    File("workflow.py").write(
+        """
+from redun import task
+
+@task
+def foo(x: "int") -> int:
+    return 10 * x
+
+class Bar:
+    def __init__(self, x):
+        self.x = x
+
+    def __str__(self) -> str:
+        return f"Bar({self.x})"
+
+@task
+def bar(x: "Bar") -> str:
+    return str(x)
+
+@task
+def baz(x: "list[int]") -> int:
+    return len(x)
+
+@task()
+def bad_task(x: "not_a_type") -> str:
+    return "j/k"
+"""
+    )
+
+    def arg_exit(status=0, message=None):
+        raise ValueError(message)
+
+    arg_exit_mock.side_effect = arg_exit
+    client = RedunClient()
+
+    assert client.execute(["redun", "run", "workflow.py", "foo", "--x", "2"]) == 20
+    assert client.execute(["redun", "run", "workflow.py", "bar", "--x", "2"]) == "Bar(2)"
+    assert client.execute(["redun", "run", "workflow.py", "baz", "--x", "2", "3", "4"]) == 3
+
+    with pytest.raises(ValueError, match="argument --x: invalid int value"):
+        client.execute(["redun", "run", "workflow.py", "foo", "--x", "bad"])
+
+    with pytest.raises(ValueError, match="argument --x: invalid int value"):
+        client.execute(["redun", "run", "workflow.py", "baz", "--x", "bad", "badder", "baddest"])
+
+    with pytest.raises(TypeError, match="Unknown type annotation 'not_a_type' for parameter 'x'"):
+        client.execute(["redun", "run", "workflow.py", "bad_task", "--x", "2"])
+
+
+@patch("argparse.ArgumentParser.exit")
+@use_tempdir
+def test_task_parse_config_arg(arg_exit_mock) -> None:
     """
     CLI should be able to parse task arguments.
     """
