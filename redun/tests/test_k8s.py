@@ -46,6 +46,7 @@ from redun.executors.k8s_utils import (
     DEFAULT_TTL_SECONDS_AFTER_FINISHED,
     K8SClient,
     create_job_object,
+    create_resources,
 )
 from redun.executors.scratch import (
     SCRATCH_ERROR,
@@ -209,7 +210,7 @@ def test_k8s_submit_cpu_limits() -> None:
 
     # Verify CPU is in requests
     assert "cpu" in job.spec.template.spec.containers[0].resources.requests
-    assert job.spec.template.spec.containers[0].resources.requests["cpu"] == 2
+    assert job.spec.template.spec.containers[0].resources.requests["cpu"] == "2"
 
     # Verify CPU is NOT in limits
     assert "cpu" not in job.spec.template.spec.containers[0].resources.limits
@@ -222,9 +223,32 @@ def test_k8s_submit_cpu_limits() -> None:
 
     # Verify GPU is in both requests and limits
     assert "nvidia.com/gpu" in job.spec.template.spec.containers[0].resources.requests
-    assert job.spec.template.spec.containers[0].resources.requests["nvidia.com/gpu"] == 1
+    assert job.spec.template.spec.containers[0].resources.requests["nvidia.com/gpu"] == "1"
     assert "nvidia.com/gpu" in job.spec.template.spec.containers[0].resources.limits
-    assert job.spec.template.spec.containers[0].resources.limits["nvidia.com/gpu"] == 1
+    assert job.spec.template.spec.containers[0].resources.limits["nvidia.com/gpu"] == "1"
+
+
+def test_create_job_object__non_string_metadata_values__converted_to_strings() -> None:
+    """
+    Labels, annotations, and env values may be numbers when read from JSON config.
+    Newer kubernetes clients reject non-string values.
+    """
+    job = create_job_object(
+        labels={"shard": 3, "team": None},
+        annotations={"attempt": 2},
+        env={"WORKERS": 4, "MODE": "fast", "DEBUG": True},
+        resources=create_resources(requests={"ephemeral-storage": 10}),
+    )
+
+    container = job.spec.template.spec.containers[0]
+    assert job.metadata.labels == {"shard": "3"}
+    assert job.metadata.annotations == {"attempt": "2"}
+    assert {var.name: var.value for var in container.env} == {
+        "WORKERS": "4",
+        "MODE": "fast",
+        "DEBUG": "true",
+    }
+    assert container.resources.requests == {"ephemeral-storage": "10"}
 
 
 @mock_k8s
@@ -584,13 +608,7 @@ def test_executor(
             name="name",
             namespace="default",
         ),
-        status=client.V1ContainerStatus(
-            image=client.V1ContainerImage(),
-            image_id="image_id",
-            name="name",
-            ready=True,
-            restart_count=1,
-        ),
+        status=client.V1PodStatus(),
     )
     get_k8s_job_pods_mock.return_value = [pod]
 
@@ -1737,20 +1755,14 @@ def test_k8s_submit_with_volumes() -> None:
         volume_mounts=volume_mounts,
     )
 
+    # Compare the serialized job, since newer kubernetes clients convert the dicts into models.
+    pod_spec = client.ApiClient().sanitize_for_serialization(job)["spec"]["template"]["spec"]
+
     # Verify volumes are configured in the pod spec
-    pod_volumes = job.spec.template.spec.volumes
-    assert pod_volumes is not None
-    assert len(pod_volumes) == 1
-    assert pod_volumes[0]["name"] == "dshm"
-    assert pod_volumes[0]["emptyDir"]["medium"] == "Memory"
-    assert pod_volumes[0]["emptyDir"]["sizeLimit"] == "16Gi"
+    assert pod_spec["volumes"] == volumes
 
     # Verify volume mounts are configured in the container
-    container_mounts = job.spec.template.spec.containers[0].volume_mounts
-    assert container_mounts is not None
-    assert len(container_mounts) == 1
-    assert container_mounts[0]["name"] == "dshm"
-    assert container_mounts[0]["mountPath"] == "/dev/shm"
+    assert pod_spec["containers"][0]["volumeMounts"] == volume_mounts
 
 
 @mock_s3

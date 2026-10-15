@@ -162,7 +162,7 @@ def k8s_submit(
     volume_mounts: Optional[list[dict[str, Any]]] = None,
 ) -> kubernetes.client.V1Job:
     """Prepares and submits a k8s job to the API server"""
-    requests = {
+    requests: dict[str, Any] = {
         "memory": f"{memory}G",
         "cpu": vcpus,
     }
@@ -199,7 +199,6 @@ def k8s_submit(
         k8s_job.spec.backoff_limit = retries * array_size
     else:
         k8s_job.spec.backoff_limit = retries
-    k8s_job.spec.restart_policy = "OnFailure"
 
     return k8s_utils.create_job(k8s_client, k8s_job, namespace=namespace)
 

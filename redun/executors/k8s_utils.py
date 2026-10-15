@@ -152,18 +152,37 @@ def create_resources(
     https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ResourceRequirements.md
     """
     resources = client.V1ResourceRequirements()
-
-    if requests is None:
-        resources.requests = {}
-    else:
-        resources.requests = requests
-
-    if limits is None:
-        resources.limits = {}
-    else:
-        resources.limits = limits
+    resources.requests = _stringify_values(requests)
+    resources.limits = _stringify_values(limits)
 
     return resources
+
+
+def _stringify(value: Any) -> str:
+    """Converts a config value to a string, writing bools as JSON does ("true"/"false")."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def _stringify_values(
+    mapping: Optional[dict[str, Any]], keep_none: bool = False
+) -> dict[str, Optional[str]]:
+    """
+    Returns a copy of `mapping` with non-string values converted to strings.
+
+    Newer kubernetes clients validate that label, annotation, env var, and resource quantity
+    values are strings, but these mappings can come from JSON config or task options, where
+    values may be numbers or bools. `None` values are dropped, or kept as is when `keep_none`
+    is set (`None` means "unset" for env vars).
+    """
+    return {
+        key: value if value is None else _stringify(value)
+        for key, value in (mapping or {}).items()
+        if value is not None or keep_none
+    }
 
 
 def _build_node_affinity(node_affinity: dict[str, Any]) -> client.V1Affinity:
@@ -228,14 +247,14 @@ def create_job_object(
     command: list[str] = ["false"],
     resources: Optional[client.V1ResourceRequirements] = None,
     timeout: Optional[int] = None,
-    labels: Optional[dict] = None,
+    labels: Optional[dict[str, Any]] = None,
     uid: Optional[str] = None,
     retries: int = 1,
     service_account_name: Optional[str] = "default",
-    annotations: Optional[dict[str, str]] = None,
+    annotations: Optional[dict[str, Any]] = None,
     secret_name: Optional[str] = None,
     node_affinity: Optional[dict[str, Any]] = None,
-    env: Optional[dict[str, str]] = None,
+    env: Optional[dict[str, Any]] = None,
     volumes: Optional[list[dict[str, Any]]] = None,
     volume_mounts: Optional[list[dict[str, Any]]] = None,
     ttl_seconds_after_finished: int = DEFAULT_TTL_SECONDS_AFTER_FINISHED,
@@ -269,7 +288,10 @@ def create_job_object(
     # Add user-provided environment variables.
     if env:
         container_env.extend(
-            [client.V1EnvVar(name=name, value=value) for name, value in env.items()]
+            [
+                client.V1EnvVar(name=name, value=value)
+                for name, value in _stringify_values(env, keep_none=True).items()
+            ]
         )
 
     container = client.V1Container(
@@ -299,8 +321,8 @@ def create_job_object(
         volumes=volumes or None,
     )
 
-    labels = labels or {}
-    annotations = annotations or {}
+    labels = _stringify_values(labels)
+    annotations = _stringify_values(annotations)
 
     # Create and configurate a pod template spec section
     template = client.V1PodTemplateSpec(
