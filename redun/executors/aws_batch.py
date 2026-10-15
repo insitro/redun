@@ -23,7 +23,10 @@ if TYPE_CHECKING:
 from redun.executors import aws_utils
 from redun.executors.base import Executor, register_executor
 from redun.executors.code_packaging import package_code, parse_code_package_config
-from redun.executors.command import get_oneshot_command, get_script_task_command
+from redun.executors.command import (
+    get_oneshot_command,
+    get_script_task_command,
+)
 from redun.executors.docker import DockerExecutor, get_docker_executor_config
 from redun.executors.scratch import (
     SCRATCH_HASHES,
@@ -38,7 +41,7 @@ from redun.executors.scratch import (
 )
 from redun.executors.scratch import parse_job_error as _parse_job_error
 from redun.file import File
-from redun.job_array import JobArrayer
+from redun.job_array import AWS_ARRAY_VAR, JobArrayer
 from redun.scheduler import Job, Scheduler, Traceback
 from redun.scripting import get_task_command
 from redun.task import CacheScope, Task
@@ -628,6 +631,8 @@ def submit_command(
     command: str,
     job_options: dict = {},
     aws_region: str = aws_utils.DEFAULT_AWS_REGION,
+    array_uuid: Optional[str] = None,
+    array_size: int = 0,
 ) -> "SubmitJobResponseTypeDef":
     """
     Submit a shell command to AWS Batch.
@@ -636,7 +641,13 @@ def submit_command(
     num_nodes = job_batch_options.get("num_nodes", None)
 
     command_main = get_script_task_command(
-        s3_scratch_prefix, job, command, suppress_output=False, exit_command="exit 1"
+        s3_scratch_prefix,
+        job,
+        command,
+        suppress_output=False,
+        exit_command="exit 1",
+        array_uuid=array_uuid,
+        array_index_env_var=AWS_ARRAY_VAR,
     )
     command_worker = (
         get_script_task_command(
@@ -646,9 +657,17 @@ def submit_command(
         else None
     )
 
-    # Submit to AWS Batch.
-    assert job.eval_hash
-    job_name = get_batch_job_name(job_options.get("job_name_prefix", "batch-job"), job.eval_hash)
+    # Build job name.
+    if array_uuid:
+        job_hash = array_uuid
+    else:
+        assert job.eval_hash
+        job_hash = job.eval_hash
+    job_name = get_batch_job_name(
+        job_options.get("job_name_prefix", "batch-job"),
+        job_hash,
+        array=bool(array_size),
+    )
 
     job_batch_args = create_job_override_command(
         command=command_main, command_worker=command_worker, num_nodes=num_nodes
@@ -662,6 +681,7 @@ def submit_command(
         job_name=job_name,
         job_def_suffix="-redun-jd",
         aws_region=aws_region,
+        array_size=array_size,
         **job_batch_options,
     )
 
@@ -928,6 +948,7 @@ class AWSBatchExecutor(Executor):
             stale_time=config.getfloat("job_stale_time", fallback=3.0),
             min_array_size=config.getint("min_array_size", fallback=5),
             max_array_size=config.getint("max_array_size", fallback=1000),
+            array_scripts=config.getboolean("array_scripts", fallback=True),
         )
         self._aws_user: Optional[str] = None
 
@@ -938,6 +959,11 @@ class AWSBatchExecutor(Executor):
         if len(jobs) == 1:
             # Singleton jobs are given as single element lists.
             self._submit_single_job(jobs[0])
+        elif self._get_job_options(jobs[0]).get("num_nodes") is not None:
+            # AWS Batch does not support multi-node array jobs. Jobs are grouped by
+            # task options, so checking the first job covers the whole group.
+            for job in jobs:
+                self._submit_single_job(job)
         else:
             self._submit_array_job(jobs)
 
@@ -1309,8 +1335,6 @@ class AWSBatchExecutor(Executor):
 
         # All jobs identical so just grab the first one
         job = jobs[0]
-        if job.task.script:
-            raise NotImplementedError("Array jobs not supported for scripts")
 
         task_options = self._get_job_options(job)
         image = task_options.pop("image", self.image)
@@ -1318,18 +1342,31 @@ class AWSBatchExecutor(Executor):
 
         job_type = "AWS Batch job"
 
-        batch_resp = submit_task(
-            image,
-            queue,
-            self.s3_scratch_prefix,
-            job,
-            job.task,
-            job_options=task_options,
-            code_file=self.code_file,
-            aws_region=self.aws_region,
-            array_uuid=array_uuid,
-            array_size=array_size,
-        )
+        if job.task.script:
+            batch_resp = submit_command(
+                image,
+                queue,
+                self.s3_scratch_prefix,
+                job,
+                "",
+                job_options=task_options,
+                aws_region=self.aws_region,
+                array_uuid=array_uuid,
+                array_size=array_size,
+            )
+        else:
+            batch_resp = submit_task(
+                image,
+                queue,
+                self.s3_scratch_prefix,
+                job,
+                job.task,
+                job_options=task_options,
+                code_file=self.code_file,
+                aws_region=self.aws_region,
+                array_uuid=array_uuid,
+                array_size=array_size,
+            )
 
         # Add entire array to array jobs, and all jobs in array to pending jobs.
         array_job_id = batch_resp["jobId"]

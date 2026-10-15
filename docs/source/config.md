@@ -446,11 +446,15 @@ A float (default: 5.0) that specifies how often, in seconds, the AWS Batch API i
 
 ##### `min_array_size`
 
-Minimum number (default: 5) of equivalent tasks that will be submitted together as an AWS Batch array job. "Equivalent" means the same task and execution requirements (CPU, memory, etc), but with possibly different arguments. Set to 0 to disable array job submission. Defaults to 5.
+Minimum number (default: 5) of equivalent tasks that will be submitted together as an AWS Batch array job. "Equivalent" means the same task and execution requirements (CPU, memory, etc), but with possibly different arguments. Set to 0 to disable array job submission. Defaults to 5. [Script tasks](design.md#shell-scripting) are arrayed as well, unless `array_scripts` is false. Tasks with `num_nodes` set are always submitted individually, since AWS Batch does not support multi-node array jobs.
 
 ##### `max_array_size`
 
 Maximum number (default: 1000) of equivalent tasks that will be submitted together as an AWS Batch array job. Must be greater than or equal to `min_array_size`. If greater than the AWS maximum array size (currently 10000), will be clamped to this value.
+
+##### `array_scripts`
+
+A bool (default: True) that specifies whether [script tasks](design.md#shell-scripting) may be submitted as AWS Batch array jobs. Each child fetches its own rendered script using the array index, so script task images still only need the commands used in the script. Set to False to submit script tasks individually while still arraying regular tasks.
 
 ##### `job_stale_time`
 
@@ -800,7 +804,7 @@ A float (default: 5.0) that specifies how often, in seconds, the k8s API is quer
 
 ##### `min_array_size`
 
-Minimum number (default: 5) of equivalent tasks that will be submitted together as an [array job](https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/). "Equivalent" means the same task and execution requirements (CPU, memory, etc), but with possibly different arguments. Set to 0 to disable array job submission.
+Minimum number (default: 5) of equivalent tasks that will be submitted together as an [array job](https://kubernetes.io/docs/tasks/job/indexed-parallel-processing-static/). "Equivalent" means the same task and execution requirements (CPU, memory, etc), but with possibly different arguments. Set to 0 to disable array job submission. Script tasks are not arrayed by this executor and are always submitted individually.
 
 ##### `max_array_size`
 

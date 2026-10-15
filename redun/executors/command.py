@@ -1,4 +1,5 @@
 import os
+from shlex import quote
 from typing import Any, Optional
 
 from redun.executors.scratch import (
@@ -104,31 +105,67 @@ def get_script_task_command(
     job: Job,
     command: str,
     exit_command: str = "",
+    array_uuid: Optional[str] = None,
     as_mount: bool = False,
     suppress_output: bool = False,  # Useful for commands on cluster worker nodes
+    array_index_env_var: str = "AWS_BATCH_JOB_ARRAY_INDEX",
 ) -> list[str]:
     """
     Returns a shell script to run a script task.
     """
-    input_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_INPUT)
-    output_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT)
-    error_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR)
-    status_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_STATUS)
 
-    # Serialize arguments to input file.
-    File(input_path).write(command)
-    input_stage = File(input_path).stage(".task_command").render_stage(as_mount)
+    if not array_uuid:
+        input_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_INPUT)
+        output_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT)
+        error_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR)
+        status_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_STATUS)
 
-    if suppress_output:
-        output_unstage = "echo 'output suppressed'"
-        error_unstage = "echo 'error suppressed'"
-        status_unstage = "echo 'status suppressed'"
-    else:
+        # Serialize arguments to input file.
+        input_stage = File(input_path).stage(".task_command").render_stage(as_mount)
+        File(input_path).write(command)
+
         output_unstage = File(output_path).stage(".task_output").render_unstage(as_mount)
         error_unstage = File(error_path).stage(".task_error").render_unstage(as_mount)
         status_unstage = get_filesystem(url=status_path).shell_copy(
             None, status_path, as_mount=as_mount
         )
+
+    else:
+        input_path = get_array_scratch_file(scratch_prefix, array_uuid, SCRATCH_INPUT)
+        input_stage = "\n".join(
+            [
+                File(input_path).stage(".task_commands.tar.gz").render_stage(as_mount),
+                f'tar xOzf .task_commands.tar.gz "${array_index_env_var}".sh > .task_command',
+                f'REDUN_OUTPUT=$(tar xOzf .task_commands.tar.gz "${array_index_env_var}".output.txt)',
+                f'REDUN_ERROR=$(tar xOzf .task_commands.tar.gz "${array_index_env_var}".error.txt)',
+                f'REDUN_STATUS=$(tar xOzf .task_commands.tar.gz "${array_index_env_var}".status.txt)',
+            ]
+        )
+
+        # For the final unstaging we use the child job's intended output/error/status paths.
+        # The actual paths are known at runtime, so we subsitute in the shell vars.
+        output_unstage = (
+            File(input_path)
+            .stage(".task_output")
+            .render_unstage(as_mount)
+            .replace(quote(input_path), '"$REDUN_OUTPUT"')
+        )
+        error_unstage = (
+            File(input_path)
+            .stage(".task_error")
+            .render_unstage(as_mount)
+            .replace(quote(input_path), '"$REDUN_ERROR"')
+        )
+        status_unstage = (
+            get_filesystem(url=input_path)
+            .shell_copy(None, input_path, as_mount=as_mount)
+            .replace(quote(input_path), '"$REDUN_STATUS"')
+        )
+
+    if suppress_output:
+        output_unstage = "echo 'output suppressed'"
+        error_unstage = "echo 'error suppressed'"
+        status_unstage = "echo 'status suppressed'"
 
     return [
         "bash",

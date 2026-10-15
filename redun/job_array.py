@@ -87,6 +87,10 @@ class JobArrayer:
     max_array_size: int
         Maximum number of jobs that can be submitted as an array job. Must
         be in (`min_array_size`, `MAX_ARRAY_SIZE`].
+
+    array_scripts: bool
+        If True, script tasks are eligible for arraying. Only enable this for
+        executors whose `_submit_array_job` implements the script case.
     """
 
     def __init__(
@@ -97,8 +101,10 @@ class JobArrayer:
         stale_time: float,
         min_array_size: int,
         max_array_size: int = MAX_ARRAY_SIZE,
+        array_scripts: bool = False,
     ):
         self.min_array_size = min_array_size
+        self.array_scripts = array_scripts
         self.max_array_size = min(max_array_size, MAX_ARRAY_SIZE)
         if self.max_array_size < self.min_array_size:
             raise ValueError("Maximum array size cannot be less than minimum.")
@@ -154,8 +160,8 @@ class JobArrayer:
         """Adds a new job"""
 
         # If arraying is turned off, just submit the job.
-        # Script jobs are also not handled yet.
-        if job.task.script or not self.min_array_size:
+        # Script jobs are only arrayed by executors that implement them.
+        if (job.task.script and not self.array_scripts) or not self.min_array_size:
             self._submit_jobs([job])
             return
 

@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+import tarfile
 import time
 import unittest.mock
 import uuid
@@ -51,6 +52,7 @@ from redun.executors.scratch import (
 from redun.file import Dir
 from redun.scheduler import Execution, Job, Scheduler, Traceback
 from redun.scripting import ScriptError
+from redun.task import Task
 from redun.tests.utils import mock_s3, mock_scheduler, use_tempdir, wait_until
 from redun.utils import pickle_dumps
 
@@ -2127,6 +2129,11 @@ def other_task(x, y):
     return x - y
 
 
+@task(limits={"cpu": 1}, random_option=5, script=True)
+def array_script_task(x):
+    return f"echo {x}"
+
+
 # Tests begin here
 def test_job_descrs() -> None:
     """Tests the JobDescription class used to determine if Jobs are equivalent"""
@@ -2376,6 +2383,206 @@ def test_array_job_s3_setup(batch_submit_mock: Mock) -> None:
     assert hashes == [job.eval_hash for job in test_jobs]
 
     # Make monitor thread exit correctly
+    executor.stop()
+
+
+@mock_s3
+def test_script_jobs_not_arrayed_by_default() -> None:
+    """Executors that don't implement script arrays submit script jobs individually."""
+    job = Job(array_script_task, array_script_task(1))
+    job.args = ((1,), {})
+
+    sched = mock_scheduler()
+    exec = mock_executor(sched)
+    submit_jobs = Mock()
+    arr = job_array.JobArrayer(
+        submit_jobs,
+        exec._on_error,
+        submit_interval=10000.0,
+        stale_time=0.05,
+        min_array_size=5,
+    )
+
+    arr.add_job(job)
+    assert arr.pending == {}
+    assert submit_jobs.call_args[0] == ([job],)
+
+    arr.stop()
+
+
+@mock_s3
+@patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+@patch("redun.executors.aws_batch.aws_describe_jobs")
+@patch("redun.executors.aws_batch.batch_submit")
+def test_script_jobs_are_arrayed(
+    batch_submit_mock: Mock, aws_describe_jobs_mock: Mock, get_aws_user_mock: Mock
+) -> None:
+    """
+    Tests repeated script jobs are submitted as a single array job.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+    executor.arrayer.min_array_size = 3
+
+    aws_describe_jobs_mock.return_value = iter([])
+    batch_submit_mock.return_value = {
+        "jobId": "array-job-id",
+        "arrayProperties": {"size": 5},
+    }
+
+    test_jobs = []
+    for i in range(5):
+        job = Job(array_script_task, array_script_task(i))
+        job.id = f"task_{i}"
+        job.eval_hash = f"script_hash_{i}"
+        job.args = ((i,), {})
+
+        executor.submit_script(job)
+        test_jobs.append(job)
+
+    # Wait for jobs to get submitted from arrayer to executor.
+    wait_until(lambda: len(executor.pending_batch_jobs) == 5)
+
+    # A single array job should cover all 5 child jobs.
+    assert batch_submit_mock.call_count == 1
+    assert batch_submit_mock.call_args[1]["array_size"] == 5
+    assert executor.pending_batch_jobs == {
+        f"array-job-id:{i}": job for i, job in enumerate(test_jobs)
+    }
+
+    executor.stop()
+
+
+@mock_s3
+@patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+@patch("redun.executors.aws_batch.aws_describe_jobs")
+@patch("redun.executors.aws_batch.AWSBatchExecutor._submit_array_job")
+@patch("redun.executors.aws_batch.AWSBatchExecutor._submit_single_job")
+@pytest.mark.parametrize("a_task", [array_task, array_script_task])
+def test_multinode_jobs_are_not_arrayed(
+    submit_single_mock: Mock,
+    submit_array_mock: Mock,
+    aws_describe_jobs_mock: Mock,
+    get_aws_user_mock: Mock,
+    a_task: Task,
+) -> None:
+    """AWS Batch does not support multi-node array jobs, so those stay individual."""
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler, custom_config_args={"num_nodes": 2})
+    executor.arrayer.min_array_size = 3
+
+    aws_describe_jobs_mock.return_value = iter([])
+
+    test_jobs = []
+    for i in range(5):
+        job = Job(a_task, a_task(i))
+        job.id = f"task_{i}"
+        job.eval_hash = f"hash_{i}"
+        job.args = ((i,), {})
+
+        if a_task.script:
+            executor.submit_script(job)
+        else:
+            executor.submit(job)
+        test_jobs.append(job)
+
+    wait_until(lambda: submit_single_mock.call_count == 5)
+    assert [call[0][0] for call in submit_single_mock.call_args_list] == test_jobs
+    submit_array_mock.assert_not_called()
+
+    executor.stop()
+
+
+@mock_s3
+@patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
+@patch("redun.executors.aws_batch.aws_describe_jobs")
+@patch("redun.executors.aws_batch.AWSBatchExecutor._submit_array_job")
+@patch("redun.executors.aws_batch.AWSBatchExecutor._submit_single_job")
+def test_array_scripts_config(
+    submit_single_mock: Mock,
+    submit_array_mock: Mock,
+    aws_describe_jobs_mock: Mock,
+    get_aws_user_mock: Mock,
+) -> None:
+    """
+    Setting `array_scripts = False` submits script jobs individually but still arrays code jobs.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler, custom_config_args={"array_scripts": False})
+    executor.arrayer.min_array_size = 3
+
+    aws_describe_jobs_mock.return_value = iter([])
+
+    script_jobs = []
+    code_jobs = []
+    for i in range(5):
+        job = Job(array_script_task, array_script_task(i))
+        job.id = f"script_task_{i}"
+        job.eval_hash = f"script_hash_{i}"
+        job.args = ((i,), {})
+        executor.submit_script(job)
+        script_jobs.append(job)
+
+        job = Job(array_task, array_task(i))
+        job.id = f"code_task_{i}"
+        job.eval_hash = f"code_hash_{i}"
+        job.args = ((i,), {})
+        executor.submit(job)
+        code_jobs.append(job)
+
+    wait_until(lambda: submit_single_mock.call_count == 5 and submit_array_mock.call_count == 1)
+    assert [call[0][0] for call in submit_single_mock.call_args_list] == script_jobs
+    assert submit_array_mock.call_args[0][0] == code_jobs
+
+    executor.stop()
+
+
+@mock_s3
+@use_tempdir
+@patch("redun.executors.aws_batch.batch_submit")
+def test_array_script_job_s3_setup(batch_submit_mock: Mock) -> None:
+    """
+    Tests that each script array child gets its own command file, and that the shared
+    container command resolves it from the array index alone.
+    """
+    scheduler = mock_scheduler()
+    executor = mock_executor(scheduler)
+
+    batch_submit_mock.return_value = {
+        "jobId": "array-job-id",
+        "arrayProperties": {"size": "10"},
+    }
+
+    test_jobs = []
+    for i in range(10):
+        job = Job(array_script_task, array_script_task(i))
+        job.id = f"task_{i}"
+        job.eval_hash = f"script_hash_{i}"
+        job.args = ((i,), {})
+        test_jobs.append(job)
+
+    array_uuid = executor._submit_array_job(test_jobs)
+
+    # Scripts should be packaged into a tarfile.
+    tar_stream = tarfile.open(
+        fileobj=File(f"s3://example-bucket/redun/array_jobs/{array_uuid}/input").open("rb"),
+        mode="r:gz",
+    )
+    for i in range(10):
+        assert f"echo {i}" in tar_stream.extractfile(f"{i}.sh").read().decode("utf-8")
+        assert (
+            tar_stream.extractfile(f"{i}.output.txt").read().decode("utf-8")
+            == f"s3://example-bucket/redun/jobs/script_hash_{i}/output"
+        )
+        assert (
+            tar_stream.extractfile(f"{i}.error.txt").read().decode("utf-8")
+            == f"s3://example-bucket/redun/jobs/script_hash_{i}/error"
+        )
+        assert (
+            tar_stream.extractfile(f"{i}.status.txt").read().decode("utf-8")
+            == f"s3://example-bucket/redun/jobs/script_hash_{i}/status"
+        )
+
     executor.stop()
 
 

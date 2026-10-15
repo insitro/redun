@@ -5,13 +5,15 @@ Utilities for working with executor scratch directories.
 import json
 import os
 import pickle
+import tarfile
 from collections.abc import Callable
 from dataclasses import dataclass
+from io import BytesIO
 from typing import Any, Optional, cast
 
 from redun.file import File
 from redun.scheduler import Job, Traceback
-from redun.scripting import ScriptError
+from redun.scripting import ScriptError, get_task_command
 from redun.utils import pickle_dump
 
 # Scratch filenames.
@@ -75,12 +77,22 @@ def get_execution_scratch_file(scratch_prefix: str, execution_id: str, filename:
     return os.path.join(scratch_prefix, "execution", execution_id, filename)
 
 
+def add_tar_textfile(tar: tarfile.TarFile, filename: str, text: str) -> None:
+    """
+    Add a text file to a tar archive.
+    """
+    tarinfo = tarfile.TarInfo(name=filename)
+    data = text.encode("utf8")
+    tarinfo.size = len(data)
+    tar.addfile(tarinfo, fileobj=BytesIO(data))
+
+
 @dataclass
 class ArrayJobScratchFiles:
     input_file: str
-    output_file: str
-    error_file: str
-    eval_file: Optional[str] = None
+    output_file: str | None
+    error_file: str | None
+    eval_file: str | None
 
 
 def write_array_job_scratch_files(
@@ -92,30 +104,54 @@ def write_array_job_scratch_files(
     """
     Write the scratch files for an Array-style Job.
     """
-    all_args = []
-    all_kwargs = []
-    for job in jobs:
-        assert job.args
-        all_args.append(job.args[0])
-        all_kwargs.append(job.args[1])
-
-    # Setup input, output and error path files.
-    # Input file is a pickled list of args, and kwargs, for each child job.
     input_file = get_array_scratch_file(scratch_prefix, array_id, SCRATCH_INPUT)
-    with File(input_file).open("wb") as out:
-        pickle_dump([all_args, all_kwargs], out)
 
-    # Output file is a plaintext list of output paths, for each child job.
-    output_file = get_array_scratch_file(scratch_prefix, array_id, SCRATCH_OUTPUT)
-    output_paths = [get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT) for job in jobs]
-    with File(output_file).open("w") as ofile:
-        json.dump(output_paths, ofile)
+    if not jobs[0].task.script:
+        # Non-script jobs use pickle for serializing their arguments.
+        # Input file is a pickled list of args and kwargs, for each child job.
+        all_args = []
+        all_kwargs = []
+        for job in jobs:
+            assert job.args
+            all_args.append(job.args[0])
+            all_kwargs.append(job.args[1])
 
-    # Error file is a plaintext list of error paths, one for each child job.
-    error_file = get_array_scratch_file(scratch_prefix, array_id, SCRATCH_ERROR)
-    error_paths = [get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR) for job in jobs]
-    with File(error_file).open("w") as efile:
-        json.dump(error_paths, efile)
+        # Setup input, output and error path files.
+        with File(input_file).open("wb") as out:
+            pickle_dump([all_args, all_kwargs], out)
+
+        # Output file is a plaintext list of output paths, for each child job.
+        output_file = get_array_scratch_file(scratch_prefix, array_id, SCRATCH_OUTPUT)
+        output_paths = [get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT) for job in jobs]
+        with File(output_file).open("w") as ofile:
+            json.dump(output_paths, ofile)
+
+        # Error file is a plaintext list of error paths, one for each child job.
+        error_file = get_array_scratch_file(scratch_prefix, array_id, SCRATCH_ERROR)
+        error_paths = [get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR) for job in jobs]
+        with File(error_file).open("w") as efile:
+            json.dump(error_paths, efile)
+
+    else:
+        # Array script jobs store all scripts into a single tar file.
+        with File(input_file).open("wb") as out:
+            with tarfile.open(fileobj=out, mode="w|gz") as tar:
+                for i, job in enumerate(jobs):
+                    assert job.args
+                    args, kwargs = job.args
+                    command = get_task_command(job.task, args, kwargs)
+                    add_tar_textfile(tar, f"{i}.sh", command)
+
+                    # Save the job-specific paths in text files within the tar.
+                    output_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_OUTPUT)
+                    error_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_ERROR)
+                    status_path = get_job_scratch_file(scratch_prefix, job, SCRATCH_STATUS)
+                    add_tar_textfile(tar, f"{i}.output.txt", output_path)
+                    add_tar_textfile(tar, f"{i}.error.txt", error_path)
+                    add_tar_textfile(tar, f"{i}.status.txt", status_path)
+
+        output_file = None
+        error_file = None
 
     # Eval hash file is plaintext hashes of child jobs for matching for job reuniting.
     if include_eval_hash:
