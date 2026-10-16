@@ -1321,6 +1321,7 @@ class ExecutionScreen(RedunScreen):
         self.app.push_screen(screen)
 
     async def action_refresh(self) -> None:
+        self.app.session.expire_all()
         await self.load_jobs()
 
     async def load_jobs(self):
@@ -1696,6 +1697,7 @@ class ExecutionsScreen(RedunScreen):
         self.call_after_refresh(self.load_executions)
 
     async def action_refresh(self) -> None:
+        self.app.session.expire_all()
         await self.load_executions()
 
     def on_screen_resume(self, message: Message) -> None:
