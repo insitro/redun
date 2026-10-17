@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.50
+October 17, 2026
+
+* `#542` - fix console refresh
+* `#541` - fix(k8s): build valid Jobs under kubernetes>=37
+* `#537` - Feat: aws batch array for scripts
+* `#535` - Support string-based type annotations in task signatures
+* `#533` - [COMP-3871] Retry transient errors when fetching k8s pod logs
+* `#532` - fix(scheduler): don't let a scheduler task's synchronous raise crash the scheduler
+* `#531` - fix(k8s): don't reunite with terminal-failed jobs
+
 ## 0.49.1
 September 04, 2026
 
