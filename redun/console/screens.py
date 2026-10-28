@@ -1322,7 +1322,10 @@ class ExecutionScreen(RedunScreen):
 
     async def action_refresh(self) -> None:
         self.app.session.expire_all()
+        self.app.session.refresh(self.execution)
+        self.job_list.jobs = None  # ty: ignore[invalid-assignment]
         await self.load_jobs()
+        await self.job_status_list.load_jobs()
 
     async def load_jobs(self):
         if not self.execution:
