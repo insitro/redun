@@ -743,11 +743,19 @@ def test_failed_jobs_are_not_reunited() -> None:
 @mock_s3
 @mock_k8s
 @patch("redun.executors.k8s.package_code")
-def test_code_packaging(package_code_mock: Mock) -> None:
+@patch("redun.executors.k8s.k8s_describe_jobs")
+@patch("redun.executors.k8s.k8s_submit")
+def test_code_packaging(
+    k8s_submit_mock: Mock,
+    k8s_describe_jobs_mock: Mock,
+    package_code_mock: Mock,
+) -> None:
     """
     Ensure that code packaging only happens on first submission.
     """
-    package_code_mock.return_value = "s3://fake-bucket/code.tar.gz"
+    package_code_mock.return_value = File("s3://fake-bucket/code.tar.gz")
+
+    k8s_describe_jobs_mock.return_value = []
 
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler, code_package=True)
@@ -757,15 +765,27 @@ def test_code_packaging(package_code_mock: Mock) -> None:
     assert executor.code_file is None
     assert package_code_mock.call_count == 0
 
+    k8s_job_id = "k8s-job-id"
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash",
+        uid=k8s_job_id,
+    )
+
     # Hand create jobs.
     job1 = Job(task1, task1(10))
     job1.id = "1"
     job1.eval_hash = "eval_hash"
     job1.args = ((10,), {})
 
+    k8s_job_id2 = "k8s-job-id-2"
+    k8s_submit_mock.return_value = create_job_object(
+        name=DEFAULT_JOB_PREFIX + "-eval_hash2",
+        uid=k8s_job_id2,
+    )
+
     job2 = Job(task1, task1(20))
     job2.id = "2"
-    job2.eval_hash = "eval_hash"
+    job2.eval_hash = "eval_hash2"
     job2.args = ((20,), {})
 
     # Submit a job and ensure that the code was packaged.

@@ -127,10 +127,13 @@ class JobArrayer:
         """Monitoring thread batches up stale jobs"""
         try:
             while not self._exit_flag.wait(timeout=self.interval):
-                stales = self.get_stale_descrs()
-
-                for descr in stales:
+                for descr in self.get_stale_descrs():
                     self.submit_pending_jobs(descr)
+
+            # Final submission of all remaining jobs before stopping.
+            while self.pending_timestamps:
+                descr = next(iter(self.pending_timestamps))
+                self.submit_pending_jobs(descr)
         except Exception as error:
             # Since we run this method at the top level of a thread, we need to
             # catch all exceptions so we can properly report them to the

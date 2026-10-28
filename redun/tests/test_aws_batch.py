@@ -2025,7 +2025,10 @@ def test_code_packaging(
 @mock_s3
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
 @patch("redun.executors.aws_batch.aws_describe_jobs")
-def test_inflight_join_only_on_first_submission(aws_describe_jobs_mock, get_aws_user_mock) -> None:
+@patch("redun.executors.aws_batch.batch_submit")
+def test_inflight_join_only_on_first_submission(
+    batch_submit_mock, aws_describe_jobs_mock, get_aws_user_mock
+) -> None:
     """
     Ensure that inflight jobs are only gathered once and not on every job submission.
     """
@@ -2180,11 +2183,17 @@ def test_arrayer_thread() -> None:
     """Tests that the arrayer monitor thread can be restarted after exit"""
     j1 = Job(array_task, array_task(1))
     j1.args = ((1,), {})
+    j1.eval_hash = "eval_hash"
+
+    submitted_jobs = []
+
+    def track_submissions(jobs):
+        submitted_jobs.extend(jobs)
 
     sched = mock_scheduler()
     exec = mock_executor(sched)
     arr = job_array.JobArrayer(
-        exec._submit_jobs,
+        track_submissions,
         exec._on_error,
         submit_interval=10000.0,
         stale_time=0.05,
@@ -2203,6 +2212,52 @@ def test_arrayer_thread() -> None:
     assert arr._monitor_thread.is_alive()
 
     arr.stop()
+
+
+@mock_s3
+def test_arrayer_flushes_on_stop() -> None:
+    """Test that JobArrayer submits all pending jobs when stopped"""
+    j1 = Job(array_task, array_task(1))
+    j1.args = ((1,), {})
+    j2 = Job(array_task, array_task(2))
+    j2.args = ((2,), {})
+    j3 = Job(array_task, array_task(3))
+    j3.args = ((3,), {})
+
+    sched = mock_scheduler()
+    exec = mock_executor(sched)
+
+    submitted_jobs = []
+
+    def track_submissions(jobs):
+        submitted_jobs.extend(jobs)
+
+    arr = job_array.JobArrayer(
+        track_submissions,
+        exec._on_error,
+        submit_interval=10000.0,  # Very long interval - won't trigger naturally
+        stale_time=10000.0,  # Very long stale time - won't trigger naturally
+        min_array_size=2,
+    )
+
+    # Add jobs that would normally wait for staleness
+    arr.add_job(j1)
+    arr.add_job(j2)
+    arr.add_job(j3)
+
+    # Give the monitor thread a moment to start
+    time.sleep(0.1)
+
+    # Jobs should still be pending (not stale yet)
+    assert len(submitted_jobs) == 0
+    assert arr.num_pending == 3
+
+    # Stop the arrayer - should flush all pending jobs
+    arr.stop()
+
+    # All jobs should now be submitted
+    assert len(submitted_jobs) == 3
+    assert arr.num_pending == 0
 
 
 @mock_s3
