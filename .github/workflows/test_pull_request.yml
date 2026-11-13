@@ -45,7 +45,7 @@ jobs:
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           version: ${{ steps.uv-version.outputs.version }}
-          python-version: '3.11'
+          python-version: '3.13'
           enable-cache: true
       - run: make setup
       - run: make test-postgres

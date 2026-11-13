@@ -2025,15 +2025,20 @@ def test_code_packaging(
 @mock_s3
 @patch("redun.executors.aws_utils.get_aws_user", return_value="alice")
 @patch("redun.executors.aws_batch.aws_describe_jobs")
+@patch("redun.executors.aws_batch.iter_batch_job_status")
 @patch("redun.executors.aws_batch.batch_submit")
 def test_inflight_join_only_on_first_submission(
-    batch_submit_mock, aws_describe_jobs_mock, get_aws_user_mock
+    batch_submit_mock, iter_batch_job_status_mock, aws_describe_jobs_mock, get_aws_user_mock
 ) -> None:
     """
     Ensure that inflight jobs are only gathered once and not on every job submission.
     """
     scheduler = mock_scheduler()
     executor = mock_executor(scheduler)
+
+    batch_submit_mock.return_value = {
+        "jobId": "job1",
+    }
 
     executor.start()
 
@@ -2053,6 +2058,10 @@ def test_inflight_join_only_on_first_submission(
 
     # Ensure that inflight jobs were gathered.
     assert executor.get_jobs.call_count == 1
+
+    batch_submit_mock.return_value = {
+        "jobId": "job2",
+    }
 
     # Submit the second job and confirm that job reuniting was not done again.
     executor.submit(job2)
