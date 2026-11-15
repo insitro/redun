@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.51
+November 15, 2026
+
+* `#548` - Add a DbHandle subclass of Handle to redun stdlib
+* `#546` - Submit all jobs pending in JobArrayer before stopping
+* `#547` - reset more state to correctly refresh console
+* `#544` - fix(deps): bump certifi to 2026.10.23 for GHSA-6q48-6c7w-9gw2
+
 ## 0.50
 October 17, 2026
 
