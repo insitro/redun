@@ -352,7 +352,8 @@ def format_timedelta(duration: timedelta) -> str:
     """
     Format timedelta as a string.
     """
-    hours, remainder_seconds = divmod(duration.seconds, 3600)
+    # duration.seconds excludes whole days, so add them back in.
+    hours, remainder_seconds = divmod(duration.days * 86400 + duration.seconds, 3600)
     minutes, seconds = divmod(remainder_seconds, 60)
     centiseconds = int(duration.microseconds / 10000)
     return "{}:{:02}:{:02}.{:02}".format(
