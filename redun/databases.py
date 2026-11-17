@@ -1,3 +1,4 @@
+import functools
 import json
 import os
 from collections import defaultdict
@@ -30,17 +31,34 @@ class DatabaseConfig:
         self.db_uri = db_uri
         self.connect_args = dict(connect_args)
 
-        if "aws_secret" in connect_args:
-            # Configure database connection from AWS Secret.
-            secret_id = self.connect_args.pop("aws_secret")
-            aws_region = self.connect_args.pop("aws_region", "")
-            db_config = get_aws_secret_db_config(secret_id, aws_region=aws_region)
-            self.db_uri = db_config.db_uri
-            self.connect_args = db_config.connect_args | self.connect_args
-
         if self.db_uri.startswith("sqlite:"):
             # We will use locks to ensure multi-threading is safe.
             self.connect_args.setdefault("check_same_thread", False)
+
+    def resolve(self) -> "DatabaseConfig":
+        """
+        Fully resolve the config.
+        """
+        db_uri = self.db_uri
+        connect_args = dict(self.connect_args)
+
+        if "callback" in connect_args:
+            # Obtain db_uri, connect_args using a callback function.
+            callback = connect_args.pop("callback")
+            connect_args2 = dict(callback())
+            if "db_uri" in connect_args2:
+                db_uri = connect_args2.pop("db_uri")
+            connect_args = connect_args2 | connect_args
+
+        if "aws_secret" in connect_args:
+            # Configure database connection from AWS Secret.
+            secret_id = connect_args.pop("aws_secret")
+            aws_region = connect_args.pop("aws_region", "")
+            db_config = get_aws_secret_db_config(secret_id, aws_region=aws_region)
+            db_uri = db_config.db_uri
+            connect_args = db_config.connect_args | connect_args
+
+        return DatabaseConfig(db_uri, connect_args)
 
 
 class Connection:
@@ -61,6 +79,7 @@ class Connection:
         return result.fetchall() if result.returns_rows else None
 
 
+@functools.lru_cache
 def get_aws_secret_db_config(secret_id: str, aws_region: str | None) -> DatabaseConfig:
     """
     Returns a DatabaseConfig from an AWS secret.
@@ -183,7 +202,7 @@ class DatabaseRegistry:
         """
         Returns a DatabaseConfig for a named database.
         """
-        return self._configs[name]
+        return self._configs[name].resolve()
 
     def __iter__(self) -> Iterable[tuple[str, DatabaseConfig]]:
         return iter(self._configs.items())
@@ -211,5 +230,10 @@ def get_db(db_name: str) -> DbHandle:
 def register_db(db_name: str, db_uri: str = "", **connect_args: Any) -> None:
     """
     Registers a database with the default DatabaseRegistry.
+
+    connect_args:
+    - aws_secret: AWS Secret used to fetch db_uri and connect_args.
+    - callback: Function to call when connecting to obtain db_uri and connect_args.
+      callback should take no arguments and returns a dict with connect_args and optional "db_uri" key.
     """
     get_database_registry().add(db_name, db_uri=db_uri, **connect_args)

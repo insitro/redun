@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.51.1
+November 16, 2026
+
+* `#550` - Avoid fetching secrets at import-time for register_db()
+
 ## 0.51
 November 15, 2026
 

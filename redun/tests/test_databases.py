@@ -8,7 +8,14 @@ import pytest
 import sqlalchemy as sa
 
 from redun import task
-from redun.databases import DbHandle, DatabaseConfig, DatabaseRegistry, get_db, register_db
+from redun.databases import (
+    DbHandle,
+    DatabaseConfig,
+    DatabaseRegistry,
+    get_db,
+    get_database_registry,
+    register_db,
+)
 from redun.scheduler import Scheduler
 from redun.value import get_type_registry
 
@@ -62,7 +69,9 @@ def test_dbhandle_config_aws_secret() -> None:
     }
 
     with patch("redun.databases.get_aws_client", return_value=mock_client):
-        config = DatabaseConfig("", {"aws_secret": "secret_name", "aws_region": "us-east-1"})
+        config = DatabaseConfig(
+            "", {"aws_secret": "secret_name", "aws_region": "us-east-1"}
+        ).resolve()
         assert config.db_uri == "postgresql://myhost:123/db"
         assert config.connect_args == {"user": "alice", "password": "pwd"}
 
@@ -138,7 +147,15 @@ def test_registry_add_and_get(sqlite_db_uri: str) -> None:
     """Test adding and retrieving database."""
     register_db("test_db", sqlite_db_uri)
     conn = get_db("test_db")
-    isinstance(conn, DbHandle)
+    assert isinstance(conn, DbHandle)
+
+
+def test_registry_func(sqlite_db_uri: str) -> None:
+    """Test adding and retrieving database."""
+    register_db("test_db", callback=lambda: {"db_uri": "sqlite:///example.db", "user": "alice"})
+    config = get_database_registry().get("test_db")
+    assert config.db_uri == "sqlite:///example.db"
+    assert config.connect_args == {"user": "alice", "check_same_thread": False}
 
 
 def test_registry_iter(sqlite_db_uri: str) -> None:
