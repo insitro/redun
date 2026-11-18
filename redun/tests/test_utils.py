@@ -25,6 +25,7 @@ from redun.utils import (
     PreviewUnpicklable,
     add_import_path,
     clear_import_paths,
+    format_timedelta,
     format_timestamp,
     get_import_paths,
     iter_nested_value,
@@ -476,3 +477,15 @@ def test_multimap() -> None:
     mmap.add("e", 9)
     assert mmap.get("d") == [7, 8]
     assert len(mmap) == 7
+
+
+def test_format_timedelta() -> None:
+    """
+    format_timedelta should count whole days in the hours.
+    """
+    assert format_timedelta(timedelta(seconds=5, microseconds=120000)) == "0:00:05.12"
+    assert format_timedelta(timedelta(hours=1, minutes=2, seconds=3)) == "1:02:03.00"
+    assert format_timedelta(timedelta(hours=23, minutes=59, seconds=59)) == "23:59:59.00"
+    assert format_timedelta(timedelta(hours=25)) == "25:00:00.00"
+    assert format_timedelta(timedelta(days=2, minutes=5)) == "48:05:00.00"
+    assert format_timedelta(timedelta(days=5)) == "120:00:00.00"
