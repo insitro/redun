@@ -18,6 +18,7 @@ from typing import (
 
 import pytest
 
+from redun.scheduler import ErrorValue
 from redun.tests.utils import use_tempdir
 from redun.utils import (
     MultiMap,
@@ -385,6 +386,33 @@ def test_pickle_unpicklable() -> None:
     assert isinstance(x2, PreviewUnpicklable)
     assert isinstance(x2.error, pickle.UnpicklingError)
     assert str(x2.error) == "pickle data was truncated"
+
+
+class MultiArgError(Exception):
+    def __init__(self, stderr: str, returncode: int):
+        self.stderr = stderr
+        self.returncode = returncode
+        super().__init__(f"Command failed ({returncode}): {stderr}")
+
+
+def test_pickle_preview_exception_multiple_args() -> None:
+    """
+    Pickle preview should recreate exceptions whose constructor takes more
+    required arguments than it passes to the base Exception.
+    """
+    data = pickle_dumps(ErrorValue(MultiArgError("boom", 2)))
+
+    # Plain unpickling calls MultiArgError(*args) with only the message.
+    with pytest.raises(TypeError):
+        pickle.loads(data)
+
+    error_value = pickle_preview(data)
+    assert isinstance(error_value, ErrorValue)
+    error = error_value.error
+    assert isinstance(error, MultiArgError)
+    assert str(error) == "Command failed (2): boom"
+    assert error.stderr == "boom"
+    assert error.returncode == 2
 
 
 class Color(Enum):

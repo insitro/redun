@@ -440,21 +440,49 @@ class PreviewClass(ABC):
         raise AttributeError(f"{name} not an attribute of {self._name} PreviewClass")
 
 
+def _preview_exception_class(cls: type[BaseException]) -> Any:
+    """
+    Wraps an exception class so that previews can recreate its instances.
+
+    Exceptions are unpickled by calling `cls(*error.args)`. That fails when
+    the constructor's signature differs from `args`, for example when
+    `__init__` takes several required parameters but passes a single message
+    to `super().__init__()`. In that case, we create the instance without
+    calling `__init__`. Pickle then restores its attributes from `__dict__`.
+    """
+
+    def make_exception(*args: Any) -> BaseException:
+        try:
+            return cls(*args)
+        except TypeError:
+            return cls.__new__(cls, *args)
+
+    return make_exception
+
+
 class PreviewingUnpickler(Unpickler):
     """
     A specialized unpickler that allows previewing of class attributes for
     unknown classes.
+
+    If `wrap_exceptions` is True, exceptions whose constructors cannot be
+    called with their own `args` are still recreated (see
+    `_preview_exception_class`).
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, wrap_exceptions: bool = False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self._wrap_exceptions = wrap_exceptions
 
         # Registry of stub classes for unknown classes.
         self._classes: dict[str, type] = {}
 
     def find_class(self, module: str, name: str) -> type:
         try:
-            return super().find_class(module, name)
+            cls = super().find_class(module, name)
+            if self._wrap_exceptions and isinstance(cls, type) and issubclass(cls, BaseException):
+                return _preview_exception_class(cls)
+            return cls
 
         except (AttributeError, ModuleNotFoundError):
             class_name = f"{module}.{name}"
@@ -489,13 +517,18 @@ def pickle_preview(data: bytes, raise_error: bool = False) -> Any:
     For example, if the class is unknown, will return a PreviewClass
     subclass that can be used to peek at attributes.
     """
-    infile = io.BytesIO(data)
-    unpickler = PreviewingUnpickler(infile)
-
     try:
         with with_pickle_preview(raise_error):
-            return unpickler.load()
+            return PreviewingUnpickler(io.BytesIO(data)).load()
     except Exception as error:
+        if isinstance(error, TypeError):
+            # The data may contain an exception that cannot be recreated from
+            # its args, so retry with exception wrapping enabled.
+            try:
+                with with_pickle_preview(raise_error):
+                    return PreviewingUnpickler(io.BytesIO(data), wrap_exceptions=True).load()
+            except Exception:
+                pass
         if raise_error:
             raise
         else:
